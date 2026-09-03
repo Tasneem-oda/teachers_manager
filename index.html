@@ -87,7 +87,7 @@
 
     async function checkProfileCompletion(userId) {
         try {
-            const response = await fetch('https://tasneemahmed-n8n.hf.space/webhook-test/check-teacher', {
+            const response = await fetch('https://tasneemahmed-n8n.hf.space/webhook/check-teacher', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ teacher_id: userId })
