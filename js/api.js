@@ -34,6 +34,6 @@ export const api = {
     },
 
     async getDashboard() {
-        return await this.call('/dashboard', 'GET');
+        return await this.call('/webhook/dashboard', 'GET');     
     }
 };
