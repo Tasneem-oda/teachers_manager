@@ -1,7 +1,8 @@
+
+import { CONFIG } from './config.js';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
 const supabase = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-
 const auth = {
     async signup(email, password, name, phone, username) {
         // 1. إنشاء الحساب في Supabase Auth
