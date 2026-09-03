@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - لوحة المعلم</title>
+    <style>
+        :root { --bg: #FAF9F6; --primary: #4B3A5A; --text: #29252D; --card: #FFFFFF; --border: #E7E1E8; }
+        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: var(--card); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid var(--border); width: 100%; max-width: 400px; }
+        .input-group { margin-bottom: 1rem; }
+        input { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 0.75rem; background-color: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        button:hover { background-color: #3F304D; }
+        .error { color: #B85C5C; font-size: 0.875rem; margin-top: 0.5rem; display: none; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>تسجيل الدخول</h2>
+        <form id="loginForm">
+            <div class="input-group">
+                <input type="email" id="email" placeholder="البريد الإلكتروني" required>
+            </div>
+            <div class="input-group">
+                <input type="password" id="password" placeholder="كلمة المرور" required>
+            </div>
+            <div id="errorMsg" class="error"></div>
+            <button type="submit" id="submitBtn">دخول</button>
+        </form>
+        <p style="text-align: center; font-size: 0.9rem;">ليس لديك حساب؟ <a href="signup.html">سجل الآن</a></p>
+    </div>
+
+    <script type="module" src="js/config.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const errorDiv = document.getElementById('errorMsg');
+            
+            btn.disabled = true;
+            btn.innerText = 'جاري التحقق...';
+            errorDiv.style.display = 'none';
+
+            try {
+                await window.auth.login(
+                    document.getElementById('email').value,
+                    document.getElementById('password').value
+                );
+            } catch (error) {
+                errorDiv.innerText = error.message;
+                errorDiv.style.display = 'block';
+                btn.disabled = false;
+                btn.innerText = 'دخول';
+            }
+        });
+    </script>
+</body>
+</html>
