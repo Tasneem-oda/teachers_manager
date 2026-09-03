@@ -31,7 +31,9 @@
 <script>
     const supabaseUrl = 'https://qdpnupgqvjxlrmwwgmij.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkcG51cGdxdmp4bHJtd3dnbWlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjczMjUsImV4cCI6MjA4NTU0MzMyNX0.gaWPEgrhIQJzZLVoo7x1hnS-63ZJPZN96Xb3WpqApik';
-    const supabase = customElements.get('supabase') ? window.supabase : supabase.createClient(supabaseUrl, supabaseKey);
+    
+    // التعديل هنا: استخدام supabaseClient بدلاً من التعدي على الكائن العام supabase
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
     let isLoginMode = true;
 
@@ -63,12 +65,13 @@
         let authError = null;
         let userData = null;
 
+        // التعديل هنا: استخدام supabaseClient بدلاً من supabase
         if (isLoginMode) {
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
             authError = error;
             userData = data;
         } else {
-            const { data, error } = await supabase.auth.signUp({ email, password });
+            const { data, error } = await supabaseClient.auth.signUp({ email, password });
             authError = error;
             userData = data;
         }
@@ -77,10 +80,8 @@
             showError(authError.message);
             document.getElementById('submit-btn').disabled = false;
         } else {
-            // حفظ التوكن في المتصفح
             localStorage.setItem('teacher_session', userData.session.access_token);
             localStorage.setItem('teacher_id', userData.user.id);
-            // توجيه لعملية التحقق من البيانات عبر n8n
             checkProfileCompletion(userData.user.id);
         }
     }
@@ -95,12 +96,13 @@
             const result = await response.json();
             
             if (result.profile_exists) {
-                window.location.href = '/dashboard.html'; // توجيه للوحة التحكم
+                window.location.href = '/dashboard.html'; 
             } else {
-                window.location.href = '/complete-profile.html'; // توجيه لإكمال البيانات
+                window.location.href = '/complete-profile.html';
             }
         } catch (err) {
             showError("حدث خطأ أثناء الاتصال بالخادم.");
+            document.getElementById('submit-btn').disabled = false;
         }
     }
 </script>
