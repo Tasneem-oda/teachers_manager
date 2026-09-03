@@ -1,5 +1,5 @@
 import { CONFIG } from './config.js';
-const api = {
+export const api = {
     async call(endpoint, method = 'POST', body = null) {
         const session = JSON.parse(localStorage.getItem('sb-session'));
         if (!session || !session.access_token) {
