@@ -54,8 +54,18 @@ export const api = {
     },
 
     async createStudent(studentData) {
-        // استخدام الدالة المركزية call يغني عن إعادة كتابة منطق المصادقة والـ fetch
         return await this.call('/webhook/qtm/students/create', 'POST', studentData);
+    },
+
+    async getStudentContext(studentId) {
+        return await this.call(`/webhook/qtm/students/context?id=${studentId}`, 'GET');
+    },
+
+    async createNote(studentId, noteText) {
+        return await this.call('/webhook/qtm/notes/create', 'POST', { 
+            student_id: studentId, 
+            note: noteText 
+        });
     }
 };
 
