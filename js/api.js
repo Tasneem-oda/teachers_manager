@@ -2,17 +2,21 @@ import { CONFIG } from './config.js';
 
 export const api = {
     async call(endpoint, method = 'POST', body = null) {
-        const sessionString = localStorage.getItem('sb-session');
-        if (!sessionString) {
+        // 1. استخدام Supabase مباشرة لجلب الجلسة والتوكن الصحيح بأمان تام
+        if (!window.supabase) {
+            throw new Error('Supabase client is not initialized.');
+        }
+
+        const { data: { session }, error } = await window.supabase.auth.getSession();
+
+        if (error || !session) {
             window.location.href = 'login.html';
             throw new Error('UNAUTHORIZED');
         }
         
-        const session = JSON.parse(sessionString);
-        
         const headers = {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`
+            'Authorization': `Bearer ${session.access_token}` // التوكن الحقيقي من الجلسة النشطة
         };
 
         const options = { method, headers };
@@ -20,20 +24,37 @@ export const api = {
             options.body = JSON.stringify(body);
         }
 
-        const response = await fetch(`${CONFIG.N8N_WEBHOOK_BASE}${endpoint}`, options);
-        const data = await response.json();
+        const url = `${CONFIG.N8N_WEBHOOK_BASE}${endpoint}`;
+        const response = await fetch(url, options);
+
+        // 2. فحص النص القادم أولاً لحماية الواجهة من الانهيار إذا كان الرد فارغاً
+        const textResponse = await response.text();
+        if (!textResponse) {
+            throw new Error('استجابة الخادم فارغة أو غير صالحة.');
+        }
+
+        let data;
+        try {
+            data = JSON.parse(textResponse);
+        } catch (e) {
+            throw new Error('فشل قراءة بيانات الخادم (Invalid JSON).');
+        }
         
         if (!data.success) {
             if (response.status === 401 || response.status === 403) {
-                localStorage.removeItem('sb-session');
+                await window.supabase.auth.signOut();
                 window.location.href = 'login.html';
             }
             throw new Error(data.error?.message || 'حدث خطأ في جلب البيانات.');
         }
+
         return data.data;
     },
 
     async getDashboard() {
-        return await this.call('/webhook/dashboard', 'GET');     
+        return await this.call('/webhook/dashboard', 'GET');      
     }
 };
+
+// إتاحة الـ api عالمياً في حال لم تستخدم الـ ES Modules في كل الملفات
+window.api = api;
