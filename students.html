@@ -1,0 +1,38 @@
+<!-- نافذة منبثقة (Modal) مخفية افتراضياً في صفحة الطلاب -->
+<div id="add-student-modal" class="modal hidden">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h2>إضافة طالب جديد</h2>
+        <form id="add-student-form">
+            <div class="form-group">
+                <label>اسم الطالب *</label>
+                <input type="text" id="student-name" required>
+            </div>
+            <div class="form-group">
+                <label>رقم الهاتف</label>
+                <input type="text" id="student-phone">
+            </div>
+            <div class="form-group">
+                <label>رابط الحصة (Zoom/Meet)</label>
+                <input type="url" id="student-link">
+            </div>
+            <div class="form-group">
+                <label>السورة الحالية</label>
+                <input type="text" id="student-surah">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>من آية</label>
+                    <input type="number" id="student-from-ayah" min="1">
+                </div>
+                <div class="form-group">
+                    <label>إلى آية</label>
+                    <input type="number" id="student-to-ayah" min="1">
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" id="submit-student-btn" class="btn btn-primary">حفظ الطالب</button>
+            </div>
+        </form>
+    </div>
+</div>
