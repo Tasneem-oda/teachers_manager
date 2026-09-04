@@ -39,7 +39,7 @@
     <div class="container">
         <div class="loader" id="loader">جاري تحميل بيانات الحصة...</div>
 
-        <div id="lesson-content" style="display: none;">
+        <div id="lesson-content-view" style="display: none;">
             <!-- Lesson Header -->
             <div class="lesson-header">
                 <h1 id="student-name">اسم الطالب</h1>
@@ -155,7 +155,7 @@
         import { ErrorHandler, Formatters } from './js/utils.js';
 
         const loader = document.getElementById('loader');
-        const content = document.getElementById('lesson-content');
+        const content = document.getElementById('lesson-content-view');
         const form = document.getElementById('lesson-form');
         const studentIdParam = new URLSearchParams(window.location.search).get('student_id');
 

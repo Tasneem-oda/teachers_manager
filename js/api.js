@@ -12,7 +12,7 @@ import { APIUtils, Storage } from './utils.js';
 async function apiCall(endpoint, method = 'GET', body = null) {
     try {
         // 1. الحصول على الجلسة والـ token
-        const { data: { session }, error } = await window.supabase.auth.getSession();
+        const { data: { session }, error } = await window.supabaseClient.auth.getSession();
 
         if (error || !session) {
             window.location.href = 'login.html';
@@ -47,7 +47,7 @@ async function apiCall(endpoint, method = 'GET', body = null) {
         }
 
         if (error.status === 401 || error.status === 403) {
-            await window.supabase.auth.signOut();
+            await window.supabaseClient.auth.signOut();
             window.location.href = 'login.html';
         }
 

@@ -55,7 +55,7 @@ export const CONFIG = {
         },
         AI: {
             ASSISTANT: '/teacher-assistant',
-            LESSION_SUMMARY: '/lesson-summary'
+            LESSON_SUMMARY: '/lesson-summary'
         }
     },
     

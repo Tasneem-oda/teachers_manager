@@ -213,7 +213,7 @@
             loading.style.display = 'block';
 
             // تنفيذ التسجيل
-            const result = await Auth.signUp(name, email, phone, username, teachingType, subject);
+            const result = await Auth.signUp(name, email, phone, password, username, teachingType, subject);
 
             if (result.success) {
                 successMessage.style.display = 'block';

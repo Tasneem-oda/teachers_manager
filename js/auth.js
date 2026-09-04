@@ -1,17 +1,17 @@
 /**
  * auth.js - إدارة المصادقة والجلسات
  * يعتمد على Supabase Auth كليًا
+ *
+ * ملاحظة مهمة: عميل Supabase الفعلي يتم إنشاؤه مرة واحدة فقط في config.js
+ * ويُخزَّن في window.supabaseClient. يجب استخدام window.supabaseClient
+ * في كل مكان (وليس window.supabase، لأن هذا الأخير هو مكتبة supabase-js
+ * الخام القادمة من الـ CDN وليس عميلاً مهيّأً، وليس لديه خاصية .auth).
  */
-// استخراج دالة التهيئة من مكتبة المتصفح لتفادي التضارب
-const { createClient } = window.supabase;
-
-// تهيئة وتصدير الكائن بالاسم الذي تعتمد عليه باقي الملفات
-export const supabase = createClient(
-    CONFIG.SUPABASE_URL, 
-    CONFIG.SUPABASE_ANON_KEY
-);
 import { CONFIG } from './config.js';
 import { APIUtils, Storage, ErrorHandler, Validators } from './utils.js';
+
+// إتاحة العميل المهيأ بنفس الاسم "supabase" لمن يريد استيراده من هذا الملف
+export const supabase = window.supabaseClient;
 
 /**
  * كائن إدارة المصادقة
@@ -41,7 +41,7 @@ export const Auth = {
             }
             
             // 2. إنشاء الحساب في Supabase Auth
-            const { data: authData, error: authError } = await window.supabase.auth.signUp({
+            const { data: authData, error: authError } = await window.supabaseClient.auth.signUp({
                 email: email,
                 password: password
             });
@@ -69,14 +69,14 @@ export const Auth = {
 
             if (!response.ok) {
                 // خطة طوارئ: حذف الحساب إذا فشل الـ webhook
-                await window.supabase.auth.signOut();
+                await window.supabaseClient.auth.signOut();
                 throw new Error('فشل إعداد ملفك الشخصي');
             }
 
             const responseData = await response.json();
             
             if (!responseData.success) {
-                await window.supabase.auth.signOut();
+                await window.supabaseClient.auth.signOut();
                 throw new Error(responseData.error?.message || 'فشل في إنشاء الحساب');
             }
 
@@ -100,7 +100,7 @@ export const Auth = {
                 throw new Error('البريد الإلكتروني غير صحيح');
             }
 
-            const { data, error } = await window.supabase.auth.signInWithPassword({
+            const { data, error } = await window.supabaseClient.auth.signInWithPassword({
                 email: email,
                 password: password
             });
@@ -134,7 +134,7 @@ export const Auth = {
      */
     async bootstrapSession() {
         try {
-            const { data: { session }, error } = await window.supabase.auth.getSession();
+            const { data: { session }, error } = await window.supabaseClient.auth.getSession();
             
             if (error || !session) {
                 return null;
@@ -170,7 +170,7 @@ export const Auth = {
      */
     async signOut() {
         try {
-            const { error } = await window.supabase.auth.signOut();
+            const { error } = await window.supabaseClient.auth.signOut();
             if (error) throw error;
             
             // حذف البيانات المحلية
@@ -189,7 +189,7 @@ export const Auth = {
      * الحصول على الجلسة الحالية
      */
     async getSession() {
-        const { data: { session }, error } = await window.supabase.auth.getSession();
+        const { data: { session }, error } = await window.supabaseClient.auth.getSession();
         if (error) {
             console.error('Get Session Error:', error);
             return null;
@@ -201,7 +201,7 @@ export const Auth = {
      * الحصول على المستخدم الحالي
      */
     async getCurrentUser() {
-        const { data: { user }, error } = await window.supabase.auth.getUser();
+        const { data: { user }, error } = await window.supabaseClient.auth.getUser();
         if (error) {
             console.error('Get User Error:', error);
             return null;
@@ -240,7 +240,7 @@ export const Auth = {
      */
     async refreshSession() {
         try {
-            const { data, error } = await window.supabase.auth.refreshSession();
+            const { data, error } = await window.supabaseClient.auth.refreshSession();
             
             if (error) {
                 throw error;
@@ -272,7 +272,7 @@ export const Auth = {
                 throw new Error('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
             }
 
-            const { error } = await window.supabase.auth.updateUser({
+            const { error } = await window.supabaseClient.auth.updateUser({
                 password: newPassword
             });
 
@@ -297,7 +297,7 @@ export const Auth = {
                 throw new Error('البريد الإلكتروني غير صحيح');
             }
 
-            const { error } = await window.supabase.auth.resetPasswordForEmail(email, {
+            const { error } = await window.supabaseClient.auth.resetPasswordForEmail(email, {
                 redirectTo: `${window.location.origin}/reset-password.html`
             });
 
