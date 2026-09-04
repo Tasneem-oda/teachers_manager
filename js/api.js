@@ -54,7 +54,7 @@ export const api = {
     async getDashboard() {
         return await this.call('/webhook/dashboard', 'GET');      
     }
-    export const api = {
+ const api = {
     async createStudent(studentData) {
         // افتراض وجود دالة auth.getSession() لجلب الـ JWT Token
         const session = await auth.getSession();
