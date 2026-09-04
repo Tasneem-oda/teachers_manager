@@ -84,10 +84,11 @@ export const CONFIG = {
     }
 };
 
-// Initialize Supabase Client بشكل صحيح خارج الكائن
-if (typeof window !== 'undefined' && window.supabase) {
-    window.supabaseClient = window.supabase.createClient(
-        CONFIG.SUPABASE_URL,
-        CONFIG.SUPABASE_ANON_KEY
-    );
-}
+// استخراج دالة التهيئة من مكتبة المتصفح لتفادي التضارب
+const { createClient } = window.supabase;
+
+// تهيئة وتصدير الكائن بالاسم الذي تعتمد عليه باقي الملفات
+export const supabase = createClient(
+    CONFIG.SUPABASE_URL, 
+    CONFIG.SUPABASE_ANON_KEY
+);
