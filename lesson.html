@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الحصة - Teachers Manager</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        :root { --bg: #FAF9F6; --primary: #4B3A5A; --text: #29252D; --secondary-text: #716A74; --card: #FFFFFF; --border: #E7E1E8; }
+        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg); margin: 0; }
+        .navbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h2 { color: var(--primary); margin: 0; }
+        .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+        .lesson-header { background: linear-gradient(135deg, #4B3A5A 0%, #7A6B83 100%); color: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem; }
+        .lesson-header h1 { margin: 0; font-size: 2rem; }
+        .lesson-header p { margin: 0.5rem 0 0 0; opacity: 0.9; }
+        .lesson-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 1rem; }
+        .meta-item { background: rgba(255, 255, 255, 0.1); padding: 0.75rem; border-radius: 8px; }
+        .meta-label { font-size: 0.85rem; opacity: 0.8; }
+        .meta-value { font-weight: 600; font-size: 1.1rem; margin-top: 0.25rem; }
+        .action-buttons { display: flex; gap: 1rem; justify-content: center; margin: 1.5rem 0; }
+        .action-buttons .btn { padding: 0.75rem 1.5rem; }
+        .section { background: var(--card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 1.5rem; }
+        .section h2 { color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 0.75rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text); }
+        .form-group textarea, .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 1rem; }
+        .form-group textarea { min-height: 100px; resize: vertical; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .loader { text-align: center; padding: 3rem; color: var(--primary); font-weight: bold; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h2>📚 Teachers Manager</h2>
+        <a href="dashboard.html" style="text-decoration: none; color: var(--primary); font-weight: 600;">رجوع</a>
+    </nav>
+
+    <div class="container">
+        <div class="loader" id="loader">جاري تحميل بيانات الحصة...</div>
+
+        <div id="lesson-content" style="display: none;">
+            <!-- Lesson Header -->
+            <div class="lesson-header">
+                <h1 id="student-name">اسم الطالب</h1>
+                <p id="lesson-date">التاريخ</p>
+                <div class="lesson-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">المادة</div>
+                        <div class="meta-value" id="subject">-</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">الموضوع الحالي</div>
+                        <div class="meta-value" id="current-topic">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Open Lesson Link -->
+            <div class="action-buttons">
+                <a href="#" id="lesson-link" class="btn" target="_blank" style="display: none;">🔗 فتح رابط الحصة</a>
+                <button class="btn" id="btn-start-timer">⏱️ بدء الحصة</button>
+            </div>
+
+            <!-- Lesson Content -->
+            <form id="lesson-form">
+                <!-- What was taught? -->
+                <div class="section">
+                    <h2>ماذا تم تدريسه في هذه الحصة؟</h2>
+                    <div class="form-group">
+                        <label for="lesson-content">محتوى الحصة</label>
+                        <textarea id="lesson-content" name="lesson_content" placeholder="اكتب ملخص ما تم تغطيته في الحصة..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Student Performance -->
+                <div class="section">
+                    <h2>أداء الطالب</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="memorization">الحفظ / الاستذكار</label>
+                            <select id="memorization" name="memorization">
+                                <option value="">اختر...</option>
+                                <option value="excellent">ممتاز</option>
+                                <option value="very_good">جيد جداً</option>
+                                <option value="good">جيد</option>
+                                <option value="fair">مقبول</option>
+                                <option value="poor">ضعيف</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="recitation">التجويد / القراءة</label>
+                            <select id="recitation" name="recitation">
+                                <option value="">اختر...</option>
+                                <option value="excellent">ممتاز</option>
+                                <option value="very_good">جيد جداً</option>
+                                <option value="good">جيد</option>
+                                <option value="fair">مقبول</option>
+                                <option value="poor">ضعيف</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="performance-notes">ملاحظات عن الأداء</label>
+                        <textarea id="performance-notes" name="performance_notes" placeholder="ملاحظاتك عن أداء الطالب..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Homework & Next Assignment -->
+                <div class="section">
+                    <h2>الواجب والمهمة القادمة</h2>
+                    <div class="form-group">
+                        <label for="homework">الواجب المنزلي</label>
+                        <textarea id="homework" name="homework" placeholder="ما الواجب المنزلي للطالب؟"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="next-assignment">المهمة / الموضوع القادم</label>
+                        <textarea id="next-assignment" name="next_assignment" placeholder="ما الذي ستشمله الحصة القادمة؟"></textarea>
+                    </div>
+                </div>
+
+                <!-- General Notes -->
+                <div class="section">
+                    <h2>ملاحظات عامة</h2>
+                    <div class="form-group">
+                        <label for="notes">ملاحظاتك الشخصية</label>
+                        <textarea id="notes" name="notes" placeholder="أي ملاحظات مهمة عن الطالب أو الحصة..."></textarea>
+                    </div>
+                </div>
+
+                <!-- AI Assistant (Optional) -->
+                <div class="section">
+                    <h2>🤖 المساعد الذكي (اختياري)</h2>
+                    <p style="color: var(--secondary-text); font-size: 0.9rem;">احصل على اقتراحات وملخصات لهذه الحصة</p>
+                    <button type="button" id="btn-ai-summary" class="btn" style="background: #9C5FA3;">اطلب ملخص ذكي</button>
+                    <div id="ai-summary" style="display: none; margin-top: 1rem; padding: 1rem; background: #F5F3F0; border-radius: 8px;">
+                        <p id="ai-summary-text"></p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="text-align: center; margin-top: 2rem;">
+                    <button type="submit" class="btn" style="padding: 1rem 2rem; font-size: 1.1rem;">✅ إنهاء الحصة</button>
+                    <a href="student.html" class="btn" style="background: #E7E1E8; color: var(--text); margin-right: 1rem; text-decoration: none;">إلغاء</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="js/config.js"></script>
+    <script type="module">
+        import { Auth } from './js/auth.js';
+        import { api } from './js/api.js';
+        import { ErrorHandler, Formatters } from './js/utils.js';
+
+        const loader = document.getElementById('loader');
+        const content = document.getElementById('lesson-content');
+        const form = document.getElementById('lesson-form');
+        const studentIdParam = new URLSearchParams(window.location.search).get('student_id');
+
+        // Check auth and load lesson
+        window.addEventListener('load', async () => {
+            const authInfo = await Auth.requireAuth();
+            if (!authInfo || !studentIdParam) {
+                window.location.href = 'dashboard.html';
+                return;
+            }
+
+            try {
+                const student = await api.getStudent(studentIdParam);
+                
+                // Populate header
+                document.getElementById('student-name').textContent = student.name || 'بدون اسم';
+                document.getElementById('lesson-date').textContent = Formatters.formatDate(new Date());
+                document.getElementById('subject').textContent = student.subject || '-';
+                document.getElementById('current-topic').textContent = student.current_topic || '-';
+
+                // Setup lesson link
+                if (student.lesson_link) {
+                    const linkEl = document.getElementById('lesson-link');
+                    linkEl.href = student.lesson_link;
+                    linkEl.style.display = 'inline-block';
+                }
+
+                loader.style.display = 'none';
+                content.style.display = 'block';
+
+            } catch (error) {
+                loader.innerText = 'حدث خطأ: ' + ErrorHandler.getErrorMessage(error);
+                loader.style.color = '#B85C5C';
+            }
+        });
+
+        // Handle form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = {
+                student_id: studentIdParam,
+                lesson_content: document.getElementById('lesson-content').value,
+                memorization: document.getElementById('memorization').value || null,
+                recitation: document.getElementById('recitation').value || null,
+                performance_notes: document.getElementById('performance-notes').value,
+                homework: document.getElementById('homework').value,
+                next_assignment: document.getElementById('next-assignment').value,
+                notes: document.getElementById('notes').value
+            };
+
+            try {
+                const btn = form.querySelector('button[type="submit"]');
+                btn.disabled = true;
+                btn.textContent = 'جاري الحفظ...';
+
+                await api.finalizeLesson(studentIdParam, formData);
+
+                ErrorHandler.showSuccess('تم حفظ الحصة بنجاح!');
+                setTimeout(() => {
+                    window.location.href = `student.html?id=${studentIdParam}`;
+                }, 1500);
+
+            } catch (error) {
+                ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
+                const btn = form.querySelector('button[type="submit"]');
+                btn.disabled = false;
+                btn.textContent = '✅ إنهاء الحصة';
+            }
+        });
+
+        // AI Summary button
+        document.getElementById('btn-ai-summary').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const btn = e.target;
+            const summaryDiv = document.getElementById('ai-summary');
+            const summaryText = document.getElementById('ai-summary-text');
+
+            try {
+                btn.disabled = true;
+                btn.textContent = '⏳ جاري التحليل...';
+
+                const content = document.getElementById('lesson-content').value;
+                const notes = document.getElementById('performance-notes').value;
+
+                const result = await api.getAIAssistance(
+                    `يرجى تحليل الحصة التالية وإعطائي ملخصاً وتوصيات:\n\nمحتوى الحصة: ${content}\n\nملاحظات الأداء: ${notes}`,
+                    { student_id: studentIdParam }
+                );
+
+                summaryText.textContent = result.suggestion || 'لا يتوفر اقتراحات في الوقت الحالي';
+                summaryDiv.style.display = 'block';
+
+            } catch (error) {
+                ErrorHandler.showError('فشل جلب المساعدة الذكية');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'اطلب ملخص ذكي';
+            }
+        });
+    </script>
+</body>
+</html>

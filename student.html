@@ -3,91 +3,328 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ملف الطالب - Teacher Manager</title>
+    <title>ملف الطالب - Teachers Manager</title>
     <link rel="stylesheet" href="css/style.css">
-    <!-- افتراض تحميل خط IBM Plex Sans Arabic في style.css -->
+    <style>
+        :root { --bg: #FAF9F6; --primary: #4B3A5A; --text: #29252D; --card: #FFFFFF; --border: #E7E1E8; }
+        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg); }
+        .navbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 2rem; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .header h1 { color: var(--primary); margin: 0; }
+        .tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 2rem; gap: 1rem; }
+        .tab-btn { background: none; border: none; padding: 1rem; font-size: 1rem; cursor: pointer; color: #716A74; font-weight: 500; border-bottom: 3px solid transparent; }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .info-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 1rem; }
+        .info-label { color: #716A74; font-weight: 500; }
+        .info-value { color: var(--text); font-weight: 600; }
+        .lesson-item { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+        .lesson-date { color: var(--primary); font-weight: 600; }
+        .lesson-detail { color: #716A74; font-size: 0.9rem; margin-top: 0.5rem; }
+        .note-item { background: #FFFBF0; border-right: 4px solid var(--primary); padding: 1rem; margin-bottom: 1rem; border-radius: 4px; }
+        .note-date { color: #716A74; font-size: 0.85rem; }
+        .note-text { color: var(--text); margin-top: 0.5rem; }
+        .btn { padding: 0.75rem 1.5rem; margin-right: 0.5rem; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-danger { background: #B85C5C; color: white; }
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+        .form-group input, .form-group textarea { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; }
+        .loading { text-align: center; padding: 2rem; color: var(--primary); }
+        .empty-state { text-align: center; padding: 2rem; color: #716A74; }
+    </style>
 </head>
-<body class="bg-muted">
+<body>
+    <nav class="navbar">
+        <h2 style="color: var(--primary); margin: 0;">👤 ملف الطالب</h2>
+        <a href="students.html" style="text-decoration: none; color: var(--primary); font-weight: 600;">رجوع</a>
+    </nav>
 
-    <div class="container student-page-container">
-        <!-- قسم التحميل الأولي -->
-        <div id="page-loader" class="loader-container">
-            <p>جاري تحميل بيانات الطالب...</p>
-        </div>
-
-        <!-- المحتوى (مخفي حتى انتهاء التحميل) -->
-        <main id="student-content" class="hidden">
-            
-            <!-- الهيدر (القاعدة 45) -->
-            <header class="page-header flex-between">
+    <div class="container">
+        <div id="loading" class="loading">جاري تحميل بيانات الطالب...</div>
+        <div id="content" style="display: none;">
+            <div class="header">
                 <div>
-                    <h1 id="ui-student-name" class="text-primary">اسم الطالب</h1>
-                    <a id="ui-lesson-link" href="#" target="_blank" class="text-secondary hidden">🔗 رابط الحصة</a>
+                    <h1 id="student-name"></h1>
+                    <p id="student-subject" style="color: #716A74; margin: 0;"></p>
                 </div>
-                <div class="header-actions">
-                    <button id="btn-edit-student" class="btn btn-secondary">تعديل</button>
-                    <button id="btn-start-lesson" class="btn btn-primary">ابدأ الحصة</button>
-                </div>
-            </header>
-
-            <div class="grid-layout">
-                <!-- العمود الأيمن: التقدم والملاحظات -->
-                <div class="main-column">
-                    
-                    <!-- بطاقة التقدم الحالي -->
-                    <section class="card mb-4">
-                        <h2 class="card-title">التقدم الحالي</h2>
-                        <div class="progress-details">
-                            <p><strong>السورة:</strong> <span id="ui-current-surah">غير محدد</span></p>
-                            <p><strong>من آية:</strong> <span id="ui-from-ayah">-</span></p>
-                            <p><strong>إلى آية:</strong> <span id="ui-to-ayah">-</span></p>
-                        </div>
-                    </section>
-
-                    <!-- بطاقة الملاحظات -->
-                    <section class="card mb-4">
-                        <h2 class="card-title">الملاحظات</h2>
-                        <div id="latest-note-container" class="note-box bg-muted p-3 mb-3 border-radius">
-                            <!-- القاعدة 52: حالة فارغة -->
-                            <p id="ui-latest-note" class="text-secondary">لا توجد ملاحظات مسجلة بعد.</p>
-                        </div>
-                        
-                        <form id="add-note-form" class="mt-3">
-                            <textarea id="note-input" class="form-control" rows="3" placeholder="اكتب ملاحظة جديدة للطالب..." required></textarea>
-                            <button type="submit" id="btn-save-note" class="btn btn-primary mt-2">حفظ الملاحظة</button>
-                        </form>
-                    </section>
-                </div>
-
-                <!-- العمود الأيسر: الملف التعليمي والتاريخ -->
-                <div class="side-column">
-                    <!-- الملف التعليمي (Teaching Profile) -->
-                    <section class="card mb-4">
-                        <h2 class="card-title">الملف التعليمي</h2>
-                        <div class="profile-details">
-                            <p class="text-sm"><strong>أسلوب الشرح:</strong> <span id="ui-teaching-style">غير محدد</span></p>
-                            <p class="text-sm"><strong>تفضيلات الطالب:</strong> <span id="ui-student-prefs">غير محدد</span></p>
-                        </div>
-                    </section>
-
-                    <!-- سجل الحصص السابقة -->
-                    <section class="card">
-                        <h2 class="card-title">سجل الحصص</h2>
-                        <ul id="lesson-history-list" class="list-unstyled">
-                            <!-- يتم حقن الحصص هنا -->
-                        </ul>
-                        <p id="ui-no-lessons" class="text-secondary text-sm hidden">مفيش حصص سابقة 🌷</p>
-                    </section>
+                <div>
+                    <button class="btn btn-primary" onclick="location.href='lesson.html?student_id=' + getStudentId()">+ حصة جديدة</button>
                 </div>
             </div>
-        </main>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab(event, 'info')">المعلومات</button>
+                <button class="tab-btn" onclick="switchTab(event, 'teaching')">نمط التدريس</button>
+                <button class="tab-btn" onclick="switchTab(event, 'history')">سجل الحصص</button>
+                <button class="tab-btn" onclick="switchTab(event, 'notes')">الملاحظات</button>
+            </div>
+
+            <!-- Info Tab -->
+            <div id="info" class="tab-content active">
+                <div class="info-card">
+                    <div class="info-row">
+                        <span class="info-label">البريد الإلكتروني</span>
+                        <span class="info-value" id="student-email">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">رقم الهاتف</span>
+                        <span class="info-value" id="student-phone">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">رابط الحصة</span>
+                        <span class="info-value" id="student-link" style="word-break: break-all;">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">الموضوع الحالي</span>
+                        <span class="info-value" id="student-current-topic">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">تاريخ الالتحاق</span>
+                        <span class="info-value" id="student-joined">-</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-primary" onclick="editStudent()">تعديل المعلومات</button>
+                    <button class="btn btn-danger" onclick="deleteStudent()">حذف الطالب</button>
+                </div>
+            </div>
+
+            <!-- Teaching Profile Tab -->
+            <div id="teaching" class="tab-content">
+                <div class="info-card" id="teaching-profile-display">
+                    <div class="empty-state">جاري تحميل نمط التدريس...</div>
+                </div>
+
+                <div class="info-card">
+                    <h3>تحديث نمط التدريس</h3>
+                    <form id="teaching-form">
+                        <div class="form-group">
+                            <label>نمط التدريس</label>
+                            <textarea id="teaching-style" placeholder="وصف نمط التدريس المفضل..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>تفضيلات الطالب</label>
+                            <textarea id="student-preferences" placeholder="تفضيلات الطالب في التعلم..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>السياق للمساعد الذكي</label>
+                            <textarea id="ai-context" placeholder="معلومات سياقية للمساعد الذكي..."></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">حفظ نمط التدريس</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- History Tab -->
+            <div id="history" class="tab-content">
+                <div id="lessons-list">
+                    <div class="empty-state">لا توجد حصص مسجلة</div>
+                </div>
+            </div>
+
+            <!-- Notes Tab -->
+            <div id="notes" class="tab-content">
+                <div class="info-card">
+                    <h3>إضافة ملاحظة جديدة</h3>
+                    <form id="note-form">
+                        <div class="form-group">
+                            <textarea id="note-text" placeholder="أضف ملاحظة جديدة..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">إضافة الملاحظة</button>
+                    </form>
+                </div>
+
+                <div id="notes-list">
+                    <div class="empty-state">لا توجد ملاحظات</div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- الاعتماديات -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="js/config.js"></script>
-    <script type="module" src="js/auth.js"></script>
-    <script type="module" src="js/api.js"></script>
-    <script type="module" src="js/student.js"></script>
+    <script type="module">
+        import { Auth } from './js/auth.js';
+        import { api } from './js/api.js';
+        import { ErrorHandler, Formatters } from './js/utils.js';
+
+        let student = null;
+        let studentId = null;
+
+        window.getStudentId = () => studentId;
+
+        // Load student data
+        window.addEventListener('load', async () => {
+            const authInfo = await Auth.requireAuth();
+            if (!authInfo) return;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            studentId = urlParams.get('id');
+
+            if (!studentId) {
+                document.getElementById('loading').innerText = 'معرف الطالب غير موجود';
+                return;
+            }
+
+            await loadStudent();
+        });
+
+        async function loadStudent() {
+            try {
+                student = await api.getStudent(studentId);
+                renderStudentInfo();
+                await Promise.all([loadTeachingProfile(), loadLessons(), loadNotes()]);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+            } catch (error) {
+                document.getElementById('loading').innerText = 'خطأ: ' + ErrorHandler.getErrorMessage(error);
+            }
+        }
+
+        function renderStudentInfo() {
+            document.getElementById('student-name').innerText = student.name;
+            document.getElementById('student-subject').innerText = '📚 ' + (student.subject || 'بدون مادة');
+            document.getElementById('student-email').innerText = student.email || '-';
+            document.getElementById('student-phone').innerText = student.phone || '-';
+            document.getElementById('student-link').innerText = student.lesson_link ? '🔗 ' + student.lesson_link : '-';
+            document.getElementById('student-current-topic').innerText = student.current_topic || '-';
+            document.getElementById('student-joined').innerText = Formatters.formatDate(student.created_at);
+        }
+
+        async function loadTeachingProfile() {
+            try {
+                const profile = await api.getTeachingProfile(studentId);
+                const display = document.getElementById('teaching-profile-display');
+
+                if (profile) {
+                    display.innerHTML = `
+                        <div class="info-row">
+                            <span class="info-label">نمط التدريس</span>
+                            <span class="info-value">${profile.teaching_style || '-'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">تفضيلات الطالب</span>
+                            <span class="info-value">${profile.student_preferences || '-'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">السياق للمساعد الذكي</span>
+                            <span class="info-value">${profile.ai_context || '-'}</span>
+                        </div>
+                    `;
+                    document.getElementById('teaching-style').value = profile.teaching_style || '';
+                    document.getElementById('student-preferences').value = profile.student_preferences || '';
+                    document.getElementById('ai-context').value = profile.ai_context || '';
+                }
+            } catch (error) {
+                console.error('Error loading teaching profile:', error);
+            }
+        }
+
+        async function loadLessons() {
+            try {
+                const data = await api.getLessons(studentId, 1, 20);
+                const lessons = data.lessons || [];
+                const list = document.getElementById('lessons-list');
+
+                if (lessons.length === 0) {
+                    list.innerHTML = '<div class="empty-state">لا توجد حصص مسجلة</div>';
+                    return;
+                }
+
+                list.innerHTML = lessons.map(lesson => `
+                    <div class="lesson-item">
+                        <div class="lesson-date">${Formatters.formatDate(lesson.lesson_date)}</div>
+                        <div class="lesson-detail">📖 الحفظ: ${lesson.memorization || '-'}</div>
+                        <div class="lesson-detail">🗣️ التلاوة: ${lesson.recitation || '-'}</div>
+                        <div class="lesson-detail">⭐ الأداء: ${lesson.performance || '-'}</div>
+                        <div class="lesson-detail">📝 المراجعة: ${lesson.revision || '-'}</div>
+                        ${lesson.next_assignment ? `<div class="lesson-detail">📋 الواجب: ${lesson.next_assignment}</div>` : ''}
+                        ${lesson.notes ? `<div class="lesson-detail">💬 الملاحظات: ${lesson.notes}</div>` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading lessons:', error);
+            }
+        }
+
+        async function loadNotes() {
+            try {
+                const data = await api.getStudentNotes(studentId, 1, 50);
+                const notes = data.notes || [];
+                const list = document.getElementById('notes-list');
+
+                if (notes.length === 0) {
+                    list.innerHTML = '<div class="empty-state">لا توجد ملاحظات</div>';
+                    return;
+                }
+
+                list.innerHTML = notes.map(note => `
+                    <div class="note-item">
+                        <div class="note-date">${Formatters.formatDate(note.created_at)}</div>
+                        <div class="note-text">${note.note}</div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading notes:', error);
+            }
+        }
+
+        // Tab switching
+        window.switchTab = (event, tabName) => {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        };
+
+        // Teaching profile form
+        document.getElementById('teaching-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            try {
+                await api.createOrUpdateTeachingProfile(studentId, {
+                    teaching_style: document.getElementById('teaching-style').value,
+                    student_preferences: document.getElementById('student-preferences').value,
+                    ai_context: document.getElementById('ai-context').value
+                });
+
+                ErrorHandler.showSuccess('تم حفظ نمط التدريس');
+            } catch (error) {
+                ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
+            }
+        });
+
+        // Notes form
+        document.getElementById('note-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            try {
+                await api.createNote(studentId, document.getElementById('note-text').value);
+                document.getElementById('note-text').value = '';
+                ErrorHandler.showSuccess('تمت إضافة الملاحظة');
+                loadNotes();
+            } catch (error) {
+                ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
+            }
+        });
+
+        // Actions
+        window.editStudent = () => alert('تحديث البيانات قيد التطوير');
+        window.deleteStudent = () => {
+            if (confirm('هل أنت متأكد من حذف هذا الطالب؟')) {
+                alert('حذف الطالب قيد التطوير');
+            }
+        };
+    </script>
 </body>
 </html>

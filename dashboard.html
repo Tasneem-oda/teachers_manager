@@ -3,47 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>الرئيسية - لوحة المعلم</title>
+    <title>لوحة التحكم - Teachers Manager</title>
+    <link rel="stylesheet" href="css/style.css">
     <style>
         :root { --bg: #FAF9F6; --primary: #4B3A5A; --primary-hover: #3F304D; --text: #29252D; --secondary-text: #716A74; --card: #FFFFFF; --border: #E7E1E8; --success: #6F8F72; --warning: #C59A4A; }
-        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 2rem; }
-        .container { max-width: 1200px; margin: 0 auto; }
+        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; }
+        .navbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h2 { color: var(--primary); margin: 0; }
+        .navbar-right { display: flex; gap: 1rem; align-items: center; }
+        .navbar-right a { text-decoration: none; color: var(--primary); font-weight: 600; }
+        .navbar-right .btn { padding: 0.5rem 1rem; font-size: 0.9rem; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-        .header h1 { margin: 0; font-size: 1.5rem; color: var(--primary); }
+        .header h1 { margin: 0; font-size: 1.8rem; color: var(--primary); }
         .header .date { color: var(--secondary-text); font-size: 0.9rem; }
-        
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
         .stat-card { background: var(--card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .stat-card h3 { margin: 0 0 0.5rem 0; font-size: 0.9rem; color: var(--secondary-text); }
         .stat-card .value { font-size: 1.8rem; font-weight: bold; color: var(--primary); margin: 0; }
-
         .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; }
-        @media (max-width: 768px) { .main-grid { grid-template-columns: 1fr; } }
-        
         .section-card { background: var(--card); border-radius: 16px; border: 1px solid var(--border); padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-        .section-title { font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.8rem; margin-top: 0; margin-bottom: 1rem; }
-        
+        .section-title { font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.8rem; margin-top: 0; margin-bottom: 1rem; color: var(--primary); }
+        .next-lesson { background: linear-gradient(135deg, #4B3A5A 0%, #7A6B83 100%); color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; }
+        .next-lesson h3 { color: white; margin: 0; font-size: 0.9rem; font-weight: 400; opacity: 0.9; }
+        .next-lesson .student-name { font-size: 1.5rem; font-weight: 600; margin: 0.5rem 0; }
+        .next-lesson .lesson-time { font-size: 0.95rem; opacity: 0.9; }
+        .next-lesson .lesson-details { margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; }
+        .next-lesson .btn { background: white; color: var(--primary); padding: 0.5rem 1rem; font-size: 0.9rem; }
         .lesson-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--border); }
         .lesson-item:last-child { border-bottom: none; padding-bottom: 0; }
         .lesson-info h4 { margin: 0 0 0.3rem 0; color: var(--text); }
         .lesson-info p { margin: 0; font-size: 0.85rem; color: var(--secondary-text); }
-        
-        .btn { padding: 0.5rem 1rem; background-color: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; font-size: 0.9rem; }
-        .btn:hover { background-color: var(--primary-hover); }
-        
         .empty-state { text-align: center; padding: 2rem; color: var(--secondary-text); }
         .loader { text-align: center; padding: 3rem; color: var(--primary); font-weight: bold; }
+        .actions { display: flex; gap: 1rem; margin-bottom: 2rem; }
+        .actions .btn { padding: 0.75rem 1.5rem; }
+        .subscription-badge { display: inline-block; padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+        .subscription-badge.trial { background: #FFE8CC; color: #C59A4A; }
+        .subscription-badge.active { background: #E8F5E9; color: #6F8F72; }
+        .subscription-badge.expired { background: #FFEBEE; color: #B85C5C; }
+        .alerts { margin-bottom: 2rem; }
+        .alert { padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid; }
+        .alert-warning { background: #FFF3E0; color: #C59A4A; border-color: #C59A4A; }
+        @media (max-width: 768px) { .main-grid { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: 1fr; } .actions { flex-direction: column; } }
     </style>
 </head>
 <body>
-    <div class="container" id="app">
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <h2>📚 Teachers Manager</h2>
+        <div class="navbar-right">
+            <a href="students.html">الطلاب</a>
+            <a href="settings.html">الإعدادات</a>
+            <button class="btn btn-small" id="logoutBtn">خروج</button>
+        </div>
+    </nav>
+
+    <div class="container">
         <div class="loader" id="loader">جاري تحميل البيانات...</div>
+
         <div id="dashboard-content" style="display: none;">
+            <!-- Header -->
             <div class="header">
-                <h1 id="greeting">صباح الخير 🌷</h1>
-                <div class="date" id="current-date"></div>
+                <div>
+                    <h1 id="greeting">صباح الخير 🌷</h1>
+                    <p class="date" id="current-date"></p>
+                </div>
+                <div>
+                    <span class="subscription-badge" id="subBadge">جاري التحميل...</span>
+                </div>
             </div>
 
+            <!-- Alerts -->
+            <div class="alerts" id="alerts-container"></div>
+
+            <!-- Stats Cards -->
             <div class="stats-grid">
                 <div class="stat-card">
                     <h3>إجمالي الطلاب</h3>
@@ -52,44 +86,181 @@
                 <div class="stat-card">
                     <h3>حصص اليوم</h3>
                     <p class="value" id="stat-lessons">0</p>
-                  
                 </div>
-                <div class="stat-card" id="sub-status-card">
+                <div class="stat-card">
                     <h3>حالة الاشتراك</h3>
                     <p class="value" id="stat-subscription" style="font-size: 1.2rem; margin-top: 0.5rem;">تحميل...</p>
                 </div>
             </div>
 
+            <!-- Actions -->
+            <div class="actions">
+                <button class="btn" id="btn-add-student">+ إضافة طالب جديد</button>
+                <a href="students.html" class="btn" style="background: #C59A4A; text-decoration: none;">عرض جميع الطلاب</a>
+            </div>
+
+            <!-- Main Grid -->
             <div class="main-grid">
-                <div class="section-card">
-                    <h2 class="section-title">حصص اليوم</h2>
-                    <div id="today-lessons-list">
-                        <!-- Lessons injected here via JS -->
+                <!-- Left Column -->
+                <div>
+                    <!-- Next Lesson -->
+                    <div id="next-lesson-container"></div>
+
+                    <!-- Today's Lessons -->
+                    <div class="section-card">
+                        <h2 class="section-title">حصص اليوم</h2>
+                        <div id="today-lessons-list">
+                            <!-- Lessons injected here via JS -->
+                        </div>
                     </div>
                 </div>
 
-                <div class="section-card">
-                    <h2 class="section-title">التقويم (الأسبوعي)</h2>
-                    <div id="weekly-calendar">
-                        <!-- Schedule injected here -->
+                <!-- Right Column -->
+                <div>
+                    <!-- Weekly Calendar -->
+                    <div class="section-card">
+                        <h2 class="section-title">التقويم (الأسبوعي)</h2>
+                        <div id="weekly-calendar">
+                            <!-- Schedule injected here -->
+                        </div>
+                    </div>
+
+                    <!-- Quick Links -->
+                    <div class="section-card" style="margin-top: 1rem;">
+                        <h2 class="section-title">روابط سريعة</h2>
+                        <a href="students.html" style="display: block; padding: 0.75rem; margin-bottom: 0.5rem; background: #F5F3F0; border-radius: 8px; text-decoration: none; color: var(--primary);">👥 الطلاب</a>
+                        <a href="settings.html" style="display: block; padding: 0.75rem; margin-bottom: 0.5rem; background: #F5F3F0; border-radius: 8px; text-decoration: none; color: var(--primary);">⚙️ الإعدادات</a>
+                        <a href="subscription.html" style="display: block; padding: 0.75rem; background: #F5F3F0; border-radius: 8px; text-decoration: none; color: var(--primary);">💳 الاشتراك</a>
                     </div>
                 </div>
             </div>
         </div>
-          <div class="dashboard-actions">
-    <button id="btn-add-student-dashboard" class="btn btn-primary">
-        + إضافة طالب جديد
-    </button>
-</div>
     </div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="js/config.js"></script>
-    <script type="module" src="js/api.js"></script>
-    <script type="module" src="js/dashboard.js"></script>
-    <script>
-document.getElementById('btn-add-student-dashboard').addEventListener('click', () => {
-    window.location.href = 'students.html?action=add';
-});
-</script>
+    <script type="module">
+        import { Auth } from './js/auth.js';
+        import { api } from './js/api.js';
+        import { Formatters, ErrorHandler } from './js/utils.js';
+
+        const loader = document.getElementById('loader');
+        const content = document.getElementById('dashboard-content');
+
+        // التحقق من المصادقة والتحميل
+        window.addEventListener('load', async () => {
+            const authInfo = await Auth.requireAuth();
+            if (!authInfo) return;
+
+            loadDashboard();
+        });
+
+        // تسجيل الخروج
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            if (confirm('هل أنت متأكد من رغبتك في تسجيل الخروج؟')) {
+                await Auth.signOut();
+            }
+        });
+
+        // إضافة طالب
+        document.getElementById('btn-add-student').addEventListener('click', () => {
+            window.location.href = 'students.html?action=add';
+        });
+
+        async function loadDashboard() {
+            try {
+                const data = await api.getDashboard();
+
+                // التاريخ
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                document.getElementById('current-date').innerText = new Date().toLocaleDateString('ar-EG', options);
+
+                // الترحيب
+                const firstName = data.teacher?.name?.split(' ')[0] || 'المستخدم';
+                document.getElementById('greeting').innerText = `صباح الخير، ${firstName} 🌷`;
+
+                // الإحصائيات
+                document.getElementById('stat-students').innerText = data.studentsCount || 0;
+                document.getElementById('stat-lessons').innerText = data.todayLessonsCount || 0;
+
+                // حالة الاشتراك
+                const subStatus = data.subscription?.status === 'trial' ? 'فترة تجريبية' : 
+                                  data.subscription?.status === 'active' ? 'نشط ✓' : 'منتهي ⚠️';
+                document.getElementById('stat-subscription').innerText = subStatus;
+
+                // شارة الاشتراك
+                const badgeEl = document.getElementById('subBadge');
+                badgeEl.textContent = subStatus;
+                badgeEl.className = `subscription-badge ${data.subscription?.status || 'trial'}`;
+
+                // التنبيهات
+                const alertsContainer = document.getElementById('alerts-container');
+                if (data.subscription?.status === 'expired') {
+                    alertsContainer.innerHTML = '<div class="alert alert-warning">⚠️ انتهت صلاحية اشتراكك. <a href="subscription.html">جدد الآن</a></div>';
+                }
+
+                // الحصة القادمة
+                const nextLessonContainer = document.getElementById('next-lesson-container');
+                if (data.upcomingLesson) {
+                    nextLessonContainer.innerHTML = `
+                        <div class="next-lesson">
+                            <h3>الحصة القادمة</h3>
+                            <p class="student-name">${data.upcomingLesson.student_name || 'بدون اسم'}</p>
+                            <p class="lesson-time">🕒 ${Formatters.formatTime(data.upcomingLesson.start_time)}</p>
+                            <div class="lesson-details">
+                                <span>${data.upcomingLesson.current_topic || 'بدون موضوع'}</span>
+                                <a href="lesson.html?student_id=${data.upcomingLesson.student_id}" class="btn">ابدأ</a>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    nextLessonContainer.innerHTML = '<div class="empty-state">لا توجد حصص قادمة اليوم 🌷</div>';
+                }
+
+                // حصص اليوم
+                const lessonsContainer = document.getElementById('today-lessons-list');
+                if (!data.todayLessons || data.todayLessons.length === 0) {
+                    lessonsContainer.innerHTML = '<div class="empty-state">لا توجد حصص اليوم 🌷</div>';
+                } else {
+                    lessonsContainer.innerHTML = data.todayLessons.map(lesson => `
+                        <div class="lesson-item">
+                            <div class="lesson-info">
+                                <h4>${lesson.student_name || 'بدون اسم'}</h4>
+                                <p>⏰ ${Formatters.formatTime(lesson.start_time)} - ${lesson.current_topic || 'بدون موضوع'}</p>
+                            </div>
+                            <a href="lesson.html?student_id=${lesson.student_id}" class="btn" style="padding: 0.5rem 1rem;">ابدأ</a>
+                        </div>
+                    `).join('');
+                }
+
+                // التقويم
+                const calendarContainer = document.getElementById('weekly-calendar');
+                if (!data.schedules || data.schedules.length === 0) {
+                    calendarContainer.innerHTML = '<div class="empty-state">لا يوجد جدول أسبوعي مسجل.</div>';
+                } else {
+                    const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+                    const grouped = data.schedules.reduce((acc, sch) => {
+                        acc[sch.day_of_week] = (acc[sch.day_of_week] || 0) + 1;
+                        return acc;
+                    }, {});
+
+                    calendarContainer.innerHTML = Object.keys(grouped).map(dayIndex => `
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.8rem; border-bottom: 1px solid #f0f0f0; padding-bottom: 0.5rem;">
+                            <strong>${days[dayIndex] || 'غير معروف'}</strong>
+                            <span style="color: var(--secondary-text);">${grouped[dayIndex]} حصص</span>
+                        </div>
+                    `).join('');
+                }
+
+                loader.style.display = 'none';
+                content.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                loader.innerText = 'حدث خطأ في تحميل البيانات: ' + ErrorHandler.getErrorMessage(error);
+                loader.style.color = '#B85C5C';
+            }
+        }
+    </script>
 </body>
 </html>

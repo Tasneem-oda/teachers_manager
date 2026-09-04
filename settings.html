@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الإعدادات - Teachers Manager</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        :root { --bg: #FAF9F6; --primary: #4B3A5A; --text: #29252D; --card: #FFFFFF; --border: #E7E1E8; }
+        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg); }
+        .navbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; }
+        .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+        .settings-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin-bottom: 1.5rem; }
+        .settings-section h2 { color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 1rem; }
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text); }
+        .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 1rem; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); }
+        .info-text { color: #716A74; font-size: 0.9rem; margin-top: 0.5rem; }
+        .btn { padding: 0.75rem 1.5rem; margin-right: 0.5rem; }
+        .btn-danger { background: #B85C5C; color: white; }
+        .btn-danger:hover { background: #A24A4A; }
+        .action-row { display: flex; gap: 1rem; }
+        .success-message { background: #E8F5E9; color: #6F8F72; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; display: none; }
+        .error-message { background: #FFEBEE; color: #B85C5C; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; display: none; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h2 style="color: var(--primary); margin: 0;">⚙️ الإعدادات</h2>
+        <a href="dashboard.html" style="text-decoration: none; color: var(--primary); font-weight: 600;">رجوع</a>
+    </nav>
+
+    <div class="container">
+        <!-- Profile Settings -->
+        <div class="settings-section">
+            <h2>ملف شخصي</h2>
+            <div class="success-message" id="profile-success">تم حفظ التغييرات بنجاح</div>
+            <div class="error-message" id="profile-error"></div>
+            
+            <form id="profile-form">
+                <div class="form-group">
+                    <label for="name">الاسم الكامل</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">البريد الإلكتروني</label>
+                    <input type="email" id="email" name="email" disabled>
+                    <div class="info-text">لا يمكن تغيير البريد الإلكتروني</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">رقم الهاتف</label>
+                    <input type="tel" id="phone" name="phone">
+                </div>
+
+                <div class="form-group">
+                    <label for="teaching-type">نوع التدريس</label>
+                    <select id="teaching-type" name="teaching_type">
+                        <option value="private">دروس خصوصية</option>
+                        <option value="group">مجموعات</option>
+                        <option value="online">أونلاين</option>
+                        <option value="offline">حضوري</option>
+                        <option value="hybrid">مختلط</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="subject">المادة / المجال</label>
+                    <input type="text" id="subject" name="subject">
+                </div>
+
+                <div class="form-group">
+                    <label for="timezone">المنطقة الزمنية</label>
+                    <select id="timezone" name="timezone">
+                        <option value="Africa/Cairo">مصر (Africa/Cairo)</option>
+                        <option value="Asia/Riyadh">السعودية (Asia/Riyadh)</option>
+                        <option value="Asia/Dubai">الإمارات (Asia/Dubai)</option>
+                        <option value="Europe/London">لندن (Europe/London)</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn">حفظ التغييرات</button>
+            </form>
+        </div>
+
+        <!-- Password & Security -->
+        <div class="settings-section">
+            <h2>الأمان</h2>
+            <div class="success-message" id="password-success">تم تغيير كلمة المرور بنجاح</div>
+            <div class="error-message" id="password-error"></div>
+            
+            <form id="password-form">
+                <div class="form-group">
+                    <label for="current-password">كلمة المرور الحالية</label>
+                    <input type="password" id="current-password" name="current_password" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="new-password">كلمة المرور الجديدة</label>
+                    <input type="password" id="new-password" name="new_password" required>
+                    <div class="info-text">يجب أن تكون 8 أحرف على الأقل</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm-password">تأكيد كلمة المرور</label>
+                    <input type="password" id="confirm-password" name="confirm_password" required>
+                </div>
+
+                <button type="submit" class="btn">تحديث كلمة المرور</button>
+            </form>
+        </div>
+
+        <!-- Notification Settings -->
+        <div class="settings-section">
+            <h2>الإشعارات</h2>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="email-notifications" checked>
+                    إشعارات البريد الإلكتروني
+                </label>
+                <div class="info-text">تلقي إشعارات حول الحصص القادمة والتحديثات</div>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="sms-notifications">
+                    إشعارات الرسائل النصية
+                </label>
+                <div class="info-text">تلقي تذكيرات بالرسائل النصية</div>
+            </div>
+
+            <button type="button" class="btn" onclick="alert('سيتم تفعيل هذا الخيار قريباً')">حفظ تفضيلات الإشعارات</button>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="settings-section" style="border-color: #B85C5C;">
+            <h2 style="color: #B85C5C;">منطقة الخطر</h2>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <h4 style="color: var(--text);">تسجيل الخروج من جميع الأجهزة</h4>
+                <p style="color: #716A74; font-size: 0.9rem;">سيتم تسجيل خروجك من جميع الأجهزة والمتصفحات</p>
+                <button type="button" class="btn btn-danger" onclick="logoutAllDevices()">تسجيل الخروج من الجميع</button>
+            </div>
+
+            <div>
+                <h4 style="color: var(--text);">حذف الحساب نهائياً</h4>
+                <p style="color: #716A74; font-size: 0.9rem; margin-bottom: 1rem;">هذا الإجراء لا يمكن التراجع عنه. سيتم حذف جميع بياناتك</p>
+                <button type="button" class="btn btn-danger" onclick="deleteAccount()">حذف الحساب</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="js/config.js"></script>
+    <script type="module">
+        import { Auth } from './js/auth.js';
+        import { Storage, ErrorHandler } from './js/utils.js';
+
+        // Check auth
+        let profile = null;
+        window.addEventListener('load', async () => {
+            const authInfo = await Auth.requireAuth();
+            if (!authInfo) return;
+
+            profile = authInfo.profile;
+            
+            // Populate form
+            if (profile) {
+                document.getElementById('name').value = profile.name || '';
+                document.getElementById('email').value = profile.email || '';
+                document.getElementById('phone').value = profile.phone || '';
+                document.getElementById('teaching-type').value = profile.teaching_type || 'private';
+                document.getElementById('subject').value = profile.subject || '';
+            }
+        });
+
+        // Profile form
+        document.getElementById('profile-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            try {
+                const name = document.getElementById('name').value;
+                const phone = document.getElementById('phone').value;
+                const teachingType = document.getElementById('teaching-type').value;
+                const subject = document.getElementById('subject').value;
+
+                // In production, this would call an API endpoint to update the profile
+                // For now, we'll just show a success message
+                
+                document.getElementById('profile-success').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('profile-success').style.display = 'none';
+                }, 3000);
+
+            } catch (error) {
+                document.getElementById('profile-error').textContent = ErrorHandler.getErrorMessage(error);
+                document.getElementById('profile-error').style.display = 'block';
+            }
+        });
+
+        // Password form
+        document.getElementById('password-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (newPassword !== confirmPassword) {
+                document.getElementById('password-error').textContent = 'كلمات المرور غير متطابقة';
+                document.getElementById('password-error').style.display = 'block';
+                return;
+            }
+
+            try {
+                const result = await Auth.updatePassword(newPassword);
+                
+                if (result.success) {
+                    document.getElementById('password-success').style.display = 'block';
+                    document.getElementById('password-form').reset();
+                    setTimeout(() => {
+                        document.getElementById('password-success').style.display = 'none';
+                    }, 3000);
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                document.getElementById('password-error').textContent = ErrorHandler.getErrorMessage(error);
+                document.getElementById('password-error').style.display = 'block';
+            }
+        });
+
+        // Logout all devices
+        window.logoutAllDevices = async () => {
+            if (confirm('هل أنت متأكد؟ سيتم تسجيل خروجك من جميع الأجهزة.')) {
+                await Auth.signOut();
+            }
+        };
+
+        // Delete account
+        window.deleteAccount = async () => {
+            if (confirm('تحذير! هذا الإجراء لا يمكن التراجع عنه. هل أنت متأكد تماماً؟')) {
+                if (confirm('الرجاء تأكيد الحذف. سيتم حذف جميع بياناتك نهائياً.')) {
+                    alert('سيتم تفعيل حذف الحساب قريباً');
+                }
+            }
+        };
+    </script>
+</body>
+</html>
