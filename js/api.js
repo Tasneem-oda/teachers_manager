@@ -54,6 +54,28 @@ export const api = {
     async getDashboard() {
         return await this.call('/webhook/dashboard', 'GET');      
     }
+    export const api = {
+    async createStudent(studentData) {
+        // افتراض وجود دالة auth.getSession() لجلب الـ JWT Token
+        const session = await auth.getSession();
+        if (!session) throw new Error("AUTHENTICATION_ERROR");
+
+        const response = await fetch(`${N8N_WEBHOOK_BASE}/webhook/qtm/students/create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify(studentData)
+        });
+
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.error.message || "فشل في حفظ البيانات");
+        }
+        return result.data;
+    }
+};
 };
 
 // إتاحة الـ api عالمياً في حال لم تستخدم الـ ES Modules في كل الملفات
