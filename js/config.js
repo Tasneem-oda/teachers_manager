@@ -88,7 +88,11 @@ export const CONFIG = {
 const { createClient } = window.supabase;
 
 // تهيئة وتصدير الكائن بالاسم الذي تعتمد عليه باقي الملفات
-export const supabase = createClient(
-    CONFIG.SUPABASE_URL, 
-    CONFIG.SUPABASE_ANON_KEY
-);
+// إضافة هذا الكود في نهاية ملف config.js أسفل كائن CONFIG
+if (typeof window !== 'undefined' && window.supabase && !window.supabaseClient) {
+    // إنشاء العميل مرة واحدة فقط وتخزينه في window.supabaseClient
+    window.supabaseClient = window.supabase.createClient(
+        CONFIG.SUPABASE_URL,
+        CONFIG.SUPABASE_ANON_KEY
+    );
+}
