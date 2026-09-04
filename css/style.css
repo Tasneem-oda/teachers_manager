@@ -1,0 +1,115 @@
+/**
+ * style.css - الأنماط الموحدة للتطبيق
+ * نظام تصميمي موحد مع دعم RTL العربية
+ */
+
+:root {
+    /* الألوان */
+    --primary: #4B3A5A;
+    --primary-hover: #3F304D;
+    --secondary: #C59A4A;
+    --success: #6F8F72;
+    --danger: #B85C5C;
+    --warning: #D4A574;
+    
+    /* خلفيات */
+    --bg-primary: #FAF9F6;
+    --bg-secondary: #F5F3F0;
+    --bg-muted: #EFEFEF;
+    
+    /* النصوص */
+    --text-primary: #29252D;
+    --text-secondary: #716A74;
+    --text-light: #A8A2AA;
+    
+    /* الحدود */
+    --border: #E7E1E8;
+    --card-bg: #FFFFFF;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    direction: rtl;
+}
+
+body {
+    font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--primary);
+    margin-bottom: 1rem;
+}
+
+/* Buttons */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background-color: var(--primary);
+    color: white;
+    transition: 0.2s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn:hover {
+    background-color: var(--primary-hover);
+}
+
+.btn-primary { background-color: var(--primary); }
+.btn-secondary { background-color: var(--secondary); }
+.btn-success { background-color: var(--success); }
+.btn-danger { background-color: var(--danger); }
+
+/* Forms */
+input, textarea, select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-family: inherit;
+    font-size: 1rem;
+}
+
+input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(75, 58, 90, 0.1);
+}
+
+/* Cards */
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    margin-bottom: 1.5rem;
+}
+
+/* Utilities */
+.container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+.flex { display: flex; gap: 1rem; justify-content: space-between; align-items: center; }
+.text-center { text-align: center; }
+.hidden { display: none; }
+.mt-2 { margin-top: 1rem; }
+.mb-2 { margin-bottom: 1rem; }
+.p-2 { padding: 1rem; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .container { padding: 1rem; }
+    .grid { grid-template-columns: 1fr; }
+    .flex { flex-direction: column; align-items: stretch; }
+}

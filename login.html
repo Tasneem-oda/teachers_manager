@@ -3,56 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تسجيل الدخول - لوحة المعلم</title>
+    <title>تسجيل الدخول - Teachers Manager</title>
+    <link rel="stylesheet" href="css/style.css">
     <style>
         :root { --bg: #FAF9F6; --primary: #4B3A5A; --text: #29252D; --card: #FFFFFF; --border: #E7E1E8; }
-        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: var(--card); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid var(--border); width: 100%; max-width: 400px; }
-        .input-group { margin-bottom: 1rem; }
-        input { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 0.75rem; background-color: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; }
-        button:hover { background-color: #3F304D; }
+        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 1rem; }
+        .login-container { background: var(--card); padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid var(--border); width: 100%; max-width: 400px; }
+        .login-container h2 { color: var(--primary); margin-bottom: 2rem; text-align: center; font-size: 1.8rem; }
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text); }
+        .form-group input { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 1rem; }
+        .form-group input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(75, 58, 90, 0.1); }
         .error { color: #B85C5C; font-size: 0.875rem; margin-top: 0.5rem; display: none; }
+        .btn { width: 100%; padding: 0.75rem; background-color: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: 600; }
+        .btn:hover { background-color: #3F304D; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .links { text-align: center; margin-top: 1.5rem; font-size: 0.9rem; }
+        .links a { color: var(--primary); text-decoration: none; font-weight: 600; margin: 0 0.5rem; }
+        .loading { text-align: center; display: none; }
+        .spinner { border: 3px solid var(--border); border-top: 3px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 0.6s linear infinite; margin: 0 auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .divider { text-align: center; margin: 1.5rem 0; color: #B0A8B0; }
+        .forgot-password { text-align: center; margin-top: 1rem; }
+        .forgot-password a { color: var(--primary); text-decoration: none; font-size: 0.9rem; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>تسجيل الدخول</h2>
+    <div class="login-container">
+        <h2>📚 تسجيل الدخول</h2>
+        
         <form id="loginForm">
-            <div class="input-group">
-                <input type="email" id="email" placeholder="البريد الإلكتروني" required>
+            <div class="form-group">
+                <label for="email">البريد الإلكتروني أو رقم الهاتف</label>
+                <input type="text" id="email" name="email" placeholder="example@email.com" required autofocus>
+                <div class="error" id="emailError"></div>
             </div>
-            <div class="input-group">
-                <input type="password" id="password" placeholder="كلمة المرور" required>
-            </div>
-            <div id="errorMsg" class="error"></div>
-            <button type="submit" id="submitBtn">دخول</button>
-        </form>
-        <p style="text-align: center; font-size: 0.9rem;">ليس لديك حساب؟ <a href="signup.html">سجل الآن</a></p>
-    </div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js"></script>
-    <script type="module" src="js/auth.js"></script>
-    <script>
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('submitBtn');
-            const errorDiv = document.getElementById('errorMsg');
-            
-            btn.disabled = true;
-            btn.innerText = 'جاري التحقق...';
-            errorDiv.style.display = 'none';
 
-            try {
-                await window.auth.login(
-                    document.getElementById('email').value,
-                    document.getElementById('password').value
-                );
-            } catch (error) {
-                errorDiv.innerText = error.message;
-                errorDiv.style.display = 'block';
-                btn.disabled = false;
-                btn.innerText = 'دخول';
+            <div class="form-group">
+                <label for="password">كلمة المرور</label>
+                <input type="password" id="password" name="password" placeholder="كلمة المرور" required>
+                <div class="error" id="passwordError"></div>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn">دخول</button>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>جاري التحقق...</p>
+            </div>
+        </form>
+
+        <div class="forgot-password">
+            <a href="reset-password.html">هل نسيت كلمة المرور؟</a>
+        </div>
+
+        <div class="divider">أو</div>
+
+        <div class="links">
+            <span>ليس لديك حساب؟</span>
+            <a href="signup.html">سجل الآن</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="js/config.js"></script>
+    <script type="module">
+        import { Auth } from './js/auth.js';
+        import { Validators, ErrorHandler } from './js/utils.js';
+
+        const form = document.getElementById('loginForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+
+        // تحقق من المستخدم المسجل
+        window.addEventListener('load', async () => {
+            const session = await Auth.getSession();
+            if (session) {
+                window.location.href = 'dashboard.html';
+            }
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // إخفاء الأخطاء السابقة
+            document.getElementById('emailError').style.display = 'none';
+            document.getElementById('passwordError').style.display = 'none';
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            // التحقق من البيانات
+            let hasErrors = false;
+
+            if (!email) {
+                document.getElementById('emailError').textContent = 'أدخل البريد الإلكتروني أو رقم الهاتف';
+                document.getElementById('emailError').style.display = 'block';
+                hasErrors = true;
+            }
+
+            if (!password) {
+                document.getElementById('passwordError').textContent = 'أدخل كلمة المرور';
+                document.getElementById('passwordError').style.display = 'block';
+                hasErrors = true;
+            }
+
+            if (hasErrors) return;
+
+            // عرض حالة التحميل
+            submitBtn.disabled = true;
+            submitBtn.style.display = 'none';
+            loading.style.display = 'block';
+
+            // تنفيذ تسجيل الدخول
+            const result = await Auth.signIn(email, password);
+
+            if (result.success) {
+                // إعادة توجيه ناجحة
+                window.location.href = 'dashboard.html';
+            } else {
+                ErrorHandler.showError(result.error);
+                submitBtn.disabled = false;
+                submitBtn.style.display = 'block';
+                loading.style.display = 'none';
             }
         });
     </script>

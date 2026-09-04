@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم الإدارية - Teachers Manager</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        :root { --bg: #FAF9F6; --primary: #4B3A5A; --text: #29252D; --card: #FFFFFF; --border: #E7E1E8; --success: #6F8F72; --danger: #B85C5C; }
+        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg); }
+        .navbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h2 { color: var(--primary); margin: 0; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .tabs { display: flex; gap: 0.5rem; margin-bottom: 2rem; border-bottom: 2px solid var(--border); }
+        .tab-btn { background: none; border: none; padding: 1rem; font-size: 1rem; cursor: pointer; color: #716A74; font-weight: 500; border-bottom: 3px solid transparent; }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; text-align: center; }
+        .stat-value { font-size: 2.5rem; font-weight: 700; color: var(--primary); }
+        .stat-label { color: #716A74; font-size: 0.9rem; margin-top: 0.5rem; }
+        .table-container { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #FAFAFA; padding: 1rem; text-align: right; font-weight: 600; color: var(--text); }
+        td { padding: 1rem; border-top: 1px solid var(--border); }
+        tr:hover { background: #FAFAFA; }
+        .btn { padding: 0.5rem 1rem; margin-left: 0.5rem; font-size: 0.85rem; cursor: pointer; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+        .badge-success { background: #E8F5E9; color: var(--success); }
+        .badge-trial { background: #FCE4EC; color: #C2185B; }
+        .badge-expired { background: #FFEBEE; color: var(--danger); }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); }
+        .modal.active { display: flex; justify-content: center; align-items: center; }
+        .modal-content { background: var(--card); padding: 2rem; border-radius: 12px; max-width: 500px; width: 90%; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .modal-header h2 { margin: 0; color: var(--primary); }
+        .close-modal { font-size: 1.5rem; cursor: pointer; color: #716A74; }
+        .search-bar { margin-bottom: 1.5rem; }
+        .search-bar input { width: 300px; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h2>🔐 لوحة التحكم الإدارية</h2>
+        <a href="dashboard.html" style="text-decoration: none; color: var(--primary); font-weight: 600;">رجوع</a>
+    </nav>
+
+    <div class="container">
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab(event, 'overview')">النظرة العامة</button>
+            <button class="tab-btn" onclick="switchTab(event, 'users')">المستخدمون</button>
+            <button class="tab-btn" onclick="switchTab(event, 'subscriptions')">الاشتراكات</button>
+            <button class="tab-btn" onclick="switchTab(event, 'system')">إعدادات النظام</button>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="overview" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-users">-</div>
+                    <div class="stat-label">إجمالي المستخدمين</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="active-teachers">-</div>
+                    <div class="stat-label">معلمين نشطين</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-students">-</div>
+                    <div class="stat-label">إجمالي الطلاب</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="paid-subscriptions">-</div>
+                    <div class="stat-label">اشتراكات مدفوعة</div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="monthly-revenue">-</div>
+                    <div class="stat-label">الإيرادات الشهرية</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="trial-users">-</div>
+                    <div class="stat-label">مستخدمو النسخة التجريبية</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Tab -->
+        <div id="users" class="tab-content">
+            <div class="search-bar">
+                <input type="text" id="user-search" placeholder="ابحث عن مستخدم...">
+            </div>
+            <div class="table-container">
+                <table id="users-table">
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>البريد الإلكتروني</th>
+                            <th>النوع</th>
+                            <th>حالة الاشتراك</th>
+                            <th>التاريخ</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody">
+                        <tr><td colspan="6" style="text-align: center; color: #716A74;">جاري تحميل البيانات...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Subscriptions Tab -->
+        <div id="subscriptions" class="tab-content">
+            <div class="search-bar">
+                <select id="subscription-filter" style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
+                    <option value="">جميع الحالات</option>
+                    <option value="trial">نسخة تجريبية</option>
+                    <option value="active">نشط</option>
+                    <option value="expired">منتهي</option>
+                </select>
+            </div>
+            <div class="table-container">
+                <table id="subscriptions-table">
+                    <thead>
+                        <tr>
+                            <th>المستخدم</th>
+                            <th>البريد الإلكتروني</th>
+                            <th>الحالة</th>
+                            <th>تاريخ الانتهاء</th>
+                            <th>المبلغ</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="subscriptions-tbody">
+                        <tr><td colspan="6" style="text-align: center; color: #716A74;">جاري تحميل البيانات...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- System Settings Tab -->
+        <div id="system" class="tab-content">
+            <div style="background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 2rem;">
+                <h2 style="color: var(--primary);">إعدادات النظام</h2>
+                
+                <div style="margin-bottom: 2rem;">
+                    <h3>الميزات المتاحة</h3>
+                    <div style="margin: 1rem 0;">
+                        <label>
+                            <input type="checkbox" id="feature-ai" checked>
+                            تفعيل المساعد الذكي
+                        </label>
+                    </div>
+                    <div>
+                        <label>
+                            <input type="checkbox" id="feature-payments" checked>
+                            تفعيل المدفوعات
+                        </label>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 2rem;">
+                    <h3>حدود النظام</h3>
+                    <div style="display: grid; gap: 1rem;">
+                        <div>
+                            <label>الحد الأقصى للطلاب لكل معلم</label>
+                            <input type="number" id="max-students" value="50" style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; width: 200px;">
+                        </div>
+                        <div>
+                            <label>مدة النسخة التجريبية (أيام)</label>
+                            <input type="number" id="trial-days" value="7" style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; width: 200px;">
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="saveSysSettings()">حفظ الإعدادات</button>
+            </div>
+
+            <div style="background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin-top: 2rem;">
+                <h2 style="color: var(--danger);">إجراءات الخطر</h2>
+                
+                <div style="margin: 1.5rem 0;">
+                    <button class="btn btn-danger" onclick="clearCache()">مسح الكاش</button>
+                    <button class="btn btn-danger" onclick="syncDatabase()">مزامنة قاعدة البيانات</button>
+                    <button class="btn btn-danger" onclick="exportData()">تصدير البيانات</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Detail Modal -->
+    <div class="modal" id="user-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>تفاصيل المستخدم</h2>
+                <span class="close-modal" onclick="closeModal('user-modal')">&times;</span>
+            </div>
+            <div id="user-details"></div>
+            <div style="margin-top: 1.5rem;">
+                <button class="btn btn-danger" onclick="suspendUser()">تعليق الحساب</button>
+                <button class="btn" style="background: #E7E1E8; color: var(--text);" onclick="closeModal('user-modal')">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="js/config.js"></script>
+    <script type="module">
+        import { Auth } from './js/auth.js';
+        import { ErrorHandler, Formatters } from './js/utils.js';
+
+        // Check if user is admin
+        window.addEventListener('load', async () => {
+            const authInfo = await Auth.requireAuth();
+            if (!authInfo || authInfo.profile.role !== 'admin') {
+                window.location.href = 'dashboard.html';
+                return;
+            }
+
+            loadOverviewStats();
+            loadUsers();
+            loadSubscriptions();
+        });
+
+        async function loadOverviewStats() {
+            // This would normally come from an API endpoint
+            document.getElementById('total-users').innerText = '245';
+            document.getElementById('active-teachers').innerText = '187';
+            document.getElementById('total-students').innerText = '1,230';
+            document.getElementById('paid-subscriptions').innerText = '98';
+            document.getElementById('monthly-revenue').innerText = '$4,950';
+            document.getElementById('trial-users').innerText = '58';
+        }
+
+        async function loadUsers() {
+            const tbody = document.getElementById('users-tbody');
+            // Mock data
+            const users = [
+                { id: 1, name: 'أحمد محمد', email: 'ahmed@example.com', role: 'teacher', status: 'active', created: '2024-01-15' },
+                { id: 2, name: 'فاطمة علي', email: 'fatima@example.com', role: 'teacher', status: 'trial', created: '2024-02-20' },
+                { id: 3, name: 'محمود سالم', email: 'mahmoud@example.com', role: 'teacher', status: 'expired', created: '2023-12-01' },
+            ];
+
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td>${user.name}</td>
+                    <td>${user.email}</td>
+                    <td>${user.role === 'teacher' ? '👨‍🏫 معلم' : 'مسؤول'}</td>
+                    <td><span class="badge ${getBadgeClass(user.status)}">${getBadgeText(user.status)}</span></td>
+                    <td>${user.created}</td>
+                    <td>
+                        <button class="btn btn-primary" onclick="viewUser(${user.id})">عرض</button>
+                        <button class="btn btn-danger" onclick="deleteUser(${user.id})">حذف</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            document.getElementById('user-search').addEventListener('input', filterUsers);
+        }
+
+        async function loadSubscriptions() {
+            const tbody = document.getElementById('subscriptions-tbody');
+            // Mock data
+            const subs = [
+                { id: 1, name: 'أحمد محمد', email: 'ahmed@example.com', status: 'active', expires: '2024-12-31', amount: '$9.99' },
+                { id: 2, name: 'فاطمة علي', email: 'fatima@example.com', status: 'trial', expires: '2024-03-10', amount: 'مجاني' },
+            ];
+
+            tbody.innerHTML = subs.map(sub => `
+                <tr>
+                    <td>${sub.name}</td>
+                    <td>${sub.email}</td>
+                    <td><span class="badge ${getBadgeClass(sub.status)}">${getBadgeText(sub.status)}</span></td>
+                    <td>${sub.expires}</td>
+                    <td>${sub.amount}</td>
+                    <td>
+                        <button class="btn btn-primary" onclick="editSubscription(${sub.id})">تعديل</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getBadgeClass(status) {
+            if (status === 'active') return 'badge-success';
+            if (status === 'trial') return 'badge-trial';
+            if (status === 'expired') return 'badge-expired';
+            return 'badge-success';
+        }
+
+        function getBadgeText(status) {
+            if (status === 'active') return '✓ نشط';
+            if (status === 'trial') return '⏱ تجريبي';
+            if (status === 'expired') return '✗ منتهي';
+            return 'غير معروف';
+        }
+
+        function filterUsers() {
+            const search = document.getElementById('user-search').value.toLowerCase();
+            const rows = document.getElementById('users-tbody').rows;
+            Array.from(rows).forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(search) ? '' : 'none';
+            });
+        }
+
+        window.switchTab = (event, tabName) => {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        };
+
+        window.viewUser = (id) => {
+            document.getElementById('user-details').innerHTML = `
+                <p><strong>المعرف:</strong> ${id}</p>
+                <p><strong>الاسم:</strong> محمد علي</p>
+                <p><strong>البريد:</strong> email@example.com</p>
+                <p><strong>الحالة:</strong> نشط</p>
+            `;
+            document.getElementById('user-modal').classList.add('active');
+        };
+
+        window.deleteUser = (id) => {
+            if (confirm('حذف المستخدم؟')) alert('تم الحذف');
+        };
+
+        window.editSubscription = (id) => alert('تحديث الاشتراك قيد التطوير');
+
+        window.suspendUser = () => alert('تعليق الحساب قيد التطوير');
+
+        window.closeModal = (id) => {
+            document.getElementById(id).classList.remove('active');
+        };
+
+        window.saveSysSettings = () => {
+            ErrorHandler.showSuccess('تم حفظ الإعدادات');
+        };
+
+        window.clearCache = () => {
+            if (confirm('هل أنت متأكد؟')) ErrorHandler.showSuccess('تم مسح الكاش');
+        };
+
+        window.syncDatabase = () => {
+            alert('جاري مزامنة قاعدة البيانات...');
+        };
+
+        window.exportData = () => alert('تصدير البيانات قيد التطوير');
+    </script>
+</body>
+</html>

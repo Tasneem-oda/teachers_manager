@@ -1,25 +1,242 @@
-<!-- نافذة منبثقة (Modal) مخفية افتراضياً في صفحة الطلاب -->
-<div id="add-student-modal" class="modal hidden">
-    <div class="modal-content">
-        <span class="close-modal">&times;</span>
-        <h2>إضافة طالب جديد</h2>
-        <form id="add-student-form">
-            <div class="form-group">
-                <label>اسم الطالب *</label>
-                <input type="text" id="student-name" required>
-            </div>
-            <div class="form-group">
-                <label> رقم الهاتف ان وجد</label>
-                <input type="text" id="student-phone">
-            </div>
-            <div class="form-group">
-                <label>رابط الحصة (Zoom/Meet)</label>
-                <input type="url" id="student-link">
-            </div>
-            <div class="form-actions">
-                <button type="submit" id="submit-student-btn" class="btn btn-primary">حفظ الطالب</button>
-            </div>
-        </form>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الطلاب - Teachers Manager</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        :root { --bg: #FAF9F6; --primary: #4B3A5A; --text: #29252D; --card: #FFFFFF; --border: #E7E1E8; }
+        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg); }
+        .navbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .search-bar { display: flex; gap: 1rem; margin-bottom: 2rem; }
+        .search-bar input { flex: 1; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; }
+        .students-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+        .student-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; cursor: pointer; transition: 0.3s; }
+        .student-card:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); transform: translateY(-2px); }
+        .student-name { font-size: 1.2rem; font-weight: 600; color: var(--primary); margin-bottom: 0.5rem; }
+        .student-info { color: #716A74; font-size: 0.9rem; margin-bottom: 0.25rem; }
+        .student-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+        .student-actions .btn { flex: 1; padding: 0.5rem; font-size: 0.85rem; }
+        .empty-state { text-align: center; padding: 3rem; color: #716A74; grid-column: 1 / -1; }
+        .loader { text-align: center; padding: 3rem; color: var(--primary); }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); }
+        .modal.active { display: flex; justify-content: center; align-items: center; }
+        .modal-content { background: var(--card); padding: 2rem; border-radius: 12px; max-width: 500px; width: 90%; }
+        .close-modal { float: left; font-size: 1.5rem; font-weight: bold; cursor: pointer; }
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+        .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; }
+        .btn { padding: 0.75rem 1.5rem; margin-right: 0.5rem; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h2 style="color: var(--primary); margin: 0;">👥 الطلاب</h2>
+        <a href="dashboard.html" style="text-decoration: none; color: var(--primary); font-weight: 600;">رجوع</a>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1 style="color: var(--primary); margin: 0;">قائمة الطلاب</h1>
+            <button class="btn" id="btn-add-new">+ طالب جديد</button>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" id="search-input" placeholder="ابحث عن طالب...">
+            <select id="filter-subject" style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
+                <option value="">جميع المواد</option>
+                <option value="quran">القرآن</option>
+                <option value="english">الإنجليزية</option>
+                <option value="arabic">العربية</option>
+                <option value="math">الرياضيات</option>
+            </select>
+        </div>
+
+        <div class="loader" id="loader">جاري تحميل الطلاب...</div>
+        <div class="students-grid" id="students-container"></div>
     </div>
-</div>
-    <script type="module" src="js/students.js"></script>
+
+    <!-- Add/Edit Modal -->
+    <div class="modal" id="add-student-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="modal-title">إضافة طالب جديد</h2>
+            <form id="add-student-form">
+                <div class="form-group">
+                    <label>اسم الطالب *</label>
+                    <input type="text" id="student-name" required>
+                </div>
+
+                <div class="form-group">
+                    <label>البريد الإلكتروني</label>
+                    <input type="email" id="student-email">
+                </div>
+
+                <div class="form-group">
+                    <label>رقم الهاتف</label>
+                    <input type="tel" id="student-phone">
+                </div>
+
+                <div class="form-group">
+                    <label>المادة *</label>
+                    <select id="student-subject" required>
+                        <option value="">اختر...</option>
+                        <option value="quran">القرآن الكريم</option>
+                        <option value="english">اللغة الإنجليزية</option>
+                        <option value="arabic">اللغة العربية</option>
+                        <option value="math">الرياضيات</option>
+                        <option value="science">العلوم</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>رابط الحصة</label>
+                    <input type="url" id="student-link" placeholder="https://zoom.us/...">
+                </div>
+
+                <div class="form-group">
+                    <label>الموضوع الحالي</label>
+                    <input type="text" id="student-topic">
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button type="submit" class="btn">حفظ</button>
+                    <button type="button" class="btn close-modal" style="background: #E7E1E8; color: var(--text);">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="js/config.js"></script>
+    <script type="module">
+        import { Auth } from './js/auth.js';
+        import { api } from './js/api.js';
+        import { ErrorHandler, Formatters } from './js/utils.js';
+
+        const loader = document.getElementById('loader');
+        const container = document.getElementById('students-container');
+        const modal = document.getElementById('add-student-modal');
+        let allStudents = [];
+
+        // Check auth and load students
+        window.addEventListener('load', async () => {
+            const authInfo = await Auth.requireAuth();
+            if (!authInfo) return;
+
+            // Check URL for add action
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('action') === 'add') {
+                modal.classList.add('active');
+            }
+
+            loadStudents();
+        });
+
+        async function loadStudents() {
+            try {
+                const data = await api.getStudents(1, 100);
+                allStudents = data.students || [];
+                renderStudents(allStudents);
+                loader.style.display = 'none';
+            } catch (error) {
+                loader.innerText = 'خطأ: ' + ErrorHandler.getErrorMessage(error);
+            }
+        }
+
+        function renderStudents(students) {
+            if (students.length === 0) {
+                container.innerHTML = '<div class="empty-state">لا توجد طلاب حالياً. <a href="#" onclick="document.getElementById(\'add-student-modal\').classList.add(\'active\')">أضف طالبك الأول</a></div>';
+                return;
+            }
+
+            container.innerHTML = students.map(student => `
+                <div class="student-card">
+                    <div class="student-name">${student.name}</div>
+                    <div class="student-info">📚 ${student.subject || 'بدون مادة'}</div>
+                    <div class="student-info">🎯 ${student.current_topic || 'بدون موضوع'}</div>
+                    <div class="student-info">📞 ${student.phone || 'بدون رقم'}</div>
+                    <div class="student-actions">
+                        <a href="student.html?id=${student.id}" class="btn">عرض الملف</a>
+                        <button class="btn" onclick="editStudent('${student.id}')">تعديل</button>
+                        <button class="btn btn-danger" onclick="deleteStudent('${student.id}')">حذف</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Search & Filter
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            const search = e.target.value.toLowerCase();
+            const subject = document.getElementById('filter-subject').value;
+
+            const filtered = allStudents.filter(s => {
+                const matchSearch = s.name.toLowerCase().includes(search);
+                const matchSubject = !subject || s.subject === subject;
+                return matchSearch && matchSubject;
+            });
+
+            renderStudents(filtered);
+        });
+
+        document.getElementById('filter-subject').addEventListener('change', () => {
+            document.getElementById('search-input').dispatchEvent(new Event('input'));
+        });
+
+        // Modal
+        document.getElementById('btn-add-new').addEventListener('click', () => {
+            document.getElementById('modal-title').textContent = 'إضافة طالب جديد';
+            document.getElementById('add-student-form').reset();
+            modal.classList.add('active');
+        });
+
+        document.querySelectorAll('.close-modal').forEach(btn => {
+            btn.addEventListener('click', () => modal.classList.remove('active'));
+        });
+
+        // Form submission
+        document.getElementById('add-student-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const studentData = {
+                name: document.getElementById('student-name').value,
+                email: document.getElementById('student-email').value || null,
+                phone: document.getElementById('student-phone').value || null,
+                subject: document.getElementById('student-subject').value,
+                lesson_link: document.getElementById('student-link').value || null,
+                current_topic: document.getElementById('student-topic').value || null
+            };
+
+            try {
+                await api.createStudent(studentData);
+                ErrorHandler.showSuccess('تم إضافة الطالب بنجاح');
+                modal.classList.remove('active');
+                loadStudents();
+            } catch (error) {
+                ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
+            }
+        });
+
+        // Delete student
+        window.deleteStudent = async (id) => {
+            if (confirm('هل أنت متأكد من حذف هذا الطالب؟')) {
+                try {
+                    await api.deleteStudent(id);
+                    ErrorHandler.showSuccess('تم حذف الطالب');
+                    loadStudents();
+                } catch (error) {
+                    ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
+                }
+            }
+        };
+
+        // Edit student (placeholder)
+        window.editStudent = (id) => {
+            alert('تحديث الطالب قيد التطوير');
+        };
+    </script>
+</body>
+</html>
