@@ -52,39 +52,41 @@
     <script type="module" src="js/config.js"></script>
     <script type="module" src="js/auth.js"></script>
     <script>
-        document.getElementById('signupForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('submitBtn');
-            const errorDiv = document.getElementById('errorMsg');
-            
-            const password = document.getElementById('password').value;
-            const confirm = document.getElementById('confirm_password').value;
+       document.getElementById('signupForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-            if (password !== confirm) {
-                errorDiv.innerText = 'كلمات المرور غير متطابقة.';
-                errorDiv.style.display = 'block';
-                return;
-            }
+    // إظهار حالة التحميل
+    const submitBtn = document.getElementById('submitBtn');
+    const originalText = submitBtn.innerText;
+    submitBtn.innerText = 'جاري الحفظ...';
+    submitBtn.disabled = true;
 
-            btn.disabled = true;
-            btn.innerText = 'جاري الإعداد...';
-            errorDiv.style.display = 'none';
+    const name = document.getElementById('name').value;
+    const email = document.getElementById('email').value;
+    const phone = document.getElementById('phone').value;
+    const password = document.getElementById('password').value;
+    // لم نعد نحتاج لجلب حقل الـ username لأنه مخفي وتمت معالجته
 
-            try {
-                await window.auth.signup(
-                    document.getElementById('email').value,
-                    password,
-                    document.getElementById('name').value,
-                    document.getElementById('phone').value,
-                    document.getElementById('username').value.toLowerCase()
-                );
-            } catch (error) {
-                errorDiv.innerText = error.message;
-                errorDiv.style.display = 'block';
-                btn.disabled = false;
-                btn.innerText = 'إنشاء حساب';
-            }
-        });
+    // استدعاء دالة التسجيل من ملف auth.js
+    const result = await Auth.signUp(name, email, phone, password);
+
+    if (result.success) {
+        // انتقال للداشبورد مباشرة عند النجاح
+        window.location.href = 'dashboard.html';
+    } else {
+        // إظهار الخطأ للمستخدم
+        alert("تنبيه: " + result.error);
+        
+        // إعادة الزر لحالته الطبيعية
+        submitBtn.innerText = originalText;
+        submitBtn.disabled = false;
+    }
+});
+
+// التحقق المسبق: إذا كان المستخدم مسجلاً بالفعل، لا داعي لبقائه في هذه الصفحة
+document.addEventListener('DOMContentLoaded', () => {
+    Auth.redirectIfAuthenticated();
+});
     </script>
 </body>
 </html>
