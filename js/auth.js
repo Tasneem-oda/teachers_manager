@@ -2,7 +2,14 @@
  * auth.js - إدارة المصادقة والجلسات
  * يعتمد على Supabase Auth كليًا
  */
+// استخراج دالة التهيئة من مكتبة المتصفح لتفادي التضارب
+const { createClient } = window.supabase;
 
+// تهيئة وتصدير الكائن بالاسم الذي تعتمد عليه باقي الملفات
+export const supabase = createClient(
+    CONFIG.SUPABASE_URL, 
+    CONFIG.SUPABASE_ANON_KEY
+);
 import { CONFIG } from './config.js';
 import { APIUtils, Storage, ErrorHandler, Validators } from './utils.js';
 
