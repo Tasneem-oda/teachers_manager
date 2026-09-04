@@ -72,6 +72,15 @@ export const CONFIG = {
         MAX_STUDENTS_TRIAL: 10,
         API_TIMEOUT: 30000,
         AI_TIMEOUT: 60000
+    },
+    
+    // Validation Patterns
+    PATTERNS: {
+        EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+        PHONE_EG: /^(\+?20|0)?1[0125]\d{8}$/,
+        USERNAME: /^[a-zA-Z0-9_-]{3,}$/,
+        STRONG_PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+        URL: /^https?:\/\/.+\..+/
     }
 };
 
