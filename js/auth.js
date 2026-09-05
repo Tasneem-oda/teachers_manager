@@ -73,8 +73,24 @@ export const Auth = {
                 throw new Error('فشل إعداد ملفك الشخصي');
             }
 
-            const responseData = await response.json();
-            
+            // نقرأ الرد كنص أولاً، لأن بعض الحالات (مشاكل بروكسي/شبكة) بترجع
+            // status ناجح لكن body فاضي، وده يكسر response.json() مباشرة
+            const responseText = await response.text();
+            let responseData = null;
+            if (responseText) {
+                try {
+                    responseData = JSON.parse(responseText);
+                } catch (parseError) {
+                    responseData = null;
+                }
+            }
+
+            if (!responseData) {
+                // الحساب في Supabase اتعمل بالفعل في هذه المرحلة، فمش هنمسحه
+                // احتياطًا (ممكن يكون البروفايل اتحفظ فعلاً والمشكلة في وصول الرد بس)
+                throw new Error('تم إنشاء حسابك، لكن حدث خطأ أثناء تأكيد إعداد ملفك الشخصي. جرّبي تسجيل الدخول مباشرة — لو ظهرت نفس المشكلة، تواصلي معنا.');
+            }
+
             if (!responseData.success) {
                 await window.supabaseClient.auth.signOut();
                 throw new Error(responseData.error?.message || 'فشل في إنشاء الحساب');
