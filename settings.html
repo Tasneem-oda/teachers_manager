@@ -7,13 +7,13 @@
     <link rel="stylesheet" href="css/style.css">
     <style>
         :root { --bg: #FAF9F6; --primary: #4B3A5A; --text: #29252D; --card: #FFFFFF; --border: #E7E1E8; }
-        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg); }
-        .navbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; }
+        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg-primary); }
+        .navbar { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; }
         .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
-        .settings-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin-bottom: 1.5rem; }
+        .settings-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin-bottom: 1.5rem; }
         .settings-section h2 { color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 1rem; }
         .form-group { margin-bottom: 1.5rem; }
-        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text); }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-primary); }
         .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 1rem; }
         .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); }
         .info-text { color: #716A74; font-size: 0.9rem; margin-top: 0.5rem; }
@@ -28,6 +28,7 @@
 <body>
     <nav class="navbar">
         <h2 style="color: var(--primary); margin: 0;">⚙️ الإعدادات</h2>
+        <a href="schedule.html" style="text-decoration: none; color: var(--primary); font-weight: 600; margin-left: 1rem;">📅 الجدول</a>
         <a href="dashboard.html" style="text-decoration: none; color: var(--primary); font-weight: 600;">رجوع</a>
     </nav>
 
@@ -139,13 +140,13 @@
             <h2 style="color: #B85C5C;">منطقة الخطر</h2>
             
             <div style="margin-bottom: 1.5rem;">
-                <h4 style="color: var(--text);">تسجيل الخروج من جميع الأجهزة</h4>
+                <h4 style="color: var(--text-primary);">تسجيل الخروج من جميع الأجهزة</h4>
                 <p style="color: #716A74; font-size: 0.9rem;">سيتم تسجيل خروجك من جميع الأجهزة والمتصفحات</p>
                 <button type="button" class="btn btn-danger" onclick="logoutAllDevices()">تسجيل الخروج من الجميع</button>
             </div>
 
             <div>
-                <h4 style="color: var(--text);">حذف الحساب نهائياً</h4>
+                <h4 style="color: var(--text-primary);">حذف الحساب نهائياً</h4>
                 <p style="color: #716A74; font-size: 0.9rem; margin-bottom: 1rem;">هذا الإجراء لا يمكن التراجع عنه. سيتم حذف جميع بياناتك</p>
                 <button type="button" class="btn btn-danger" onclick="deleteAccount()">حذف الحساب</button>
             </div>

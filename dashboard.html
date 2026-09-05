@@ -7,8 +7,8 @@
     <link rel="stylesheet" href="css/style.css">
     <style>
         :root { --bg: #FAF9F6; --primary: #4B3A5A; --primary-hover: #3F304D; --text: #29252D; --secondary-text: #716A74; --card: #FFFFFF; --border: #E7E1E8; --success: #6F8F72; --warning: #C59A4A; }
-        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; }
-        .navbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg-primary); color: var(--text-primary); margin: 0; padding: 0; }
+        .navbar { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
         .navbar h2 { color: var(--primary); margin: 0; }
         .navbar-right { display: flex; gap: 1rem; align-items: center; }
         .navbar-right a { text-decoration: none; color: var(--primary); font-weight: 600; }
@@ -16,13 +16,13 @@
         .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
         .header h1 { margin: 0; font-size: 1.8rem; color: var(--primary); }
-        .header .date { color: var(--secondary-text); font-size: 0.9rem; }
+        .header .date { color: var(--text-secondary); font-size: 0.9rem; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-        .stat-card { background: var(--card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .stat-card h3 { margin: 0 0 0.5rem 0; font-size: 0.9rem; color: var(--secondary-text); }
+        .stat-card { background: var(--card-bg); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .stat-card h3 { margin: 0 0 0.5rem 0; font-size: 0.9rem; color: var(--text-secondary); }
         .stat-card .value { font-size: 1.8rem; font-weight: bold; color: var(--primary); margin: 0; }
         .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; }
-        .section-card { background: var(--card); border-radius: 16px; border: 1px solid var(--border); padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .section-card { background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
         .section-title { font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.8rem; margin-top: 0; margin-bottom: 1rem; color: var(--primary); }
         .next-lesson { background: linear-gradient(135deg, #4B3A5A 0%, #7A6B83 100%); color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; }
         .next-lesson h3 { color: white; margin: 0; font-size: 0.9rem; font-weight: 400; opacity: 0.9; }
@@ -32,9 +32,9 @@
         .next-lesson .btn { background: white; color: var(--primary); padding: 0.5rem 1rem; font-size: 0.9rem; }
         .lesson-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--border); }
         .lesson-item:last-child { border-bottom: none; padding-bottom: 0; }
-        .lesson-info h4 { margin: 0 0 0.3rem 0; color: var(--text); }
-        .lesson-info p { margin: 0; font-size: 0.85rem; color: var(--secondary-text); }
-        .empty-state { text-align: center; padding: 2rem; color: var(--secondary-text); }
+        .lesson-info h4 { margin: 0 0 0.3rem 0; color: var(--text-primary); }
+        .lesson-info p { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
+        .empty-state { text-align: center; padding: 2rem; color: var(--text-secondary); }
         .loader { text-align: center; padding: 3rem; color: var(--primary); font-weight: bold; }
         .actions { display: flex; gap: 1rem; margin-bottom: 2rem; }
         .actions .btn { padding: 0.75rem 1.5rem; }
@@ -54,6 +54,7 @@
         <h2>📚 Teachers Manager</h2>
         <div class="navbar-right">
             <a href="students.html">الطلاب</a>
+            <a href="schedule.html">📅 الجدول الأسبوعي</a>
             <a href="settings.html">الإعدادات</a>
             <button class="btn btn-small" id="logoutBtn">خروج</button>
         </div>
@@ -247,7 +248,7 @@
                     calendarContainer.innerHTML = Object.keys(grouped).map(dayIndex => `
                         <div style="display: flex; justify-content: space-between; margin-bottom: 0.8rem; border-bottom: 1px solid #f0f0f0; padding-bottom: 0.5rem;">
                             <strong>${days[dayIndex] || 'غير معروف'}</strong>
-                            <span style="color: var(--secondary-text);">${grouped[dayIndex]} حصص</span>
+                            <span style="color: var(--text-secondary);">${grouped[dayIndex]} حصص</span>
                         </div>
                     `).join('');
                 }

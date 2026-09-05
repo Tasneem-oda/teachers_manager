@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الجدول الأسبوعي - Teachers Manager</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .navbar { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h2 { color: var(--primary); margin: 0; }
+        .navbar-right { display: flex; gap: 1rem; align-items: center; }
+        .navbar-right a { text-decoration: none; color: var(--primary); font-weight: 600; }
+
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+        .page-header h1 { margin: 0; font-size: 1.6rem; color: var(--primary); }
+        .legend { display: flex; gap: 1.25rem; font-size: 0.85rem; color: var(--text-secondary); }
+        .legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
+        .legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+        .legend .free-dot { background: var(--bg-secondary); border: 1px solid var(--border); }
+        .legend .busy-dot { background: var(--primary); }
+
+        .calendar-wrap { overflow-x: auto; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 0.5rem; }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: 70px repeat(7, minmax(110px, 1fr));
+            grid-auto-rows: 26px;
+            min-width: 900px;
+        }
+        .day-head {
+            grid-row: 1;
+            position: sticky; top: 0; background: var(--card-bg); z-index: 2;
+            text-align: center; font-weight: 700; color: var(--primary);
+            padding: 0.5rem 0; border-bottom: 2px solid var(--border);
+        }
+        .time-label {
+            font-size: 0.72rem; color: var(--text-light); text-align: left; padding-left: 4px;
+            border-top: 1px solid var(--border);
+        }
+        .slot {
+            border-top: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            cursor: pointer;
+            position: relative;
+        }
+        .slot.free:hover { background: var(--bg-secondary); }
+        .slot.free::after { content: '+'; opacity: 0; color: var(--secondary); font-weight: 700; }
+        .slot.free:hover::after { opacity: 1; }
+        .slot.free { display: flex; align-items: center; justify-content: center; }
+        .slot.busy {
+            background: var(--primary);
+            color: #fff;
+            border-radius: 8px;
+            margin: 1px 2px;
+            padding: 4px 6px;
+            font-size: 0.78rem;
+            line-height: 1.3;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        }
+        .slot.busy:hover { background: var(--primary-hover); }
+        .slot.busy strong { display: block; font-size: 0.82rem; }
+
+        @media (max-width: 700px) {
+            .calendar-grid { grid-template-columns: 55px repeat(7, minmax(90px, 1fr)); }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h2>Teachers Manager</h2>
+        <div class="navbar-right">
+            <a href="dashboard.html">لوحة التحكم</a>
+            <a href="students.html">الطلاب</a>
+            <a href="schedule.html" style="text-decoration: underline;">الجدول الأسبوعي</a>
+            <a href="settings.html">الإعدادات</a>
+            <button class="btn" id="logout-btn" style="background: var(--danger);">خروج</button>
+        </div>
+    </nav>
+
+    <div style="max-width: 1200px; margin: 0 auto; padding: 1.5rem;">
+        <div class="page-header">
+            <h1>📅 الجدول الأسبوعي</h1>
+            <div class="legend">
+                <span><i class="free-dot"></i> وقت فارغ (اضغطي للإضافة)</span>
+                <span><i class="busy-dot"></i> حصة محجوزة</span>
+            </div>
+        </div>
+
+        <div class="calendar-wrap">
+            <div class="calendar-grid" id="calendar-grid"></div>
+        </div>
+    </div>
+
+    <!-- مودال إضافة/تعديل موعد -->
+    <div class="modal" id="schedule-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="schedule-modal-title">إضافة موعد</h2>
+            <form id="schedule-form">
+                <input type="hidden" id="sch-id">
+                <div class="form-group">
+                    <label for="sch-student">الطالب *</label>
+                    <select id="sch-student" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="sch-day">اليوم *</label>
+                    <select id="sch-day" required>
+                        <option value="0">الأحد</option>
+                        <option value="1">الإثنين</option>
+                        <option value="2">الثلاثاء</option>
+                        <option value="3">الأربعاء</option>
+                        <option value="4">الخميس</option>
+                        <option value="5">الجمعة</option>
+                        <option value="6">السبت</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="sch-time">وقت البداية *</label>
+                    <input type="time" id="sch-time" required>
+                </div>
+                <div class="form-group">
+                    <label for="sch-duration">مدة الحصة (دقيقة) *</label>
+                    <select id="sch-duration" required>
+                        <option value="30">30 دقيقة</option>
+                        <option value="45" selected>45 دقيقة</option>
+                        <option value="60">60 دقيقة</option>
+                        <option value="90">90 دقيقة</option>
+                    </select>
+                </div>
+                <div style="display:flex; gap:0.5rem; margin-top:1rem;">
+                    <button type="submit" class="btn" id="sch-save-btn">حفظ الموعد</button>
+                    <button type="button" class="btn" id="sch-delete-btn" style="background: var(--danger); display:none;">حذف الموعد</button>
+                    <button type="button" class="btn close-modal" style="background: var(--bg-muted); color: var(--text-primary);">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="error-toast" style="display:none;"></div>
+    <div id="success-toast" style="display:none;"></div>
+
+    <script type="module">
+        import { Auth } from './js/auth.js';
+        import { api } from './js/api.js';
+        import { ErrorHandler } from './js/utils.js';
+
+        const HOUR_START = 6, HOUR_END = 23, SLOT_MIN = 30;
+        const SLOTS = (HOUR_END - HOUR_START) * 60 / SLOT_MIN; // 34
+        const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+        let students = [];
+        let schedules = [];
+
+        function slotToTime(idx) {
+            const total = HOUR_START * 60 + idx * SLOT_MIN;
+            const h = Math.floor(total / 60), m = total % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
+        function timeToSlot(timeStr) {
+            const [h, m] = timeStr.substring(0, 5).split(':').map(Number);
+            return Math.round(((h * 60 + m) - HOUR_START * 60) / SLOT_MIN);
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+            grid.style.gridTemplateRows = `36px repeat(${SLOTS}, 26px)`;
+
+            // رأس الأعمدة
+            const cornerHead = document.createElement('div');
+            cornerHead.className = 'day-head';
+            cornerHead.style.gridColumn = '1'; cornerHead.style.gridRow = '1';
+            grid.appendChild(cornerHead);
+            DAY_NAMES.forEach((name, di) => {
+                const h = document.createElement('div');
+                h.className = 'day-head';
+                h.style.gridColumn = di + 2; h.style.gridRow = '1';
+                h.textContent = name;
+                grid.appendChild(h);
+            });
+
+            // عمود الوقت
+            for (let s = 0; s < SLOTS; s++) {
+                const label = document.createElement('div');
+                label.className = 'time-label';
+                label.style.gridColumn = '1'; label.style.gridRow = s + 2;
+                if (s % 2 === 0) label.textContent = slotToTime(s);
+                grid.appendChild(label);
+            }
+
+            // خريطة الأوقات المشغولة لتجنب رسم خلايا فاضية فوقها
+            const coveredCells = new Set(); // "day-slot"
+
+            schedules.forEach(sch => {
+                const startSlot = timeToSlot(sch.start_time);
+                const span = Math.max(1, Math.ceil(sch.duration_minutes / SLOT_MIN));
+                if (startSlot < 0 || startSlot >= SLOTS) return;
+                const block = document.createElement('div');
+                block.className = 'slot busy';
+                block.style.gridColumn = sch.day_of_week + 2;
+                block.style.gridRow = `${startSlot + 2} / span ${span}`;
+                block.innerHTML = `<strong>${sch.student_name}</strong>${sch.start_time.substring(0,5)} (${sch.duration_minutes} د)`;
+                block.addEventListener('click', () => openEditModal(sch));
+                grid.appendChild(block);
+
+                for (let k = 0; k < span; k++) coveredCells.add(`${sch.day_of_week}-${startSlot + k}`);
+            });
+
+            // الخلايا الفاضية
+            for (let di = 0; di < 7; di++) {
+                for (let s = 0; s < SLOTS; s++) {
+                    if (coveredCells.has(`${di}-${s}`)) continue;
+                    const cell = document.createElement('div');
+                    cell.className = 'slot free';
+                    cell.style.gridColumn = di + 2; cell.style.gridRow = s + 2;
+                    cell.addEventListener('click', () => openAddModal(di, slotToTime(s)));
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        function openAddModal(day, time, presetStudentId = null) {
+            document.getElementById('schedule-modal-title').textContent = 'إضافة موعد';
+            document.getElementById('sch-id').value = '';
+            document.getElementById('sch-day').value = day;
+            document.getElementById('sch-time').value = time;
+            document.getElementById('sch-duration').value = '45';
+            if (presetStudentId) document.getElementById('sch-student').value = presetStudentId;
+            document.getElementById('sch-delete-btn').style.display = 'none';
+            document.getElementById('schedule-modal').classList.add('active');
+        }
+
+        function openEditModal(sch) {
+            document.getElementById('schedule-modal-title').textContent = 'تعديل / حذف الموعد';
+            document.getElementById('sch-id').value = sch.id;
+            document.getElementById('sch-student').value = sch.student_id;
+            document.getElementById('sch-day').value = sch.day_of_week;
+            document.getElementById('sch-time').value = sch.start_time.substring(0, 5);
+            document.getElementById('sch-duration').value = String(sch.duration_minutes);
+            document.getElementById('sch-delete-btn').style.display = 'inline-block';
+            document.getElementById('schedule-modal').classList.add('active');
+        }
+
+        async function loadData() {
+            try {
+                const [studentsData, schedulesData] = await Promise.all([
+                    api.getStudents(1, 100),
+                    api.getSchedules()
+                ]);
+                students = studentsData.students || [];
+                schedules = schedulesData.schedules || [];
+
+                const studentSelect = document.getElementById('sch-student');
+                studentSelect.innerHTML = students.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+
+                renderGrid();
+
+                // فتح مودال إضافة تلقائيًا لو جاي من صفحة طالب معين
+                const params = new URLSearchParams(location.search);
+                const addStudent = params.get('add_student');
+                if (addStudent) {
+                    openAddModal(0, '16:00', addStudent);
+                }
+            } catch (err) {
+                ErrorHandler.showError(ErrorHandler.getErrorMessage(err));
+            }
+        }
+
+        document.querySelectorAll('.close-modal').forEach(btn => {
+            btn.addEventListener('click', () => document.getElementById('schedule-modal').classList.remove('active'));
+        });
+
+        document.getElementById('schedule-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('sch-id').value;
+            const payload = {
+                student_id: document.getElementById('sch-student').value,
+                day_of_week: parseInt(document.getElementById('sch-day').value),
+                start_time: document.getElementById('sch-time').value,
+                duration_minutes: parseInt(document.getElementById('sch-duration').value)
+            };
+            try {
+                if (id) {
+                    await api.updateSchedule(id, payload);
+                } else {
+                    await api.createSchedule(payload);
+                }
+                ErrorHandler.showSuccess('تم حفظ الموعد بنجاح');
+                document.getElementById('schedule-modal').classList.remove('active');
+                await loadData();
+            } catch (err) {
+                ErrorHandler.showError(ErrorHandler.getErrorMessage(err));
+            }
+        });
+
+        document.getElementById('sch-delete-btn').addEventListener('click', async () => {
+            const id = document.getElementById('sch-id').value;
+            if (!id || !confirm('هل تريدين حذف هذا الموعد؟')) return;
+            try {
+                await api.deleteSchedule(id);
+                ErrorHandler.showSuccess('تم حذف الموعد');
+                document.getElementById('schedule-modal').classList.remove('active');
+                await loadData();
+            } catch (err) {
+                ErrorHandler.showError(ErrorHandler.getErrorMessage(err));
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await Auth.signOut();
+            window.location.href = 'login.html';
+        });
+
+        (async () => {
+            const authInfo = await Auth.requireAuth();
+            if (!authInfo) return;
+            await loadData();
+        })();
+    </script>
+</body>
+</html>

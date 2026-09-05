@@ -7,14 +7,14 @@
     <link rel="stylesheet" href="css/style.css">
     <style>
         :root { --bg: #FAF9F6; --primary: #4B3A5A; --text: #29252D; --card: #FFFFFF; --border: #E7E1E8; }
-        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg); }
-        .navbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg-primary); }
+        .navbar { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
         .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
         .search-bar { display: flex; gap: 1rem; margin-bottom: 2rem; }
         .search-bar input { flex: 1; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; }
         .students-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
-        .student-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; cursor: pointer; transition: 0.3s; }
+        .student-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; cursor: pointer; transition: 0.3s; }
         .student-card:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); transform: translateY(-2px); }
         .student-name { font-size: 1.2rem; font-weight: 600; color: var(--primary); margin-bottom: 0.5rem; }
         .student-info { color: #716A74; font-size: 0.9rem; margin-bottom: 0.25rem; }
@@ -24,7 +24,7 @@
         .loader { text-align: center; padding: 3rem; color: var(--primary); }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); }
         .modal.active { display: flex; justify-content: center; align-items: center; }
-        .modal-content { background: var(--card); padding: 2rem; border-radius: 12px; max-width: 500px; width: 90%; }
+        .modal-content { background: var(--card-bg); padding: 2rem; border-radius: 12px; max-width: 500px; width: 90%; }
         .close-modal { float: left; font-size: 1.5rem; font-weight: bold; cursor: pointer; }
         .form-group { margin-bottom: 1.5rem; }
         .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
@@ -35,6 +35,7 @@
 <body>
     <nav class="navbar">
         <h2 style="color: var(--primary); margin: 0;">👥 الطلاب</h2>
+        <a href="schedule.html" style="text-decoration: none; color: var(--primary); font-weight: 600; margin-left: 1rem;">📅 الجدول</a>
         <a href="dashboard.html" style="text-decoration: none; color: var(--primary); font-weight: 600;">رجوع</a>
     </nav>
 
@@ -104,7 +105,7 @@
 
                 <div style="display: flex; gap: 1rem;">
                     <button type="submit" class="btn">حفظ</button>
-                    <button type="button" class="btn close-modal" style="background: #E7E1E8; color: var(--text);">إلغاء</button>
+                    <button type="button" class="btn close-modal" style="background: #E7E1E8; color: var(--text-primary);">إلغاء</button>
                 </div>
             </form>
         </div>

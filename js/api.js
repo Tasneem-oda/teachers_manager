@@ -123,12 +123,8 @@ export const api = {
         );
     },
 
-    async checkScheduleConflict(studentId, dayOfWeek, startTime, duration) {
-        return await apiCall(
-            CONFIG.API_ENDPOINTS.SCHEDULES.CHECK_CONFLICT,
-            'POST',
-            { student_id: studentId, day_of_week: dayOfWeek, start_time: startTime, duration_minutes: duration }
-        );
+    async getSchedules() {
+        return await apiCall(CONFIG.API_ENDPOINTS.SCHEDULES.GET_ALL, 'GET');
     },
 
     // ==================== LESSONS ====================

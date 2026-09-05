@@ -7,11 +7,11 @@
     <link rel="stylesheet" href="css/style.css">
     <style>
         :root { --bg: #FAF9F6; --primary: #4B3A5A; --text: #29252D; --card: #FFFFFF; --border: #E7E1E8; --success: #6F8F72; }
-        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg); }
-        .navbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; }
+        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg-primary); }
+        .navbar { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; }
         .container { max-width: 1000px; margin: 0 auto; padding: 2rem; }
         .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-top: 2rem; }
-        .pricing-card { background: var(--card); border: 2px solid var(--border); border-radius: 12px; padding: 2rem; text-align: center; transition: 0.3s; }
+        .pricing-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: 12px; padding: 2rem; text-align: center; transition: 0.3s; }
         .pricing-card:hover { box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); transform: translateY(-4px); }
         .pricing-card.active { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(75, 58, 90, 0.1); }
         .pricing-card h3 { color: var(--primary); margin-top: 0; }
@@ -27,6 +27,7 @@
 <body>
     <nav class="navbar">
         <h2 style="color: var(--primary); margin: 0;">💳 الاشتراك</h2>
+        <a href="schedule.html" style="text-decoration: none; color: var(--primary); font-weight: 600; margin-left: 1rem;">📅 الجدول</a>
         <a href="dashboard.html" style="text-decoration: none; color: var(--primary); font-weight: 600;">رجوع</a>
     </nav>
 
@@ -81,7 +82,7 @@
             </div>
         </div>
 
-        <div style="background: var(--card); padding: 2rem; border-radius: 12px; margin-top: 3rem; border: 1px solid var(--border);">
+        <div style="background: var(--card-bg); padding: 2rem; border-radius: 12px; margin-top: 3rem; border: 1px solid var(--border);">
             <h2 style="color: var(--primary); text-align: center;">الأسئلة الشائعة</h2>
             <div style="max-width: 600px; margin: 0 auto;">
                 <div style="margin-bottom: 1.5rem;">

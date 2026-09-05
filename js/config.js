@@ -31,7 +31,7 @@ export const CONFIG = {
             CREATE: '/create-schedule',
             UPDATE: '/update-schedule',
             DELETE: '/delete-schedule',
-            CHECK_CONFLICT: '/check-schedule-conflict'
+            GET_ALL: '/get-schedules'
         },
         LESSONS: {
             START: '/start-lesson',

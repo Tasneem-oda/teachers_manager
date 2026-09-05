@@ -7,8 +7,8 @@
     <link rel="stylesheet" href="css/style.css">
     <style>
         :root { --bg: #FAF9F6; --primary: #4B3A5A; --text: #29252D; --card: #FFFFFF; --border: #E7E1E8; }
-        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg); }
-        .navbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; }
+        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg-primary); }
+        .navbar { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; }
         .container { max-width: 1000px; margin: 0 auto; padding: 2rem; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
         .header h1 { color: var(--primary); margin: 0; }
@@ -17,16 +17,16 @@
         .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .info-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .info-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
         .info-row { display: flex; justify-content: space-between; margin-bottom: 1rem; }
         .info-label { color: #716A74; font-weight: 500; }
-        .info-value { color: var(--text); font-weight: 600; }
-        .lesson-item { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+        .info-value { color: var(--text-primary); font-weight: 600; }
+        .lesson-item { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
         .lesson-date { color: var(--primary); font-weight: 600; }
         .lesson-detail { color: #716A74; font-size: 0.9rem; margin-top: 0.5rem; }
         .note-item { background: #FFFBF0; border-right: 4px solid var(--primary); padding: 1rem; margin-bottom: 1rem; border-radius: 4px; }
         .note-date { color: #716A74; font-size: 0.85rem; }
-        .note-text { color: var(--text); margin-top: 0.5rem; }
+        .note-text { color: var(--text-primary); margin-top: 0.5rem; }
         .btn { padding: 0.75rem 1.5rem; margin-right: 0.5rem; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-danger { background: #B85C5C; color: white; }
@@ -40,6 +40,7 @@
 <body>
     <nav class="navbar">
         <h2 style="color: var(--primary); margin: 0;">👤 ملف الطالب</h2>
+        <a href="schedule.html" style="text-decoration: none; color: var(--primary); font-weight: 600; margin-left: 1rem;">📅 الجدول</a>
         <a href="students.html" style="text-decoration: none; color: var(--primary); font-weight: 600;">رجوع</a>
     </nav>
 
@@ -51,7 +52,8 @@
                     <h1 id="student-name"></h1>
                     <p id="student-subject" style="color: #716A74; margin: 0;"></p>
                 </div>
-                <div>
+                <div style="display:flex; gap:0.5rem;">
+                    <button class="btn" style="background: var(--secondary);" onclick="location.href='schedule.html?add_student=' + getStudentId()">📅 إضافة موعد</button>
                     <button class="btn btn-primary" onclick="location.href='lesson.html?student_id=' + getStudentId()">+ حصة جديدة</button>
                 </div>
             </div>
