@@ -6,25 +6,25 @@
     <title>لوحة التحكم الإدارية - Teachers Manager</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
-        :root { --bg: #FAF9F6; --primary: #4B3A5A; --text: #29252D; --card: #FFFFFF; --border: #E7E1E8; --success: #6F8F72; --danger: #B85C5C; }
-        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg-primary); }
+        body { margin: 0; }
         .navbar { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
-        .navbar h2 { color: var(--primary); margin: 0; }
+        .navbar h2 { color: var(--primary); margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.3rem; }
+        .navbar .back-link { text-decoration: none; color: var(--primary); font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; }
         .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
         .tabs { display: flex; gap: 0.5rem; margin-bottom: 2rem; border-bottom: 2px solid var(--border); }
-        .tab-btn { background: none; border: none; padding: 1rem; font-size: 1rem; cursor: pointer; color: #716A74; font-weight: 500; border-bottom: 3px solid transparent; }
+        .tab-btn { background: none; border: none; padding: 1rem; font-size: 1rem; cursor: pointer; color: var(--text-secondary); font-weight: 500; border-bottom: 3px solid transparent; }
         .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-        .stat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; text-align: center; }
+        .stat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem; text-align: center; }
         .stat-value { font-size: 2.5rem; font-weight: 700; color: var(--primary); }
-        .stat-label { color: #716A74; font-size: 0.9rem; margin-top: 0.5rem; }
-        .table-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        .stat-label { color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem; }
+        .table-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
         table { width: 100%; border-collapse: collapse; }
-        th { background: #FAFAFA; padding: 1rem; text-align: right; font-weight: 600; color: var(--text-primary); }
+        th { background: var(--bg-secondary); padding: 1rem; text-align: right; font-weight: 600; color: var(--text-primary); }
         td { padding: 1rem; border-top: 1px solid var(--border); }
-        tr:hover { background: #FAFAFA; }
+        tr:hover { background: var(--bg-secondary); }
         .btn { padding: 0.5rem 1rem; margin-left: 0.5rem; font-size: 0.85rem; cursor: pointer; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-danger { background: var(--danger); color: white; }
@@ -32,20 +32,14 @@
         .badge-success { background: #E8F5E9; color: var(--success); }
         .badge-trial { background: #FCE4EC; color: #C2185B; }
         .badge-expired { background: #FFEBEE; color: var(--danger); }
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); }
-        .modal.active { display: flex; justify-content: center; align-items: center; }
-        .modal-content { background: var(--card-bg); padding: 2rem; border-radius: 12px; max-width: 500px; width: 90%; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-        .modal-header h2 { margin: 0; color: var(--primary); }
-        .close-modal { font-size: 1.5rem; cursor: pointer; color: #716A74; }
         .search-bar { margin-bottom: 1.5rem; }
         .search-bar input { width: 300px; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; }
     </style>
 </head>
 <body>
     <nav class="navbar">
-        <h2>🔐 لوحة التحكم الإدارية</h2>
-        <a href="dashboard.html" style="text-decoration: none; color: var(--primary); font-weight: 600;">رجوع</a>
+        <h2><span id="ic-admin-lock" class="icon"></span> لوحة التحكم الإدارية</h2>
+        <a href="dashboard.html" class="back-link"><span id="ic-admin-back" class="icon"></span> رجوع</a>
     </nav>
 
     <div class="container">
@@ -213,6 +207,10 @@
     <script type="module">
         import { Auth } from './js/auth.js';
         import { ErrorHandler, Formatters } from './js/utils.js';
+        import { icon } from './js/icons.js';
+
+        document.getElementById('ic-admin-lock').innerHTML = icon('lock', { size: 20 });
+        document.getElementById('ic-admin-back').innerHTML = icon('arrowNext', { size: 16 });
 
         // Check if user is admin
         window.addEventListener('load', async () => {
@@ -250,7 +248,7 @@
                 <tr>
                     <td>${user.name}</td>
                     <td>${user.email}</td>
-                    <td>${user.role === 'teacher' ? '👨‍🏫 معلم' : 'مسؤول'}</td>
+                    <td>${user.role === 'teacher' ? icon('graduationCap', { size: 14 }) + ' معلم' : 'مسؤول'}</td>
                     <td><span class="badge ${getBadgeClass(user.status)}">${getBadgeText(user.status)}</span></td>
                     <td>${user.created}</td>
                     <td>

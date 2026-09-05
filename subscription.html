@@ -6,9 +6,7 @@
     <title>الاشتراك - Teachers Manager</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
-        :root { --bg: #FAF9F6; --primary: #4B3A5A; --text: #29252D; --card: #FFFFFF; --border: #E7E1E8; --success: #6F8F72; }
-        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg-primary); }
-        .navbar { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; }
+        body { margin: 0; }
         .container { max-width: 1000px; margin: 0 auto; padding: 2rem; }
         .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-top: 2rem; }
         .pricing-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: 12px; padding: 2rem; text-align: center; transition: 0.3s; }
@@ -21,7 +19,7 @@
         .features-list li { list-style: none; padding: 0.5rem 0; color: #716A74; }
         .features-list li:before { content: "✓ "; color: var(--success); font-weight: bold; margin-right: 0.5rem; }
         .btn { width: 100%; padding: 0.75rem; margin-top: 1.5rem; }
-        .status-banner { background: #E8F5E9; color: var(--success); padding: 1rem; border-radius: 8px; margin-bottom: 2rem; text-align: center; }
+        .status-banner { background: #E8F5E9; color: var(--success); padding: 1rem; border-radius: 8px; margin-bottom: 2rem; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -109,6 +107,7 @@
         import { Auth } from './js/auth.js';
         import { api } from './js/api.js';
         import { renderSidebar, renderTopHeader } from './js/sidebar.js';
+        import { icon } from './js/icons.js';
 
         renderSidebar('settings');
         renderTopHeader({ title: 'الاشتراك', subtitle: 'اختاري الخطة المناسبة لكِ', showSearch: false });
@@ -122,16 +121,16 @@
             try {
                 const sub = await api.checkSubscription();
                 const statusBanner = document.getElementById('status-banner');
-                
+
                 if (sub.status === 'active') {
-                    statusBanner.textContent = '✅ أنت مشترك في الخطة الاحترافية';
+                    statusBanner.innerHTML = icon('checkCircle', { size: 16 }) + ' أنت مشترك في الخطة الاحترافية';
                 } else if (sub.status === 'trial') {
                     const daysLeft = Math.ceil((new Date(sub.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24));
-                    statusBanner.textContent = `⏳ لديك ${daysLeft} أيام متبقية من الفترة التجريبية`;
+                    statusBanner.innerHTML = icon('clock', { size: 16 }) + ` لديك ${daysLeft} أيام متبقية من الفترة التجريبية`;
                 } else {
                     statusBanner.style.background = '#FFEBEE';
                     statusBanner.style.color = '#B85C5C';
-                    statusBanner.textContent = '⚠️ انتهت صلاحية اشتراكك';
+                    statusBanner.innerHTML = icon('warning', { size: 16 }) + ' انتهت صلاحية اشتراكك';
                 }
                 statusBanner.style.display = 'block';
             } catch (error) {

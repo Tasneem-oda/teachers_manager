@@ -6,22 +6,18 @@
     <title>الحصة - Teachers Manager</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
-        :root { --bg: #FAF9F6; --primary: #4B3A5A; --text: #29252D; --secondary-text: #716A74; --card: #FFFFFF; --border: #E7E1E8; }
-        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg-primary); margin: 0; }
-        .navbar { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
-        .navbar h2 { color: var(--primary); margin: 0; }
-        .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+        body { margin: 0; }
         .lesson-header { background: linear-gradient(135deg, #4B3A5A 0%, #7A6B83 100%); color: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem; }
-        .lesson-header h1 { margin: 0; font-size: 2rem; }
+        .lesson-header h1 { margin: 0; font-size: 2rem; color: #fff; }
         .lesson-header p { margin: 0.5rem 0 0 0; opacity: 0.9; }
         .lesson-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 1rem; }
         .meta-item { background: rgba(255, 255, 255, 0.1); padding: 0.75rem; border-radius: 8px; }
         .meta-label { font-size: 0.85rem; opacity: 0.8; }
         .meta-value { font-weight: 600; font-size: 1.1rem; margin-top: 0.25rem; }
         .action-buttons { display: flex; gap: 1rem; justify-content: center; margin: 1.5rem 0; }
-        .action-buttons .btn { padding: 0.75rem 1.5rem; }
+        .action-buttons .btn { padding: 0.75rem 1.5rem; display: inline-flex; align-items: center; gap: 0.4rem; }
         .section { background: var(--card-bg); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 1.5rem; }
-        .section h2 { color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 0.75rem; }
+        .section h2 { color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; font-size: 1.15rem; }
         .form-group { margin-bottom: 1rem; }
         .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-primary); }
         .form-group textarea, .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 1rem; }
@@ -58,8 +54,8 @@
 
             <!-- Open Lesson Link -->
             <div class="action-buttons">
-                <a href="#" id="lesson-link" class="btn" target="_blank" style="display: none;">🔗 فتح رابط الحصة</a>
-                <button class="btn" id="btn-start-timer">⏱️ بدء الحصة</button>
+                <a href="#" id="lesson-link" class="btn" target="_blank" style="display: none;"><span id="ic-link" class="icon" style="display:inline-flex;"></span> فتح رابط الحصة</a>
+                <button class="btn" id="btn-start-timer"><span id="ic-timer" class="icon" style="display:inline-flex;"></span> بدء الحصة</button>
             </div>
 
             <!-- Lesson Content -->
@@ -130,7 +126,7 @@
 
                 <!-- AI Assistant (Optional) -->
                 <div class="section">
-                    <h2>🤖 المساعد الذكي (اختياري)</h2>
+                    <h2><span id="ic-ai-section" class="icon" style="display:inline-flex;"></span> المساعد الذكي (اختياري)</h2>
                     <p style="color: var(--text-secondary); font-size: 0.9rem;">احصل على اقتراحات وملخصات لهذه الحصة</p>
                     <button type="button" id="btn-ai-summary" class="btn" style="background: #9C5FA3;">اطلب ملخص ذكي</button>
                     <div id="ai-summary" style="display: none; margin-top: 1rem; padding: 1rem; background: #F5F3F0; border-radius: 8px;">
@@ -140,7 +136,7 @@
 
                 <!-- Action Buttons -->
                 <div style="text-align: center; margin-top: 2rem;">
-                    <button type="submit" class="btn" style="padding: 1rem 2rem; font-size: 1.1rem;">✅ إنهاء الحصة</button>
+                    <button type="submit" class="btn" style="padding: 1rem 2rem; font-size: 1.1rem;"><span id="ic-finish" class="icon" style="display:inline-flex;"></span> إنهاء الحصة</button>
                     <a href="student.html" class="btn" style="background: #E7E1E8; color: var(--text-primary); margin-right: 1rem; text-decoration: none;">إلغاء</a>
                 </div>
             </form>
@@ -155,11 +151,16 @@
     <script type="module">
         import { Auth } from './js/auth.js';
         import { renderSidebar, renderTopHeader } from './js/sidebar.js';
+        import { api } from './js/api.js';
+        import { ErrorHandler, Formatters } from './js/utils.js';
+        import { icon } from './js/icons.js';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'سجّلي تفاصيل الحصة وأنهيها بضغطة زر', showSearch: false });
-        import { api } from './js/api.js';
-        import { ErrorHandler, Formatters } from './js/utils.js';
+        document.getElementById('ic-link').innerHTML = icon('link', { size: 15 });
+        document.getElementById('ic-timer').innerHTML = icon('play', { size: 15 });
+        document.getElementById('ic-ai-section').innerHTML = icon('sparkles', { size: 18 });
+        document.getElementById('ic-finish').innerHTML = icon('checkCircle', { size: 17 });
 
         const loader = document.getElementById('loader');
         const content = document.getElementById('lesson-content-view');
@@ -230,7 +231,7 @@
                 ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
                 const btn = form.querySelector('button[type="submit"]');
                 btn.disabled = false;
-                btn.textContent = '✅ إنهاء الحصة';
+                btn.innerHTML = icon('checkCircle', { size: 17 }) + ' إنهاء الحصة';
             }
         });
 
@@ -243,7 +244,7 @@
 
             try {
                 btn.disabled = true;
-                btn.textContent = '⏳ جاري التحليل...';
+                btn.textContent = 'جاري التحليل...';
 
                 const content = document.getElementById('lesson-content').value;
                 const notes = document.getElementById('performance-notes').value;

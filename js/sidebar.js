@@ -2,14 +2,15 @@
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
 import { Auth } from './auth.js';
+import { icon } from './icons.js';
 
 const NAV_ITEMS = [
-    { key: 'dashboard', href: 'dashboard.html', icon: '🏠', label: 'الرئيسية' },
-    { key: 'students', href: 'students.html', icon: '👥', label: 'الطلاب' },
-    { key: 'schedule', href: 'schedule.html', icon: '📅', label: 'المواعيد' },
-    { key: 'notes', href: 'students.html', icon: '📝', label: 'الملاحظات' },
-    { key: 'books', href: 'books.html', icon: '📖', label: 'كتابي' },
-    { key: 'settings', href: 'settings.html', icon: '⚙️', label: 'الإعدادات' }
+    { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
+    { key: 'students', href: 'students.html', icon: 'users', label: 'الطلاب' },
+    { key: 'schedule', href: 'schedule.html', icon: 'calendar', label: 'المواعيد' },
+    { key: 'notes', href: 'students.html', icon: 'edit', label: 'الملاحظات' },
+    { key: 'books', href: 'books.html', icon: 'bookOpen', label: 'كتابي' },
+    { key: 'settings', href: 'settings.html', icon: 'gear', label: 'الإعدادات' }
 ];
 
 export function renderSidebar(activeKey) {
@@ -18,7 +19,7 @@ export function renderSidebar(activeKey) {
 
     const navHtml = NAV_ITEMS.map(item => `
         <a href="${item.href}" class="${item.key === activeKey ? 'active' : ''}">
-            <span class="icon">${item.icon}</span>
+            <span class="icon">${icon(item.icon, { size: 19 })}</span>
             <span>${item.label}</span>
         </a>
     `).join('');
@@ -26,7 +27,7 @@ export function renderSidebar(activeKey) {
     root.innerHTML = `
         <aside class="sidebar">
             <div class="sidebar-logo">
-                <div class="logo-icon">📚</div>
+                <div class="logo-icon">${icon('graduationCap', { size: 22 })}</div>
                 <div>
                     <h1>Teachers Manager</h1>
                     <p>منصّة إدارة التدريس</p>
@@ -34,13 +35,13 @@ export function renderSidebar(activeKey) {
             </div>
             <nav class="sidebar-nav">${navHtml}</nav>
             <div class="sidebar-sub-card" id="sidebar-sub-card" style="display:none;">
-                <div class="title">👑 الخطة الاحترافية</div>
+                <div class="title">${icon('crown', { size: 15 })} الخطة الاحترافية</div>
                 <p class="desc" id="sidebar-sub-desc">تجديد الاشتراك</p>
                 <div class="bar"><div class="bar-fill" id="sidebar-sub-bar" style="width: 100%;"></div></div>
             </div>
             <div class="sidebar-footer">
                 <a href="#" id="sidebar-logout">
-                    <span class="icon">🚪</span>
+                    <span class="icon">${icon('logout', { size: 19 })}</span>
                     <span>تسجيل الخروج</span>
                 </a>
             </div>
@@ -97,9 +98,12 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
             <div class="top-header-right">
                 ${showSearch ? `
                 <div class="search-box">
-                    <span>🔍</span>
+                    <span class="icon">${icon('search', { size: 16 })}</span>
                     <input type="text" id="global-search" placeholder="ابحث عن طالب...">
                 </div>` : ''}
+                <button type="button" class="bell-btn" id="header-bell" title="الإشعارات">
+                    ${icon('bell', { size: 18 })}
+                </button>
                 <div class="header-avatar">
                     <div class="avatar-fallback" id="header-avatar-fallback">؟</div>
                     <div>

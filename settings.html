@@ -6,12 +6,10 @@
     <title>الإعدادات - Teachers Manager</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
-        :root { --bg: #FAF9F6; --primary: #4B3A5A; --text: #29252D; --card: #FFFFFF; --border: #E7E1E8; }
-        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg-primary); }
-        .navbar { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; }
+        body { margin: 0; }
         .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
-        .settings-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin-bottom: 1.5rem; }
-        .settings-section h2 { color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 1rem; }
+        .settings-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 2rem; margin-bottom: 1.5rem; }
+        .settings-section h2 { color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; font-size: 1.2rem; }
         .form-group { margin-bottom: 1.5rem; }
         .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-primary); }
         .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 1rem; }
@@ -34,7 +32,7 @@
     <div class="container" style="max-width: 800px; margin: 0; padding: 0;">
         <!-- Profile Settings -->
         <div class="settings-section">
-            <h2>ملف شخصي</h2>
+            <h2><span id="ic-profile" class="icon"></span> ملف شخصي</h2>
             <div class="success-message" id="profile-success">تم حفظ التغييرات بنجاح</div>
             <div class="error-message" id="profile-error"></div>
             
@@ -87,7 +85,7 @@
 
         <!-- Password & Security -->
         <div class="settings-section">
-            <h2>الأمان</h2>
+            <h2><span id="ic-security" class="icon"></span> الأمان</h2>
             <div class="success-message" id="password-success">تم تغيير كلمة المرور بنجاح</div>
             <div class="error-message" id="password-error"></div>
             
@@ -114,7 +112,7 @@
 
         <!-- Notification Settings -->
         <div class="settings-section">
-            <h2>الإشعارات</h2>
+            <h2><span id="ic-notif" class="icon"></span> الإشعارات</h2>
             <div class="form-group">
                 <label>
                     <input type="checkbox" id="email-notifications" checked>
@@ -161,8 +159,12 @@
         import { Auth } from './js/auth.js';
         import { Storage, ErrorHandler } from './js/utils.js';
         import { renderSidebar, renderTopHeader } from './js/sidebar.js';
+        import { icon } from './js/icons.js';
 
         renderSidebar('settings');
+        document.getElementById('ic-profile').innerHTML = icon('userCheck', { size: 18 });
+        document.getElementById('ic-security').innerHTML = icon('lock', { size: 18 });
+        document.getElementById('ic-notif').innerHTML = icon('bell', { size: 18 });
         renderTopHeader({ title: 'الإعدادات', subtitle: 'إدارة ملفك الشخصي وأمان حسابك', showSearch: false });
 
         // Check auth

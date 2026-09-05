@@ -6,19 +6,21 @@
     <title>Teachers Manager - إدارة الطلاب والحصص</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
-        :root { --bg: #FAF9F6; --primary: #4B3A5A; --text: #29252D; --card: #FFFFFF; --border: #E7E1E8; }
-        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg-primary); color: var(--text-primary); }
+        body { margin: 0; }
         .navbar { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
         .navbar a { text-decoration: none; color: var(--primary); font-weight: 600; }
-        .nav-right { display: flex; gap: 1rem; }
+        .nav-right { display: flex; gap: 1rem; align-items: center; }
+        .brand { display: flex; align-items: center; gap: 0.6rem; color: var(--primary); font-weight: 700; font-size: 1.2rem; }
+        .brand .logo-icon { width: 34px; height: 34px; border-radius: 10px; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; }
         .hero { padding: 4rem 2rem; text-align: center; max-width: 1200px; margin: 0 auto; }
-        .hero h1 { font-size: 2.5rem; color: var(--primary); margin-bottom: 1rem; }
+        .hero h1 { font-size: 2.5rem; color: var(--primary); margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.6rem; flex-wrap: wrap; }
         .hero p { font-size: 1.2rem; color: #716A74; margin-bottom: 2rem; max-width: 600px; margin-left: auto; margin-right: auto; }
         .cta-buttons { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
         .cta-buttons .btn { padding: 1rem 2rem; font-size: 1.1rem; }
         .features { padding: 3rem 2rem; background: #F5F3F0; }
         .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; max-width: 1200px; margin: 0 auto; margin-top: 2rem; }
-        .feature-card { background: var(--card-bg); padding: 2rem; border-radius: 12px; text-align: center; }
+        .feature-card { background: var(--card-bg); padding: 2rem; border-radius: 14px; text-align: center; }
+        .feature-card .icon-badge { margin: 0 auto 1rem; width: 56px; height: 56px; border-radius: 16px; }
         .feature-card h3 { color: var(--primary); font-size: 1.3rem; margin-bottom: 1rem; }
         .feature-card p { color: #716A74; }
         .footer { background: var(--card-bg); border-top: 1px solid var(--border); padding: 2rem; text-align: center; color: #716A74; }
@@ -27,7 +29,7 @@
 <body>
     <!-- Navigation -->
     <nav class="navbar">
-        <h2 style="color: var(--primary);">📚 Teachers Manager</h2>
+        <div class="brand"><span class="logo-icon" id="nav-logo-icon"></span> Teachers Manager</div>
         <div class="nav-right">
             <a href="login.html">دخول</a>
             <a href="signup.html" style="background: var(--primary); color: white; padding: 0.5rem 1rem; border-radius: 6px;">تسجيل جديد</a>
@@ -36,7 +38,7 @@
 
     <!-- Hero Section -->
     <section class="hero">
-        <h1>نظّم طلابك وحصصك من مكان واحد 🎓</h1>
+        <h1><span id="hero-icon" style="display:inline-flex; color: var(--secondary);"></span> نظّم طلابك وحصصك من مكان واحد</h1>
         <p>منصة متكاملة لإدارة الطلاب والحصص والملاحظات. قل وداعاً لـ WhatsApp وملفات Excel!</p>
         <div class="cta-buttons">
             <a href="signup.html" class="btn" style="background: var(--primary); color: white;">ابدأ الآن مجاناً</a>
@@ -52,32 +54,32 @@
         </div>
         <div class="features-grid">
             <div class="feature-card">
-                <div style="font-size: 2.5rem; margin-bottom: 1rem;">👨‍🎓</div>
+                <div class="icon-badge" id="feat-icon-0" style="background:rgba(75,58,90,0.1); color:var(--primary);"></div>
                 <h3>إدارة الطلاب</h3>
                 <p>احفظ بيانات طلابك وتقدمهم التعليمي بسهولة</p>
             </div>
             <div class="feature-card">
-                <div style="font-size: 2.5rem; margin-bottom: 1rem;">📅</div>
+                <div class="icon-badge" id="feat-icon-1" style="background:rgba(197,154,74,0.15); color:var(--secondary);"></div>
                 <h3>جدول الحصص</h3>
                 <p>نظّم جدولك الأسبوعي ولاحظ التعارضات تلقائياً</p>
             </div>
             <div class="feature-card">
-                <div style="font-size: 2.5rem; margin-bottom: 1rem;">📝</div>
+                <div class="icon-badge" id="feat-icon-2" style="background:rgba(111,143,114,0.15); color:var(--success);"></div>
                 <h3>الملاحظات والتقدم</h3>
                 <p>سجل ملاحظات لكل حصة واتتبع تقدم كل طالب</p>
             </div>
             <div class="feature-card">
-                <div style="font-size: 2.5rem; margin-bottom: 1rem;">📊</div>
+                <div class="icon-badge" id="feat-icon-3" style="background:rgba(212,165,116,0.2); color:var(--warning);"></div>
                 <h3>لوحة التحكم</h3>
                 <p>شاهد ملخص يومك وإحصائيات طلابك</p>
             </div>
             <div class="feature-card">
-                <div style="font-size: 2.5rem; margin-bottom: 1rem;">🤖</div>
+                <div class="icon-badge" id="feat-icon-4" style="background:rgba(75,58,90,0.1); color:var(--primary);"></div>
                 <h3>المساعد الذكي</h3>
                 <p>احصل على اقتراحات وملخصات مدعومة بالذكاء الاصطناعي</p>
             </div>
             <div class="feature-card">
-                <div style="font-size: 2.5rem; margin-bottom: 1rem;">📱</div>
+                <div class="icon-badge" id="feat-icon-5" style="background:rgba(111,143,114,0.15); color:var(--success);"></div>
                 <h3>متاح في كل مكان</h3>
                 <p>وصول آمن من أي جهاز وفي أي وقت</p>
             </div>
@@ -93,7 +95,15 @@
     <script type="module" src="js/config.js"></script>
     <script type="module">
         import { Auth } from './js/auth.js';
-        
+        import { icon } from './js/icons.js';
+
+        document.getElementById('nav-logo-icon').innerHTML = icon('graduationCap', { size: 19 });
+        document.getElementById('hero-icon').innerHTML = icon('sparkles', { size: 36 });
+        const featureIcons = ['userCheck', 'calendar', 'edit', 'clipboardList', 'sparkles', 'checkCircle'];
+        featureIcons.forEach((name, i) => {
+            document.getElementById('feat-icon-' + i).innerHTML = icon(name, { size: 26 });
+        });
+
         // إعادة توجيه المستخدمين المسجلين
         window.addEventListener('load', async () => {
             const session = await Auth.getSession();

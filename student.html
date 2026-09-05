@@ -47,8 +47,8 @@
                             <p id="student-subject" style="color: var(--text-secondary); margin: 0;"></p>
                         </div>
                         <div style="display:flex; gap:0.5rem;">
-                            <button class="btn" style="background: var(--secondary);" onclick="location.href='schedule.html?add_student=' + getStudentId()">📅 إضافة موعد</button>
-                            <button class="btn btn-primary" onclick="location.href='lesson.html?student_id=' + getStudentId()">▶ بدء الحصة</button>
+                            <button class="btn" style="background: var(--secondary);" onclick="location.href='schedule.html?add_student=' + getStudentId()"><span id="ic-add-appt" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> إضافة موعد</button>
+                            <button class="btn btn-primary" onclick="location.href='lesson.html?student_id=' + getStudentId()"><span id="ic-start-lesson" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> بدء الحصة</button>
                         </div>
                     </div>
 
@@ -73,7 +73,7 @@
 
                         <!-- الجزء المُركَّز عليه: نمط التدريس -->
                         <div class="focus-card">
-                            <h3>🎯 نمط التدريس</h3>
+                            <h3><span id="ic-focus" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> نمط التدريس</h3>
                             <p class="sub">هذا القسم يساعد المساعد الذكي على فهم أسلوب هذا الطالب بدقة</p>
                             <div id="teaching-profile-display" style="margin-bottom: 1.25rem;">
                                 <div class="empty-state">جاري التحميل...</div>
@@ -97,7 +97,7 @@
 
                         <!-- الجزء المُركَّز عليه: الملاحظات -->
                         <div class="focus-card">
-                            <h3>🗒️ الملاحظات</h3>
+                            <h3><span id="ic-notes-focus" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> الملاحظات</h3>
                             <p class="sub">سجّلي أي ملاحظة عن تقدّم الطالب هنا لمتابعتها لاحقًا</p>
                             <form id="note-form" style="margin-bottom: 1.25rem;">
                                 <div class="form-group">
@@ -125,14 +125,21 @@
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="js/config.js"></script>
     <script type="module">
         import { Auth } from './js/auth.js';
         import { api } from './js/api.js';
         import { ErrorHandler, Formatters } from './js/utils.js';
         import { renderSidebar, renderTopHeader } from './js/sidebar.js';
+        import { icon } from './js/icons.js';
 
         renderSidebar('students');
         renderTopHeader({ title: 'ملف الطالب', subtitle: 'المعلومات، نمط التدريس، والملاحظات في مكان واحد' });
+        document.getElementById('ic-add-appt').innerHTML = icon('calendar', { size: 15 });
+        document.getElementById('ic-start-lesson').innerHTML = icon('play', { size: 15 });
+        document.getElementById('ic-focus').innerHTML = icon('target', { size: 17 });
+        document.getElementById('ic-notes-focus').innerHTML = icon('clipboard', { size: 17 });
 
         const urlParams = new URLSearchParams(window.location.search);
         const studentId = urlParams.get('id');
@@ -164,10 +171,10 @@
 
         function renderStudentInfo() {
             document.getElementById('student-name').innerText = student.name;
-            document.getElementById('student-subject').innerText = '📚 ' + (student.subject || 'بدون مادة');
+            document.getElementById('student-subject').innerHTML = icon('bookOpen', { size: 14 }) + ' ' + (student.subject || 'بدون مادة');
             document.getElementById('student-email').innerText = student.email || '-';
             document.getElementById('student-phone').innerText = student.phone || '-';
-            document.getElementById('student-link').innerText = student.lesson_link ? '🔗 ' + student.lesson_link : '-';
+            document.getElementById('student-link').innerHTML = student.lesson_link ? icon('link', { size: 13 }) + ' ' + student.lesson_link : '-';
             document.getElementById('student-current-topic').innerText = student.current_topic || '-';
             document.getElementById('student-joined').innerText = Formatters.formatDate(student.created_at);
         }
@@ -205,13 +212,13 @@
                 list.innerHTML = lessons.map(lesson => `
                     <div class="lesson-hist-item">
                         <div class="lesson-date">${Formatters.formatDate(lesson.lesson_date)}</div>
-                        ${lesson.lesson_content ? `<div class="lesson-detail">📘 محتوى الحصة: ${lesson.lesson_content}</div>` : ''}
-                        ${lesson.memorization ? `<div class="lesson-detail">📖 الحفظ: ${lesson.memorization}</div>` : ''}
-                        ${lesson.recitation ? `<div class="lesson-detail">🗣️ الأداء الشفهي: ${lesson.recitation}</div>` : ''}
-                        ${lesson.performance ? `<div class="lesson-detail">⭐ التقييم العام: ${lesson.performance}</div>` : ''}
-                        ${lesson.homework ? `<div class="lesson-detail">📋 الواجب: ${lesson.homework}</div>` : ''}
-                        ${lesson.next_assignment ? `<div class="lesson-detail">➡️ للحصة القادمة: ${lesson.next_assignment}</div>` : ''}
-                        ${lesson.notes ? `<div class="lesson-detail">💬 ملاحظات: ${lesson.notes}</div>` : ''}
+                        ${lesson.lesson_content ? `<div class="lesson-detail">${icon('bookOpen', { size: 13 })} محتوى الحصة: ${lesson.lesson_content}</div>` : ''}
+                        ${lesson.memorization ? `<div class="lesson-detail">${icon('bookOpen', { size: 13 })} الحفظ: ${lesson.memorization}</div>` : ''}
+                        ${lesson.recitation ? `<div class="lesson-detail">${icon('messageCircle', { size: 13 })} الأداء الشفهي: ${lesson.recitation}</div>` : ''}
+                        ${lesson.performance ? `<div class="lesson-detail">${icon('star', { size: 13 })} التقييم العام: ${lesson.performance}</div>` : ''}
+                        ${lesson.homework ? `<div class="lesson-detail">${icon('clipboardList', { size: 13 })} الواجب: ${lesson.homework}</div>` : ''}
+                        ${lesson.next_assignment ? `<div class="lesson-detail">${icon('arrowNext', { size: 13 })} للحصة القادمة: ${lesson.next_assignment}</div>` : ''}
+                        ${lesson.notes ? `<div class="lesson-detail">${icon('messageSquare', { size: 13 })} ملاحظات: ${lesson.notes}</div>` : ''}
                     </div>
                 `).join('');
             } catch (error) {

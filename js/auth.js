@@ -10,8 +10,10 @@
 import { CONFIG } from './config.js';
 import { APIUtils, Storage, ErrorHandler, Validators } from './utils.js';
 
-// إتاحة العميل المهيأ بنفس الاسم "supabase" لمن يريد استيراده من هذا الملف
-export const supabase = window.supabaseClient;
+// ملحوظة: لا نصدّر "supabase" كقيمة ثابتة هنا لأن window.supabaseClient
+// قد لا يكون جاهزًا بعد وقت تحميل هذه الوحدة. أي كود يحتاج العميل مباشرة
+// يجب أن يستخدم window.supabaseClient وقت التنفيذ الفعلي (كما تفعل كل
+// الدوال أدناه)، وليس عند وقت الاستيراد.
 
 /**
  * كائن إدارة المصادقة

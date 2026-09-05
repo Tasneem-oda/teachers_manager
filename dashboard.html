@@ -23,7 +23,7 @@
                         <!-- حصص اليوم -->
                         <div class="card">
                             <div class="flex" style="margin-bottom:1rem;">
-                                <h3 style="margin:0;">📅 حصص اليوم</h3>
+                                <h3 style="margin:0; display:flex; align-items:center; gap:0.5rem;"><span id="ic-today" class="icon"></span>حصص اليوم</h3>
                                 <a href="schedule.html" style="font-size:0.82rem; color:var(--primary); text-decoration:none; font-weight:600;">عرض الجدول كامل</a>
                             </div>
                             <div id="today-lessons-list"></div>
@@ -32,17 +32,17 @@
                         <!-- المساعد الذكي + الملاحظات -->
                         <div style="display:flex; flex-direction:column; gap:1.5rem;">
                             <div class="ai-card">
-                                <h3>✨ المساعد الذكي</h3>
+                                <h3><span id="ic-ai" class="icon"></span> المساعد الذكي</h3>
                                 <p class="sub">كيف يمكنني مساعدتك اليوم؟</p>
                                 <div class="ai-quick-actions">
-                                    <button type="button" onclick="alert('المساعد الذكي كشات تفاعلي قادم في التحديث القادم — حاليًا متاح من صفحة الحصة كملخص ذكي.')">💡 اقترح نشاطًا تعليميًا</button>
-                                    <button type="button" onclick="alert('المساعد الذكي كشات تفاعلي قادم في التحديث القادم — حاليًا متاح من صفحة الحصة كملخص ذكي.')">📖 اشرح الفكرة الحالية</button>
+                                    <button type="button" onclick="alert('المساعد الذكي كشات تفاعلي قادم في التحديث القادم — حاليًا متاح من صفحة الحصة كملخص ذكي.')"><span id="ic-idea" class="icon"></span> اقترح نشاطًا تعليميًا</button>
+                                    <button type="button" onclick="alert('المساعد الذكي كشات تفاعلي قادم في التحديث القادم — حاليًا متاح من صفحة الحصة كملخص ذكي.')"><span id="ic-explain" class="icon"></span> اشرح الفكرة الحالية</button>
                                 </div>
                             </div>
 
                             <div class="card notes-panel">
                                 <div class="flex" style="margin-bottom:0.5rem;">
-                                    <h3 style="margin:0; font-size:0.95rem;">🗒️ آخر الملاحظات</h3>
+                                    <h3 style="margin:0; font-size:0.95rem;"><span id="ic-notes" class="icon"></span> آخر الملاحظات</h3>
                                 </div>
                                 <div id="recent-notes-hint" style="font-size:0.82rem; color:var(--text-secondary);">
                                     افتحي ملف أي طالب من صفحة "الطلاب" لعرض وإضافة ملاحظاته.
@@ -54,12 +54,12 @@
                     <div class="card" style="margin-top:1.5rem;">
                         <h3 style="margin-bottom:1rem;">روابط سريعة</h3>
                         <div class="quick-links-grid">
-                            <a href="students.html?action=add" class="quick-link-btn"><span class="icon">➕</span> إضافة طالب</a>
-                            <a href="schedule.html" class="quick-link-btn"><span class="icon">📅</span> جدول المواعيد</a>
-                            <a href="books.html" class="quick-link-btn"><span class="icon">📖</span> كتابي</a>
-                            <a href="students.html" class="quick-link-btn"><span class="icon">📝</span> الملاحظات</a>
-                            <a href="subscription.html" class="quick-link-btn"><span class="icon">💳</span> الاشتراك</a>
-                            <a href="settings.html" class="quick-link-btn"><span class="icon">⚙️</span> الإعدادات</a>
+                            <a href="students.html?action=add" class="quick-link-btn"><span class="icon" id="ic-ql-add"></span> إضافة طالب</a>
+                            <a href="schedule.html" class="quick-link-btn"><span class="icon" id="ic-ql-schedule"></span> جدول المواعيد</a>
+                            <a href="books.html" class="quick-link-btn"><span class="icon" id="ic-ql-books"></span> كتابي</a>
+                            <a href="students.html" class="quick-link-btn"><span class="icon" id="ic-ql-notes"></span> الملاحظات</a>
+                            <a href="subscription.html" class="quick-link-btn"><span class="icon" id="ic-ql-sub"></span> الاشتراك</a>
+                            <a href="settings.html" class="quick-link-btn"><span class="icon" id="ic-ql-settings"></span> الإعدادات</a>
                         </div>
                     </div>
                 </div>
@@ -70,13 +70,28 @@
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="js/config.js"></script>
     <script type="module">
         import { Auth } from './js/auth.js';
         import { api } from './js/api.js';
         import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js';
         import { renderSidebar, renderTopHeader } from './js/sidebar.js';
+        import { icon } from './js/icons.js';
 
         renderSidebar('dashboard');
+
+        document.getElementById('ic-today').innerHTML = icon('calendar', { size: 17 });
+        document.getElementById('ic-ai').innerHTML = icon('sparkles', { size: 17 });
+        document.getElementById('ic-idea').innerHTML = icon('lightbulb', { size: 15 });
+        document.getElementById('ic-explain').innerHTML = icon('bookOpen', { size: 15 });
+        document.getElementById('ic-notes').innerHTML = icon('clipboard', { size: 16 });
+        document.getElementById('ic-ql-add').innerHTML = icon('plus', { size: 19 });
+        document.getElementById('ic-ql-schedule').innerHTML = icon('calendar', { size: 19 });
+        document.getElementById('ic-ql-books').innerHTML = icon('bookOpen', { size: 19 });
+        document.getElementById('ic-ql-notes').innerHTML = icon('edit', { size: 19 });
+        document.getElementById('ic-ql-sub').innerHTML = icon('creditCard', { size: 19 });
+        document.getElementById('ic-ql-settings').innerHTML = icon('gear', { size: 19 });
 
         function greeting() {
             const h = new Date().getHours();
@@ -90,14 +105,14 @@
 
         function renderStats(data) {
             const items = [
-                { icon: '👥', color: 'var(--primary)', bg: 'rgba(75,58,90,0.1)', num: data.studentsCount ?? 0, label: 'إجمالي الطلاب', link: 'students.html' },
-                { icon: '📅', color: 'var(--secondary)', bg: 'rgba(197,154,74,0.15)', num: data.todayLessonsCount ?? 0, label: 'حصص اليوم', link: 'schedule.html' },
-                { icon: '📆', color: 'var(--success)', bg: 'rgba(111,143,114,0.15)', num: (data.schedules || []).length, label: 'مواعيد ثابتة أسبوعيًا', link: 'schedule.html' },
-                { icon: '💳', color: 'var(--warning)', bg: 'rgba(212,165,116,0.2)', num: data.subscription?.status === 'trial' ? 'تجريبي' : (data.subscription?.status === 'active' ? 'فعّال' : '—'), label: 'حالة الاشتراك', link: 'subscription.html' }
+                { icon: 'users', color: 'var(--primary)', bg: 'rgba(75,58,90,0.1)', num: data.studentsCount ?? 0, label: 'إجمالي الطلاب', link: 'students.html' },
+                { icon: 'calendar', color: 'var(--secondary)', bg: 'rgba(197,154,74,0.15)', num: data.todayLessonsCount ?? 0, label: 'حصص اليوم', link: 'schedule.html' },
+                { icon: 'clock', color: 'var(--success)', bg: 'rgba(111,143,114,0.15)', num: (data.schedules || []).length, label: 'مواعيد ثابتة أسبوعيًا', link: 'schedule.html' },
+                { icon: 'creditCard', color: 'var(--warning)', bg: 'rgba(212,165,116,0.2)', num: data.subscription?.status === 'trial' ? 'تجريبي' : (data.subscription?.status === 'active' ? 'فعّال' : '—'), label: 'حالة الاشتراك', link: 'subscription.html' }
             ];
             document.getElementById('stats-row').innerHTML = items.map(it => `
                 <div class="stat-card">
-                    <div class="stat-icon" style="background:${it.bg}; color:${it.color};">${it.icon}</div>
+                    <div class="stat-icon" style="background:${it.bg}; color:${it.color};">${icon(it.icon, { size: 18 })}</div>
                     <p class="stat-num">${it.num}</p>
                     <p class="stat-label">${it.label}</p>
                     <a class="stat-link" href="${it.link}">عرض التفاصيل</a>
@@ -119,7 +134,7 @@
                         <p class="meta">${l.current_topic || 'بدون موضوع محدد'}</p>
                     </div>
                     <div class="lesson-time">${Formatters.formatTime ? Formatters.formatTime(l.start_time) : l.start_time}</div>
-                    <button class="btn btn-start" onclick="location.href='lesson.html?student_id=${l.student_id}'">▶ ابدأ الحصة</button>
+                    <button class="btn btn-start" onclick="location.href='lesson.html?student_id=${l.student_id}'">${icon('play', { size: 13 })} ابدأ الحصة</button>
                 </div>
             `).join('');
         }

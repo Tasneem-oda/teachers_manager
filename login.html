@@ -6,10 +6,10 @@
     <title>تسجيل الدخول - Teachers Manager</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
-        :root { --bg: #FAF9F6; --primary: #4B3A5A; --text: #29252D; --card: #FFFFFF; --border: #E7E1E8; }
-        body { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; background-color: var(--bg-primary); color: var(--text-primary); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 1rem; }
-        .login-container { background: var(--card-bg); padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid var(--border); width: 100%; max-width: 400px; }
-        .login-container h2 { color: var(--primary); margin-bottom: 2rem; text-align: center; font-size: 1.8rem; }
+        body { display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 1rem; }
+        .login-container { background: var(--card-bg); padding: 2.5rem; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid var(--border); width: 100%; max-width: 400px; }
+        .login-logo { width: 56px; height: 56px; border-radius: 16px; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; }
+        .login-container h2 { color: var(--primary); margin-bottom: 2rem; text-align: center; font-size: 1.6rem; }
         .form-group { margin-bottom: 1.5rem; }
         .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-primary); }
         .form-group input { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 1rem; }
@@ -20,17 +20,19 @@
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .links { text-align: center; margin-top: 1.5rem; font-size: 0.9rem; }
         .links a { color: var(--primary); text-decoration: none; font-weight: 600; margin: 0 0.5rem; }
-        .loading { text-align: center; display: none; }
+        .loading { text-align: center; display: none; padding: 0; }
+        .loading::before { display: none; content: none; }
         .spinner { border: 3px solid var(--border); border-top: 3px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 0.6s linear infinite; margin: 0 auto; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .divider { text-align: center; margin: 1.5rem 0; color: #B0A8B0; }
+        .divider { text-align: center; margin: 1.5rem 0; color: var(--text-light); }
         .forgot-password { text-align: center; margin-top: 1rem; }
         .forgot-password a { color: var(--primary); text-decoration: none; font-size: 0.9rem; }
     </style>
 </head>
 <body>
     <div class="login-container">
-        <h2>📚 تسجيل الدخول</h2>
+        <div class="login-logo" id="login-logo"></div>
+        <h2>تسجيل الدخول</h2>
         
         <form id="loginForm">
             <div class="form-group">
@@ -70,6 +72,9 @@
     <script type="module">
         import { Auth } from './js/auth.js';
         import { Validators, ErrorHandler } from './js/utils.js';
+        import { icon } from './js/icons.js';
+
+        document.getElementById('login-logo').innerHTML = icon('graduationCap', { size: 28 });
 
         const form = document.getElementById('loginForm');
         const submitBtn = document.getElementById('submitBtn');
