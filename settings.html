@@ -26,13 +26,12 @@
     </style>
 </head>
 <body>
-    <nav class="navbar">
-        <h2 style="color: var(--primary); margin: 0;">⚙️ الإعدادات</h2>
-        <a href="schedule.html" style="text-decoration: none; color: var(--primary); font-weight: 600; margin-left: 1rem;">📅 الجدول</a>
-        <a href="dashboard.html" style="text-decoration: none; color: var(--primary); font-weight: 600;">رجوع</a>
-    </nav>
-
-    <div class="container">
+    <div class="app-shell">
+    <div id="sidebar-root"></div>
+    <main class="main-content">
+    <div id="top-header-root"></div>
+    <div class="page-body">
+    <div class="container" style="max-width: 800px; margin: 0; padding: 0;">
         <!-- Profile Settings -->
         <div class="settings-section">
             <h2>ملف شخصي</h2>
@@ -152,12 +151,19 @@
             </div>
         </div>
     </div>
+    </div>
+    </main>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="js/config.js"></script>
     <script type="module">
         import { Auth } from './js/auth.js';
         import { Storage, ErrorHandler } from './js/utils.js';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js';
+
+        renderSidebar('settings');
+        renderTopHeader({ title: 'الإعدادات', subtitle: 'إدارة ملفك الشخصي وأمان حسابك', showSearch: false });
 
         // Check auth
         let profile = null;

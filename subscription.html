@@ -25,13 +25,12 @@
     </style>
 </head>
 <body>
-    <nav class="navbar">
-        <h2 style="color: var(--primary); margin: 0;">💳 الاشتراك</h2>
-        <a href="schedule.html" style="text-decoration: none; color: var(--primary); font-weight: 600; margin-left: 1rem;">📅 الجدول</a>
-        <a href="dashboard.html" style="text-decoration: none; color: var(--primary); font-weight: 600;">رجوع</a>
-    </nav>
-
-    <div class="container">
+    <div class="app-shell">
+    <div id="sidebar-root"></div>
+    <main class="main-content">
+    <div id="top-header-root"></div>
+    <div class="page-body">
+    <div class="container" style="max-width: 1100px; margin: 0; padding: 0;">
         <h1 style="color: var(--primary); text-align: center;">اختر خطة اشتراكك</h1>
         <p style="text-align: center; color: #716A74; margin-bottom: 2rem;">ابدأ بالنسخة المجانية ثم ترقي كلما احتجت</p>
 
@@ -100,12 +99,19 @@
             </div>
         </div>
     </div>
+    </div>
+    </main>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="js/config.js"></script>
     <script type="module">
         import { Auth } from './js/auth.js';
         import { api } from './js/api.js';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js';
+
+        renderSidebar('settings');
+        renderTopHeader({ title: 'الاشتراك', subtitle: 'اختاري الخطة المناسبة لكِ', showSearch: false });
 
         // Check auth
         window.addEventListener('load', async () => {

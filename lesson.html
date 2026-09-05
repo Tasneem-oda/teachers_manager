@@ -31,13 +31,12 @@
     </style>
 </head>
 <body>
-    <nav class="navbar">
-        <h2>📚 Teachers Manager</h2>
-        <a href="schedule.html" style="text-decoration: none; color: var(--primary); font-weight: 600; margin-left: 1rem;">📅 الجدول</a>
-        <a href="dashboard.html" style="text-decoration: none; color: var(--primary); font-weight: 600;">رجوع</a>
-    </nav>
-
-    <div class="container">
+    <div class="app-shell">
+    <div id="sidebar-root"></div>
+    <main class="main-content">
+    <div id="top-header-root"></div>
+    <div class="page-body">
+    <div class="container" style="max-width: 900px; margin: 0; padding: 0;">
         <div class="loader" id="loader">جاري تحميل بيانات الحصة...</div>
 
         <div id="lesson-content-view" style="display: none;">
@@ -79,7 +78,7 @@
                     <h2>أداء الطالب</h2>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="memorization">الحفظ / الاستذكار</label>
+                            <label for="memorization">الحفظ / الاستيعاب</label>
                             <select id="memorization" name="memorization">
                                 <option value="">اختر...</option>
                                 <option value="excellent">ممتاز</option>
@@ -90,7 +89,7 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="recitation">التجويد / القراءة</label>
+                            <label for="recitation">الأداء الشفهي / المشاركة</label>
                             <select id="recitation" name="recitation">
                                 <option value="">اختر...</option>
                                 <option value="excellent">ممتاز</option>
@@ -147,11 +146,18 @@
             </form>
         </div>
     </div>
+    </div>
+    </main>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="js/config.js"></script>
     <script type="module">
         import { Auth } from './js/auth.js';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js';
+
+        renderSidebar('students');
+        renderTopHeader({ title: 'الحصة', subtitle: 'سجّلي تفاصيل الحصة وأنهيها بضغطة زر', showSearch: false });
         import { api } from './js/api.js';
         import { ErrorHandler, Formatters } from './js/utils.js';
 

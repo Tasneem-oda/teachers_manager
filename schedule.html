@@ -66,29 +66,24 @@
     </style>
 </head>
 <body>
-    <nav class="navbar">
-        <h2>Teachers Manager</h2>
-        <div class="navbar-right">
-            <a href="dashboard.html">لوحة التحكم</a>
-            <a href="students.html">الطلاب</a>
-            <a href="schedule.html" style="text-decoration: underline;">الجدول الأسبوعي</a>
-            <a href="settings.html">الإعدادات</a>
-            <button class="btn" id="logout-btn" style="background: var(--danger);">خروج</button>
-        </div>
-    </nav>
+    <div class="app-shell">
+        <div id="sidebar-root"></div>
+        <main class="main-content">
+            <div id="top-header-root"></div>
+            <div class="page-body">
+                <div class="page-header">
+                    <h1>📅 الجدول الأسبوعي</h1>
+                    <div class="legend">
+                        <span><i class="free-dot"></i> وقت فارغ (اضغطي للإضافة)</span>
+                        <span><i class="busy-dot"></i> حصة محجوزة</span>
+                    </div>
+                </div>
 
-    <div style="max-width: 1200px; margin: 0 auto; padding: 1.5rem;">
-        <div class="page-header">
-            <h1>📅 الجدول الأسبوعي</h1>
-            <div class="legend">
-                <span><i class="free-dot"></i> وقت فارغ (اضغطي للإضافة)</span>
-                <span><i class="busy-dot"></i> حصة محجوزة</span>
+                <div class="calendar-wrap">
+                    <div class="calendar-grid" id="calendar-grid"></div>
+                </div>
             </div>
-        </div>
-
-        <div class="calendar-wrap">
-            <div class="calendar-grid" id="calendar-grid"></div>
-        </div>
+        </main>
     </div>
 
     <!-- مودال إضافة/تعديل موعد -->
@@ -143,6 +138,10 @@
         import { Auth } from './js/auth.js';
         import { api } from './js/api.js';
         import { ErrorHandler } from './js/utils.js';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js';
+
+        renderSidebar('schedule');
+        renderTopHeader({ title: 'الجدول الأسبوعي', subtitle: 'نظّمي كل مواعيدك في مكان واحد' });
 
         const HOUR_START = 6, HOUR_END = 23, SLOT_MIN = 30;
         const SLOTS = (HOUR_END - HOUR_START) * 60 / SLOT_MIN; // 34
@@ -304,11 +303,6 @@
             } catch (err) {
                 ErrorHandler.showError(ErrorHandler.getErrorMessage(err));
             }
-        });
-
-        document.getElementById('logout-btn').addEventListener('click', async () => {
-            await Auth.signOut();
-            window.location.href = 'login.html';
         });
 
         (async () => {

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>كتابي - Teachers Manager</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-shell">
+        <div id="sidebar-root"></div>
+        <main class="main-content">
+            <div id="top-header-root"></div>
+            <div class="page-body">
+                <div class="card" style="text-align:center; padding: 4rem 2rem;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">📖</div>
+                    <h2>كتابي قريبًا</h2>
+                    <p style="color: var(--text-secondary); max-width: 420px; margin: 0.5rem auto 0;">
+                        هنا هتقدري ترفعي كتبك الخاصة (أكتر من كتاب) وتعرضيها أثناء التدريس. الميزة دي جزء من المرحلة القادمة.
+                    </p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { Auth } from './js/auth.js';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js';
+
+        renderSidebar('books');
+        renderTopHeader({ title: 'كتابي', subtitle: 'مكتبتك الخاصة من الكتب', showSearch: false });
+
+        (async () => {
+            const authInfo = await Auth.requireAuth();
+            if (!authInfo) return;
+        })();
+    </script>
+</body>
+</html>
