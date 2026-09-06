@@ -69,7 +69,7 @@
                 <div class="page-header">
                     <h1><span id="ic-page-title" class="icon" style="display:inline-flex; vertical-align:-4px;"></span> الجدول الأسبوعي</h1>
                     <div class="legend">
-                        <span><i class="free-dot"></i> وقت فارغ (اضغطي للإضافة)</span>
+                        <span><i class="free-dot"></i> وقت فارغ (اضغط للإضافة)</span>
                         <span><i class="busy-dot"></i> حصة محجوزة</span>
                     </div>
                 </div>
@@ -139,7 +139,7 @@
         import { icon } from './js/icons.js';
 
         renderSidebar('schedule');
-        renderTopHeader({ title: 'الجدول الأسبوعي', subtitle: 'نظّمي كل مواعيدك في مكان واحد' });
+        renderTopHeader({ title: 'الجدول الأسبوعي', subtitle: 'نظّم كل مواعيدك في مكان واحد' });
         document.getElementById('ic-page-title').innerHTML = icon('calendar', { size: 22 });
 
         const HOUR_START = 6, HOUR_END = 23, SLOT_MIN = 30;

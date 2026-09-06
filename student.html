@@ -29,6 +29,11 @@
         .note-text { color: var(--text-primary); margin-top: 0.35rem; font-size: 0.9rem; }
         .loading { text-align: center; padding: 2rem; color: var(--primary); }
         .empty-state { text-align: center; padding: 2rem; color: var(--text-secondary); }
+        @media (max-width: 560px) {
+            .header-actions { flex-direction: column; width: 100%; }
+            .header-actions .btn { width: 100%; justify-content: center; display: inline-flex; }
+            .tabs { overflow-x: auto; }
+        }
     </style>
 </head>
 <body>
@@ -46,7 +51,7 @@
                             <h1 id="student-name" style="margin:0 0 0.2rem;"></h1>
                             <p id="student-subject" style="color: var(--text-secondary); margin: 0;"></p>
                         </div>
-                        <div style="display:flex; gap:0.5rem;">
+                        <div class="header-actions" style="display:flex; gap:0.5rem;">
                             <button class="btn" style="background: var(--secondary);" onclick="location.href='schedule.html?add_student=' + getStudentId()"><span id="ic-add-appt" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> إضافة موعد</button>
                             <button class="btn btn-primary" onclick="location.href='lesson.html?student_id=' + getStudentId()"><span id="ic-start-lesson" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> بدء الحصة</button>
                         </div>
@@ -98,7 +103,7 @@
                         <!-- الجزء المُركَّز عليه: الملاحظات -->
                         <div class="focus-card">
                             <h3><span id="ic-notes-focus" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> الملاحظات</h3>
-                            <p class="sub">سجّلي أي ملاحظة عن تقدّم الطالب هنا لمتابعتها لاحقًا</p>
+                            <p class="sub">سجّل أي ملاحظة عن تقدّم الطالب هنا لمتابعتها لاحقًا</p>
                             <form id="note-form" style="margin-bottom: 1.25rem;">
                                 <div class="form-group">
                                     <textarea id="note-text" placeholder="أضف ملاحظة جديدة..." required></textarea>
