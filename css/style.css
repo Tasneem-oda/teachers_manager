@@ -254,10 +254,55 @@ input:focus, textarea:focus, select:focus {
 
 @media (max-width: 900px) {
     .app-shell { flex-direction: column; }
-    .sidebar { width: 100%; height: auto; position: relative; flex-direction: row; overflow-x: auto; }
+    .main-content { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+
+    /* السايدبار يتحول لشريط تنقل سفلي ثابت (مطابق لتصميم تطبيق الموبايل) */
+    .sidebar {
+        position: fixed; bottom: 0; left: 0; right: 0; top: auto;
+        width: 100%; height: auto; flex-direction: row;
+        padding: 0.35rem 0.25rem calc(0.35rem + env(safe-area-inset-bottom, 0px));
+        z-index: 500; box-shadow: 0 -2px 14px rgba(41,37,45,0.1);
+        border-top: 1px solid var(--sidebar-bg-hover);
+    }
     .sidebar-logo, .sidebar-sub-card, .sidebar-footer { display: none; }
-    .sidebar-nav { flex-direction: row; }
+    .sidebar-nav { flex-direction: row; gap: 0.1rem; }
+    .sidebar-nav a {
+        flex: 1; flex-direction: column; gap: 0.2rem; padding: 0.4rem 0.15rem;
+        font-size: 0.62rem; text-align: center; border-radius: 10px;
+    }
+    .sidebar-nav a .label {
+        max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* زر تسجيل الخروج يظهر في الهيدر بدلاً من السايدبار على الموبايل */
+    .mobile-only-flex { display: flex !important; }
+
+    /* تصغير الحشو العام على الشاشات الصغيرة */
+    .top-header { padding: 0.85rem 1rem; }
+    .page-body { padding: 1rem; }
+    .search-box { min-width: 0; flex: 1; }
+    .top-header-right { flex: 1; justify-content: flex-end; }
+    .header-avatar .name, .header-avatar .role { display: none; }
+
     .quick-links-grid { grid-template-columns: repeat(2, 1fr); }
+    .students-grid { grid-template-columns: 1fr !important; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .lesson-item { flex-wrap: wrap; }
+    .lesson-item .lesson-time { order: 3; margin-inline-start: auto; }
+    .lesson-item .btn-start { order: 4; width: 100%; margin-top: 0.4rem; justify-content: center; display: flex; }
+
+    .modal-content { padding: 1.25rem; border-radius: 14px; }
+
+    #error-toast, #success-toast { left: 12px; right: 12px; max-width: none; top: 12px; }
+}
+
+@media (max-width: 480px) {
+    .top-header .greeting h2 { font-size: 1rem; }
+    .top-header .greeting p { font-size: 0.74rem; }
+    .search-box { display: none; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .quick-links-grid { grid-template-columns: repeat(2, 1fr); }
+    .sidebar-nav a { font-size: 0.58rem; }
 }
 
 /* ============================================================
@@ -282,6 +327,7 @@ svg.i { flex-shrink: 0; vertical-align: -3px; }
     position: absolute; top: 7px; left: 7px; width: 8px; height: 8px; border-radius: 50%;
     background: var(--danger); border: 2px solid var(--card-bg);
 }
+.mobile-only-flex { display: none; }
 
 /* ============================================================
    Modal (نافذة منبثقة موحّدة لكل الصفحات)

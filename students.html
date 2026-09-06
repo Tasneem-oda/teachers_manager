@@ -18,6 +18,11 @@
         .form-group label { display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.88rem; }
         .filters-row { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
         .filters-row select { max-width: 220px; margin: 0; }
+        @media (max-width: 480px) {
+            .student-actions { flex-wrap: wrap; }
+            .student-actions .btn { flex: 1 1 calc(50% - 0.25rem); }
+            .filters-row select { max-width: 100%; flex: 1; }
+        }
     </style>
 </head>
 <body>

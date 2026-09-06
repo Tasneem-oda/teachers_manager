@@ -20,7 +20,7 @@ export function renderSidebar(activeKey) {
     const navHtml = NAV_ITEMS.map(item => `
         <a href="${item.href}" class="${item.key === activeKey ? 'active' : ''}">
             <span class="icon">${icon(item.icon, { size: 19 })}</span>
-            <span>${item.label}</span>
+            <span class="label">${item.label}</span>
         </a>
     `).join('');
 
@@ -42,7 +42,7 @@ export function renderSidebar(activeKey) {
             <div class="sidebar-footer">
                 <a href="#" id="sidebar-logout">
                     <span class="icon">${icon('logout', { size: 19 })}</span>
-                    <span>تسجيل الخروج</span>
+                    <span class="label">تسجيل الخروج</span>
                 </a>
             </div>
         </aside>
@@ -74,7 +74,7 @@ async function loadSubscriptionBadge() {
             desc.textContent = 'اشتراك فعّال';
             bar.style.width = '100%';
         } else {
-            desc.textContent = 'انتهى الاشتراك - جددي الآن';
+            desc.textContent = 'انتهى الاشتراك - جدد الآن';
             bar.style.width = '0%';
         }
     } catch (e) {
@@ -104,16 +104,24 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
                 <button type="button" class="bell-btn" id="header-bell" title="الإشعارات">
                     ${icon('bell', { size: 18 })}
                 </button>
+                <button type="button" class="bell-btn mobile-only-flex" id="header-logout-mobile" title="تسجيل الخروج">
+                    ${icon('logout', { size: 18 })}
+                </button>
                 <div class="header-avatar">
                     <div class="avatar-fallback" id="header-avatar-fallback">؟</div>
                     <div>
                         <p class="name" id="header-user-name">...</p>
-                        <p class="role">معلمة</p>
+                        <p class="role">معلم</p>
                     </div>
                 </div>
             </div>
         </header>
     `;
+
+    document.getElementById('header-logout-mobile').addEventListener('click', async () => {
+        await Auth.signOut();
+        window.location.href = 'login.html';
+    });
 
     if (showSearch) {
         const searchInput = document.getElementById('global-search');
@@ -135,7 +143,7 @@ async function loadHeaderProfile() {
         const nameEl = document.getElementById('header-user-name');
         const avatarEl = document.getElementById('header-avatar-fallback');
         if (profile && nameEl) {
-            nameEl.textContent = profile.name || 'معلمة';
+            nameEl.textContent = profile.name || 'معلم';
             avatarEl.textContent = (profile.name || '؟').trim().charAt(0);
         }
     } catch (e) {
