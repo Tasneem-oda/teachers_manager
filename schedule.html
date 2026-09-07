@@ -356,39 +356,62 @@
                 saveBtn.textContent = 'جاري الحفظ...';
 
                 if (!id && recurrenceType === 'daily') {
-                    // إنشاء 7 مواعيد (كل أيام الأسبوع) بنفس معرّف مجموعة التكرار
+                    // إنشاء 7 مواعيد (كل أيام الأسبوع) بنفس معرّف مجموعة التكرار.
+                    // مهم: لا نوقف المحاولة عند أول فشل (مثل تعارض حقيقي في يوم معيّن)
+                    // حتى لا تظهر الجدولة اليومية بيوم واحد فقط بدل 7 أيام.
                     const groupId = genGroupId();
+                    const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+                    const failedDays = [];
+                    let successCount = 0;
+
                     for (let day = 0; day < 7; day++) {
-                        await api.createSchedule({
-                            student_id: studentId,
-                            day_of_week: day,
-                            start_time: startTime,
-                            duration_minutes: duration,
-                            recurrence_type: 'daily',
-                            recurrence_group_id: groupId
-                        });
+                        try {
+                            await api.createSchedule({
+                                student_id: studentId,
+                                day_of_week: day,
+                                start_time: startTime,
+                                duration_minutes: duration,
+                                recurrence_type: 'daily',
+                                recurrence_group_id: groupId
+                            });
+                            successCount++;
+                        } catch (dayErr) {
+                            failedDays.push(`${dayNames[day]} (${ErrorHandler.getErrorMessage(dayErr)})`);
+                        }
                     }
+
+                    if (successCount === 0) {
+                        throw new Error('لم يتم إنشاء أي موعد: ' + failedDays.join('، '));
+                    }
+                    if (failedDays.length > 0) {
+                        ErrorHandler.showError(`تم إنشاء ${successCount} من 7 أيام فقط. الأيام التي بها تعارض ولم تُضف: ${failedDays.join('، ')}`);
+                    } else {
+                        ErrorHandler.showSuccess('تم حفظ الموعد بنجاح في كل أيام الأسبوع');
+                    }
+                    document.getElementById('schedule-modal').classList.remove('active');
+                    await loadData();
+                    return;
+                }
+
+                const payload = {
+                    student_id: studentId,
+                    start_time: startTime,
+                    duration_minutes: duration,
+                    recurrence_type: recurrenceType,
+                    recurrence_group_id: recurrenceType === 'daily' ? existingGroupId : null
+                };
+                if (recurrenceType === 'weekly' || recurrenceType === 'daily') {
+                    payload.day_of_week = parseInt(document.getElementById('sch-day').value || '0');
+                    payload.start_date = null;
                 } else {
-                    const payload = {
-                        student_id: studentId,
-                        start_time: startTime,
-                        duration_minutes: duration,
-                        recurrence_type: recurrenceType,
-                        recurrence_group_id: recurrenceType === 'daily' ? existingGroupId : null
-                    };
-                    if (recurrenceType === 'weekly' || recurrenceType === 'daily') {
-                        payload.day_of_week = parseInt(document.getElementById('sch-day').value || '0');
-                        payload.start_date = null;
-                    } else {
-                        if (!dateValue) throw new Error('يرجى اختيار التاريخ');
-                        payload.start_date = dateValue;
-                        payload.day_of_week = new Date(dateValue + 'T00:00:00').getDay();
-                    }
-                    if (id) {
-                        await api.updateSchedule(id, payload);
-                    } else {
-                        await api.createSchedule(payload);
-                    }
+                    if (!dateValue) throw new Error('يرجى اختيار التاريخ');
+                    payload.start_date = dateValue;
+                    payload.day_of_week = new Date(dateValue + 'T00:00:00').getDay();
+                }
+                if (id) {
+                    await api.updateSchedule(id, payload);
+                } else {
+                    await api.createSchedule(payload);
                 }
 
                 ErrorHandler.showSuccess('تم حفظ الموعد بنجاح');
