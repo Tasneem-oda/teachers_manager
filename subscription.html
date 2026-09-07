@@ -7,18 +7,22 @@
     <link rel="stylesheet" href="css/style.css">
     <style>
         body { margin: 0; }
-        .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 2rem; margin-top: 2rem; }
+        .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 2rem; margin-top: 2rem; max-width: 640px; margin-inline: auto; }
         .pricing-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: 12px; padding: 2rem; text-align: center; transition: 0.3s; }
         .pricing-card:hover { box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); transform: translateY(-4px); }
         .pricing-card.active { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(75, 58, 90, 0.1); }
         .pricing-card h3 { color: var(--primary); margin-top: 0; }
         .price { font-size: 2.5rem; font-weight: bold; color: var(--primary); margin: 1rem 0; }
+        .price small { font-size: 1rem; font-weight: 600; color: var(--text-secondary); }
         .price-period { color: #716A74; font-size: 0.9rem; }
         .features-list { text-align: right; margin: 2rem 0; }
         .features-list li { list-style: none; padding: 0.5rem 0; color: #716A74; }
         .features-list li:before { content: "✓ "; color: var(--success); font-weight: bold; margin-right: 0.5rem; }
         .btn { width: 100%; padding: 0.75rem; margin-top: 1.5rem; }
+        .whatsapp-btn { background: #25D366; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; text-decoration: none; color: #fff; font-weight: 700; box-sizing: border-box; }
+        .whatsapp-btn:hover { background: #1ebe57; }
         .status-banner { background: #E8F5E9; color: var(--success); padding: 1rem; border-radius: 8px; margin-bottom: 2rem; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 600; }
+        .subscribe-note { text-align: center; color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.75rem; }
         @media (max-width: 480px) {
             .pricing-grid { grid-template-columns: 1fr; }
             .pricing-card { padding: 1.5rem; }
@@ -32,8 +36,8 @@
     <div id="top-header-root"></div>
     <div class="page-body">
     <div class="container" style="max-width: 1100px; margin: 0; padding: 0;">
-        <h1 style="color: var(--primary); text-align: center;">اختر خطة اشتراكك</h1>
-        <p style="text-align: center; color: #716A74; margin-bottom: 2rem;">ابدأ بالنسخة المجانية ثم قم بالترقية كلما احتجت</p>
+        <h1 style="color: var(--primary); text-align: center;">اشتراكك في Teachers Manager</h1>
+        <p style="text-align: center; color: #716A74; margin-bottom: 2rem;">خطة واحدة بسيطة وواضحة، بدون تعقيد</p>
 
         <div class="status-banner" id="status-banner" style="display: none;"></div>
 
@@ -47,16 +51,14 @@
                     <li>حتى 10 طلاب</li>
                     <li>تسجيل الحصص</li>
                     <li>الملاحظات</li>
-                    <li>بدون دعم أولوي</li>
                 </ul>
                 <button class="btn" disabled style="opacity: 0.5;">النسخة الحالية</button>
             </div>
 
-            <!-- Professional Plan -->
+            <!-- Monthly Plan -->
             <div class="pricing-card active">
-                <h3>الخطة الاحترافية</h3>
-                <div class="price">49</div>
-                <p class="price-period">شهرياً</p>
+                <h3>الخطة الشهرية</h3>
+                <div class="price">150 <small>جنيه / شهريًا</small></div>
                 <ul class="features-list">
                     <li>عدد غير محدود من الطلاب</li>
                     <li>جميع الميزات</li>
@@ -64,38 +66,27 @@
                     <li>تقارير متقدمة</li>
                     <li>دعم أولوي</li>
                 </ul>
-                <button class="btn">الاشتراك الآن</button>
-            </div>
-
-            <!-- Annual Plan -->
-            <div class="pricing-card">
-                <h3>الخطة السنوية</h3>
-                <div class="price">399</div>
-                <p class="price-period">سنوياً (توفير 33%)</p>
-                <ul class="features-list">
-                    <li>نفس مميزات الخطة الاحترافية</li>
-                    <li>توفير إضافي</li>
-                    <li>أولوية عالية</li>
-                    <li>استشارات مجانية</li>
-                </ul>
-                <button class="btn">الاشتراك الآن</button>
+                <a class="btn whatsapp-btn" id="whatsapp-subscribe-btn" href="#" target="_blank" rel="noopener">
+                    <span id="ic-whatsapp"></span> الاشتراك عبر واتساب
+                </a>
+                <p class="subscribe-note">هيتم تحويلك للواتساب لإتمام الاشتراك مباشرة</p>
             </div>
         </div>
 
-        <div style="background: var(--card-bg); padding: 2rem; border-radius: 12px; margin-top: 3rem; border: 1px solid var(--border);">
+        <div style="background: var(--card-bg); padding: 2rem; border-radius: 12px; margin-top: 3rem; border: 1px solid var(--border); max-width: 640px; margin-inline: auto;">
             <h2 style="color: var(--primary); text-align: center;">الأسئلة الشائعة</h2>
             <div style="max-width: 600px; margin: 0 auto;">
                 <div style="margin-bottom: 1.5rem;">
-                    <h4 style="color: var(--primary);">هل يمكنني تعديل خطتي لاحقاً؟</h4>
-                    <p style="color: #716A74;">نعم، يمكنك الترقية أو الانتقال إلى خطة أخرى في أي وقت</p>
+                    <h4 style="color: var(--primary);">كيف يتم الاشتراك؟</h4>
+                    <p style="color: #716A74;">بالضغط على زر "الاشتراك عبر واتساب" سيتم فتح محادثة واتساب مباشرة لإتمام عملية الاشتراك.</p>
                 </div>
                 <div style="margin-bottom: 1.5rem;">
                     <h4 style="color: var(--primary);">هل هناك فترة تجريبية حقيقية؟</h4>
-                    <p style="color: #716A74;">نعم، 7 أيام مجاناً بدون الحاجة لإدخال بيانات بطاقة</p>
+                    <p style="color: #716A74;">نعم، 7 أيام مجانًا بدون الحاجة لإدخال بيانات دفع.</p>
                 </div>
                 <div>
                     <h4 style="color: var(--primary);">ماذا يحدث بعد انتهاء الفترة التجريبية؟</h4>
-                    <p style="color: #716A74;">ستحتاج للاشتراك في خطة مدفوعة لمتابعة الاستخدام</p>
+                    <p style="color: #716A74;">ستحتاج للاشتراك في الخطة الشهرية لمتابعة الاستخدام بدون انقطاع.</p>
                 </div>
             </div>
         </div>
@@ -113,7 +104,14 @@
         import { icon } from './js/icons.js';
 
         renderSidebar('settings');
-        renderTopHeader({ title: 'الاشتراك', subtitle: 'اختر الخطة المناسبة لك', showSearch: false });
+        renderTopHeader({ title: 'الاشتراك', subtitle: 'الخطة الشهرية لتطبيق Teachers Manager', showSearch: false });
+        document.getElementById('ic-whatsapp').innerHTML = icon('messageCircle', { size: 18 });
+
+        // زر الاشتراك عبر واتساب - يرسل رسالة جاهزة لرقم صاحب الحساب
+        const WHATSAPP_NUMBER = '201037728764';
+        const whatsappMessage = 'مرحباً، أرغب في الاشتراك في الخطة الشهرية (150 جنيه) في تطبيق Teachers Manager.';
+        document.getElementById('whatsapp-subscribe-btn').href =
+            `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`;
 
         // Check auth
         window.addEventListener('load', async () => {
@@ -126,7 +124,7 @@
                 const statusBanner = document.getElementById('status-banner');
 
                 if (sub.status === 'active') {
-                    statusBanner.innerHTML = icon('checkCircle', { size: 16 }) + ' أنت مشترك في الخطة الاحترافية';
+                    statusBanner.innerHTML = icon('checkCircle', { size: 16 }) + ' أنت مشترك في الخطة الشهرية';
                 } else if (sub.status === 'trial') {
                     const daysLeft = Math.ceil((new Date(sub.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24));
                     statusBanner.innerHTML = icon('clock', { size: 16 }) + ` لديك ${daysLeft} أيام متبقية من الفترة التجريبية`;
@@ -135,19 +133,9 @@
                     statusBanner.style.color = '#B85C5C';
                     statusBanner.innerHTML = icon('warning', { size: 16 }) + ' انتهت صلاحية اشتراكك';
                 }
-                statusBanner.style.display = 'block';
+                statusBanner.style.display = 'flex';
             } catch (error) {
                 console.error('Error checking subscription:', error);
-            }
-        });
-
-        // Subscribe buttons
-        document.querySelectorAll('.btn').forEach(btn => {
-            if (btn.textContent === 'الاشتراك الآن') {
-                btn.addEventListener('click', async () => {
-                    alert('سيتم تفعيل نظام الدفع قريباً');
-                    // Redirect to payment gateway
-                });
             }
         });
     </script>

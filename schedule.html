@@ -54,6 +54,7 @@
         }
         .slot.busy:hover { background: var(--primary-hover); }
         .slot.busy strong { display: block; font-size: 0.82rem; }
+        .recur-badge { display: block; font-size: 0.65rem; opacity: 0.85; margin-top: 1px; }
 
         @media (max-width: 700px) {
             .calendar-grid { grid-template-columns: 55px repeat(7, minmax(90px, 1fr)); }
@@ -88,11 +89,21 @@
             <h2 id="schedule-modal-title">إضافة موعد</h2>
             <form id="schedule-form">
                 <input type="hidden" id="sch-id">
+                <input type="hidden" id="sch-recurrence-group">
                 <div class="form-group">
                     <label for="sch-student">الطالب *</label>
                     <select id="sch-student" required></select>
                 </div>
                 <div class="form-group">
+                    <label for="sch-recurrence">تكرار الموعد *</label>
+                    <select id="sch-recurrence" required>
+                        <option value="weekly" selected>أسبوعيًا (كل أسبوع في نفس اليوم)</option>
+                        <option value="daily">يوميًا (كل يوم في نفس الوقت)</option>
+                        <option value="monthly">شهريًا (نفس التاريخ كل شهر)</option>
+                        <option value="none">بدون تكرار (مرة واحدة)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="sch-day-group">
                     <label for="sch-day">اليوم *</label>
                     <select id="sch-day" required>
                         <option value="0">الأحد</option>
@@ -103,6 +114,10 @@
                         <option value="5">الجمعة</option>
                         <option value="6">السبت</option>
                     </select>
+                </div>
+                <div class="form-group" id="sch-date-group" style="display:none;">
+                    <label for="sch-date">التاريخ *</label>
+                    <input type="date" id="sch-date">
                 </div>
                 <div class="form-group">
                     <label for="sch-time">وقت البداية *</label>
@@ -117,9 +132,11 @@
                         <option value="90">90 دقيقة</option>
                     </select>
                 </div>
-                <div style="display:flex; gap:0.5rem; margin-top:1rem;">
+                <p id="sch-recurrence-note" style="display:none; font-size:0.8rem; color:var(--text-secondary); background:var(--bg-secondary); padding:0.6rem 0.8rem; border-radius:8px;"></p>
+                <div style="display:flex; gap:0.5rem; margin-top:1rem; flex-wrap:wrap;">
                     <button type="submit" class="btn" id="sch-save-btn">حفظ الموعد</button>
                     <button type="button" class="btn" id="sch-delete-btn" style="background: var(--danger); display:none;">حذف الموعد</button>
+                    <button type="button" class="btn" id="sch-delete-series-btn" style="background: var(--danger); display:none;">حذف كل أيام التكرار</button>
                     <button type="button" class="btn close-modal" style="background: var(--bg-muted); color: var(--text-primary);">إلغاء</button>
                 </div>
             </form>
@@ -134,7 +151,7 @@
     <script type="module">
         import { Auth } from './js/auth.js';
         import { api } from './js/api.js';
-        import { ErrorHandler } from './js/utils.js';
+        import { ErrorHandler, Formatters } from './js/utils.js';
         import { renderSidebar, renderTopHeader } from './js/sidebar.js';
         import { icon } from './js/icons.js';
 
@@ -148,6 +165,7 @@
 
         let students = [];
         let schedules = [];
+        const RECURRENCE_LABELS = { daily: 'يوميًا', monthly: 'شهريًا', none: 'مرة واحدة' };
 
         function slotToTime(idx) {
             const total = HOUR_START * 60 + idx * SLOT_MIN;
@@ -182,7 +200,7 @@
                 const label = document.createElement('div');
                 label.className = 'time-label';
                 label.style.gridColumn = '1'; label.style.gridRow = s + 2;
-                if (s % 2 === 0) label.textContent = slotToTime(s);
+                if (s % 2 === 0) label.textContent = Formatters.formatTime(slotToTime(s));
                 grid.appendChild(label);
             }
 
@@ -197,7 +215,7 @@
                 block.className = 'slot busy';
                 block.style.gridColumn = sch.day_of_week + 2;
                 block.style.gridRow = `${startSlot + 2} / span ${span}`;
-                block.innerHTML = `<strong>${sch.student_name}</strong>${sch.start_time.substring(0,5)} (${sch.duration_minutes} د)`;
+                block.innerHTML = `<strong>${sch.student_name}</strong>${Formatters.formatTime(sch.start_time)} (${sch.duration_minutes} د)${sch.recurrence_type && sch.recurrence_type !== 'weekly' ? `<span class="recur-badge">${RECURRENCE_LABELS[sch.recurrence_type] || ''}</span>` : ''}`;
                 block.addEventListener('click', () => openEditModal(sch));
                 grid.appendChild(block);
 
@@ -217,25 +235,79 @@
             }
         }
 
+        function updateRecurrenceFields() {
+            const type = document.getElementById('sch-recurrence').value;
+            const dayGroup = document.getElementById('sch-day-group');
+            const dateGroup = document.getElementById('sch-date-group');
+            const note = document.getElementById('sch-recurrence-note');
+            const daySelect = document.getElementById('sch-day');
+            const dateInput = document.getElementById('sch-date');
+
+            if (type === 'weekly') {
+                dayGroup.style.display = 'block';
+                dateGroup.style.display = 'none';
+                daySelect.required = true;
+                dateInput.required = false;
+                note.style.display = 'none';
+            } else if (type === 'daily') {
+                dayGroup.style.display = 'none';
+                dateGroup.style.display = 'none';
+                daySelect.required = false;
+                dateInput.required = false;
+                note.style.display = 'block';
+                note.textContent = 'سيتم إضافة هذا الموعد في نفس الوقت في كل أيام الأسبوع السبعة.';
+            } else {
+                dayGroup.style.display = 'none';
+                dateGroup.style.display = 'block';
+                daySelect.required = false;
+                dateInput.required = true;
+                note.style.display = 'block';
+                note.textContent = type === 'monthly'
+                    ? 'يظهر الموعد في الجدول الأسبوعي على يوم الأسبوع المطابق للتاريخ المحدد، كتذكير بالتكرار الشهري.'
+                    : 'هذا موعد لمرة واحدة فقط في التاريخ المحدد.';
+            }
+        }
+        document.getElementById('sch-recurrence').addEventListener('change', updateRecurrenceFields);
+
+        function genGroupId() {
+            if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+            return 'grp-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+        }
+
         function openAddModal(day, time, presetStudentId = null) {
             document.getElementById('schedule-modal-title').textContent = 'إضافة موعد';
             document.getElementById('sch-id').value = '';
+            document.getElementById('sch-recurrence-group').value = '';
+            document.getElementById('sch-recurrence').value = 'weekly';
             document.getElementById('sch-day').value = day;
+            document.getElementById('sch-date').value = '';
             document.getElementById('sch-time').value = time;
             document.getElementById('sch-duration').value = '45';
             if (presetStudentId) document.getElementById('sch-student').value = presetStudentId;
             document.getElementById('sch-delete-btn').style.display = 'none';
+            document.getElementById('sch-delete-series-btn').style.display = 'none';
+            updateRecurrenceFields();
             document.getElementById('schedule-modal').classList.add('active');
         }
 
         function openEditModal(sch) {
             document.getElementById('schedule-modal-title').textContent = 'تعديل / حذف الموعد';
             document.getElementById('sch-id').value = sch.id;
+            document.getElementById('sch-recurrence-group').value = sch.recurrence_group_id || '';
             document.getElementById('sch-student').value = sch.student_id;
+            document.getElementById('sch-recurrence').value = sch.recurrence_type || 'weekly';
             document.getElementById('sch-day').value = sch.day_of_week;
+            document.getElementById('sch-date').value = sch.start_date ? String(sch.start_date).substring(0, 10) : '';
             document.getElementById('sch-time').value = sch.start_time.substring(0, 5);
             document.getElementById('sch-duration').value = String(sch.duration_minutes);
             document.getElementById('sch-delete-btn').style.display = 'inline-block';
+
+            const groupSiblings = sch.recurrence_group_id
+                ? schedules.filter(s => s.recurrence_group_id === sch.recurrence_group_id)
+                : [];
+            document.getElementById('sch-delete-series-btn').style.display = groupSiblings.length > 1 ? 'inline-block' : 'none';
+
+            updateRecurrenceFields();
             document.getElementById('schedule-modal').classList.add('active');
         }
 
@@ -271,19 +343,71 @@
         document.getElementById('schedule-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('sch-id').value;
-            const payload = {
-                student_id: document.getElementById('sch-student').value,
-                day_of_week: parseInt(document.getElementById('sch-day').value),
-                start_time: document.getElementById('sch-time').value,
-                duration_minutes: parseInt(document.getElementById('sch-duration').value)
-            };
+            const recurrenceType = document.getElementById('sch-recurrence').value;
+            const studentId = document.getElementById('sch-student').value;
+            const startTime = document.getElementById('sch-time').value;
+            const duration = parseInt(document.getElementById('sch-duration').value);
+            const dateValue = document.getElementById('sch-date').value;
+            const existingGroupId = document.getElementById('sch-recurrence-group').value || null;
+            const saveBtn = document.getElementById('sch-save-btn');
+
             try {
-                if (id) {
-                    await api.updateSchedule(id, payload);
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'جاري الحفظ...';
+
+                if (!id && recurrenceType === 'daily') {
+                    // إنشاء 7 مواعيد (كل أيام الأسبوع) بنفس معرّف مجموعة التكرار
+                    const groupId = genGroupId();
+                    for (let day = 0; day < 7; day++) {
+                        await api.createSchedule({
+                            student_id: studentId,
+                            day_of_week: day,
+                            start_time: startTime,
+                            duration_minutes: duration,
+                            recurrence_type: 'daily',
+                            recurrence_group_id: groupId
+                        });
+                    }
                 } else {
-                    await api.createSchedule(payload);
+                    const payload = {
+                        student_id: studentId,
+                        start_time: startTime,
+                        duration_minutes: duration,
+                        recurrence_type: recurrenceType,
+                        recurrence_group_id: recurrenceType === 'daily' ? existingGroupId : null
+                    };
+                    if (recurrenceType === 'weekly' || recurrenceType === 'daily') {
+                        payload.day_of_week = parseInt(document.getElementById('sch-day').value || '0');
+                        payload.start_date = null;
+                    } else {
+                        if (!dateValue) throw new Error('يرجى اختيار التاريخ');
+                        payload.start_date = dateValue;
+                        payload.day_of_week = new Date(dateValue + 'T00:00:00').getDay();
+                    }
+                    if (id) {
+                        await api.updateSchedule(id, payload);
+                    } else {
+                        await api.createSchedule(payload);
+                    }
                 }
+
                 ErrorHandler.showSuccess('تم حفظ الموعد بنجاح');
+                document.getElementById('schedule-modal').classList.remove('active');
+                await loadData();
+            } catch (err) {
+                ErrorHandler.showError(ErrorHandler.getErrorMessage(err));
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'حفظ الموعد';
+            }
+        });
+
+        document.getElementById('sch-delete-btn').addEventListener('click', async () => {
+            const id = document.getElementById('sch-id').value;
+            if (!id || !confirm('هل تريد حذف هذا الموعد؟')) return;
+            try {
+                await api.deleteSchedule(id);
+                ErrorHandler.showSuccess('تم حذف الموعد');
                 document.getElementById('schedule-modal').classList.remove('active');
                 await loadData();
             } catch (err) {
@@ -291,12 +415,15 @@
             }
         });
 
-        document.getElementById('sch-delete-btn').addEventListener('click', async () => {
-            const id = document.getElementById('sch-id').value;
-            if (!id || !confirm('هل تريدين حذف هذا الموعد؟')) return;
+        document.getElementById('sch-delete-series-btn').addEventListener('click', async () => {
+            const groupId = document.getElementById('sch-recurrence-group').value;
+            if (!groupId || !confirm('سيتم حذف كل أيام هذا التكرار اليومي. هل تريد المتابعة؟')) return;
             try {
-                await api.deleteSchedule(id);
-                ErrorHandler.showSuccess('تم حذف الموعد');
+                const members = schedules.filter(s => s.recurrence_group_id === groupId);
+                for (const m of members) {
+                    await api.deleteSchedule(m.id);
+                }
+                ErrorHandler.showSuccess('تم حذف كل أيام التكرار');
                 document.getElementById('schedule-modal').classList.remove('active');
                 await loadData();
             } catch (err) {

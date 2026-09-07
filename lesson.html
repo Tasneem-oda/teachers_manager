@@ -175,6 +175,48 @@
         const form = document.getElementById('lesson-form');
         const studentIdParam = new URLSearchParams(window.location.search).get('student_id');
 
+        let currentLessonId = null;
+        let lessonStartedAt = null;
+        let timerInterval = null;
+
+        function startElapsedTimer() {
+            const btn = document.getElementById('btn-start-timer');
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const secs = Math.floor((Date.now() - lessonStartedAt) / 1000);
+                const m = String(Math.floor(secs / 60)).padStart(2, '0');
+                const s = String(secs % 60).padStart(2, '0');
+                btn.innerHTML = icon('clock', { size: 15 }) + ` جارية الآن... ${m}:${s}`;
+            }, 1000);
+        }
+
+        document.getElementById('btn-start-timer').addEventListener('click', async () => {
+            const btn = document.getElementById('btn-start-timer');
+            if (btn.disabled || lessonStartedAt) return;
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = icon('clock', { size: 15 }) + ' جاري البدء...';
+
+                const result = await api.startLesson(studentIdParam);
+                currentLessonId = (result && (result.lesson_id || result.id)) || null;
+                lessonStartedAt = Date.now();
+                btn.disabled = false;
+                startElapsedTimer();
+
+                ErrorHandler.showSuccess('بدأت الحصة الآن، بالتوفيق!');
+
+                const linkEl = document.getElementById('lesson-link');
+                if (linkEl && linkEl.style.display !== 'none' && linkEl.href) {
+                    window.open(linkEl.href, '_blank');
+                }
+            } catch (error) {
+                btn.disabled = false;
+                btn.innerHTML = icon('play', { size: 15 }) + ' بدء الحصة';
+                ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
+            }
+        });
+
         // Check auth and load lesson
         window.addEventListener('load', async () => {
             const authInfo = await Auth.requireAuth();
@@ -228,7 +270,8 @@
                 btn.disabled = true;
                 btn.textContent = 'جاري الحفظ...';
 
-                await api.finalizeLesson(studentIdParam, formData);
+                await api.finalizeLesson(currentLessonId || studentIdParam, formData);
+                clearInterval(timerInterval);
 
                 ErrorHandler.showSuccess('تم حفظ الحصة بنجاح!');
                 setTimeout(() => {
