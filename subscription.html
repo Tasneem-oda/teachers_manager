@@ -99,8 +99,7 @@
     <script type="module" src="js/config.js"></script>
     <script type="module">
         import { Auth } from './js/auth.js';
-        import { api } from './js/api.js';
-        import { renderSidebar, renderTopHeader, computeSubscriptionState, daysLabel } from './js/sidebar.js';
+        import { renderSidebar, renderTopHeader, computeSubscriptionState, daysLabel, getSubscriptionCached } from './js/sidebar.js';
         import { icon } from './js/icons.js';
 
         renderSidebar('settings');
@@ -120,7 +119,7 @@
 
             // Check subscription status — نعرض دائمًا كام يوم متبقٍ (سواء تجريبي أو مدفوع) حتى يفهم المستخدم موقفه بوضوح
             try {
-                const sub = await api.checkSubscription();
+                const sub = await getSubscriptionCached();
                 const state = computeSubscriptionState(sub);
                 const statusBanner = document.getElementById('status-banner');
 

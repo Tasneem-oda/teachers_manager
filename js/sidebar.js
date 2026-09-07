@@ -12,6 +12,48 @@ const NAV_ITEMS = [
     { key: 'settings', href: 'settings.html', icon: 'gear', label: 'الإعدادات' }
 ];
 
+/**
+ * تخزين مؤقّت لنتيجة /check-subscription لتقليل الضغط على n8n:
+ * - يمنع استدعاء check-subscription مرتين في نفس الصفحة (كان يحدث في لوحة التحكم:
+ *   مرة من enforceSubscriptionLock ومرة من renderTrialBanner).
+ * - يُخزَّن في sessionStorage لمدة 3 دقائق فقط، فلا يُعاد الاستعلام مع كل تنقل بين الصفحات.
+ * حالة الاشتراك لا تتغيّر لحظيًا في الاستخدام العادي، فهذا التخزين آمن ولا يؤثر على دقة القفل.
+ */
+const SUB_CACHE_KEY = 'tm_sub_cache_v1';
+const SUB_CACHE_TTL_MS = 3 * 60 * 1000;
+let subFetchPromise = null;
+
+export async function getSubscriptionCached() {
+    try {
+        const raw = sessionStorage.getItem(SUB_CACHE_KEY);
+        if (raw) {
+            const cached = JSON.parse(raw);
+            if (cached && (Date.now() - cached.ts) < SUB_CACHE_TTL_MS) {
+                return cached.data;
+            }
+        }
+    } catch (e) { /* تجاهل تخزين تالف */ }
+
+    // لو فيه طلب شبكة قيد التنفيذ بالفعل في نفس اللحظة (مثلاً استدعاءان في نفس تحميل الصفحة)
+    // نشترك في نفس الطلب بدل ما نبعت طلب مكرر لـ n8n
+    if (subFetchPromise) return subFetchPromise;
+
+    subFetchPromise = (async () => {
+        const { api } = await import('./api.js');
+        const data = await api.checkSubscription();
+        try {
+            sessionStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
+        } catch (e) { /* تجاهل لو التخزين ممتلئ */ }
+        return data;
+    })();
+
+    try {
+        return await subFetchPromise;
+    } finally {
+        subFetchPromise = null;
+    }
+}
+
 export function renderSidebar(activeKey) {
     const root = document.getElementById('sidebar-root');
     if (!root) return;
@@ -101,7 +143,7 @@ async function enforceSubscriptionLock() {
 
     try {
         const { api } = await import('./api.js');
-        const sub = await api.checkSubscription();
+        const sub = await getSubscriptionCached();
         const state = computeSubscriptionState(sub);
         if (!state.locked) return;
 
@@ -154,8 +196,7 @@ export async function renderTrialBanner(containerId = 'trial-banner-root') {
     const root = document.getElementById(containerId);
     if (!root) return;
     try {
-        const { api } = await import('./api.js');
-        const sub = await api.checkSubscription();
+        const sub = await getSubscriptionCached();
         const state = computeSubscriptionState(sub);
 
         // القفل العام (enforceSubscriptionLock) هيتكفّل بعرض شاشة القفل الكاملة عند انتهاء الاشتراك فعليًا
