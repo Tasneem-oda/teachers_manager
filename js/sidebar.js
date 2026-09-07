@@ -47,6 +47,102 @@ export function renderSidebar(activeKey) {
         await Auth.signOut();
         window.location.href = 'login.html';
     });
+
+    // بوابة الاشتراك: قفل الصفحة إذا انتهت التجربة/الاشتراك فعليًا (لا تُطبَّق على صفحة الاشتراك نفسها)
+    enforceSubscriptionLock();
+}
+
+/**
+ * صيغة عدد الأيام بالعربية الفصحى الصحيحة نحويًا
+ */
+export function daysLabel(n) {
+    if (n <= 0) return '0 يوم';
+    if (n === 1) return 'يوم واحد';
+    if (n === 2) return 'يومان';
+    if (n <= 10) return `${n} أيام`;
+    return `${n} يومًا`;
+}
+
+/**
+ * تحويل صف الاشتراك الخام (من /check-subscription) إلى حالة واضحة قابلة للاستخدام:
+ * - يحسب الأيام المتبقية فعليًا من التاريخ (وليس فقط نص status)
+ * - أي حالة نصية غير trial/active/none (مثل expired أو أي قيمة تُضبط يدويًا) تُعتبر مقفلة تلقائيًا
+ */
+export function computeSubscriptionState(sub) {
+    const now = new Date();
+    if (!sub || sub.status === 'none') {
+        return { kind: 'none', locked: false, daysLeft: null };
+    }
+    if (sub.status === 'trial') {
+        if (sub.trial_ends_at) {
+            const daysLeft = Math.ceil((new Date(sub.trial_ends_at) - now) / 86400000);
+            if (daysLeft > 0) return { kind: 'trial', locked: false, daysLeft };
+            return { kind: 'trial', locked: true, daysLeft: 0, reason: 'trial_expired' };
+        }
+        return { kind: 'trial', locked: false, daysLeft: null };
+    }
+    if (sub.status === 'active') {
+        if (sub.paid_until) {
+            const daysLeft = Math.ceil((new Date(sub.paid_until) - now) / 86400000);
+            if (daysLeft > 0) return { kind: 'active', locked: false, daysLeft };
+            return { kind: 'active', locked: true, daysLeft: 0, reason: 'payment_expired' };
+        }
+        return { kind: 'active', locked: false, daysLeft: null };
+    }
+    // أي حالة أخرى (expired, cancelled, ...) تُقفَل افتراضيًا
+    return { kind: sub.status, locked: true, daysLeft: 0, reason: 'inactive' };
+}
+
+const WHATSAPP_NUMBER = '201037728764';
+
+async function enforceSubscriptionLock() {
+    // لا نقفل صفحة الاشتراك نفسها حتى يستطيع المستخدم الاشتراك دائمًا
+    if (window.location.pathname.endsWith('subscription.html')) return;
+
+    try {
+        const { api } = await import('./api.js');
+        const sub = await api.checkSubscription();
+        const state = computeSubscriptionState(sub);
+        if (!state.locked) return;
+
+        let studentsNote = 'جميع بيانات طلابك وحصصك محفوظة بالكامل ولن يتم حذف أي شيء منها.';
+        try {
+            const data = await api.getDashboard();
+            const count = data && typeof data.studentsCount === 'number' ? data.studentsCount : null;
+            if (count !== null) {
+                studentsNote = `بياناتك محفوظة بالكامل — لديك ${count} طالب${count === 1 ? '' : ' مسجّلين'} وكل حصصهم وملاحظاتهم موجودة كما هي، ولن يُحذف منها أي شيء.`;
+            }
+        } catch (e) {
+            // تجاهل بصمت — تُستخدم الرسالة العامة أعلاه
+        }
+
+        const heading = state.reason === 'trial_expired' ? 'انتهت الفترة التجريبية المجانية' : 'انتهت فترة الاشتراك الحالية';
+        const whatsappMessage = 'مرحباً، أرغب في تجديد/تفعيل الاشتراك في الخطة الشهرية (150 جنيه) في تطبيق Teachers Manager.';
+        const waHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'sub-lock-overlay';
+        overlay.innerHTML = `
+            <div class="sub-lock-card">
+                <div class="sub-lock-icon">${icon('lock', { size: 26 })}</div>
+                <h2>${heading}</h2>
+                <p class="sub-lock-reassure">${icon('checkCircle', { size: 15 })} ${studentsNote}</p>
+                <p class="sub-lock-desc">فعّل الاشتراك الشهري (150 جنيه) لاستعادة الوصول الكامل فورًا — بياناتك في انتظارك.</p>
+                <a href="${waHref}" target="_blank" rel="noopener" class="btn sub-lock-whatsapp">${icon('messageCircle', { size: 17 })} تجديد الاشتراك عبر واتساب</a>
+                <a href="subscription.html" class="sub-lock-link">عرض تفاصيل الاشتراك</a>
+                <button type="button" id="sub-lock-logout" class="sub-lock-link sub-lock-logout-btn">تسجيل الخروج</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+
+        document.getElementById('sub-lock-logout').addEventListener('click', async () => {
+            await Auth.signOut();
+            window.location.href = 'login.html';
+        });
+    } catch (e) {
+        // فشل التحقق ليس سببًا لقفل التطبيق على المستخدم — تجاهل بصمت
+    }
 }
 
 /**
@@ -60,33 +156,36 @@ export async function renderTrialBanner(containerId = 'trial-banner-root') {
     try {
         const { api } = await import('./api.js');
         const sub = await api.checkSubscription();
-        if (!sub || sub.status === 'none' || sub.status === 'active') {
-            root.innerHTML = '';
-            return;
-        }
-        if (sub.status === 'trial' && sub.trial_ends_at) {
-            const daysLeft = Math.max(0, Math.ceil((new Date(sub.trial_ends_at) - new Date()) / 86400000));
+        const state = computeSubscriptionState(sub);
+
+        // القفل العام (enforceSubscriptionLock) هيتكفّل بعرض شاشة القفل الكاملة عند انتهاء الاشتراك فعليًا
+        if (state.locked) { root.innerHTML = ''; return; }
+
+        if (state.kind === 'trial' && state.daysLeft !== null) {
             root.innerHTML = `
                 <div class="trial-banner">
                     <div class="trial-banner-icon">${icon('sparkles', { size: 20 })}</div>
                     <div class="trial-banner-text">
                         <strong>الفترة التجريبية المجانية</strong>
-                        <span>متبقٍ ${daysLeft} يوم${daysLeft === 1 ? '' : daysLeft === 2 ? 'ين' : ''} — بعدها يمكنك الاشتراك في الخطة الشهرية لمتابعة الاستخدام.</span>
+                        <span>متبقٍ ${daysLabel(state.daysLeft)} — بعدها يمكنك الاشتراك في الخطة الشهرية لمتابعة الاستخدام.</span>
                     </div>
                     <a href="subscription.html" class="btn trial-banner-btn">عرض الاشتراك</a>
                 </div>
             `;
-        } else {
+        } else if (state.kind === 'active' && state.daysLeft !== null && state.daysLeft <= 5) {
+            // تذكير بقرب انتهاء الاشتراك المدفوع (5 أيام أو أقل)
             root.innerHTML = `
-                <div class="trial-banner trial-banner-expired">
-                    <div class="trial-banner-icon">${icon('warning', { size: 20 })}</div>
+                <div class="trial-banner">
+                    <div class="trial-banner-icon">${icon('clock', { size: 20 })}</div>
                     <div class="trial-banner-text">
-                        <strong>انتهت الفترة التجريبية</strong>
-                        <span>اشترك الآن في الخطة الشهرية لمتابعة استخدام البرنامج بدون انقطاع.</span>
+                        <strong>اشتراكك على وشك الانتهاء</strong>
+                        <span>متبقٍ ${daysLabel(state.daysLeft)} على نهاية الخطة الشهرية الحالية.</span>
                     </div>
-                    <a href="subscription.html" class="btn trial-banner-btn">الاشتراك الآن</a>
+                    <a href="subscription.html" class="btn trial-banner-btn">تجديد الاشتراك</a>
                 </div>
             `;
+        } else {
+            root.innerHTML = '';
         }
     } catch (e) {
         root.innerHTML = '';
