@@ -1,0 +1,135 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "path": "get-schedules",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "8f3d19c4-14eb-49af-8c19-b087cb35f5b9",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "gss01-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\nreturn { teacherId: payload.sub };"
+      },
+      "id": "b3210057-d5f1-4fc3-9c42-2a5051f72d87",
+      "name": "Decode JWT",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT s.id, s.student_id, st.name AS student_name, s.day_of_week, s.start_time, s.duration_minutes,\n  s.recurrence_type, s.start_date, s.recurrence_group_id\nFROM teachers_manager.schedules s\nJOIN teachers_manager.students st ON s.student_id = st.id\nWHERE s.teacher_id = $1\nORDER BY s.day_of_week, s.start_time;",
+        "options": {
+          "queryReplacement": "={{ $json.teacherId }}"
+        }
+      },
+      "id": "0c4ef5cd-8f4c-4e18-9bd1-d9621a54c719",
+      "name": "Get Schedules",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        384,
+        0
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const schedules = $input.all().map(i => i.json).filter(s => s.id);\nreturn { schedules };"
+      },
+      "id": "11a35529-0b31-4ee2-8e1b-b9e16ae457c1",
+      "name": "Build Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"data\": {{ JSON.stringify($json) }}\n}",
+        "options": {}
+      },
+      "id": "6b5181f3-3fd2-4d17-8b53-cc59ec17b07c",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        784,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Decode JWT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decode JWT": {
+      "main": [
+        [
+          {
+            "node": "Get Schedules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Schedules": {
+      "main": [
+        [
+          {
+            "node": "Build Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597"
+  }
+}

@@ -100,7 +100,7 @@
     <script type="module">
         import { Auth } from './js/auth.js';
         import { api } from './js/api.js';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js';
+        import { renderSidebar, renderTopHeader, computeSubscriptionState, daysLabel } from './js/sidebar.js';
         import { icon } from './js/icons.js';
 
         renderSidebar('settings');
@@ -118,20 +118,26 @@
             const authInfo = await Auth.requireAuth();
             if (!authInfo) return;
 
-            // Check subscription status
+            // Check subscription status — نعرض دائمًا كام يوم متبقٍ (سواء تجريبي أو مدفوع) حتى يفهم المستخدم موقفه بوضوح
             try {
                 const sub = await api.checkSubscription();
+                const state = computeSubscriptionState(sub);
                 const statusBanner = document.getElementById('status-banner');
 
-                if (sub.status === 'active') {
-                    statusBanner.innerHTML = icon('checkCircle', { size: 16 }) + ' أنت مشترك في الخطة الشهرية';
-                } else if (sub.status === 'trial') {
-                    const daysLeft = Math.ceil((new Date(sub.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24));
-                    statusBanner.innerHTML = icon('clock', { size: 16 }) + ` لديك ${daysLeft} أيام متبقية من الفترة التجريبية`;
-                } else {
+                if (state.kind === 'active' && !state.locked) {
+                    statusBanner.innerHTML = state.daysLeft !== null
+                        ? icon('checkCircle', { size: 16 }) + ` أنت مشترك في الخطة الشهرية — متبقٍ ${daysLabel(state.daysLeft)} على نهايتها`
+                        : icon('checkCircle', { size: 16 }) + ' أنت مشترك في الخطة الشهرية';
+                } else if (state.kind === 'trial' && !state.locked) {
+                    statusBanner.innerHTML = icon('clock', { size: 16 }) + ` لديك ${daysLabel(state.daysLeft)} متبقية من الفترة التجريبية`;
+                } else if (state.locked) {
                     statusBanner.style.background = '#FFEBEE';
                     statusBanner.style.color = '#B85C5C';
-                    statusBanner.innerHTML = icon('warning', { size: 16 }) + ' انتهت صلاحية اشتراكك';
+                    statusBanner.innerHTML = icon('warning', { size: 16 }) +
+                        (state.reason === 'trial_expired' ? ' انتهت الفترة التجريبية — اشترك الآن للمتابعة' : ' انتهت صلاحية اشتراكك — جدد الآن للمتابعة');
+                } else {
+                    statusBanner.style.display = 'none';
+                    return;
                 }
                 statusBanner.style.display = 'flex';
             } catch (error) {

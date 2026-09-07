@@ -1,0 +1,199 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "start-lesson",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1e2f3b4-5c6d-4e7f-8a9b-0c1d2e3f4a5b",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -1008,
+        160
+      ],
+      "webhookId": "stl01-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\nconst body = $input.first().json.body || {};\nreturn {\n  teacherId: payload.sub,\n  studentId: body.student_id || null\n};"
+      },
+      "id": "b2f3a4c5-6d7e-4f8a-9b0c-1d2e3f4a5b6c",
+      "name": "Decode JWT",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  EXISTS(SELECT 1 FROM teachers_manager.students WHERE id = $1::uuid AND teacher_id = $2::uuid) AS student_owned;",
+        "options": {
+          "queryReplacement": "={{ $json.studentId }},{{ $json.teacherId }}"
+        }
+      },
+      "id": "c3a4b5d6-7e8f-4a9b-0c1d-2e3f4a5b6c7d",
+      "name": "Check Ownership",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        -608,
+        160
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.student_owned }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "d4b5c6e7-8f9a-4b0c-1d2e-3f4a5b6c7d8e",
+      "name": "Student Owned?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO teachers_manager.lessons (id, student_id, teacher_id, lesson_date, start_time, status)\nVALUES (gen_random_uuid(), $1::uuid, $2::uuid, CURRENT_DATE, CURRENT_TIME, 'in_progress')\nRETURNING id;",
+        "options": {
+          "queryReplacement": "={{ $('Decode JWT').item.json.studentId }},{{ $('Decode JWT').item.json.teacherId }}"
+        }
+      },
+      "id": "e5c6d7f8-9a0b-4c1d-2e3f-4a5b6c7d8e9f",
+      "name": "Insert Lesson",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        -192,
+        80
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"data\": {\n    \"lesson_id\": \"{{ $json.id }}\"\n  }\n}",
+        "options": {}
+      },
+      "id": "f6d7e8a9-0b1c-4d2e-3f4a-5b6c7d8e9f0a",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        16,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"الطالب غير موجود أو لا يتبع لحسابك.\"\n  }\n}",
+        "options": {}
+      },
+      "id": "a7e8f9b0-1c2d-4e3f-4a5b-6c7d8e9f0a1b",
+      "name": "Not Found Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -192,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Decode JWT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decode JWT": {
+      "main": [
+        [
+          {
+            "node": "Check Ownership",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Ownership": {
+      "main": [
+        [
+          {
+            "node": "Student Owned?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Student Owned?": {
+      "main": [
+        [
+          {
+            "node": "Insert Lesson",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not Found Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Lesson": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597"
+  }
+}
