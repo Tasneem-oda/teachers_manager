@@ -8,7 +8,6 @@ const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
     { key: 'students', href: 'students.html', icon: 'users', label: 'الطلاب' },
     { key: 'schedule', href: 'schedule.html', icon: 'calendar', label: 'المواعيد' },
-    { key: 'notes', href: 'students.html', icon: 'edit', label: 'الملاحظات' },
     { key: 'books', href: 'books.html', icon: 'bookOpen', label: 'كتابي' },
     { key: 'settings', href: 'settings.html', icon: 'gear', label: 'الإعدادات' }
 ];
@@ -34,11 +33,6 @@ export function renderSidebar(activeKey) {
                 </div>
             </div>
             <nav class="sidebar-nav">${navHtml}</nav>
-            <div class="sidebar-sub-card" id="sidebar-sub-card" style="display:none;">
-                <div class="title">${icon('crown', { size: 15 })} الخطة الاحترافية</div>
-                <p class="desc" id="sidebar-sub-desc">تجديد الاشتراك</p>
-                <div class="bar"><div class="bar-fill" id="sidebar-sub-bar" style="width: 100%;"></div></div>
-            </div>
             <div class="sidebar-footer">
                 <a href="#" id="sidebar-logout">
                     <span class="icon">${icon('logout', { size: 19 })}</span>
@@ -53,32 +47,49 @@ export function renderSidebar(activeKey) {
         await Auth.signOut();
         window.location.href = 'login.html';
     });
-
-    loadSubscriptionBadge();
 }
 
-async function loadSubscriptionBadge() {
+/**
+ * بانر حالة الاشتراك/التجربة المجانية — مكان ثابت في بداية البرنامج (أعلى لوحة التحكم)
+ * بدلاً من ظهوره داخل السايدبار (كان يختفي على الموبايل ويسبب مشاكل تصميم).
+ * يُستدعى مرة واحدة من dashboard.html فقط.
+ */
+export async function renderTrialBanner(containerId = 'trial-banner-root') {
+    const root = document.getElementById(containerId);
+    if (!root) return;
     try {
         const { api } = await import('./api.js');
         const sub = await api.checkSubscription();
-        const card = document.getElementById('sidebar-sub-card');
-        const desc = document.getElementById('sidebar-sub-desc');
-        const bar = document.getElementById('sidebar-sub-bar');
-        if (!sub || sub.status === 'none') return;
-        card.style.display = 'block';
+        if (!sub || sub.status === 'none' || sub.status === 'active') {
+            root.innerHTML = '';
+            return;
+        }
         if (sub.status === 'trial' && sub.trial_ends_at) {
             const daysLeft = Math.max(0, Math.ceil((new Date(sub.trial_ends_at) - new Date()) / 86400000));
-            desc.textContent = `${daysLeft} يوم متبقٍ في التجربة`;
-            bar.style.width = `${Math.min(100, (daysLeft / 7) * 100)}%`;
-        } else if (sub.status === 'active') {
-            desc.textContent = 'اشتراك فعّال';
-            bar.style.width = '100%';
+            root.innerHTML = `
+                <div class="trial-banner">
+                    <div class="trial-banner-icon">${icon('sparkles', { size: 20 })}</div>
+                    <div class="trial-banner-text">
+                        <strong>الفترة التجريبية المجانية</strong>
+                        <span>متبقٍ ${daysLeft} يوم${daysLeft === 1 ? '' : daysLeft === 2 ? 'ين' : ''} — بعدها يمكنك الاشتراك في الخطة الشهرية لمتابعة الاستخدام.</span>
+                    </div>
+                    <a href="subscription.html" class="btn trial-banner-btn">عرض الاشتراك</a>
+                </div>
+            `;
         } else {
-            desc.textContent = 'انتهى الاشتراك - جدد الآن';
-            bar.style.width = '0%';
+            root.innerHTML = `
+                <div class="trial-banner trial-banner-expired">
+                    <div class="trial-banner-icon">${icon('warning', { size: 20 })}</div>
+                    <div class="trial-banner-text">
+                        <strong>انتهت الفترة التجريبية</strong>
+                        <span>اشترك الآن في الخطة الشهرية لمتابعة استخدام البرنامج بدون انقطاع.</span>
+                    </div>
+                    <a href="subscription.html" class="btn trial-banner-btn">الاشتراك الآن</a>
+                </div>
+            `;
         }
     } catch (e) {
-        // فشل تحميل الاشتراك ليس خطأ حرج، نخفي الكارت بصمت
+        root.innerHTML = '';
     }
 }
 

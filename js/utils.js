@@ -52,8 +52,16 @@ export const Formatters = {
     
     formatTime: (time) => {
         if (!time) return '';
-        if (time.length >= 5) return time.substring(0, 5);
-        return time;
+        const raw = time.length >= 5 ? time.substring(0, 5) : time;
+        const parts = raw.split(':');
+        if (parts.length < 2) return raw;
+        let hours = parseInt(parts[0], 10);
+        const minutes = parts[1].padStart(2, '0');
+        if (isNaN(hours)) return raw;
+        const period = hours >= 12 ? 'م' : 'ص';
+        hours = hours % 12;
+        if (hours === 0) hours = 12;
+        return `${hours}:${minutes} ${period}`;
     },
     
     formatDateTime: (dateTime, locale = 'ar-EG') => {

@@ -17,9 +17,11 @@
                 <div id="loading" class="loading">جاري تحميل البيانات...</div>
 
                 <div id="content" style="display:none;">
+                    <div id="trial-banner-root"></div>
+
                     <div class="stats-row" id="stats-row"></div>
 
-                    <div style="display:grid; grid-template-columns: 2fr 1fr; gap:1.5rem; align-items:start;">
+                    <div class="dashboard-grid">
                         <!-- حصص اليوم -->
                         <div class="card">
                             <div class="flex" style="margin-bottom:1rem;">
@@ -76,7 +78,7 @@
         import { Auth } from './js/auth.js';
         import { api } from './js/api.js';
         import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js';
+        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js';
         import { icon } from './js/icons.js';
 
         renderSidebar('dashboard');
@@ -128,10 +130,12 @@
             }
             container.innerHTML = lessons.map(l => `
                 <div class="lesson-item">
-                    <div class="lesson-avatar">${(l.student_name || '؟').charAt(0)}</div>
-                    <div class="lesson-info">
-                        <p class="name">${l.student_name}</p>
-                        <p class="meta">${l.current_topic || 'بدون موضوع محدد'}</p>
+                    <div class="lesson-main">
+                        <div class="lesson-avatar">${(l.student_name || '؟').charAt(0)}</div>
+                        <div class="lesson-info">
+                            <p class="name">${l.student_name}</p>
+                            <p class="meta">${l.current_topic || 'بدون موضوع محدد'}</p>
+                        </div>
                     </div>
                     <div class="lesson-time">${Formatters.formatTime ? Formatters.formatTime(l.start_time) : l.start_time}</div>
                     <button class="btn btn-start" onclick="location.href='lesson.html?student_id=${l.student_id}'">${icon('play', { size: 13 })} ابدأ الحصة</button>
@@ -148,6 +152,7 @@
                 });
                 renderStats(data);
                 renderTodayLessons(data.todayLessons);
+                renderTrialBanner();
 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('content').style.display = 'block';

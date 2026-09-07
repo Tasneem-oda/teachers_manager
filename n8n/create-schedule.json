@@ -1,0 +1,252 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "create-schedule",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "cb9c03b1-7310-47ac-9baa-f4bb204c56f6",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -1008,
+        160
+      ],
+      "webhookId": "crs01-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\nconst body = $input.first().json.body || {};\n\n// دعم التكرار: weekly (افتراضي) | daily | monthly | none\nconst allowedRecurrence = ['weekly', 'daily', 'monthly', 'none'];\nlet recurrenceType = body.recurrence_type || 'weekly';\nif (!allowedRecurrence.includes(recurrenceType)) { recurrenceType = 'weekly'; }\n\nreturn {\n  teacherId: payload.sub,\n  studentId: body.student_id || null,\n  dayOfWeek: parseInt(body.day_of_week),\n  startTime: body.start_time,\n  duration: parseInt(body.duration_minutes) || 45,\n  excludeId: '',\n  recurrenceType: recurrenceType,\n  startDate: body.start_date || null,\n  recurrenceGroupId: body.recurrence_group_id || null\n};"
+      },
+      "id": "2c6c753b-1d69-490f-81d7-221bcd4f4799",
+      "name": "Decode JWT",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  EXISTS(SELECT 1 FROM teachers_manager.students WHERE id = $1::uuid AND teacher_id = $2::uuid) AS student_owned,\n(SELECT COUNT(*)::int FROM teachers_manager.schedules\n    WHERE teacher_id = $2::uuid AND day_of_week = $3::integer\n    AND (start_time, start_time + ($4::integer || ' minutes')::interval)\n        OVERLAPS ($5::time, $5::time + ($4::integer || ' minutes')::interval)\n    AND ($6 = '' OR id::text <> $6)\n  ) AS conflict_count;",
+        "options": {
+          "queryReplacement": "={{ $json.studentId }},{{ $json.teacherId }},{{ $json.dayOfWeek }},{{ $json.duration }},{{ $json.startTime }},{{ $json.excludeId }}"
+        }
+      },
+      "id": "9ee7a61f-c577-45cc-a9fd-d6d1bcb8bac9",
+      "name": "Check Availability",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        -608,
+        160
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.student_owned }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "4a5e2401-98c5-43d4-94c6-9945f4ad4ff8",
+      "name": "Student Owned?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.conflict_count }}",
+              "operation": "equal"
+            }
+          ]
+        }
+      },
+      "id": "51afcb4f-0bb6-4816-b66a-8b2f8e8fcb18",
+      "name": "No Conflict?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO teachers_manager.schedules (id, student_id, teacher_id, day_of_week, start_time, duration_minutes, recurrence_type, start_date, recurrence_group_id)\nVALUES (gen_random_uuid(), $1::uuid, $2::uuid, $3::integer, $4::time, $5::integer, $6, $7::date, $8::uuid)\nRETURNING id;",
+        "options": {
+          "queryReplacement": "={{ $('Decode JWT').item.json.studentId }},{{ $('Decode JWT').item.json.teacherId }},{{ $('Decode JWT').item.json.dayOfWeek }},{{ $('Decode JWT').item.json.startTime }},{{ $('Decode JWT').item.json.duration }},{{ $('Decode JWT').item.json.recurrenceType }},{{ $('Decode JWT').item.json.startDate }},{{ $('Decode JWT').item.json.recurrenceGroupId }}"
+        }
+      },
+      "id": "4d8af5a1-a446-4211-8739-4a0fb0b01a93",
+      "name": "Insert Schedule",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"data\": {\n    \"schedule_id\": \"{{ $json.id }}\"\n  }\n}",
+        "options": {}
+      },
+      "id": "d4e3074f-b39d-4eba-bee4-58b552a2d2ce",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        208,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"SCHEDULE_CONFLICT\",\n    \"message\": \"يوجد تعارض: هذا الموعد يتداخل مع حصة أخرى مجدولة بالفعل.\"\n  }\n}",
+        "options": {}
+      },
+      "id": "3a6f43c4-4321-40cd-83aa-5b12a384abd3",
+      "name": "Conflict Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"الطالب غير موجود أو لا يتبع لحسابك.\"\n  }\n}",
+        "options": {}
+      },
+      "id": "c2139e73-56f4-4778-8068-6b087795052f",
+      "name": "Not Found Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        320
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Decode JWT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decode JWT": {
+      "main": [
+        [
+          {
+            "node": "Check Availability",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Availability": {
+      "main": [
+        [
+          {
+            "node": "Student Owned?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Student Owned?": {
+      "main": [
+        [
+          {
+            "node": "No Conflict?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not Found Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Conflict?": {
+      "main": [
+        [
+          {
+            "node": "Insert Schedule",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Conflict Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Schedule": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597"
+  }
+}
