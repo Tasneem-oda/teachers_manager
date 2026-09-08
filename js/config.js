@@ -9,7 +9,7 @@ export const CONFIG = {
     SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkcG51cGdxdmp4bHJtd3dnbWlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjczMjUsImV4cCI6MjA4NTU0MzMyNX0.gaWPEgrhIQJzZLVoo7x1hnS-63ZJPZN96Xb3WpqApik',
     
     // n8n Webhook Base URL
-    N8N_WEBHOOK_BASE: 'https://tasneemahmed-n8n.hf.space/webhook',
+    N8N_WEBHOOK_BASE: 'https://n8n-2lse.srv1963528.hstgr.cloud/webhook',
     
     // API Endpoints تجميع لسهولة الصيانة
     API_ENDPOINTS: {
