@@ -357,28 +357,34 @@
 
                 if (!id && recurrenceType === 'daily') {
                     // إنشاء 7 مواعيد (كل أيام الأسبوع) بنفس معرّف مجموعة التكرار.
-                    // مهم: لا نوقف المحاولة عند أول فشل (مثل تعارض حقيقي في يوم معيّن)
-                    // حتى لا تظهر الجدولة اليومية بيوم واحد فقط بدل 7 أيام.
+                    // الطلبات السبعة تُرسل بالتوازي (Promise.allSettled) بدل التتابع الواحد تلو الآخر،
+                    // لأن كل يوم مستقل تمامًا عن الأيام الأخرى (فحص التعارض مبني على day_of_week منفصل
+                    // لكل طلب) — هذا يقلّل زمن الانتظار من 7 أضعاف زمن الطلب الواحد إلى طلب واحد تقريبًا.
+                    // كما لا نوقف المحاولة عند أول فشل (مثل تعارض حقيقي في يوم معيّن) حتى لا تظهر
+                    // الجدولة اليومية بيوم واحد فقط بدل 7 أيام.
                     const groupId = genGroupId();
                     const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+                    const results = await Promise.allSettled(
+                        Array.from({ length: 7 }, (_, day) => api.createSchedule({
+                            student_id: studentId,
+                            day_of_week: day,
+                            start_time: startTime,
+                            duration_minutes: duration,
+                            recurrence_type: 'daily',
+                            recurrence_group_id: groupId
+                        }))
+                    );
+
                     const failedDays = [];
                     let successCount = 0;
-
-                    for (let day = 0; day < 7; day++) {
-                        try {
-                            await api.createSchedule({
-                                student_id: studentId,
-                                day_of_week: day,
-                                start_time: startTime,
-                                duration_minutes: duration,
-                                recurrence_type: 'daily',
-                                recurrence_group_id: groupId
-                            });
+                    results.forEach((r, day) => {
+                        if (r.status === 'fulfilled') {
                             successCount++;
-                        } catch (dayErr) {
-                            failedDays.push(`${dayNames[day]} (${ErrorHandler.getErrorMessage(dayErr)})`);
+                        } else {
+                            failedDays.push(`${dayNames[day]} (${ErrorHandler.getErrorMessage(r.reason)})`);
                         }
-                    }
+                    });
 
                     if (successCount === 0) {
                         throw new Error('لم يتم إنشاء أي موعد: ' + failedDays.join('، '));
