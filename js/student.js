@@ -1,4 +1,5 @@
 import { api } from './api.js';
+import { Formatters } from './utils.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. استخراج ID الطالب من الرابط (?id=...)
@@ -48,7 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const li = document.createElement('li');
                 li.className = 'lesson-item text-sm mb-2 border-bottom pb-2';
                 const date = new Date(lesson.lesson_date).toLocaleDateString('ar-EG');
-                li.innerHTML = `<strong>${date}:</strong> تسميع (${lesson.recitation || '-'})`;
+                li.innerHTML = `<strong>${Formatters.escapeHtml(date)}:</strong> تسميع (${Formatters.escapeHtml(lesson.recitation || '-')})`;
                 historyList.appendChild(li);
             });
         } else {
@@ -60,7 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         content.classList.remove('hidden');
 
     } catch (error) {
-        loader.innerHTML = `<p class="text-danger">${error.message}</p>`;
+        loader.innerHTML = `<p class="text-danger">${Formatters.escapeHtml(error.message || '')}</p>`;
     }
 
     // 3. منطق زر (ابدأ الحصة)

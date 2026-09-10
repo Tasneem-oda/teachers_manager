@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ملف الطالب - Teachers Manager</title>
     <link rel="stylesheet" href="css/style.css">
+    <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
+    <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4B3A5A">
     <style>
         .tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 1.5rem; gap: 1rem; }
         .tab-btn { background: none; border: none; padding: 1rem; font-size: 0.95rem; cursor: pointer; color: var(--text-secondary); font-weight: 600; border-bottom: 3px solid transparent; }
@@ -176,10 +183,10 @@
 
         function renderStudentInfo() {
             document.getElementById('student-name').innerText = student.name;
-            document.getElementById('student-subject').innerHTML = icon('bookOpen', { size: 14 }) + ' ' + (student.subject || 'بدون مادة');
+            document.getElementById('student-subject').innerHTML = icon('bookOpen', { size: 14 }) + ' ' + Formatters.escapeHtml(student.subject || 'بدون مادة');
             document.getElementById('student-email').innerText = student.email || '-';
             document.getElementById('student-phone').innerText = student.phone || '-';
-            document.getElementById('student-link').innerHTML = student.lesson_link ? icon('link', { size: 13 }) + ' ' + student.lesson_link : '-';
+            document.getElementById('student-link').innerHTML = student.lesson_link ? icon('link', { size: 13 }) + ' ' + Formatters.escapeHtml(student.lesson_link) : '-';
             document.getElementById('student-current-topic').innerText = student.current_topic || '-';
             document.getElementById('student-joined').innerText = Formatters.formatDate(student.created_at);
         }
@@ -190,9 +197,9 @@
                 const display = document.getElementById('teaching-profile-display');
                 if (profile) {
                     display.innerHTML = `
-                        <div class="info-row"><span class="info-label">نمط التدريس</span><span class="info-value">${profile.teaching_style || '-'}</span></div>
-                        <div class="info-row"><span class="info-label">تفضيلات الطالب</span><span class="info-value">${profile.student_preferences || '-'}</span></div>
-                        <div class="info-row"><span class="info-label">السياق للمساعد الذكي</span><span class="info-value">${profile.ai_context || '-'}</span></div>
+                        <div class="info-row"><span class="info-label">نمط التدريس</span><span class="info-value">${Formatters.escapeHtml(profile.teaching_style || '-')}</span></div>
+                        <div class="info-row"><span class="info-label">تفضيلات الطالب</span><span class="info-value">${Formatters.escapeHtml(profile.student_preferences || '-')}</span></div>
+                        <div class="info-row"><span class="info-label">السياق للمساعد الذكي</span><span class="info-value">${Formatters.escapeHtml(profile.ai_context || '-')}</span></div>
                     `;
                     document.getElementById('teaching-style').value = profile.teaching_style || '';
                     document.getElementById('student-preferences').value = profile.student_preferences || '';
@@ -217,13 +224,13 @@
                 list.innerHTML = lessons.map(lesson => `
                     <div class="lesson-hist-item">
                         <div class="lesson-date">${Formatters.formatDate(lesson.lesson_date)}</div>
-                        ${lesson.lesson_content ? `<div class="lesson-detail">${icon('bookOpen', { size: 13 })} محتوى الحصة: ${lesson.lesson_content}</div>` : ''}
-                        ${lesson.memorization ? `<div class="lesson-detail">${icon('bookOpen', { size: 13 })} الحفظ: ${lesson.memorization}</div>` : ''}
-                        ${lesson.recitation ? `<div class="lesson-detail">${icon('messageCircle', { size: 13 })} الأداء الشفهي: ${lesson.recitation}</div>` : ''}
-                        ${lesson.performance ? `<div class="lesson-detail">${icon('star', { size: 13 })} التقييم العام: ${lesson.performance}</div>` : ''}
-                        ${lesson.homework ? `<div class="lesson-detail">${icon('clipboardList', { size: 13 })} الواجب: ${lesson.homework}</div>` : ''}
-                        ${lesson.next_assignment ? `<div class="lesson-detail">${icon('arrowNext', { size: 13 })} للحصة القادمة: ${lesson.next_assignment}</div>` : ''}
-                        ${lesson.notes ? `<div class="lesson-detail">${icon('messageSquare', { size: 13 })} ملاحظات: ${lesson.notes}</div>` : ''}
+                        ${lesson.lesson_content ? `<div class="lesson-detail">${icon('bookOpen', { size: 13 })} محتوى الحصة: ${Formatters.escapeHtml(lesson.lesson_content)}</div>` : ''}
+                        ${lesson.memorization ? `<div class="lesson-detail">${icon('bookOpen', { size: 13 })} الحفظ: ${Formatters.escapeHtml(lesson.memorization)}</div>` : ''}
+                        ${lesson.recitation ? `<div class="lesson-detail">${icon('messageCircle', { size: 13 })} الأداء الشفهي: ${Formatters.escapeHtml(lesson.recitation)}</div>` : ''}
+                        ${lesson.performance ? `<div class="lesson-detail">${icon('star', { size: 13 })} التقييم العام: ${Formatters.escapeHtml(lesson.performance)}</div>` : ''}
+                        ${lesson.homework ? `<div class="lesson-detail">${icon('clipboardList', { size: 13 })} الواجب: ${Formatters.escapeHtml(lesson.homework)}</div>` : ''}
+                        ${lesson.next_assignment ? `<div class="lesson-detail">${icon('arrowNext', { size: 13 })} للحصة القادمة: ${Formatters.escapeHtml(lesson.next_assignment)}</div>` : ''}
+                        ${lesson.notes ? `<div class="lesson-detail">${icon('messageSquare', { size: 13 })} ملاحظات: ${Formatters.escapeHtml(lesson.notes)}</div>` : ''}
                     </div>
                 `).join('');
             } catch (error) {
@@ -243,7 +250,7 @@
                 list.innerHTML = notes.map(note => `
                     <div class="note-item">
                         <div class="note-date">${Formatters.formatDate(note.created_at)}</div>
-                        <div class="note-text">${note.note}</div>
+                        <div class="note-text">${Formatters.escapeHtml(note.note || '')}</div>
                     </div>
                 `).join('');
             } catch (error) {
@@ -296,5 +303,6 @@
             }
         };
     </script>
+    <script src="js/pwa-install.js" defer></script>
 </body>
 </html>

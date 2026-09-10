@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تسجيل جديد - Teachers Manager</title>
     <link rel="stylesheet" href="css/style.css">
+    <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
+    <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4B3A5A">
     <style>
         body { display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 1rem; }
         .signup-container { background: var(--card-bg); padding: 2rem; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid var(--border); width: 100%; max-width: 450px; }
@@ -16,6 +23,9 @@
         .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(75, 58, 90, 0.1); }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
         .error { color: #B85C5C; font-size: 0.875rem; margin-top: 0.5rem; display: none; }
+        /* نص إرشادي هادئ تحت حقل اسم المستخدم يوضح القواعد المسموحة قبل ما المستخدم يغلط */
+        .field-hint { display: block; color: var(--text-secondary, #767676); font-size: 0.8rem; margin-top: 0.4rem; line-height: 1.5; }
+        .field-hint.hint-error { color: #B85C5C; }
         .btn { width: 100%; padding: 0.75rem; background-color: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: 600; }
         .btn:hover { background-color: #3F304D; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -61,8 +71,30 @@
             </div>
 
             <div class="form-group">
-                <label for="username">اسم المستخدم *</label>
-                <input type="text" id="username" name="username" placeholder="مثال: ahmed_teacher" required>
+                <label for="username">اسم المستخدم (بالإنجليزية) *</label>
+                <!--
+                    ملاحظات على حقل اسم المستخدم:
+                    - pattern: نفس نمط CONFIG.PATTERNS.USERNAME في config.js (أحرف/أرقام/underscore/hyphen، 3-20 حرف)
+                      وده بيفعّل تحقق المتصفح تلقائيًا (HTML5 validation) كطبقة حماية إضافية قبل الإرسال
+                    - autocomplete="username": يساعد المتصفح يقترح/يحفظ اسم المستخدم بشكل صحيح
+                    - dir="ltr": نخلي اتجاه الكتابة داخل الحقل نفسه من اليسار لليمين لأن القيمة دايمًا إنجليزي/أرقام
+                      حتى لو باقي الصفحة RTL، عشان الكتابة تبان بشكل طبيعي
+                -->
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    placeholder="مثال: ahmed_teacher"
+                    pattern="[a-zA-Z0-9_-]{3,20}"
+                    minlength="3"
+                    maxlength="20"
+                    autocomplete="username"
+                    dir="ltr"
+                    required>
+                <small class="field-hint" id="usernameHint">
+                    يُسمح فقط بالأحرف الإنجليزية (a-z, A-Z) والأرقام (0-9) والشرطة السفلية (_) والشرطة (-)،
+                    بدون مسافات أو أحرف عربية أو رموز أخرى — من 3 إلى 20 حرفًا.
+                </small>
                 <div class="error" id="usernameError"></div>
             </div>
 
@@ -135,6 +167,43 @@
         const loading = document.getElementById('loading');
         const successMessage = document.getElementById('successMessage');
 
+        // ============================================================
+        // حقل اسم المستخدم: منع الكتابة بأي حرف غير مسموح به مباشرة
+        // ============================================================
+        // بدل ما نستنى المستخدم يضغط "إنشاء الحساب" ويكتشف إن فيه خطأ،
+        // بنمنع دخول أي حرف عربي أو مسافة أو رمز خاص (غير _ و -) وهو لسه
+        // بيكتب. ده بيقلل جدًا احتمال ظهور خطأ اسم المستخدم من الأساس.
+        const usernameInput = document.getElementById('username');
+        const usernameHint = document.getElementById('usernameHint');
+        const usernameError = document.getElementById('usernameError');
+
+        usernameInput.addEventListener('input', () => {
+            const cursorPos = usernameInput.selectionStart;
+            const originalLength = usernameInput.value.length;
+
+            // إزالة أي حرف مش إنجليزي/رقم/underscore/hyphen فورًا أثناء الكتابة
+            const cleaned = usernameInput.value.replace(/[^a-zA-Z0-9_-]/g, '');
+
+            if (cleaned !== usernameInput.value) {
+                usernameInput.value = cleaned;
+                // نحاول نحافظ على موضع المؤشر تقريبًا بعد حذف الأحرف الممنوعة
+                const removedCount = originalLength - cleaned.length;
+                const newPos = Math.max(0, cursorPos - removedCount);
+                usernameInput.setSelectionRange(newPos, newPos);
+
+                // نظهر تنبيه لحظي واضح تحت الحقل (بدون قطع الكتابة أو عمل alert مزعج)
+                usernameHint.textContent = 'تم حذف حرف/رمز غير مسموح به — اسم المستخدم يقبل إنجليزي وأرقام و _ و - فقط';
+                usernameHint.classList.add('hint-error');
+            } else {
+                // رجّع النص الإرشادي العادي لو الكتابة سليمة
+                usernameHint.textContent = 'يُسمح فقط بالأحرف الإنجليزية (a-z, A-Z) والأرقام (0-9) والشرطة السفلية (_) والشرطة (-)، بدون مسافات أو أحرف عربية أو رموز أخرى — من 3 إلى 20 حرفًا.';
+                usernameHint.classList.remove('hint-error');
+            }
+
+            // نخفي رسالة الخطأ القديمة (لو موجودة) بمجرد ما المستخدم يعدّل الحقل
+            usernameError.style.display = 'none';
+        });
+
         // تحقق من المستخدم المسجل
         window.addEventListener('load', async () => {
             const session = await Auth.getSession();
@@ -179,8 +248,17 @@
                 hasErrors = true;
             }
 
-            if (!username || !Validators.username(username)) {
-                document.getElementById('usernameError').textContent = 'اسم المستخدم يجب أن يكون 3-20 حرف';
+            // فحص تفصيلي لاسم المستخدم عشان نعرض رسالة دقيقة حسب نوع الخطأ
+            // (فارغ / فيه حروف ممنوعة / قصير / طويل) بدل رسالة عامة واحدة
+            const usernameCheck = Validators.usernameDetailed(username);
+            if (!usernameCheck.valid) {
+                const usernameMessages = {
+                    empty: 'من فضلك أدخل اسم المستخدم',
+                    invalidChars: 'اسم المستخدم يجب أن يكون بالأحرف الإنجليزية فقط (بدون مسافات أو أحرف عربية أو رموز خاصة، فقط _ أو - مسموح)',
+                    tooShort: 'اسم المستخدم قصير جدًا — لازم يكون 3 أحرف على الأقل',
+                    tooLong: 'اسم المستخدم طويل جدًا — الحد الأقصى 20 حرف'
+                };
+                document.getElementById('usernameError').textContent = usernameMessages[usernameCheck.reason] || 'اسم المستخدم غير صحيح';
                 document.getElementById('usernameError').style.display = 'block';
                 hasErrors = true;
             }
@@ -225,12 +303,31 @@
                     window.location.href = 'dashboard.html';
                 }, 2000);
             } else {
-                ErrorHandler.showError(result.error);
+                // ============================================================
+                // معالجة خاصة لأخطاء اسم المستخدم القادمة من السيرفر
+                // ============================================================
+                // لو اسم المستخدم مكرر (مثلاً DB بترجع "duplicate key" أو
+                // "unique constraint" أو كود Postgres 23505)، بنعرض رسالة
+                // واضحة تحت حقل اسم المستخدم نفسه بدل رسالة تقنية عامة في toast
+                const errorText = (result.error || '').toString();
+                const isUsernameTaken = /username/i.test(errorText) &&
+                    (/duplicate|already|exists|unique|مكرر|مستخدم بالفعل|23505/i.test(errorText));
+
+                if (isUsernameTaken) {
+                    const usernameErrorEl = document.getElementById('usernameError');
+                    usernameErrorEl.textContent = 'اسم المستخدم هذا مُستخدم بالفعل، من فضلك جرّب اسمًا آخر';
+                    usernameErrorEl.style.display = 'block';
+                    usernameInput.focus();
+                } else {
+                    ErrorHandler.showError(result.error);
+                }
+
                 submitBtn.disabled = false;
                 submitBtn.style.display = 'block';
                 loading.style.display = 'none';
             }
         });
     </script>
+    <script src="js/pwa-install.js" defer></script>
 </body>
 </html>

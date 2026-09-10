@@ -12,7 +12,36 @@ export const Validators = {
     
     phone: (phone) => CONFIG.PATTERNS.PHONE_EG.test(phone),
     
+    // فحص بسيط (true/false) - بيتأكد إن اسم المستخدم مطابق تمامًا للنمط المسموح
+    // (أحرف إنجليزية/أرقام/underscore/hyphen فقط، من 3 إلى 20 حرف)
     username: (username) => CONFIG.PATTERNS.USERNAME.test(username) && username.length >= 3,
+
+    // فحص تفصيلي لاسم المستخدم بيرجع سبب الخطأ بالتحديد عشان تقدر تعرض
+    // رسالة واضحة للمستخدم (بدل رسالة عامة واحدة لكل الحالات)
+    // القيمة المرجعة: { valid: boolean, reason: 'empty' | 'invalidChars' | 'tooShort' | 'tooLong' | null }
+    usernameDetailed: (username) => {
+        const value = (username || '').trim();
+
+        if (!value) {
+            return { valid: false, reason: 'empty' };
+        }
+
+        // لو فيه أي حرف غير مسموح به (عربي، مسافة، رمز خاص غير _ أو -) نرفض فورًا
+        // ونوضح إن المشكلة في الأحرف نفسها، مش في الطول
+        if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+            return { valid: false, reason: 'invalidChars' };
+        }
+
+        if (value.length < 3) {
+            return { valid: false, reason: 'tooShort' };
+        }
+
+        if (value.length > 20) {
+            return { valid: false, reason: 'tooLong' };
+        }
+
+        return { valid: true, reason: null };
+    },
     
     password: (password) => password.length >= 8,
     

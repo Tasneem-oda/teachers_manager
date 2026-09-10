@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>الجدول الأسبوعي - Teachers Manager</title>
     <link rel="stylesheet" href="css/style.css">
+    <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
+    <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4B3A5A">
     <style>
         .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
         .page-header h1 { margin: 0; font-size: 1.6rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem; }
@@ -215,7 +222,7 @@
                 block.className = 'slot busy';
                 block.style.gridColumn = sch.day_of_week + 2;
                 block.style.gridRow = `${startSlot + 2} / span ${span}`;
-                block.innerHTML = `<strong>${sch.student_name}</strong>${Formatters.formatTime(sch.start_time)} (${sch.duration_minutes} د)${sch.recurrence_type && sch.recurrence_type !== 'weekly' ? `<span class="recur-badge">${RECURRENCE_LABELS[sch.recurrence_type] || ''}</span>` : ''}`;
+                block.innerHTML = `<strong>${Formatters.escapeHtml(sch.student_name || '')}</strong>${Formatters.formatTime(sch.start_time)} (${sch.duration_minutes} د)${sch.recurrence_type && sch.recurrence_type !== 'weekly' ? `<span class="recur-badge">${Formatters.escapeHtml(RECURRENCE_LABELS[sch.recurrence_type] || '')}</span>` : ''}`;
                 block.addEventListener('click', () => openEditModal(sch));
                 grid.appendChild(block);
 
@@ -321,7 +328,7 @@
                 schedules = schedulesData.schedules || [];
 
                 const studentSelect = document.getElementById('sch-student');
-                studentSelect.innerHTML = students.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                studentSelect.innerHTML = students.map(s => `<option value="${s.id}">${Formatters.escapeHtml(s.name || '')}</option>`).join('');
 
                 renderGrid();
 
@@ -466,5 +473,6 @@
             await loadData();
         })();
     </script>
+    <script src="js/pwa-install.js" defer></script>
 </body>
 </html>

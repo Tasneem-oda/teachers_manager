@@ -1,4 +1,5 @@
 import { api } from './api.js';
+import { Formatters } from './utils.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const loader = document.getElementById('loader');
@@ -12,7 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const data = await api.getDashboard();
         
         // 1. البيانات الشخصية
-        document.getElementById('greeting').innerText = `صباح الخير، ${data.teacher.name.split(' ')[0]} 🌷`;
+        document.getElementById('greeting').innerText = `صباح الخير، ${data.teacher.name.split(' ')[0]} 🌷`; // innerText: آمن بالفعل، لا يحتاج escaping
         
         // 2. الإحصائيات
         document.getElementById('stat-students').innerText = data.studentsCount || 0;
@@ -33,8 +34,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             lessonsContainer.innerHTML = data.todayLessons.map(lesson => `
                 <div class="lesson-item">
                     <div class="lesson-info">
-                        <h4>${lesson.student_name}</h4>
-                        <p>${lesson.start_time.slice(0, 5)} - حفظ: ${lesson.current_surah || 'غير محدد'}</p>
+                        <h4>${Formatters.escapeHtml(lesson.student_name || '')}</h4>
+                        <p>${lesson.start_time.slice(0, 5)} - حفظ: ${Formatters.escapeHtml(lesson.current_surah || 'غير محدد')}</p>
                     </div>
                     <a href="lesson.html?student_id=${lesson.student_id}" class="btn">ابدأ الحصة</a>
                 </div>
