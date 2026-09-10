@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>الرئيسية - Teachers Manager</title>
     <link rel="stylesheet" href="css/style.css">
+    <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
+    <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4B3A5A">
 </head>
 <body>
     <div class="app-shell">
@@ -131,10 +138,10 @@
             container.innerHTML = lessons.map(l => `
                 <div class="lesson-item">
                     <div class="lesson-main">
-                        <div class="lesson-avatar">${(l.student_name || '؟').charAt(0)}</div>
+                        <div class="lesson-avatar">${Formatters.escapeHtml((l.student_name || '؟').charAt(0))}</div>
                         <div class="lesson-info">
-                            <p class="name">${l.student_name}</p>
-                            <p class="meta">${l.current_topic || 'بدون موضوع محدد'}</p>
+                            <p class="name">${Formatters.escapeHtml(l.student_name || '')}</p>
+                            <p class="meta">${Formatters.escapeHtml(l.current_topic || 'بدون موضوع محدد')}</p>
                         </div>
                     </div>
                     <div class="lesson-time">${Formatters.formatTime ? Formatters.formatTime(l.start_time) : l.start_time}</div>
@@ -147,7 +154,7 @@
             try {
                 const data = await api.getDashboard();
                 renderTopHeader({
-                    title: `${greeting()} يا ${(data.teacher?.name || '').split(' ')[0] || ''} 🌸`,
+                    title: `${greeting()} يا ${Formatters.escapeHtml((data.teacher?.name || '').split(' ')[0] || '')} 🌸`,
                     subtitle: dateStr()
                 });
                 renderStats(data);
@@ -168,5 +175,6 @@
             await loadDashboard();
         })();
     </script>
+    <script src="js/pwa-install.js" defer></script>
 </body>
 </html>

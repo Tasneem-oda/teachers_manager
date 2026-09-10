@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>الطلاب - Teachers Manager</title>
     <link rel="stylesheet" href="css/style.css">
+    <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
+    <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4B3A5A">
     <style>
         .students-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
         .students-grid .empty-state { grid-column: 1 / -1; }
@@ -108,7 +115,7 @@
     <script type="module">
         import { Auth } from './js/auth.js';
         import { api } from './js/api.js';
-        import { ErrorHandler } from './js/utils.js';
+        import { ErrorHandler, Formatters } from './js/utils.js';
         import { renderSidebar, renderTopHeader } from './js/sidebar.js';
         import { icon } from './js/icons.js';
 
@@ -157,10 +164,10 @@
             }
             container.innerHTML = students.map(student => `
                 <div class="student-card">
-                    <div class="student-name">${student.name}</div>
-                    <div class="student-info">${icon('bookOpen', { size: 14 })} ${student.subject || 'بدون مادة'}</div>
-                    <div class="student-info">${icon('target', { size: 14 })} ${student.current_topic || 'بدون موضوع'}</div>
-                    <div class="student-info">${icon('phone', { size: 14 })} ${student.phone || 'بدون رقم'}</div>
+                    <div class="student-name">${Formatters.escapeHtml(student.name || '')}</div>
+                    <div class="student-info">${icon('bookOpen', { size: 14 })} ${Formatters.escapeHtml(student.subject || 'بدون مادة')}</div>
+                    <div class="student-info">${icon('target', { size: 14 })} ${Formatters.escapeHtml(student.current_topic || 'بدون موضوع')}</div>
+                    <div class="student-info">${icon('phone', { size: 14 })} ${Formatters.escapeHtml(student.phone || 'بدون رقم')}</div>
                     <div class="student-actions">
                         <a href="student.html?id=${student.id}" class="btn">عرض الملف</a>
                         <button class="btn" style="background: var(--secondary);" onclick="location.href='schedule.html?add_student=${student.id}'">${icon('calendar', { size: 14 })} موعد</button>
@@ -218,5 +225,6 @@
             }
         };
     </script>
+    <script src="js/pwa-install.js" defer></script>
 </body>
 </html>

@@ -9,7 +9,7 @@ export const CONFIG = {
     SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkcG51cGdxdmp4bHJtd3dnbWlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjczMjUsImV4cCI6MjA4NTU0MzMyNX0.gaWPEgrhIQJzZLVoo7x1hnS-63ZJPZN96Xb3WpqApik',
     
     // n8n Webhook Base URL
-    N8N_WEBHOOK_BASE: 'https://tasneemahmed-n8n.hf.space/webhook',
+    N8N_WEBHOOK_BASE: 'https://n8n-2lse.srv1963528.hstgr.cloud/webhook',
     
     // API Endpoints تجميع لسهولة الصيانة
     API_ENDPOINTS: {
@@ -78,7 +78,9 @@ export const CONFIG = {
     PATTERNS: {
         EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
         PHONE_EG: /^(\+?20|0)?1[0125]\d{8}$/,
-        USERNAME: /^[a-zA-Z0-9_-]{3,}$/,
+        // اسم المستخدم: أحرف إنجليزية (كبيرة/صغيرة) وأرقام و "_" و "-" فقط، بدون مسافات
+        // أو أحرف عربية أو رموز خاصة أخرى، بطول من 3 إلى 20 حرفًا
+        USERNAME: /^[a-zA-Z0-9_-]{3,20}$/,
         STRONG_PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
         URL: /^https?:\/\/.+\..+/
     }
