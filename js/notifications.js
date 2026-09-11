@@ -41,7 +41,7 @@ function loadOneSignalSdk() {
     if (document.getElementById('onesignal-sdk')) return; // محمّلة بالفعل
     const script = document.createElement('script');
     script.id = 'onesignal-sdk';
-    script.src = 'https://cdn.onesignal.com/sdks/OneSignalSDK.js';
+    script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
     script.defer = true;
     document.head.appendChild(script);
 }
