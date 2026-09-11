@@ -10,7 +10,14 @@ import { CONFIG } from './config.js';
 export const Validators = {
     email: (email) => CONFIG.PATTERNS.EMAIL.test(email),
     
-    phone: (phone) => CONFIG.PATTERNS.PHONE_EG.test(phone),
+    // فحص رقم الهاتف: بيقبل أي رقم دولي (مش مقتصر على الأرقام المصرية فقط)
+    // بيشيل رموز التنسيق (مسافات/-/أقواس) الأول، وبعدين يتأكد إن الأرقام
+    // الفعلية من 7 إلى 15 رقم (نطاق معقول لمعظم أرقام الهواتف حول العالم)
+    phone: (phone) => {
+        if (!phone) return false;
+        const digitsOnly = phone.replace(/\D/g, '');
+        return CONFIG.PATTERNS.PHONE.test(phone.trim()) && digitsOnly.length >= 7 && digitsOnly.length <= 15;
+    },
     
     // فحص بسيط (true/false) - بيتأكد إن اسم المستخدم مطابق تمامًا للنمط المسموح
     // (أحرف إنجليزية/أرقام/underscore/hyphen فقط، من 3 إلى 20 حرف)
@@ -100,10 +107,12 @@ export const Formatters = {
     },
     
     formatPhone: (phone) => {
-        const cleaned = phone.replace(/\D/g, '');
-        if (cleaned.length === 10) return '0' + cleaned;
-        if (cleaned.length === 11 && cleaned.startsWith('2')) return '0' + cleaned.substring(1);
-        return '+20' + cleaned.substring(cleaned.length === 12 ? 2 : 0);
+        // ملحوظة: قبل كده كانت الدالة دي بتفرض صيغة مصرية (+20) على أي رقم،
+        // وده كان غلط لأي رقم هاتف من دولة تانية. التطبيق بقى يقبل أرقام
+        // دولية من أي دولة، فبقينا نكتفي بتنظيف بسيط للمسافات ونعرض الرقم
+        // زي ما المستخدم كتبه بالظبط، بدون أي افتراض لدولة معينة.
+        if (!phone) return '';
+        return phone.trim();
     },
     
     capitalizeWords: (str) => {
