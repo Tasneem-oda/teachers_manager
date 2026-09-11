@@ -211,3 +211,28 @@
 - أُضيف `n8n/send-daily-lesson-notifications.json`: workflow مجدول (Schedule Trigger) يعمل يوميًا الساعة 7 صباحًا بتوقيت القاهرة، يجلب حصص كل معلّم لهذا اليوم من `teachers_manager.schedules` (باحترام نوع التكرار: أسبوعي/يومي/شهري/مرة واحدة)، ويرسل إشعار Push عبر REST API الخاص بـ OneSignal لكل معلّم عنده حصة واحدة على الأقل
 - **لا توجد أي migration جديدة لقاعدة البيانات** — OneSignal تدير الاشتراكات بنفسها عبر `external_id` المطابق لمعرّف المعلم في Supabase
 - خطوات التفعيل الكاملة (إنشاء حساب OneSignal، الحصول على App ID و REST API Key، وربطهم بالفرونت إند وبـ n8n) موثقة بالتفصيل في `PUSH_NOTIFICATIONS_SETUP.md`
+
+---
+
+## إصلاح: إشعارات Push ما كانتش بتشتغل خالص (لا اشتراك ولا نافذة إذن)
+
+**السبب:** `js/notifications.js` كان بيحمّل SDK بتاع OneSignal من رابط قديم
+ومهجور (`cdn.onesignal.com/sdks/OneSignalSDK.js`)، وده رابط لنسخة "stub"
+قديمة قبل v16 مالهاش أي علاقة بآلية `window.OneSignalDeferred` اللي باقي
+الكود مبني عليها بالكامل. النتيجة كانت: كل استدعاءات `OneSignal.init()`،
+`OneSignal.login()`، و`OneSignal.Notifications.requestPermission()` كانت
+بتتحط في طابور انتظار وتفضل من غير تنفيذ أبدًا - من غير أي خطأ ظاهر في
+الـ console، فمفيش نافذة إذن كانت بتظهر للمستخدم ومفيش أي اشتراك بيتسجّل.
+
+**الإصلاح:** استبدلنا الرابط بالرابط الصحيح للنسخة الحالية v16:
+`https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js`
+
+ملف `OneSignalSDKWorker.js` في جذر الموقع كان صحيحًا بالفعل ومحتاجش تعديل.
+
+---
+
+## إضافة: Google Tag Manager في كل صفحات الموقع
+
+- أُضيف كود GTM الأول (`<script>...gtm.js...</script>`) فورًا بعد فتح تاج `<head>` في كل صفحة، بمعرّف `GTM-NXC2WZMT`
+- أُضيف كود الـ noscript (`<iframe src="...ns.html?id=GTM-NXC2WZMT">`) فورًا بعد فتح تاج `<body>` في كل صفحة
+- طُبّق على كل صفحات الموقع الـ13 (index, login, signup, reset-password, dashboard, students, student, schedule, books, settings, lesson, subscription, admin) — مفيش أي تعديل تاني على أي كود موجود
