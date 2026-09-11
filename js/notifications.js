@@ -41,12 +41,7 @@ function loadOneSignalSdk() {
     if (document.getElementById('onesignal-sdk')) return; // محمّلة بالفعل
     const script = document.createElement('script');
     script.id = 'onesignal-sdk';
-    // ملحوظة مهمة: الرابط ده هو رابط النسخة الحالية v16 من SDK بتاع OneSignal.
-    // الرابط القديم (cdn.onesignal.com/sdks/OneSignalSDK.js) بقى "stub" قديم
-    // مالوش علاقة بـ window.OneSignalDeferred، فكان بيخلي كل استدعاءاتنا
-    // (init/login/requestPermission) تتحط في الطابور من غير ما تتنفذ أبدًا،
-    // من غير أي خطأ ظاهر في الـ console - وده اللي كان بيمنع ظهور نافذة
-    // إذن الإشعارات للمستخدم تمامًا.
+
     script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
     script.defer = true;
     document.head.appendChild(script);
