@@ -17,7 +17,7 @@ export const CONFIG = {
     // 3) هتلاقي الـ App ID في Settings > Keys & IDs، حطيه بدل القيمة تحت
     // 4) لازم الموقع يبقى شغال على HTTPS (مش مشكلة عندك لأنه منشور بالفعل على دومين)
     PUSH_NOTIFICATIONS: {
-        ONESIGNAL_APP_ID: 'REPLACE_WITH_YOUR_ONESIGNAL_APP_ID'
+        ONESIGNAL_APP_ID: '8cba05cf-844b-4e83-a7e7-8dbce1264ae3'
     },
     
     // API Endpoints تجميع لسهولة الصيانة
