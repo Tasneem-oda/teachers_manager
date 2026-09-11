@@ -1,0 +1,137 @@
+{
+  "name": "send-daily-lesson-notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "id": "339ac2a0-48c5-43a8-be1e-b3eec8642618",
+      "name": "كل يوم الساعة 7 صباحًا",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH today_schedules AS (\n  SELECT s.teacher_id, s.start_time, s.duration_minutes, st.name AS student_name\n  FROM teachers_manager.schedules s\n  JOIN teachers_manager.students st ON st.id = s.student_id\n  WHERE\n    (\n      s.recurrence_type IN ('weekly','daily')\n      AND s.day_of_week = EXTRACT(DOW FROM CURRENT_DATE)::int\n      AND (s.start_date IS NULL OR s.start_date <= CURRENT_DATE)\n    )\n    OR (\n      s.recurrence_type = 'monthly'\n      AND s.start_date IS NOT NULL\n      AND s.start_date <= CURRENT_DATE\n      AND EXTRACT(DAY FROM s.start_date) = EXTRACT(DAY FROM CURRENT_DATE)\n    )\n    OR (\n      s.recurrence_type = 'none'\n      AND s.start_date = CURRENT_DATE\n    )\n)\nSELECT teacher_id,\n       COUNT(*)::int AS lesson_count,\n       json_agg(json_build_object('student_name', student_name, 'start_time', start_time) ORDER BY start_time) AS lessons\nFROM today_schedules\nGROUP BY teacher_id;",
+        "options": {}
+      },
+      "id": "3ef3820e-5b2e-4fa8-a2b2-a72208566677",
+      "name": "Get Today Schedules Per Teacher",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        224,
+        0
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// بناء نص عنوان ومحتوى الإشعار لكل معلّم عنده حصة واحدة على الأقل اليوم\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n    const row = item.json;\n    if (!row.teacher_id) continue;\n\n    const lessons = Array.isArray(row.lessons) ? row.lessons : [];\n    const count = row.lesson_count || lessons.length;\n    if (count === 0) continue; // لا نرسل إشعار لمعلم بدون حصص اليوم\n\n    // نعرض أول 5 حصص بالتفصيل (اسم الطالب + الوقت)، وأي حصص زيادة بنلخصها برقم\n    const detailed = lessons.slice(0, 5).map((l) => {\n        const time = (l.start_time || '').toString().substring(0, 5); // HH:MM\n        return `${l.student_name || 'طالب'} (${time})`;\n    }).join('، ');\n\n    const extraCount = lessons.length > 5 ? lessons.length - 5 : 0;\n    const extraText = extraCount > 0 ? ` و${extraCount} ${extraCount === 1 ? 'حصة أخرى' : 'حصص أخرى'}` : '';\n\n    const title = count === 1 ? 'عندك حصة واحدة اليوم' : `عندك ${count} حصص اليوم`;\n    const body = detailed + extraText;\n\n    results.push({\n        json: {\n            teacher_id: row.teacher_id,\n            title,\n            body\n        }\n    });\n}\n\nreturn results;"
+      },
+      "id": "c604c7f5-0e1d-416c-9797-ff86cc6b07f4",
+      "name": "Build Notification Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://onesignal.com/api/v1/notifications",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"app_id\": \"REPLACE_WITH_YOUR_ONESIGNAL_APP_ID\",\n  \"include_aliases\": { \"external_id\": [\"{{ $json.teacher_id }}\"] },\n  \"target_channel\": \"push\",\n  \"headings\": { \"ar\": {{ JSON.stringify($json.title) }}, \"en\": {{ JSON.stringify($json.title) }} },\n  \"contents\": { \"ar\": {{ JSON.stringify($json.body) }}, \"en\": {{ JSON.stringify($json.body) }} },\n  \"url\": \"https://teachers-manager.online/schedule.html\"\n}",
+        "options": {}
+      },
+      "id": "cf8b9029-b609-4414-8053-5eb6240d9bbc",
+      "name": "Send OneSignal Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        672,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_ONESIGNAL_HEADER_AUTH_CREDENTIAL_ID",
+          "name": "OneSignal REST API Key"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "كل يوم الساعة 7 صباحًا": {
+      "main": [
+        [
+          {
+            "node": "Get Today Schedules Per Teacher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Today Schedules Per Teacher": {
+      "main": [
+        [
+          {
+            "node": "Build Notification Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Notification Text": {
+      "main": [
+        [
+          {
+            "node": "Send OneSignal Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "timezone": "Africa/Cairo"
+  },
+  "meta": {
+    "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597"
+  }
+}

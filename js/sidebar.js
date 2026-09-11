@@ -3,6 +3,7 @@
  */
 import { Auth } from './auth.js';
 import { icon } from './icons.js';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
@@ -86,6 +87,7 @@ export function renderSidebar(activeKey) {
 
     document.getElementById('sidebar-logout').addEventListener('click', async (e) => {
         e.preventDefault();
+        unlinkOnSignOut(); // فك ربط الجهاز عن هوية المعلم قبل الخروج (إشعارات Push)
         await Auth.signOut();
         window.location.href = 'login.html';
     });
@@ -179,6 +181,7 @@ async function enforceSubscriptionLock() {
         document.body.style.overflow = 'hidden';
 
         document.getElementById('sub-lock-logout').addEventListener('click', async () => {
+            unlinkOnSignOut();
             await Auth.signOut();
             window.location.href = 'login.html';
         });
@@ -270,6 +273,7 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
     `;
 
     document.getElementById('header-logout-mobile').addEventListener('click', async () => {
+        unlinkOnSignOut();
         await Auth.signOut();
         window.location.href = 'login.html';
     });
@@ -284,6 +288,10 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
     }
 
     loadHeaderProfile();
+
+    // تفعيل إشعارات Push (تذكير الحصص اليومي) - مرة واحدة بعد رسم الهيدر
+    // عشان زرار الجرس (header-bell) يكون موجود في الصفحة قبل ما نربطه بالحدث
+    initPushNotifications();
 }
 
 async function loadHeaderProfile() {

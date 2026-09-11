@@ -66,7 +66,8 @@
 
             <div class="form-group">
                 <label for="phone">رقم الهاتف</label>
-                <input type="tel" id="phone" name="phone" placeholder="01234567890">
+                <!-- الحقل بيقبل أي رقم هاتف دولي (مش مقتصر على الأرقام المصرية) -->
+                <input type="tel" id="phone" name="phone" placeholder="مثال: 01234567890 أو +966501234567">
                 <div class="error" id="phoneError"></div>
             </div>
 
@@ -242,8 +243,10 @@
                 hasErrors = true;
             }
 
+            // رقم الهاتف اختياري، بس لو المستخدم كتب رقم، بيتقبل أي رقم دولي
+            // (مش مقتصر على الأرقام المصرية فقط) - راجع Validators.phone في utils.js
             if (phone && !Validators.phone(phone)) {
-                document.getElementById('phoneError').textContent = 'رقم الهاتف غير صحيح';
+                document.getElementById('phoneError').textContent = 'رقم الهاتف غير صحيح (تأكد إنه يحتوي على أرقام فقط، بطول معقول، مع إمكانية إضافة + ومفتاح الدولة)';
                 document.getElementById('phoneError').style.display = 'block';
                 hasErrors = true;
             }
