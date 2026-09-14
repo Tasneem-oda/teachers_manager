@@ -82,7 +82,7 @@
             <div class="action-buttons">
                 <a href="#" id="lesson-link" class="btn" target="_blank" style="display: none;"><span id="ic-link" class="icon" style="display:inline-flex;"></span> فتح رابط الحصة</a>
                 <button class="btn" id="btn-start-timer"><span id="ic-timer" class="icon" style="display:inline-flex;"></span> بدء الحصة</button>
-                <button type="button" class="btn" id="btn-open-ai-chat" style="background:#9C5FA3;"><span id="ic-ai-chat-btn" class="icon" style="display:inline-flex;"></span> مساعد الذكاء الاصطناعي</button>
+                <button type="button" class="btn btn-ai-pulse" id="btn-open-ai-chat"><span id="ic-ai-chat-btn" class="icon" style="display:inline-flex;"></span> مساعد الذكاء الاصطناعي</button>
             </div>
 
             <!-- Lesson Content -->
@@ -266,7 +266,11 @@
         const loader = document.getElementById('loader');
         const content = document.getElementById('lesson-content-view');
         const form = document.getElementById('lesson-form');
-        const studentIdParam = new URLSearchParams(window.location.search).get('student_id');
+        const urlSearchParams = new URLSearchParams(window.location.search);
+        const studentIdParam = urlSearchParams.get('student_id');
+        // لو الرابط جاي من زرار "فتح المساعد الذكي" في الداشبورد (?open_ai=1)
+        // بيتفتح شات المساعد أوتوماتيك بعد تحميل بيانات الحصة
+        const openAiParam = urlSearchParams.get('open_ai');
 
         let currentLessonId = null;
         let lessonStartedAt = null;
@@ -337,6 +341,12 @@
 
                 loader.style.display = 'none';
                 content.style.display = 'block';
+
+                // فتح شات المساعد الذكي أوتوماتيك لو الرابط طالب كده
+                if (openAiParam === '1') {
+                    aiChatOverlay.style.display = 'flex';
+                    setTimeout(() => aiChatInput.focus(), 50);
+                }
 
             } catch (error) {
                 loader.innerText = 'حدث خطأ: ' + ErrorHandler.getErrorMessage(error);

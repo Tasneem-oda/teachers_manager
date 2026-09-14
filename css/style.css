@@ -291,6 +291,30 @@ input:focus, textarea:focus, select:focus {
 }
 .ai-quick-actions button:hover { background: var(--bg-muted); }
 
+/* زرار المساعد الذكي: تأثير نبض هادئ ومستمر يلفت الانتباه من غير إزعاج */
+@keyframes ai-pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(156, 95, 163, 0.45); }
+    50% { box-shadow: 0 0 0 9px rgba(156, 95, 163, 0); }
+}
+@keyframes ai-sparkle-wiggle {
+    0%, 100% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(18deg) scale(1.2); }
+}
+.btn-ai-pulse {
+    position: relative;
+    background: linear-gradient(135deg, var(--primary) 0%, #9C5FA3 100%) !important;
+    color: #fff !important;
+    border: none !important;
+    text-align: center !important;
+    animation: ai-pulse-glow 2.4s ease-in-out infinite;
+    transition: filter 0.15s, transform 0.15s;
+}
+.btn-ai-pulse:hover { filter: brightness(1.1); transform: translateY(-1px); animation-play-state: paused; }
+.btn-ai-pulse .icon { display: inline-flex; animation: ai-sparkle-wiggle 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+    .btn-ai-pulse, .btn-ai-pulse .icon { animation: none; }
+}
+
 /* Notes panel */
 .notes-panel .note-item { border-bottom: 1px solid var(--border); padding: 0.7rem 0; font-size: 0.85rem; }
 .notes-panel .note-item:last-child { border-bottom: none; }
