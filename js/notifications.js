@@ -18,8 +18,8 @@
  * CONFIG.PUSH_NOTIFICATIONS.ONESIGNAL_APP_ID) عشان الكود ده يشتغل فعليًا.
  * ============================================================================
  */
-import { CONFIG } from './config.js';
-import { Auth } from './auth.js';
+import { CONFIG } from './config.js?v=2';
+import { Auth } from './auth.js?v=2';
 
 const PROMPT_DISMISS_KEY = 'tm_notif_prompt_dismissed';
 
