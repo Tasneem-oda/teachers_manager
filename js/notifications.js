@@ -11,10 +11,10 @@
  *   لاحقًا وهو بس عارف الـ teacher_id، من غير ما نحتاج نخزّن أي بيانات
  *   اشتراك (subscription) بنفسنا في قاعدة بياناتنا.
  * - الإشعار الفعلي (تذكير الحصص اليومي) بيتبعت من workflow مجدول في n8n
- *   (شوفي n8n/send-daily-lesson-notifications.json) بيستدعي REST API بتاع
+ *   (شوف n8n/send-daily-lesson-notifications.json) بيستدعي REST API بتاع
  *   OneSignal مباشرة - مفيش أي كود هنا بيبعت الإشعار نفسه.
  *
- * ملحوظة: لازم تحطي الـ ONESIGNAL_APP_ID الحقيقي في js/config.js (تحت
+ * ملحوظة: لازم تحط الـ ONESIGNAL_APP_ID الحقيقي في js/config.js (تحت
  * CONFIG.PUSH_NOTIFICATIONS.ONESIGNAL_APP_ID) عشان الكود ده يشتغل فعليًا.
  * ============================================================================
  */
@@ -41,7 +41,12 @@ function loadOneSignalSdk() {
     if (document.getElementById('onesignal-sdk')) return; // محمّلة بالفعل
     const script = document.createElement('script');
     script.id = 'onesignal-sdk';
-
+    // ملحوظة مهمة: الرابط ده هو رابط النسخة الحالية v16 من SDK بتاع OneSignal.
+    // الرابط القديم (cdn.onesignal.com/sdks/OneSignalSDK.js) بقى "stub" قديم
+    // مالوش علاقة بـ window.OneSignalDeferred، فكان بيخلي كل استدعاءاتنا
+    // (init/login/requestPermission) تتحط في الطابور من غير ما تتنفذ أبدًا،
+    // من غير أي خطأ ظاهر في الـ console - وده اللي كان بيمنع ظهور نافذة
+    // إذن الإشعارات للمستخدم تمامًا.
     script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
     script.defer = true;
     document.head.appendChild(script);

@@ -241,6 +241,17 @@ export const api = {
             'POST',
             { lesson_id: lessonId }
         );
+    },
+
+    // مساعد الذكاء الاصطناعي التفاعلي: رسالة واحدة من المعلم + رد المساعد،
+    // مع ذاكرة محادثة خاصة بالطالب محفوظة في السيرفر (مش محتاجين نبعت
+    // التاريخ كامل من هنا - الـ backend بيجيبه بنفسه من قاعدة البيانات)
+    async chatWithAIAssistant(studentId, message) {
+        return await apiCall(
+            CONFIG.API_ENDPOINTS.AI.CHAT,
+            'POST',
+            { student_id: studentId, message }
+        );
     }
 };
 

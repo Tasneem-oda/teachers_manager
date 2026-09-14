@@ -12,10 +12,10 @@ export const CONFIG = {
     N8N_WEBHOOK_BASE: 'https://n8n-2lse.srv1963528.hstgr.cloud/webhook',
 
     // إعدادات إشعارات Push (OneSignal) - لإرسال تذكير يومي للمعلم بحصص اليوم
-    // 1) أنشئي حساب مجاني على https://onesignal.com
-    // 2) أنشئي تطبيق ويب جديد (Web Push) واختاري "Typical Site"
-    // 3) هتلاقي الـ App ID في Settings > Keys & IDs، حطيه بدل القيمة تحت
-    // 4) لازم الموقع يبقى شغال على HTTPS (مش مشكلة عندك لأنه منشور بالفعل على دومين)
+    // 1) أنشئ حساب مجاني على https://onesignal.com
+    // 2) أنشئ تطبيق ويب جديد (Web Push) واختار "Typical Site"
+    // 3) هتلاقي الـ App ID في Settings > Keys & IDs، حطّه بدل القيمة تحت
+    // 4) لازم الموقع يبقى شغال على HTTPS (مش مشكلة هنا لأنه منشور بالفعل على دومين)
     PUSH_NOTIFICATIONS: {
         ONESIGNAL_APP_ID: '8cba05cf-844b-4e83-a7e7-8dbce1264ae3'
     },
@@ -64,7 +64,10 @@ export const CONFIG = {
         },
         AI: {
             ASSISTANT: '/teacher-assistant',
-            LESSON_SUMMARY: '/lesson-summary'
+            LESSON_SUMMARY: '/lesson-summary',
+            // مساعد الذكاء الاصطناعي التفاعلي (شات بذاكرة خاصة بكل طالب) - منفصل
+            // عن ASSISTANT اللي بيستخدمه زرار "طلب ملخص ذكي" الموجود بالفعل
+            CHAT: '/ai-chat'
         }
     },
     

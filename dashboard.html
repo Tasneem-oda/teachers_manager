@@ -51,12 +51,12 @@
 
                         <!-- المساعد الذكي + الملاحظات -->
                         <div style="display:flex; flex-direction:column; gap:1.5rem;">
+                            <!-- المساعد الذكي -->
                             <div class="ai-card">
                                 <h3><span id="ic-ai" class="icon"></span> المساعد الذكي</h3>
-                                <p class="sub">كيف يمكنني مساعدتك اليوم؟</p>
+                                <p class="sub" id="ai-card-sub">شات تفاعلي بذاكرة خاصة بكل طالب — متاح الآن من صفحة كل حصة</p>
                                 <div class="ai-quick-actions">
-                                    <button type="button" onclick="alert('المساعد الذكي كشات تفاعلي قادم في التحديث القادم — حاليًا متاح من صفحة الحصة كملخص ذكي.')"><span id="ic-idea" class="icon"></span> اقترح نشاطًا تعليميًا</button>
-                                    <button type="button" onclick="alert('المساعد الذكي كشات تفاعلي قادم في التحديث القادم — حاليًا متاح من صفحة الحصة كملخص ذكي.')"><span id="ic-explain" class="icon"></span> اشرح الفكرة الحالية</button>
+                                    <button type="button" id="btn-open-ai-assistant" class="btn-ai-pulse"><span id="ic-ai-enter" class="icon"></span> فتح المساعد الذكي</button>
                                 </div>
                             </div>
 
@@ -77,7 +77,7 @@
                             <a href="students.html?action=add" class="quick-link-btn"><span class="icon" id="ic-ql-add"></span> إضافة طالب</a>
                             <a href="schedule.html" class="quick-link-btn"><span class="icon" id="ic-ql-schedule"></span> جدول المواعيد</a>
                             <a href="books.html" class="quick-link-btn"><span class="icon" id="ic-ql-books"></span> كتابي</a>
-                            <a href="students.html" class="quick-link-btn"><span class="icon" id="ic-ql-notes"></span> الملاحظات</a>
+                            <a href="students.html" class="quick-link-btn"><span class="icon" id="ic-ql-notes"></span> ملاحظات الطلاب</a>
                             <a href="subscription.html" class="quick-link-btn"><span class="icon" id="ic-ql-sub"></span> الاشتراك</a>
                             <a href="settings.html" class="quick-link-btn"><span class="icon" id="ic-ql-settings"></span> الإعدادات</a>
                         </div>
@@ -101,10 +101,13 @@
 
         renderSidebar('dashboard');
 
+        // بيانات آخر تحميل للوحة التحكم - نحتفظ بيها هنا عشان زرار
+        // "فتح المساعد الذكي" يقدر يقرر يوديك على شات حصة النهاردة مباشرة
+        let dashboardData = null;
+
         document.getElementById('ic-today').innerHTML = icon('calendar', { size: 17 });
         document.getElementById('ic-ai').innerHTML = icon('sparkles', { size: 17 });
-        document.getElementById('ic-idea').innerHTML = icon('lightbulb', { size: 15 });
-        document.getElementById('ic-explain').innerHTML = icon('bookOpen', { size: 15 });
+        document.getElementById('ic-ai-enter').innerHTML = icon('link', { size: 15 });
         document.getElementById('ic-notes').innerHTML = icon('clipboard', { size: 16 });
         document.getElementById('ic-ql-add').innerHTML = icon('plus', { size: 19 });
         document.getElementById('ic-ql-schedule').innerHTML = icon('calendar', { size: 19 });
@@ -161,9 +164,35 @@
             `).join('');
         }
 
+        // تحديث نص التلميح تحت "المساعد الذكي" حسب وجود حصص اليوم من عدمه،
+        // عشان الزرار يوصف فعليًا اللي هيحصل لما المستخدم يضغط عليه
+        function updateAiCardHint() {
+            const hintEl = document.getElementById('ai-card-sub');
+            const lessons = (dashboardData && dashboardData.todayLessons) || [];
+            if (lessons.length > 0) {
+                hintEl.textContent = `شات تفاعلي بذاكرة خاصة بكل طالب — هيفتح دلوقتي على حصة ${lessons[0].student_name || 'اليوم'}`;
+            } else {
+                hintEl.textContent = 'شات تفاعلي بذاكرة خاصة بكل طالب — متاح من صفحة أي حصة، اختَر طالبًا للبدء';
+            }
+        }
+
+        // زرار "فتح المساعد الذكي": بيوديك على شات المساعد جوه حصة النهاردة
+        // مباشرة لو فيه حصة، وإلا يوديك تختار طالب تبدأ معاه
+        document.getElementById('btn-open-ai-assistant').addEventListener('click', () => {
+            const lessons = (dashboardData && dashboardData.todayLessons) || [];
+            if (lessons.length > 0 && lessons[0].student_id) {
+                window.location.href = `lesson.html?student_id=${lessons[0].student_id}&open_ai=1`;
+            } else if (dashboardData && (dashboardData.studentsCount || 0) > 0) {
+                window.location.href = 'students.html';
+            } else {
+                window.location.href = 'students.html?action=add';
+            }
+        });
+
         async function loadDashboard() {
             try {
                 const data = await api.getDashboard();
+                dashboardData = data;
                 renderTopHeader({
                     title: `${greeting()} يا ${Formatters.escapeHtml((data.teacher?.name || '').split(' ')[0] || '')} 🌸`,
                     subtitle: dateStr()
@@ -171,6 +200,7 @@
                 renderStats(data);
                 renderTodayLessons(data.todayLessons);
                 renderTrialBanner();
+                updateAiCardHint();
 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('content').style.display = 'block';

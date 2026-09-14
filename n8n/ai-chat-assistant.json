@@ -1,0 +1,648 @@
+{
+  "name": "ai-chat-assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "b46996c1-0dc2-42d7-a2dc-790879dc2417",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\n\nconst body = $input.first().json.body || {};\nconst rawMessage = (body.message || '').toString().trim();\n\n// ================= إعدادات قابلة للتعديل =================\n// عدد الطلبات المسموح بها لكل معلّم في اليوم الواحد (لحماية باقي المعلمين\n// من إن معلم واحد يستهلك كل الحصة المجانية المشتركة)\nconst dailyLimit = 40;\n// أقل عدد ثوانٍ لازم يفصل بين طلبين لكل النظام (كل المعلمين مجتمعين) -\n// ده بيحمي حصة Gemini المجانية من تجاوز حد الطلبات بالدقيقة (RPM).\n// 5 ثواني = أقصى ~12 طلب/دقيقة للنظام كله. زوّدها لو ظهرت أخطاء 429\n// كتير، أو قلّلها لو عدد المعلمين قليل وحصتك المجانية بتسمح بأكتر\n// (تقدر تتابع حدودك الفعلية من https://aistudio.google.com/usage)\nconst minIntervalSeconds = 5;\n// أقصى طول لرسالة المعلم (حماية من إساءة الاستخدام واستهلاك حصة زيادة)\nconst maxMessageLength = 600;\n// عدد آخر الرسائل اللي المساعد \"بيفتكرها\" من نفس الطالب (10 من المعلم\n// + 10 من المساعد تقريبًا)\nconst memoryLimit = 20;\n// اسم موديل Gemini - اختار أخف/أرخص موديل مجاني متاح لحسابك من\n// https://aistudio.google.com (الأسماء والحدود المجانية بتتغيّر بمرور\n// الوقت، تأكد من الاسم الصحيح قبل التفعيل)\nconst geminiModel = 'gemini-2.0-flash-lite';\n\nlet validationError = null;\nif (!body.student_id) {\n    validationError = 'رقم الطالب مطلوب';\n} else if (!rawMessage) {\n    validationError = 'من فضلك اكتب رسالة';\n} else if (rawMessage.length > maxMessageLength) {\n    validationError = `الرسالة طويلة جدًا (الحد الأقصى ${maxMessageLength} حرف)`;\n}\n\nreturn {\n    teacherId: payload.sub,\n    studentId: body.student_id || null,\n    message: rawMessage,\n    isValid: validationError === null,\n    validationError,\n    dailyLimit,\n    minIntervalSeconds,\n    maxMessageLength,\n    memoryLimit,\n    geminiModel\n};"
+      },
+      "id": "ed424b37-57b7-456d-ab23-8781ed5a2ed2",
+      "name": "Decode JWT & Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.isValid }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "766f0c9d-b07a-4602-8158-86f9ea5766f8",
+      "name": "Message Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"{{ $json.validationError }}\"\n  }\n}",
+        "options": {}
+      },
+      "id": "c1e8400b-c0f5-4314-9794-1902e4d6908b",
+      "name": "Validation Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        660,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n    s.id AS student_id,\n    s.name,\n    s.subject,\n    s.current_topic,\n    s.current_surah,\n    s.current_from_ayah,\n    s.current_to_ayah,\n    (\n        SELECT json_agg(row_to_json(l)) FROM (\n            SELECT lesson_date, lesson_content, memorization, recitation, performance, notes, next_assignment, homework\n            FROM teachers_manager.lessons\n            WHERE student_id = s.id AND teacher_id = s.teacher_id\n            ORDER BY lesson_date DESC\n            LIMIT 5\n        ) l\n    ) AS recent_lessons,\n    (\n        SELECT json_agg(row_to_json(n)) FROM (\n            SELECT note, created_at\n            FROM teachers_manager.student_notes\n            WHERE student_id = s.id AND teacher_id = s.teacher_id\n            ORDER BY created_at DESC\n            LIMIT 10\n        ) n\n    ) AS notes\nFROM teachers_manager.students s\nWHERE s.id = $1::uuid AND s.teacher_id = $2::uuid;",
+        "options": {
+          "queryReplacement": "={{ $('Decode JWT & Config').item.json.studentId }},{{ $('Decode JWT & Config').item.json.teacherId }}"
+        }
+      },
+      "id": "7f4a033c-799c-4258-a169-055fb9b6a538",
+      "name": "Get Student Context",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        660,
+        180
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !!$json.student_id }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "2937e7b3-8988-419f-94fd-078ca87905e0",
+      "name": "Student Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        880,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"الطالب غير موجود أو لا يتبع لحسابك.\"\n  }\n}",
+        "options": {}
+      },
+      "id": "dbc65c83-c871-46e1-bb54-4d0c463f7bc1",
+      "name": "Not Found Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE teachers_manager.ai_rate_limiter\nSET last_request_at = now()\nWHERE id = 1\n  AND (last_request_at IS NULL OR now() - last_request_at >= ($1 || ' seconds')::interval)\nRETURNING last_request_at;",
+        "options": {
+          "queryReplacement": "={{ $('Decode JWT & Config').item.json.minIntervalSeconds }}"
+        }
+      },
+      "id": "631f386b-889b-4d32-841a-75f2223c3c8c",
+      "name": "Reserve Global Rate Slot",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1100,
+        60
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !!$json.last_request_at }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "c044257b-a925-4ab7-93c0-d88cbc20d0b0",
+      "name": "Rate Slot Reserved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"BUSY\",\n    \"message\": \"النظام مشغول لحظة، من فضلك أعد المحاولة بعد ثوانٍ قليلة.\"\n  }\n}",
+        "options": {}
+      },
+      "id": "84fd2b18-890b-497e-897e-01582fd3a3eb",
+      "name": "Busy Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1540,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO teachers_manager.ai_usage_daily (teacher_id, usage_date, request_count)\nVALUES ($1::uuid, CURRENT_DATE, 1)\nON CONFLICT (teacher_id, usage_date)\nDO UPDATE SET request_count = teachers_manager.ai_usage_daily.request_count + 1\nWHERE teachers_manager.ai_usage_daily.request_count < $2\nRETURNING request_count;",
+        "options": {
+          "queryReplacement": "={{ $('Decode JWT & Config').item.json.teacherId }},{{ $('Decode JWT & Config').item.json.dailyLimit }}"
+        }
+      },
+      "id": "a3154618-4d05-45c8-8fd7-e790b27844c9",
+      "name": "Reserve Daily Quota",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1540,
+        -60
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !!$json.request_count }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "1529d4f6-2a9e-4cb3-9c4e-2073954cd99b",
+      "name": "Quota Reserved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"DAILY_LIMIT\",\n    \"message\": \"وصلتِ للحد الأقصى المسموح به من الطلبات اليوم ({{ $('Decode JWT & Config').item.json.dailyLimit }} طلب). حاول مرة أخرى غدًا.\"\n  }\n}",
+        "options": {}
+      },
+      "id": "9b50f149-45de-40f3-96b9-210fd594571b",
+      "name": "Daily Limit Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1980,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT role, content\nFROM teachers_manager.ai_chat_messages\nWHERE student_id = $1::uuid AND teacher_id = $2::uuid\nORDER BY created_at DESC\nLIMIT $3;",
+        "options": {
+          "queryReplacement": "={{ $('Decode JWT & Config').item.json.studentId }},{{ $('Decode JWT & Config').item.json.teacherId }},{{ $('Decode JWT & Config').item.json.memoryLimit }}"
+        }
+      },
+      "id": "7d7ee02f-c56f-48d3-aa49-5203f48e6c95",
+      "name": "Get Chat Memory",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1980,
+        -220
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $('Decode JWT & Config').item.json;\nconst student = $('Get Student Context').item.json;\nconst memoryItems = $('Get Chat Memory').all().map(i => i.json).filter(m => m.role && m.content);\n// الرسائل راجعة من الأحدث للأقدم - لازم نرتبها زمنيًا (الأقدم أولًا) قبل\n// ما نبنيها كسياق محادثة لـ Gemini\nmemoryItems.reverse();\n\nconst lessons = Array.isArray(student.recent_lessons) ? student.recent_lessons : [];\nconst notes = Array.isArray(student.notes) ? student.notes : [];\n\nconst lessonsText = lessons.length\n    ? lessons.map((l) => {\n        const date = (l.lesson_date || '').toString().substring(0, 10);\n        const parts = [];\n        if (l.lesson_content) parts.push(`المحتوى: ${l.lesson_content}`);\n        if (l.memorization) parts.push(`الحفظ: ${l.memorization}`);\n        if (l.recitation) parts.push(`الأداء الشفهي: ${l.recitation}`);\n        if (l.performance) parts.push(`الأداء العام: ${l.performance}`);\n        if (l.notes) parts.push(`ملاحظات: ${l.notes}`);\n        if (l.next_assignment) parts.push(`المهمة القادمة: ${l.next_assignment}`);\n        if (l.homework) parts.push(`الواجب: ${l.homework}`);\n        return `[حصة ${date}] ${parts.join(' - ') || 'بدون تفاصيل مسجّلة'}`;\n    }).join('\\n')\n    : 'لا يوجد سجل حصص سابقة بعد.';\n\nconst notesText = notes.length\n    ? notes.map(n => `- ${n.note}`).join('\\n')\n    : 'لا توجد ملاحظات مسجّلة عن هذا الطالب.';\n\nconst positionText = [\n    student.current_surah ? `السورة الحالية: ${student.current_surah}` : null,\n    (student.current_from_ayah && student.current_to_ayah)\n        ? `آخر مقطع تم أخذه: من آية ${student.current_from_ayah} إلى آية ${student.current_to_ayah}`\n        : null,\n    student.current_topic ? `الموضوع الحالي: ${student.current_topic}` : null\n].filter(Boolean).join('\\n') || 'لا يوجد تسجيل لموضع الطالب الحالي.';\n\nconst systemPrompt = `أنت مساعد ذكاء اصطناعي متخصص في مساعدة معلم/معلمة القرآن الكريم أثناء التحضير للحصة أو أثناءها فعليًا مع الطالب \"${student.name}\".\n\nمهمتك: تنفيذ طلبات المعلم بدقة (شرح آيات، اقتراح طريقة شرح، إجابة أسئلة تتعلق بالمنهج أو الطالب)، مع مراعاة كل ما يلي:\n\n== بيانات الطالب ==\nالاسم: ${student.name}\nالمادة: ${student.subject || 'غير محددة'}\n${positionText}\n\n== سجل آخر الحصص (الأحدث أولاً) ==\n${lessonsText}\n\n== ملاحظات المعلم عن هذا الطالب ==\n${notesText}\n\n== تعليمات مهمة لأسلوبك ==\n1. لو المعلم قال \"اشرح الصفحة/المقطع التالي\" أو ما شابه من غير ما يحدد آيات بنفسه، اعتمد على \"آخر مقطع تم أخذه\" في بيانات الطالب فوق كنقطة بداية، واشرح المقطع اللي بعده منطقيًا.\n2. اطّلع على ملاحظات المعلم عن أسلوب الطالب المفضل في التعلّم، وفصّل أسلوب شرحك حسبها تلقائيًا من غير ما تسأليه: لو الملاحظات بتقول إن الطالب بيحب الأمثلة من الحياة العملية، اربط الشرح بأمثلة واقعية قريبة منه. لو بيحب القصص، ركّز على قصص التفسير وأسباب النزول المرتبطة بالآيات.\n3. لو مفيش ملاحظات واضحة عن أسلوب معين، اشرح بأسلوب متوازن وواضح يناسب طالب عادي.\n4. ردودك موجّهة للمعلم/ـة عشان يستخدمها في شرح الطالب، مش موجّهة للطالب مباشرة.\n5. خلّي ردودك مركّزة وعملية، بدون حشو، وبالعربية الفصحى الواضحة إلا لو المعلم كتب بالعامية.\n6. لو الطلب غامض جدًا ومحتاج توضيح (مثلاً \"اشرح\" من غير أي تحديد ومفيش سياق كافي يوضح المقصود)، اسأل سؤال توضيحي واحد قصير بدل ما تفترض حاجة غلط.`;\n\nconst contents = memoryItems.map(m => ({\n    role: m.role === 'assistant' ? 'model' : 'user',\n    parts: [{ text: m.content }]\n}));\ncontents.push({ role: 'user', parts: [{ text: config.message }] });\n\nreturn {\n    teacherId: config.teacherId,\n    studentId: config.studentId,\n    userMessage: config.message,\n    dailyLimit: config.dailyLimit,\n    requestCount: $('Reserve Daily Quota').item.json.request_count,\n    geminiModel: config.geminiModel,\n    geminiRequestBody: {\n        systemInstruction: { parts: [{ text: systemPrompt }] },\n        contents,\n        generationConfig: {\n            temperature: 0.7,\n            maxOutputTokens: 900\n        }\n    }\n};"
+      },
+      "id": "3eaebdcb-aebd-48ac-9125-4a5452929ed7",
+      "name": "Build Gemini Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        2200,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $json.geminiModel }}:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.geminiRequestBody) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "3825decd-6cbe-4459-aa62-bc1704fdd6c0",
+      "name": "Call Gemini API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2420,
+        -220
+      ],
+      "continueOnFail": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_GEMINI_HEADER_AUTH_CREDENTIAL_ID",
+          "name": "Gemini API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $('Build Gemini Prompt').item.json;\nconst raw = $input.first().json;\n\nconst errorMessages = {\n    RATE_LIMITED: 'الخدمة مزدحمة حاليًا (وصلنا للحد المؤقت مع مزوّد الذكاء الاصطناعي)، من فضلك حاول تاني بعد دقيقة.',\n    BLOCKED: 'تعذّر توليد رد مناسب لهذا الطلب، جرّب تصيغه بطريقة مختلفة.',\n    AI_ERROR: 'حدث خطأ غير متوقع أثناء التواصل مع المساعد الذكي، من فضلك حاول مرة أخرى.'\n};\n\n// حالة: فشل استدعاء Gemini بالكامل (خطأ شبكة/مصادقة/تجاوز حد الاستخدام 429 إلخ)\nif (raw.error) {\n    const errText = JSON.stringify(raw.error).toLowerCase();\n    const statusCode = raw.error.httpCode || raw.error.status || raw.error.code || '';\n    let errorType = 'AI_ERROR';\n    if (String(statusCode).includes('429') || errText.includes('resource_exhausted') || errText.includes('quota')) {\n        errorType = 'RATE_LIMITED';\n    }\n    return {\n        success: false,\n        errorType,\n        message: errorMessages[errorType],\n        teacherId: prev.teacherId\n    };\n}\n\nconst candidate = raw.candidates && raw.candidates[0];\nconst finishReason = candidate && candidate.finishReason;\nconst text = candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text;\n\nif (!text) {\n    const errorType = (finishReason === 'SAFETY' || finishReason === 'BLOCKLIST' || finishReason === 'PROHIBITED_CONTENT') ? 'BLOCKED' : 'AI_ERROR';\n    return {\n        success: false,\n        errorType,\n        message: errorMessages[errorType],\n        teacherId: prev.teacherId\n    };\n}\n\nreturn {\n    success: true,\n    reply: text.trim(),\n    teacherId: prev.teacherId,\n    studentId: prev.studentId,\n    userMessage: prev.userMessage,\n    dailyLimit: prev.dailyLimit,\n    requestCount: prev.requestCount\n};"
+      },
+      "id": "c7f951dd-8fc7-4d14-a038-099fc639be67",
+      "name": "Extract AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        2640,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.success }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "31807cf2-2156-4e48-9c8b-a8eed39fead3",
+      "name": "AI Success?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        2860,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO teachers_manager.ai_chat_messages (teacher_id, student_id, role, content)\nVALUES\n    ($1::uuid, $2::uuid, 'user', $3),\n    ($1::uuid, $2::uuid, 'assistant', $4);",
+        "options": {
+          "queryReplacement": "={{ $json.teacherId }},{{ $json.studentId }},{{ $json.userMessage }},{{ $json.reply }}"
+        }
+      },
+      "id": "4adbedb9-96ba-45a9-8380-fe0fd4c2aa1b",
+      "name": "Save Chat Messages",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        3080,
+        -320
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, data: { reply: $('Extract AI Response').item.json.reply, remaining_today: $('Extract AI Response').item.json.dailyLimit - $('Extract AI Response').item.json.requestCount } }) }}",
+        "options": {}
+      },
+      "id": "38a93054-3d14-4e2b-b63c-4d3996f62f0a",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        3300,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE teachers_manager.ai_usage_daily\nSET request_count = GREATEST(request_count - 1, 0)\nWHERE teacher_id = $1::uuid AND usage_date = CURRENT_DATE;",
+        "options": {
+          "queryReplacement": "={{ $json.teacherId }}"
+        }
+      },
+      "id": "4130a803-ed9f-4909-bc74-fb8723e0ca3e",
+      "name": "Rollback Daily Quota",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        3080,
+        -120
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: { code: $('Extract AI Response').item.json.errorType, message: $('Extract AI Response').item.json.message } }) }}",
+        "options": {}
+      },
+      "id": "a56b600a-0d19-4ccc-8764-6031fb41378b",
+      "name": "AI Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        3300,
+        -120
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Decode JWT & Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decode JWT & Config": {
+      "main": [
+        [
+          {
+            "node": "Message Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message Valid?": {
+      "main": [
+        [
+          {
+            "node": "Get Student Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validation Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Student Context": {
+      "main": [
+        [
+          {
+            "node": "Student Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Student Found?": {
+      "main": [
+        [
+          {
+            "node": "Reserve Global Rate Slot",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not Found Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve Global Rate Slot": {
+      "main": [
+        [
+          {
+            "node": "Rate Slot Reserved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Slot Reserved?": {
+      "main": [
+        [
+          {
+            "node": "Reserve Daily Quota",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Busy Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve Daily Quota": {
+      "main": [
+        [
+          {
+            "node": "Quota Reserved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quota Reserved?": {
+      "main": [
+        [
+          {
+            "node": "Get Chat Memory",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Daily Limit Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Chat Memory": {
+      "main": [
+        [
+          {
+            "node": "Build Gemini Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Gemini Prompt": {
+      "main": [
+        [
+          {
+            "node": "Call Gemini API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Gemini API": {
+      "main": [
+        [
+          {
+            "node": "Extract AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract AI Response": {
+      "main": [
+        [
+          {
+            "node": "AI Success?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Success?": {
+      "main": [
+        [
+          {
+            "node": "Save Chat Messages",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rollback Daily Quota",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Chat Messages": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rollback Daily Quota": {
+      "main": [
+        [
+          {
+            "node": "AI Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {},
+  "meta": {
+    "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597"
+  }
+}
