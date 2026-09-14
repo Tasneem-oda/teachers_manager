@@ -64,7 +64,10 @@ export const CONFIG = {
         },
         AI: {
             ASSISTANT: '/teacher-assistant',
-            LESSON_SUMMARY: '/lesson-summary'
+            LESSON_SUMMARY: '/lesson-summary',
+            // مساعد الذكاء الاصطناعي التفاعلي (شات بذاكرة خاصة بكل طالب) - منفصل
+            // عن ASSISTANT اللي بيستخدمه زرار "طلب ملخص ذكي" الموجود بالفعل
+            CHAT: '/ai-chat'
         }
     },
     

@@ -82,6 +82,7 @@
             <div class="action-buttons">
                 <a href="#" id="lesson-link" class="btn" target="_blank" style="display: none;"><span id="ic-link" class="icon" style="display:inline-flex;"></span> فتح رابط الحصة</a>
                 <button class="btn" id="btn-start-timer"><span id="ic-timer" class="icon" style="display:inline-flex;"></span> بدء الحصة</button>
+                <button type="button" class="btn" id="btn-open-ai-chat" style="background:#9C5FA3;"><span id="ic-ai-chat-btn" class="icon" style="display:inline-flex;"></span> مساعد الذكاء الاصطناعي</button>
             </div>
 
             <!-- Lesson Content -->
@@ -166,11 +167,82 @@
                     <a href="student.html" class="btn" style="background: #E7E1E8; color: var(--text-primary); margin-right: 1rem; text-decoration: none;">إلغاء</a>
                 </div>
             </form>
+
+            <!-- ============================================================
+                 مودال مساعد الذكاء الاصطناعي (شات تفاعلي مع ذاكرة خاصة بالطالب)
+                 مخفي افتراضيًا، بيتفتح بالضغط على زرار "مساعد الذكاء الاصطناعي"
+                 فوق. منفصل تمامًا عن قسم "المساعد الذكي (اختياري)" (طلب ملخص
+                 ذكي) الموجود جوه الفورم - مفيش أي تعديل على الجزء ده.
+                 ============================================================ -->
+            <div id="ai-chat-overlay" style="display:none;">
+                <div class="ai-chat-card">
+                    <div class="ai-chat-header">
+                        <div class="ai-chat-header-title">
+                            <span id="ic-ai-chat-header" class="icon" style="display:inline-flex;"></span>
+                            <div>
+                                <h3>مساعد الذكاء الاصطناعي</h3>
+                                <p id="ai-chat-student-name">-</p>
+                            </div>
+                        </div>
+                        <button type="button" id="btn-close-ai-chat" class="ai-chat-close-btn" aria-label="إغلاق">
+                            <span id="ic-ai-chat-close" class="icon" style="display:inline-flex;"></span>
+                        </button>
+                    </div>
+                    <div id="ai-chat-messages" class="ai-chat-messages">
+                        <div class="ai-chat-hint">اكتبي طلبك للمساعد، مثلاً: "اشرح من آية ٥ لآية ١٠" أو "اشرح الصفحة التالية للطالب" — المساعد شايف سجل حصص الطالب وملاحظاتك عليه.</div>
+                    </div>
+                    <div id="ai-chat-quota" class="ai-chat-quota"></div>
+                    <form id="ai-chat-form" class="ai-chat-input-row">
+                        <textarea id="ai-chat-input" placeholder="اكتبي طلبك هنا..." rows="1" maxlength="600"></textarea>
+                        <button type="submit" id="btn-ai-chat-send" class="btn">إرسال</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
     </div>
     </main>
     </div>
+
+    <style>
+        #ai-chat-overlay {
+            position: fixed; inset: 0; z-index: 10000;
+            background: rgba(41, 37, 45, 0.55);
+            display: flex; align-items: center; justify-content: center;
+            padding: 1rem;
+        }
+        .ai-chat-card {
+            background: var(--card-bg, #FFFFFF);
+            width: 100%; max-width: 560px; height: min(80vh, 720px);
+            border-radius: 16px; display: flex; flex-direction: column;
+            overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+        }
+        .ai-chat-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 1rem 1.25rem; background: linear-gradient(135deg, #4B3A5A 0%, #7A6B83 100%);
+            color: #fff; flex-shrink: 0;
+        }
+        .ai-chat-header-title { display: flex; align-items: center; gap: 0.65rem; }
+        .ai-chat-header-title h3 { margin: 0; font-size: 1rem; }
+        .ai-chat-header-title p { margin: 0.15rem 0 0; font-size: 0.8rem; opacity: 0.85; }
+        .ai-chat-close-btn { background: rgba(255,255,255,0.15); border: none; color: #fff; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .ai-chat-close-btn:hover { background: rgba(255,255,255,0.3); }
+        .ai-chat-messages { flex: 1; overflow-y: auto; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; background: var(--bg-secondary, #F5F3F0); }
+        .ai-chat-hint { font-size: 0.82rem; color: var(--text-secondary, #716A74); text-align: center; padding: 1rem; }
+        .ai-chat-bubble { max-width: 85%; padding: 0.65rem 0.9rem; border-radius: 12px; font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+        .ai-chat-bubble.role-user { align-self: flex-end; background: var(--primary, #4B3A5A); color: #fff; border-bottom-left-radius: 4px; }
+        .ai-chat-bubble.role-assistant { align-self: flex-start; background: #fff; border: 1px solid var(--border, #E7E1E8); color: var(--text-primary, #29252D); border-bottom-right-radius: 4px; }
+        .ai-chat-bubble.role-error { align-self: center; background: #FBEAEA; color: #B85C5C; border: 1px solid #F0CFCF; font-size: 0.82rem; }
+        .ai-chat-bubble.role-loading { align-self: flex-start; background: #fff; border: 1px solid var(--border, #E7E1E8); color: var(--text-secondary, #716A74); font-size: 0.85rem; }
+        .ai-chat-quota { padding: 0.3rem 1.25rem; font-size: 0.72rem; color: var(--text-secondary, #716A74); text-align: center; flex-shrink: 0; }
+        .ai-chat-input-row { display: flex; gap: 0.6rem; padding: 0.85rem 1.25rem; border-top: 1px solid var(--border, #E7E1E8); flex-shrink: 0; background: var(--card-bg, #FFFFFF); }
+        .ai-chat-input-row textarea { flex: 1; resize: none; max-height: 90px; padding: 0.6rem 0.8rem; border: 1px solid var(--border, #E7E1E8); border-radius: 10px; font-family: inherit; font-size: 0.9rem; }
+        .ai-chat-input-row .btn { flex-shrink: 0; padding: 0.6rem 1.1rem; }
+        @media (max-width: 480px) {
+            .ai-chat-card { height: 92vh; border-radius: 12px; }
+            .ai-chat-bubble { max-width: 92%; }
+        }
+    </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="js/config.js"></script>
@@ -187,6 +259,9 @@
         document.getElementById('ic-timer').innerHTML = icon('play', { size: 15 });
         document.getElementById('ic-ai-section').innerHTML = icon('sparkles', { size: 18 });
         document.getElementById('ic-finish').innerHTML = icon('checkCircle', { size: 17 });
+        document.getElementById('ic-ai-chat-btn').innerHTML = icon('messageSquare', { size: 15 });
+        document.getElementById('ic-ai-chat-header').innerHTML = icon('sparkles', { size: 18 });
+        document.getElementById('ic-ai-chat-close').innerHTML = icon('x', { size: 16 });
 
         const loader = document.getElementById('loader');
         const content = document.getElementById('lesson-content-view');
@@ -251,6 +326,7 @@
                 document.getElementById('lesson-date').textContent = Formatters.formatDate(new Date());
                 document.getElementById('subject').textContent = student.subject || '-';
                 document.getElementById('current-topic').textContent = student.current_topic || '-';
+                document.getElementById('ai-chat-student-name').textContent = student.name || '';
 
                 // Setup lesson link
                 if (student.lesson_link) {
@@ -331,6 +407,93 @@
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'اطلب ملخص ذكي';
+            }
+        });
+
+        // ============================================================
+        // مساعد الذكاء الاصطناعي (شات تفاعلي) - ميزة منفصلة تمامًا عن
+        // قسم "طلب ملخص ذكي" فوق، بذاكرة محادثة خاصة بالطالب محفوظة
+        // في السيرفر (راجعي n8n/ai-chat-assistant.json لتفاصيل الباك إند)
+        // ============================================================
+        const aiChatOverlay = document.getElementById('ai-chat-overlay');
+        const aiChatMessages = document.getElementById('ai-chat-messages');
+        const aiChatForm = document.getElementById('ai-chat-form');
+        const aiChatInput = document.getElementById('ai-chat-input');
+        const aiChatSendBtn = document.getElementById('btn-ai-chat-send');
+        const aiChatQuota = document.getElementById('ai-chat-quota');
+        let aiChatBusy = false;
+
+        function renderAiChatMessage(role, text) {
+            // نشيل أي رسالة "جاري التفكير..." أو نص الترحيب قبل ما نضيف رسالة حقيقية
+            const loadingEl = aiChatMessages.querySelector('.role-loading');
+            if (loadingEl) loadingEl.remove();
+            const hintEl = aiChatMessages.querySelector('.ai-chat-hint');
+            if (hintEl) hintEl.remove();
+
+            const bubble = document.createElement('div');
+            bubble.className = `ai-chat-bubble role-${role}`;
+            bubble.textContent = text;
+            aiChatMessages.appendChild(bubble);
+            aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
+        }
+
+        function showAiChatLoading() {
+            const bubble = document.createElement('div');
+            bubble.className = 'ai-chat-bubble role-loading';
+            bubble.textContent = 'جاري التفكير...';
+            aiChatMessages.appendChild(bubble);
+            aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
+        }
+
+        document.getElementById('btn-open-ai-chat').addEventListener('click', () => {
+            if (!studentIdParam) return;
+            aiChatOverlay.style.display = 'flex';
+            aiChatInput.focus();
+        });
+
+        document.getElementById('btn-close-ai-chat').addEventListener('click', () => {
+            aiChatOverlay.style.display = 'none';
+        });
+
+        // إرسال بالـ Enter (وShift+Enter لسطر جديد بدل الإرسال)
+        aiChatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                aiChatForm.requestSubmit();
+            }
+        });
+
+        aiChatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (aiChatBusy) return;
+
+            const message = aiChatInput.value.trim();
+            if (!message) return;
+
+            aiChatBusy = true;
+            aiChatSendBtn.disabled = true;
+            aiChatInput.disabled = true;
+
+            renderAiChatMessage('user', message);
+            aiChatInput.value = '';
+            showAiChatLoading();
+
+            try {
+                const result = await api.chatWithAIAssistant(studentIdParam, message);
+                renderAiChatMessage('assistant', (result && result.reply) || 'لم يصل رد من المساعد.');
+
+                if (result && typeof result.remaining_today === 'number') {
+                    aiChatQuota.textContent = `متبقٍ ${result.remaining_today} طلب اليوم`;
+                }
+            } catch (error) {
+                // رسائل الأخطاء الخاصة (وصول الحد اليومي / ازدحام مؤقت مع الذكاء
+                // الاصطناعي / طلب غير صالح) بترجع بنص عربي واضح جاهز من الـ backend
+                renderAiChatMessage('error', ErrorHandler.getErrorMessage(error) || 'حدث خطأ أثناء التواصل مع المساعد الذكي.');
+            } finally {
+                aiChatBusy = false;
+                aiChatSendBtn.disabled = false;
+                aiChatInput.disabled = false;
+                aiChatInput.focus();
             }
         });
     </script>
