@@ -51,12 +51,12 @@
 
                         <!-- المساعد الذكي + الملاحظات -->
                         <div style="display:flex; flex-direction:column; gap:1.5rem;">
+                            <!-- المساعد الذكي -->
                             <div class="ai-card">
                                 <h3><span id="ic-ai" class="icon"></span> المساعد الذكي</h3>
-                                <p class="sub">كيف يمكنني مساعدتك اليوم؟</p>
+                                <p class="sub">شات تفاعلي بذاكرة خاصة بكل طالب — متاح الآن من صفحة كل حصة</p>
                                 <div class="ai-quick-actions">
-                                    <button type="button" onclick="alert('المساعد الذكي كشات تفاعلي قادم في التحديث القادم — حاليًا متاح من صفحة الحصة كملخص ذكي.')"><span id="ic-idea" class="icon"></span> اقترح نشاطًا تعليميًا</button>
-                                    <button type="button" onclick="alert('المساعد الذكي كشات تفاعلي قادم في التحديث القادم — حاليًا متاح من صفحة الحصة كملخص ذكي.')"><span id="ic-explain" class="icon"></span> اشرح الفكرة الحالية</button>
+                                    <button type="button" onclick="window.location.href='schedule.html'"><span id="ic-ai-enter" class="icon"></span> فتح المساعد الذكي</button>
                                 </div>
                             </div>
 
@@ -103,8 +103,7 @@
 
         document.getElementById('ic-today').innerHTML = icon('calendar', { size: 17 });
         document.getElementById('ic-ai').innerHTML = icon('sparkles', { size: 17 });
-        document.getElementById('ic-idea').innerHTML = icon('lightbulb', { size: 15 });
-        document.getElementById('ic-explain').innerHTML = icon('bookOpen', { size: 15 });
+        document.getElementById('ic-ai-enter').innerHTML = icon('link', { size: 15 });
         document.getElementById('ic-notes').innerHTML = icon('clipboard', { size: 16 });
         document.getElementById('ic-ql-add').innerHTML = icon('plus', { size: 19 });
         document.getElementById('ic-ql-schedule').innerHTML = icon('calendar', { size: 19 });

@@ -11,10 +11,10 @@
  *   لاحقًا وهو بس عارف الـ teacher_id، من غير ما نحتاج نخزّن أي بيانات
  *   اشتراك (subscription) بنفسنا في قاعدة بياناتنا.
  * - الإشعار الفعلي (تذكير الحصص اليومي) بيتبعت من workflow مجدول في n8n
- *   (شوفي n8n/send-daily-lesson-notifications.json) بيستدعي REST API بتاع
+ *   (شوف n8n/send-daily-lesson-notifications.json) بيستدعي REST API بتاع
  *   OneSignal مباشرة - مفيش أي كود هنا بيبعت الإشعار نفسه.
  *
- * ملحوظة: لازم تحطي الـ ONESIGNAL_APP_ID الحقيقي في js/config.js (تحت
+ * ملحوظة: لازم تحط الـ ONESIGNAL_APP_ID الحقيقي في js/config.js (تحت
  * CONFIG.PUSH_NOTIFICATIONS.ONESIGNAL_APP_ID) عشان الكود ده يشتغل فعليًا.
  * ============================================================================
  */

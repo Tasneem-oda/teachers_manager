@@ -189,11 +189,11 @@
                         </button>
                     </div>
                     <div id="ai-chat-messages" class="ai-chat-messages">
-                        <div class="ai-chat-hint">اكتبي طلبك للمساعد، مثلاً: "اشرح من آية ٥ لآية ١٠" أو "اشرح الصفحة التالية للطالب" — المساعد شايف سجل حصص الطالب وملاحظاتك عليه.</div>
+                        <div class="ai-chat-hint">اكتب طلبك للمساعد، مثلاً: "اشرح من آية ٥ لآية ١٠" أو "اشرح الصفحة التالية للطالب" — المساعد شايف سجل حصص الطالب وملاحظاتك عليه.</div>
                     </div>
                     <div id="ai-chat-quota" class="ai-chat-quota"></div>
                     <form id="ai-chat-form" class="ai-chat-input-row">
-                        <textarea id="ai-chat-input" placeholder="اكتبي طلبك هنا..." rows="1" maxlength="600"></textarea>
+                        <textarea id="ai-chat-input" placeholder="اكتب طلبك هنا..." rows="1" maxlength="600"></textarea>
                         <button type="submit" id="btn-ai-chat-send" class="btn">إرسال</button>
                     </form>
                 </div>
@@ -413,7 +413,7 @@
         // ============================================================
         // مساعد الذكاء الاصطناعي (شات تفاعلي) - ميزة منفصلة تمامًا عن
         // قسم "طلب ملخص ذكي" فوق، بذاكرة محادثة خاصة بالطالب محفوظة
-        // في السيرفر (راجعي n8n/ai-chat-assistant.json لتفاصيل الباك إند)
+        // في السيرفر (راجع n8n/ai-chat-assistant.json لتفاصيل الباك إند)
         // ============================================================
         const aiChatOverlay = document.getElementById('ai-chat-overlay');
         const aiChatMessages = document.getElementById('ai-chat-messages');
