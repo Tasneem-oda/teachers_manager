@@ -1,0 +1,187 @@
+{
+    "name": "mark-notifications-read",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "mark-notifications-read",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "ac07862c-951b-42d4-9208-cca34f0c91f3",
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                0,
+                0
+            ],
+            "webhookId": "mnr01-webhook"
+        },
+        {
+            "parameters": {
+                "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\nconst body = $input.first().json.body || {};\n\n// لو الـ body فيه id، بنحدد إشعار واحد بعينه كمقروء (عند الضغط عليه في القائمة).\n// لو مفيش id (body فاضي)، بنحدد كل إشعارات المعلم غير المقروءة كمقروءة دفعة\n// واحدة (زرار \"تحديد الكل كمقروء\").\nreturn {\n    teacherId: payload.sub,\n    notifId: (body.id || '').toString().trim()\n};"
+            },
+            "id": "0a224220-0ec9-4e97-a56a-d5744705358e",
+            "name": "Decode JWT",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                224,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.notifId }}",
+                            "operation": "notEqual",
+                            "value2": ""
+                        }
+                    ]
+                }
+            },
+            "id": "772d7d86-ecd7-4483-bf19-8db1c703ad3d",
+            "name": "Has Specific ID?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                448,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "UPDATE teachers_manager.notifications\nSET is_read = true, read_at = now()\nWHERE teacher_id = $1::uuid AND id = $2::uuid AND is_read = false\nRETURNING id;",
+                "options": {
+                    "queryReplacement": "={{ $json.teacherId }},{{ $json.notifId }}"
+                }
+            },
+            "id": "e48679bf-63ff-446f-abaf-e3ea4928e6f1",
+            "name": "Mark One As Read",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.4,
+            "position": [
+                672,
+                -80
+            ],
+            "alwaysOutputData": true,
+            "credentials": {
+                "postgres": {
+                    "id": "bxJVKX8A8LBKYb6c",
+                    "name": "Postgres account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "UPDATE teachers_manager.notifications\nSET is_read = true, read_at = now()\nWHERE teacher_id = $1::uuid AND is_read = false\nRETURNING id;",
+                "options": {
+                    "queryReplacement": "={{ $json.teacherId }}"
+                }
+            },
+            "id": "ed4c4107-0010-4694-82b8-473d383eef3d",
+            "name": "Mark All As Read",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.4,
+            "position": [
+                672,
+                120
+            ],
+            "alwaysOutputData": true,
+            "credentials": {
+                "postgres": {
+                    "id": "bxJVKX8A8LBKYb6c",
+                    "name": "Postgres account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={\n  \"success\": true,\n  \"data\": { \"updated\": true }\n}",
+                "options": {}
+            },
+            "id": "b886d8dd-d44a-48e8-a69e-bb0c01eb5135",
+            "name": "Success Response",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                896,
+                0
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Decode JWT",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Decode JWT": {
+            "main": [
+                [
+                    {
+                        "node": "Has Specific ID?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Has Specific ID?": {
+            "main": [
+                [
+                    {
+                        "node": "Mark One As Read",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Mark All As Read",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Mark One As Read": {
+            "main": [
+                [
+                    {
+                        "node": "Success Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Mark All As Read": {
+            "main": [
+                [
+                    {
+                        "node": "Success Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "meta": {
+        "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597"
+    }
+}

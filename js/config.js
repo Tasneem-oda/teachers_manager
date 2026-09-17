@@ -62,6 +62,11 @@ export const CONFIG = {
         ADMIN: {
             GET_USERS: '/admin/get-users'
         },
+        // مركز الإشعارات (نافذة زر الجرس 🔔) - مقروءة / غير مقروءة
+        NOTIFICATIONS: {
+            GET_ALL: '/get-notifications',
+            MARK_READ: '/mark-notifications-read'
+        },
         AI: {
             ASSISTANT: '/teacher-assistant',
             LESSON_SUMMARY: '/lesson-summary',

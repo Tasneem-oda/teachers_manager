@@ -1,0 +1,136 @@
+{
+    "name": "get-notifications",
+    "nodes": [
+        {
+            "parameters": {
+                "path": "get-notifications",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "39afd912-232d-4bee-8d92-0e752b8cc416",
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                0,
+                0
+            ],
+            "webhookId": "gnt01-webhook"
+        },
+        {
+            "parameters": {
+                "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\nreturn { teacherId: payload.sub };"
+            },
+            "id": "c7fbd7a1-1822-4c00-8a62-56c0528bc547",
+            "name": "Decode JWT",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                192,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "SELECT id, title, body, url, is_read, created_at, read_at\nFROM teachers_manager.notifications\nWHERE teacher_id = $1::uuid\nORDER BY created_at DESC\nLIMIT 200;",
+                "options": {
+                    "queryReplacement": "={{ $json.teacherId }}"
+                }
+            },
+            "id": "e2873414-95a8-4a33-bdb1-bcd0dc242a16",
+            "name": "Get Notifications",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.4,
+            "position": [
+                384,
+                0
+            ],
+            "alwaysOutputData": true,
+            "credentials": {
+                "postgres": {
+                    "id": "bxJVKX8A8LBKYb6c",
+                    "name": "Postgres account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// نقسّم النتيجة إلى غير مقروءة / مقروءة عشان الواجهة تعرضهم في تبويبين\n// مباشرة من غير ما تحتاج تفلتر بنفسها\nconst rows = $input.all().map(i => i.json).filter(r => r.id);\nconst unread = rows.filter(r => r.is_read === false);\nconst read = rows.filter(r => r.is_read === true);\nreturn { unread, read };"
+            },
+            "id": "bb46b92f-f338-4709-832c-96411c013ee0",
+            "name": "Build Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                576,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={\n  \"success\": true,\n  \"data\": {{ JSON.stringify($json) }}\n}",
+                "options": {}
+            },
+            "id": "fdeaa30c-8b9e-4457-a86b-b5b00f1d1020",
+            "name": "Respond to Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                784,
+                0
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Decode JWT",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Decode JWT": {
+            "main": [
+                [
+                    {
+                        "node": "Get Notifications",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Notifications": {
+            "main": [
+                [
+                    {
+                        "node": "Build Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Build Response": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "meta": {
+        "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597"
+    }
+}
