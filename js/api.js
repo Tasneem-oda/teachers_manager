@@ -3,8 +3,8 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=2';
-import { APIUtils, Storage } from './utils.js?v=2';
+import { CONFIG } from './config.js?v=3';
+import { APIUtils, Storage } from './utils.js?v=3';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -223,6 +223,23 @@ export const api = {
     
     async checkSubscription() {
         return await apiCall(CONFIG.API_ENDPOINTS.SUBSCRIPTIONS.CHECK, 'GET');
+    },
+
+    // ==================== NOTIFICATIONS (مركز الإشعارات - زر الجرس) ====================
+
+    // يرجع { unread: [...], read: [...] } لكل إشعارات المعلم الحالي
+    async getNotifications() {
+        return await apiCall(CONFIG.API_ENDPOINTS.NOTIFICATIONS.GET_ALL, 'GET');
+    },
+
+    // بدون id: تحدد كل الإشعارات غير المقروءة كمقروءة دفعة واحدة (زرار "تحديد الكل كمقروء")
+    // مع id: تحدد إشعار واحد بعينه كمقروء (عند الضغط عليه في القائمة)
+    async markNotificationsRead(id = null) {
+        return await apiCall(
+            CONFIG.API_ENDPOINTS.NOTIFICATIONS.MARK_READ,
+            'POST',
+            id ? { id } : {}
+        );
     },
 
     // ==================== AI ====================
