@@ -69,6 +69,15 @@
         .slot.busy:hover { background: var(--primary-hover); }
         .slot.busy strong { display: block; font-size: 0.82rem; }
         .recur-badge { display: block; font-size: 0.65rem; opacity: 0.85; margin-top: 1px; }
+        .slot-edit-btn {
+            position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.22); border: none; border-radius: 5px;
+            color: #fff; cursor: pointer; padding: 0; opacity: 0; transition: opacity 0.15s;
+        }
+        .slot.busy:hover .slot-edit-btn { opacity: 1; }
+        .slot-edit-btn:hover { background: rgba(255,255,255,0.4); }
+        .slot-edit-btn svg { width: 11px; height: 11px; }
 
         @media (max-width: 700px) {
             .calendar-grid { grid-template-columns: 55px repeat(7, minmax(90px, 1fr)); }
@@ -233,7 +242,12 @@
                 block.className = 'slot busy';
                 block.style.gridColumn = sch.day_of_week + 2;
                 block.style.gridRow = `${startSlot + 2} / span ${span}`;
-                block.innerHTML = `<strong>${Formatters.escapeHtml(sch.student_name || '')}</strong>${Formatters.formatTime(sch.start_time)} (${sch.duration_minutes} د)${sch.recurrence_type && sch.recurrence_type !== 'weekly' ? `<span class="recur-badge">${Formatters.escapeHtml(RECURRENCE_LABELS[sch.recurrence_type] || '')}</span>` : ''}`;
+                block.innerHTML = `<button type="button" class="slot-edit-btn" title="تعديل الموعد" aria-label="تعديل الموعد">${icon('edit', { size: 11 })}</button><strong>${Formatters.escapeHtml(sch.student_name || '')}</strong>${Formatters.formatTime(sch.start_time)} (${sch.duration_minutes} د)${sch.recurrence_type && sch.recurrence_type !== 'weekly' ? `<span class="recur-badge">${Formatters.escapeHtml(RECURRENCE_LABELS[sch.recurrence_type] || '')}</span>` : ''}`;
+                // زر التعديل الصريح فوق الحصة + الضغط في أي مكان آخر من الحصة يفتح نفس مودال التعديل
+                block.querySelector('.slot-edit-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openEditModal(sch);
+                });
                 block.addEventListener('click', () => openEditModal(sch));
                 grid.appendChild(block);
 
