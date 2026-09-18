@@ -129,6 +129,7 @@
         import { ErrorHandler, Formatters } from './js/utils.js?v=3';
         import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=3';
         import { icon } from './js/icons.js?v=3';
+        import { openStudentAppointments } from './js/student-appointments.js?v=3';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الطلاب', subtitle: 'إدارة كل طلابك من مكان واحد' });
@@ -181,12 +182,23 @@
                     <div class="student-info">${icon('phone', { size: 14 })} ${Formatters.escapeHtml(student.phone || 'بدون رقم')}</div>
                     <div class="student-actions">
                         <a href="student.html?id=${student.id}" class="btn">عرض الملف</a>
-                        <button class="btn" style="background: var(--secondary);" onclick="location.href='schedule.html?add_student=${student.id}'">${icon('calendar', { size: 14 })} موعد</button>
+                        <button class="btn btn-open-appts" style="background: var(--secondary);" data-id="${student.id}">${icon('calendar', { size: 14 })} موعد</button>
                         <button class="btn btn-danger" onclick="deleteStudent('${student.id}')">${icon('trash', { size: 14 })} حذف</button>
                     </div>
                 </div>
             `).join('');
         }
+
+        // زرار "موعد" في كارت الطالب: بيفتح نفس بوب أب مواعيد الطالب الموحّد
+        // (js/student-appointments.js) المستخدم في صفحة ملف الطالب أيضًا،
+        // بدل ما يودّي المستخدم لصفحة الجدول الأسبوعي العام. استخدمنا
+        // delegation على الحاوية عشان الأزرار بتتعاد رسمها مع كل renderStudents().
+        container.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-open-appts');
+            if (!btn) return;
+            const st = allStudents.find(s => String(s.id) === String(btn.dataset.id));
+            openStudentAppointments(btn.dataset.id, st ? st.name : '');
+        });
 
         document.getElementById('filter-subject').addEventListener('change', (e) => {
             const subject = e.target.value;
