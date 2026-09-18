@@ -1,9 +1,9 @@
 /**
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
-import { Auth } from './auth.js?v=4';
-import { icon } from './icons.js?v=4';
-import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=4';
+import { Auth } from './auth.js?v=5';
+import { icon } from './icons.js?v=5';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=5';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
