@@ -345,7 +345,7 @@
 
             try {
                 const res = await api.prepareLesson(studentId);
-                const { plan, sources } = res.data;
+                const { plan, sources } = res;
                 const sourcesHtml = (sources && sources.length > 0)
                     ? `<p style="font-size:0.78rem; color:var(--text-secondary); margin-top:1rem;">بالاعتماد على: ${sources.map(s => Formatters.escapeHtml(s.book_title)).join('، ')}</p>`
                     : '<p style="font-size:0.78rem; color:var(--text-secondary); margin-top:1rem;">لا توجد مصادر مرتبطة بهذا الطالب بعد - ارفعي كتاب من "مكتبتي" وحدّدي استخدامه مع هذا الطالب للحصول على اقتراحات أدق.</p>';

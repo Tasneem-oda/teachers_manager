@@ -298,8 +298,8 @@
                 if (!confirm(`هل تريد حذف "${book.title}"؟ هيتم حذف كل ما يرتبط به.`)) return;
                 try {
                     const res = await api.deleteBook(bookId);
-                    if (res.data && res.data.storage_path) {
-                        await api.deleteBookFile(res.data.storage_path);
+                    if (res && res.storage_path) {
+                        await api.deleteBookFile(res.storage_path);
                     }
                     ErrorHandler.showSuccess('تم حذف المصدر');
                     await loadBooks();
@@ -384,8 +384,8 @@
                 } catch (err) {
                     throw new Error('تعذّر إنشاء المصدر: ' + ErrorHandler.getErrorMessage(err));
                 }
-                bookId = createRes.data.book_id;
-                const storagePath = createRes.data.storage_path;
+                bookId = createRes.book_id;
+                const storagePath = createRes.storage_path;
 
                 // الخطوة 2: رفع بايتات الملف مباشرة لـ Supabase Storage
                 statusText.textContent = 'جاري رفع الملف...';
@@ -490,7 +490,7 @@
                 btn.disabled = true;
                 btn.textContent = 'جاري البحث...';
                 const res = await api.askSources(question);
-                const { answer, sources } = res.data;
+                const { answer, sources } = res;
 
                 document.getElementById('ask-answer-text').textContent = answer;
                 const sourcesList = document.getElementById('ask-sources-list');
