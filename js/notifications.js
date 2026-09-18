@@ -36,6 +36,7 @@
 import { CONFIG } from './config.js?v=4';
 import { Auth } from './auth.js?v=4';
 import { api } from './api.js?v=4';
+import { ErrorHandler } from './utils.js?v=4';
 
 const PROMPT_DISMISS_KEY = 'tm_notif_prompt_dismissed';
 const BADGE_CACHE_KEY = 'tm_notif_badge_cache_v1';
@@ -94,6 +95,19 @@ async function initAndLinkTeacher() {
     loadOneSignalSdk();
 
     runWhenOneSignalReady(async (OneSignal) => {
+        // إصلاح "[M] No SW registration for postMessage": ده race condition
+        // كلاسيكي - أول مرة يتسجل فيها Service Worker (sw.js عبر
+        // js/pwa-install.js)، الصفحة الحالية مش بتبقى تحت سيطرته فورًا إلا
+        // بعد ما event 'activate' يخلّص تمامًا (اللي فيه self.clients.claim()
+        // في sw.js). لو OneSignal.init() اتنادى قبل ما ده يحصل، بيحاول
+        // يبعت postMessage لـ Service Worker لسه مش "متحكم" في الصفحة،
+        // فبتظهر الرسالة دي. بننتظر هنا navigator.serviceWorker.ready -
+        // اللي بيتأكد إن فيه Service Worker نشط وبيتحكم في الصفحة فعليًا -
+        // قبل ما نكمل، عشان نضمن إن OneSignal يلاقي التسجيل جاهز من أول مرة.
+        if ('serviceWorker' in navigator) {
+            try { await navigator.serviceWorker.ready; } catch (e) { /* تجاهل */ }
+        }
+
         await OneSignal.init({
             appId,
             // إصلاح مهم: بنقول لـ OneSignal تستخدم sw.js (نفس ملف الـ Service
@@ -213,14 +227,31 @@ function dismissPrompt() {
 
 /**
  * طلب إذن الإشعارات من المتصفح فعليًا (بيظهر نافذة المتصفح الأصلية)
+ *
+ * ملحوظة مهمة: لو الإذن كان "denied" بالفعل (اتحظر قبل كده من المتصفح)،
+ * مفيش أي كود - عندنا أو عند OneSignal - يقدر "يطلب" الإذن تاني برمجيًا؛
+ * المتصفح بيرفض المحاولة فورًا (خطأ "Permission blocked") كحماية من
+ * تضايق المستخدمين بطلبات متكررة. الحل الوحيد وقتها إن المستخدم نفسه
+ * يفك الحظر يدويًا من إعدادات الموقع في المتصفح - مفيش أي بديل برمجي،
+ * ومفيش فرق هنا بين OneSignal وأي خدمة إشعارات تانية.
  */
 export async function requestPermission() {
+    if ('Notification' in window && Notification.permission === 'denied') {
+        ErrorHandler.showError(
+            'إذن الإشعارات محظور لهذا الموقع من إعدادات المتصفح. افتحي إعدادات الموقع (أيقونة القفل 🔒 بجانب رابط الموقع) ← الإشعارات ← اختاري "سماح"، ثم أعيدي تحميل الصفحة.'
+        );
+        return;
+    }
+
     return new Promise((resolve) => {
         runWhenOneSignalReady(async (OneSignal) => {
             try {
                 await OneSignal.Notifications.requestPermission();
             } catch (e) {
                 console.warn('تعذّر طلب إذن الإشعارات:', e);
+                ErrorHandler.showError(
+                    'تعذّر تفعيل الإشعارات. تأكدي إن الإشعارات مش محظورة من إعدادات المتصفح لهذا الموقع، ولو بتستخدمي آيفون، تأكدي إنك فتحتي الموقع من الشاشة الرئيسية بعد إضافته (Add to Home Screen) لا من متصفح Safari مباشرة.'
+                );
             }
             resolve();
         });
