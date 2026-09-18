@@ -46,7 +46,10 @@ export const CONFIG = {
             START: '/start-lesson',
             FINALIZE: '/finalize-lesson',
             GET: '/get-lesson',
-            GET_HISTORY: '/get-lesson-history'
+            GET_HISTORY: '/get-lesson-history',
+            // مواعيد اليوم بحالتها (فات ميعادها/قيد التنفيذ/تمت/اتلغت) + إلغاء حصة اليوم يدويًا
+            GET_TODAY: '/get-today-lessons',
+            CANCEL: '/cancel-lesson'
         },
         NOTES: {
             CREATE: '/create-note',
