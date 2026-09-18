@@ -143,26 +143,104 @@
             `).join('');
         }
 
+        // حالة كل حصة اليوم: null (لسه ماعملهاش/ممكن تكون فاتت) | in_progress | completed | cancelled
+        // بتتحمّل من endpoint منفصل (get-today-lessons) وبتتوصل بـ student_id
+        // مع لستة data.todayLessons الأصلية. لو الـ endpoint فشل (لسه معملوش
+        // import في n8n مثلاً) بنكمل عادي من غير تمييز حالات - مفيش كسر للصفحة.
+        let todayStatusMap = {};
+
+        function getLessonState(lesson) {
+            const info = todayStatusMap[lesson.student_id] || {};
+            const status = info.status || null;
+            if (status === 'completed') return { state: 'completed', lessonId: info.lessonId };
+            if (status === 'cancelled') return { state: 'cancelled', lessonId: info.lessonId };
+            if (status === 'in_progress') return { state: 'in_progress', lessonId: info.lessonId };
+
+            // مفيش صف مسجّل النهاردة لهذا الطالب - نحدد لسه معاداها ما جاش
+            // ولا فات ميعادها (بالمقارنة بوقت الجهاز الحالي)
+            const t = TimeUtils.getTimeFromString(lesson.start_time);
+            if (t) {
+                const now = new Date();
+                const startMinutes = t.hours * 60 + t.minutes;
+                const nowMinutes = now.getHours() * 60 + now.getMinutes();
+                if (nowMinutes > startMinutes) return { state: 'late', lessonId: null };
+            }
+            return { state: 'upcoming', lessonId: null };
+        }
+
         function renderTodayLessons(lessons) {
             const container = document.getElementById('today-lessons-list');
             if (!lessons || lessons.length === 0) {
                 container.innerHTML = '<div class="empty-state">لا توجد حصص مجدولة اليوم 🎉</div>';
                 return;
             }
-            container.innerHTML = lessons.map(l => `
-                <div class="lesson-item">
-                    <div class="lesson-main">
-                        <div class="lesson-avatar">${Formatters.escapeHtml((l.student_name || '؟').charAt(0))}</div>
-                        <div class="lesson-info">
-                            <p class="name">${Formatters.escapeHtml(l.student_name || '')}</p>
-                            <p class="meta">${Formatters.escapeHtml(l.current_topic || 'بدون موضوع محدد')}</p>
+            container.innerHTML = lessons.map(l => {
+                const { state } = getLessonState(l);
+
+                let badge = '';
+                let actionsHtml = '';
+
+                if (state === 'completed') {
+                    // تمت بنجاح: نشيل زرار "ابدأ الحصة" خالص، بنعرض شارة بس
+                    badge = `<span class="lesson-status-badge status-completed">${icon('checkCircle', { size: 11 })} تمت بنجاح</span>`;
+                } else if (state === 'cancelled') {
+                    // اتلغت يدويًا: شكل مميز (باهت + خط فوق الاسم)، من غير أي أزرار
+                    badge = `<span class="lesson-status-badge status-cancelled">${icon('x', { size: 11 })} تم إلغاء الحصة</span>`;
+                } else if (state === 'in_progress') {
+                    // بدأها المعلم فعلاً ولسه ماخلصهاش - إتاحة المتابعة، من غير زرار إلغاء
+                    badge = `<span class="lesson-status-badge status-in-progress">${icon('clock', { size: 11 })} قيد التنفيذ الآن</span>`;
+                    actionsHtml = `<button class="btn btn-start" onclick="location.href='lesson.html?student_id=${l.student_id}'">${icon('play', { size: 13 })} متابعة الحصة</button>`;
+                } else {
+                    // upcoming أو late: لسه ماعملهاش، فيها إمكانية البدء في أي وقت + إلغائها
+                    if (state === 'late') {
+                        badge = `<span class="lesson-status-badge status-late">${icon('clock', { size: 11 })} فات ميعادها</span>`;
+                    }
+                    actionsHtml = `
+                        <div class="lesson-actions">
+                            <button class="btn btn-start" onclick="location.href='lesson.html?student_id=${l.student_id}'">${icon('play', { size: 13 })} ابدأ الحصة</button>
+                            <button type="button" class="btn-cancel-lesson" data-student-id="${l.student_id}" data-student-name="${Formatters.escapeHtml(l.student_name || '')}">${icon('x', { size: 13 })} إلغاء</button>
                         </div>
+                    `;
+                }
+
+                return `
+                    <div class="lesson-item is-${state}">
+                        <div class="lesson-main">
+                            <div class="lesson-avatar">${Formatters.escapeHtml((l.student_name || '؟').charAt(0))}</div>
+                            <div class="lesson-info">
+                                <p class="name">${Formatters.escapeHtml(l.student_name || '')}</p>
+                                <p class="meta">${Formatters.escapeHtml(l.current_topic || 'بدون موضوع محدد')}</p>
+                                ${badge}
+                            </div>
+                        </div>
+                        <div class="lesson-time">${Formatters.formatTime ? Formatters.formatTime(l.start_time) : l.start_time}</div>
+                        ${actionsHtml}
                     </div>
-                    <div class="lesson-time">${Formatters.formatTime ? Formatters.formatTime(l.start_time) : l.start_time}</div>
-                    <button class="btn btn-start" onclick="location.href='lesson.html?student_id=${l.student_id}'">${icon('play', { size: 13 })} ابدأ الحصة</button>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
+
+        // إلغاء حصة اليوم: delegation على الحاوية لأن العناصر بتتعاد رسمها
+        // مع كل تحديث (renderTodayLessons)
+        document.getElementById('today-lessons-list').addEventListener('click', async (e) => {
+            const btn = e.target.closest('.btn-cancel-lesson');
+            if (!btn) return;
+            const studentId = btn.dataset.studentId;
+            const studentName = btn.dataset.studentName || 'الطالب';
+            if (!confirm(`هل تريد إلغاء حصة "${studentName}" اليوم؟`)) return;
+
+            try {
+                btn.disabled = true;
+                btn.textContent = 'جاري الإلغاء...';
+                await api.cancelLesson(studentId);
+                ErrorHandler.showSuccess('تم إلغاء الحصة');
+                await loadDashboard();
+            } catch (error) {
+                ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
+                btn.disabled = false;
+                btn.innerHTML = `${icon('x', { size: 13 })} إلغاء`;
+            }
+        });
 
         // تحديث نص التلميح تحت "المساعد الذكي" حسب وجود حصص اليوم من عدمه،
         // عشان الزرار يوصف فعليًا اللي هيحصل لما المستخدم يضغط عليه
@@ -193,6 +271,23 @@
             try {
                 const data = await api.getDashboard();
                 dashboardData = data;
+
+                // نجيب حالة حصص اليوم الفعلية (فات ميعادها/قيد التنفيذ/تمت/اتلغت)
+                // من endpoint منفصل. لو فشل (مثلاً لسه ملهوش استيراد في n8n)
+                // بنكمل عادي من غير تمييز حالات بدل ما نكسر الداشبورد كله.
+                todayStatusMap = {};
+                try {
+                    const todayStatus = await api.getTodayLessons();
+                    (todayStatus.lessons || []).forEach(item => {
+                        todayStatusMap[item.student_id] = {
+                            status: item.lesson_status || null,
+                            lessonId: item.lesson_id || null
+                        };
+                    });
+                } catch (statusError) {
+                    todayStatusMap = {};
+                }
+
                 renderTopHeader({
                     title: `${greeting()} يا ${Formatters.escapeHtml((data.teacher?.name || '').split(' ')[0] || '')} 🌸`,
                     subtitle: dateStr()

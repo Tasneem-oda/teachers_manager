@@ -70,7 +70,7 @@
                             <p id="student-subject" style="color: var(--text-secondary); margin: 0;"></p>
                         </div>
                         <div class="header-actions" style="display:flex; gap:0.5rem;">
-                            <button class="btn" style="background: var(--secondary);" onclick="location.href='schedule.html?add_student=' + getStudentId()"><span id="ic-add-appt" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> إضافة موعد</button>
+                            <button class="btn" style="background: var(--secondary);" id="btn-open-student-appts" type="button"><span id="ic-add-appt" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> مواعيد الطالب</button>
                             <button class="btn btn-primary" onclick="location.href='lesson.html?student_id=' + getStudentId()"><span id="ic-start-lesson" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> بدء الحصة</button>
                         </div>
                     </div>
@@ -156,6 +156,7 @@
         import { ErrorHandler, Formatters } from './js/utils.js?v=3';
         import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=3';
         import { icon } from './js/icons.js?v=3';
+        import { openStudentAppointments } from './js/student-appointments.js?v=3';
 
         renderSidebar('students');
         renderTopHeader({ title: 'ملف الطالب', subtitle: 'المعلومات، نمط التدريس، والملاحظات في مكان واحد' });
@@ -301,6 +302,13 @@
                 ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
             }
         });
+
+        // زرار "مواعيد الطالب": بيفتح نفس بوب أب مواعيد الطالب الموحّد
+        // (js/student-appointments.js) المستخدم في كل صفحات التطبيق.
+        document.getElementById('btn-open-student-appts').addEventListener('click', () => {
+            openStudentAppointments(studentId, student ? student.name : '');
+        });
+
 
         window.editStudent = () => alert('تحديث البيانات الأساسية قيد التطوير حاليًا');
         window.deleteStudent = async () => {

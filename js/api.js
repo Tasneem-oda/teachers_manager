@@ -166,6 +166,17 @@ export const api = {
         );
     },
 
+    // حصص اليوم بحالتها الفعلية (فات ميعادها بدون تنفيذ / قيد التنفيذ / تمت بنجاح / اتلغت يدويًا)
+    // مستخدمة في الداشبورد لتمييز شكل كل حصة والأزرار المتاحة لها
+    async getTodayLessons() {
+        return await apiCall(CONFIG.API_ENDPOINTS.LESSONS.GET_TODAY, 'GET');
+    },
+
+    // إلغاء حصة اليوم يدويًا لطالب معيّن (زرار "إلغاء" في قسم حصص اليوم بالداشبورد)
+    async cancelLesson(studentId) {
+        return await apiCall(CONFIG.API_ENDPOINTS.LESSONS.CANCEL, 'POST', { student_id: studentId });
+    },
+
     // ==================== NOTES ====================
     
     async createNote(studentId, noteText, lessonId = null) {
