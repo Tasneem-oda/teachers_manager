@@ -1,0 +1,338 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ask-sources",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666601",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [-2000, 300],
+      "webhookId": "ask01-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\nconst body = $input.first().json.body || {};\nconst question = (body.question || '').toString().trim();\n\nlet validationError = null;\nif (!question) validationError = 'من فضلك اكتبي سؤالك';\nelse if (question.length > 600) validationError = 'السؤال طويل جدًا (الحد الأقصى 600 حرف)';\n\nreturn {\n  teacherId: payload.sub,\n  studentId: body.student_id || null,\n  question,\n  isValid: validationError === null,\n  validationError,\n  minIntervalSeconds: 5,\n  dailyLimit: 40,\n  topK: 6,\n  geminiModel: 'gemini-3.5-flash-lite',\n  embeddingModel: 'text-embedding-004'\n};"
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666602",
+      "name": "Decode JWT & Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1792, 300]
+    },
+    {
+      "parameters": {
+        "conditions": { "boolean": [{ "value1": "={{ $json.isValid }}", "value2": true }] }
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666603",
+      "name": "Message Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [-1584, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"{{ $json.validationError }}\"\n  }\n}",
+        "options": {}
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666604",
+      "name": "Validation Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-1376, 460]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE teachers_manager.ai_rate_limiter\nSET last_request_at = now()\nWHERE id = 1\n  AND (last_request_at IS NULL OR now() - last_request_at >= ($1 || ' seconds')::interval)\nRETURNING last_request_at;",
+        "options": { "queryReplacement": "={{ $('Decode JWT & Config').item.json.minIntervalSeconds }}" }
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666605",
+      "name": "Reserve Global Rate Slot",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [-1376, 160],
+      "alwaysOutputData": true,
+      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
+    },
+    {
+      "parameters": {
+        "conditions": { "boolean": [{ "value1": "={{ !!$json.last_request_at }}", "value2": true }] }
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666606",
+      "name": "Rate Slot Reserved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [-1168, 160]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"BUSY\",\n    \"message\": \"النظام مشغول لحظة، من فضلك أعيدي المحاولة بعد ثوانٍ قليلة.\"\n  }\n}",
+        "options": {}
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666607",
+      "name": "Busy Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-960, 320]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO teachers_manager.ai_usage_daily (teacher_id, usage_date, request_count)\nVALUES ($1::uuid, CURRENT_DATE, 1)\nON CONFLICT (teacher_id, usage_date)\nDO UPDATE SET request_count = teachers_manager.ai_usage_daily.request_count + 1\nWHERE teachers_manager.ai_usage_daily.request_count < $2\nRETURNING request_count;",
+        "options": { "queryReplacement": "={{ $('Decode JWT & Config').item.json.teacherId }},{{ $('Decode JWT & Config').item.json.dailyLimit }}" }
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666608",
+      "name": "Reserve Daily Quota",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [-960, 40],
+      "alwaysOutputData": true,
+      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
+    },
+    {
+      "parameters": {
+        "conditions": { "boolean": [{ "value1": "={{ !!$json.request_count }}", "value2": true }] }
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666609",
+      "name": "Quota Reserved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [-752, 40]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"DAILY_LIMIT\",\n    \"message\": \"وصلتِ للحد الأقصى المسموح به من الطلبات اليوم. حاولي مرة أخرى غدًا.\"\n  }\n}",
+        "options": {}
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666610",
+      "name": "Daily Limit Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-544, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'models/text-embedding-004', content: { parts: [{ text: $('Decode JWT & Config').item.json.question }] } }) }}",
+        "options": { "timeout": 20000 }
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666611",
+      "name": "Embed Question",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-544, -40],
+      "credentials": { "httpHeaderAuth": { "id": "8Tc8LjAwoWExdl38", "name": "Gemini API Key" } },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const cfg = $('Decode JWT & Config').item.json;\nconst raw = $input.first().json;\nconst values = raw && raw.embedding && Array.isArray(raw.embedding.values) ? raw.embedding.values : null;\nif (!values) {\n  return { embedFailed: true, teacherId: cfg.teacherId };\n}\nreturn {\n  teacherId: cfg.teacherId,\n  studentId: cfg.studentId,\n  question: cfg.question,\n  topK: cfg.topK,\n  embeddingLiteral: '[' + values.join(',') + ']'\n};"
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666612",
+      "name": "Parse Question Embedding",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-336, -40]
+    },
+    {
+      "parameters": {
+        "conditions": { "boolean": [{ "value1": "={{ !!$json.embedFailed }}", "value2": true }] }
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666613",
+      "name": "Embed Failed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [-128, -40]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AI_ERROR\",\n    \"message\": \"تعذّر معالجة السؤال، من فضلك حاولي مرة أخرى.\"\n  }\n}",
+        "options": {}
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666614",
+      "name": "Embed Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [80, 80]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT c.content, c.chapter_title, c.page_number, c.book_id, b.title AS book_title\nFROM teachers_manager.book_chunks c\nJOIN teachers_manager.book_sources b ON b.id = c.book_id\nWHERE c.teacher_id = $1::uuid\n  AND b.status = 'ready'\n  AND (\n    $2::uuid IS NULL\n    OR NOT EXISTS (SELECT 1 FROM teachers_manager.book_student_links l WHERE l.book_id = b.id)\n    OR EXISTS (SELECT 1 FROM teachers_manager.book_student_links l WHERE l.book_id = b.id AND l.student_id = $2::uuid)\n  )\nORDER BY c.embedding <=> $3::vector\nLIMIT $4::integer;",
+        "options": {
+          "queryReplacement": "={{ $json.teacherId }},{{ $json.studentId }},{{ $json.embeddingLiteral }},{{ $json.topK }}"
+        }
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666615",
+      "name": "Search Relevant Chunks",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [-128, -200],
+      "alwaysOutputData": true,
+      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const q = $('Parse Question Embedding').item.json;\nconst chunks = $input.all().map(i => i.json);\n\nif (chunks.length === 0) {\n  return { json: { noSources: true, teacherId: q.teacherId } };\n}\n\nconst contextText = chunks.map((c, i) => `[مصدر ${i + 1}] من كتاب \"${c.book_title}\"${c.chapter_title ? ' - ' + c.chapter_title : ''}${c.page_number ? ' - صفحة ' + c.page_number : ''}:\\n${c.content}`).join('\\n\\n');\n\nconst prompt = `أنت مساعد معلم بيجاوب بالاعتماد فقط على المصادر (كتب/مذكرات) اللي المعلم رفعها، مش من معلوماتك العامة، إلا لو المصادر مش كافية للإجابة وقتها وضّح ده صراحة.\\n\\n== المصادر المتاحة ==\\n${contextText}\\n\\n== سؤال المعلم ==\\n${q.question}\\n\\nجاوب بالعربية، بشكل واضح ومباشر يناسب معلم محترف، واستشهد برقم المصدر [مصدر N] جنب كل معلومة أخدتها من مصدر معيّن.`;\n\nreturn {\n  json: {\n    teacherId: q.teacherId,\n    question: q.question,\n    sources: chunks.map(c => ({ book_id: c.book_id, book_title: c.book_title, chapter: c.chapter_title, page: c.page_number, excerpt: c.content.slice(0, 220) })),\n    geminiRequestBody: {\n      contents: [{ role: 'user', parts: [{ text: prompt }] }],\n      generationConfig: { temperature: 0.3, maxOutputTokens: 1200 }\n    }\n  }\n};"
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666616",
+      "name": "Build Answer Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [80, -200]
+    },
+    {
+      "parameters": {
+        "conditions": { "boolean": [{ "value1": "={{ !!$json.noSources }}", "value2": true }] }
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666617",
+      "name": "No Sources?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [288, -200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"data\": {\n    \"answer\": \"لسه مفيش مصادر مرفوعة أو متاحة بخصوص هذا الطالب. ارفعي كتاب من صفحة مكتبتي أولًا.\",\n    \"sources\": []\n  }\n}",
+        "options": {}
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666618",
+      "name": "No Sources Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [496, -320]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.geminiRequestBody) }}",
+        "options": { "timeout": 30000 }
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666619",
+      "name": "Answer With Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [496, -120],
+      "credentials": { "httpHeaderAuth": { "id": "8Tc8LjAwoWExdl38", "name": "Gemini API Key" } },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $('Build Answer Prompt').item.json;\nconst raw = $input.first().json;\n\nif (raw.error) {\n  return { json: { success: false, message: 'تعذّر توليد الإجابة، من فضلك حاولي مرة أخرى.' } };\n}\n\nconst candidate = raw.candidates && raw.candidates[0];\nconst text = candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text;\nif (!text) {\n  return { json: { success: false, message: 'تعذّر توليد إجابة مناسبة لهذا السؤال.' } };\n}\n\nreturn { json: { success: true, answer: text.trim(), sources: prev.sources } };"
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666620",
+      "name": "Extract Answer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [704, -120]
+    },
+    {
+      "parameters": {
+        "conditions": { "boolean": [{ "value1": "={{ $json.success }}", "value2": true }] }
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666621",
+      "name": "Answer Success?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [912, -120]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, data: { answer: $json.answer, sources: $json.sources } }) }}",
+        "options": {}
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666622",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, -200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AI_ERROR\",\n    \"message\": \"{{ $json.message }}\"\n  }\n}",
+        "options": {}
+      },
+      "id": "b6b6b666-6666-4666-8666-666666666623",
+      "name": "AI Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, -40]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Decode JWT & Config", "type": "main", "index": 0 }]] },
+    "Decode JWT & Config": { "main": [[{ "node": "Message Valid?", "type": "main", "index": 0 }]] },
+    "Message Valid?": {
+      "main": [
+        [{ "node": "Reserve Global Rate Slot", "type": "main", "index": 0 }],
+        [{ "node": "Validation Error Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Reserve Global Rate Slot": { "main": [[{ "node": "Rate Slot Reserved?", "type": "main", "index": 0 }]] },
+    "Rate Slot Reserved?": {
+      "main": [
+        [{ "node": "Reserve Daily Quota", "type": "main", "index": 0 }],
+        [{ "node": "Busy Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Reserve Daily Quota": { "main": [[{ "node": "Quota Reserved?", "type": "main", "index": 0 }]] },
+    "Quota Reserved?": {
+      "main": [
+        [{ "node": "Embed Question", "type": "main", "index": 0 }],
+        [{ "node": "Daily Limit Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Embed Question": { "main": [[{ "node": "Parse Question Embedding", "type": "main", "index": 0 }]] },
+    "Parse Question Embedding": { "main": [[{ "node": "Embed Failed?", "type": "main", "index": 0 }]] },
+    "Embed Failed?": {
+      "main": [
+        [{ "node": "Embed Error Response", "type": "main", "index": 0 }],
+        [{ "node": "Search Relevant Chunks", "type": "main", "index": 0 }]
+      ]
+    },
+    "Search Relevant Chunks": { "main": [[{ "node": "Build Answer Prompt", "type": "main", "index": 0 }]] },
+    "Build Answer Prompt": { "main": [[{ "node": "No Sources?", "type": "main", "index": 0 }]] },
+    "No Sources?": {
+      "main": [
+        [{ "node": "No Sources Response", "type": "main", "index": 0 }],
+        [{ "node": "Answer With Gemini", "type": "main", "index": 0 }]
+      ]
+    },
+    "Answer With Gemini": { "main": [[{ "node": "Extract Answer", "type": "main", "index": 0 }]] },
+    "Extract Answer": { "main": [[{ "node": "Answer Success?", "type": "main", "index": 0 }]] },
+    "Answer Success?": {
+      "main": [
+        [{ "node": "Success Response", "type": "main", "index": 0 }],
+        [{ "node": "AI Error Response", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": { "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597" }
+}

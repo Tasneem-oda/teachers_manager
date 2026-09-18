@@ -10,7 +10,7 @@
     <!-- End Google Tag Manager -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>كتابي - Teachers Manager</title>
+    <title>مكتبتي - Teachers Manager</title>
     <link rel="stylesheet" href="css/style.css?v=4">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
@@ -19,6 +19,80 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
+    <style>
+        .lib-intro {
+            display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+            flex-wrap: wrap; margin-bottom: 1.25rem;
+        }
+        .lib-intro-text h2 { margin: 0 0 0.25rem; font-size: 1.15rem; }
+        .lib-intro-text p { margin: 0; color: var(--text-secondary); font-size: 0.88rem; }
+
+        .ask-card { margin-bottom: 1.5rem; }
+        .ask-card .ask-row { display: flex; gap: 0.6rem; align-items: flex-start; flex-wrap: wrap; }
+        .ask-card textarea {
+            flex: 1; min-width: 220px; resize: vertical; min-height: 46px; max-height: 160px;
+            padding: 0.7rem 0.9rem; border: 1px solid var(--border); border-radius: 10px;
+            font-family: inherit; font-size: 0.9rem; background: var(--bg-secondary);
+        }
+        .ask-answer {
+            margin-top: 1rem; background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: 10px; padding: 1rem 1.1rem; font-size: 0.9rem; line-height: 1.7;
+            white-space: pre-wrap;
+        }
+        .ask-sources-list { margin-top: 0.9rem; display: flex; flex-direction: column; gap: 0.5rem; }
+        .ask-source-item {
+            display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px;
+            padding: 0.55rem 0.8rem; font-size: 0.8rem;
+        }
+        .ask-source-item .src-label { color: var(--text-secondary); }
+        .ask-source-item .src-label strong { color: var(--text-primary); }
+        .ask-source-item button { flex-shrink: 0; }
+
+        .books-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1rem;
+        }
+        .book-card {
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
+            padding: 1.1rem; display: flex; flex-direction: column; gap: 0.6rem;
+        }
+        .book-card .book-icon {
+            width: 42px; height: 42px; border-radius: 10px; background: var(--bg-secondary);
+            color: var(--primary); display: flex; align-items: center; justify-content: center;
+        }
+        .book-card .book-title { font-weight: 700; font-size: 0.95rem; margin: 0; line-height: 1.4; }
+        .book-card .book-meta { font-size: 0.78rem; color: var(--text-secondary); margin: 0; }
+        .book-status-badge {
+            display: inline-flex; align-items: center; gap: 0.3rem; width: fit-content;
+            font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 20px;
+        }
+        .book-status-badge.status-ready { background: #E8F5E9; color: var(--success); }
+        .book-status-badge.status-processing { background: rgba(197,154,74,0.2); color: var(--secondary); }
+        .book-status-badge.status-uploading { background: rgba(197,154,74,0.2); color: var(--secondary); }
+        .book-status-badge.status-failed { background: rgba(184,92,92,0.12); color: var(--danger); }
+        .book-scope-tag { font-size: 0.72rem; color: var(--text-secondary); }
+        .book-card-actions { display: flex; gap: 0.5rem; margin-top: 0.3rem; flex-wrap: wrap; }
+        .book-card-actions .btn { flex: 1; padding: 0.45rem 0.6rem; font-size: 0.78rem; white-space: nowrap; }
+        .book-icon-btn {
+            width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
+            background: var(--bg-secondary); color: var(--text-secondary); cursor: pointer;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .book-icon-btn.danger:hover { background: #FBEAEA; color: var(--danger); border-color: #F0CFCF; }
+
+        .file-type-choice { display: flex; gap: 0.6rem; margin-bottom: 1rem; }
+        .file-type-choice label {
+            flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+            border: 1.5px solid var(--border); border-radius: 10px; padding: 0.8rem 0.5rem;
+            cursor: pointer; font-size: 0.78rem; color: var(--text-secondary);
+        }
+        .file-type-choice input { display: none; }
+        .file-type-choice input:checked + span { color: var(--primary); font-weight: 700; }
+        .file-type-choice label:has(input:checked) { border-color: var(--primary); background: var(--bg-secondary); }
+
+        .student-check-list { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.6rem; }
+        .student-check-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem; }
+    </style>
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -30,16 +104,109 @@
         <main class="main-content">
             <div id="top-header-root"></div>
             <div class="page-body">
-                <div class="card" style="text-align:center; padding: 4rem 2rem;">
-                    <div id="ic-books-big" style="display:flex; align-items:center; justify-content:center; margin-bottom: 1rem; color: var(--primary);"></div>
-                    <h2>كتابي قريبًا</h2>
-                    <p style="color: var(--text-secondary); max-width: 420px; margin: 0.5rem auto 0;">
-                        هنا هتقدر ترفع كتبك الخاصة (أكتر من كتاب) وتعرضها أثناء التدريس. الميزة دي جزء من المرحلة القادمة.
-                    </p>
+
+                <div class="card lib-intro">
+                    <div class="lib-intro-text">
+                        <h2>مصادر التدريس الخاصة بك</h2>
+                        <p>ارفع كتبك وملفاتك، وخلي المساعد يرجع لها لما تحتاج مساعدة.</p>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="btn-add-source">
+                        <span id="ic-add-source" class="icon" style="display:inline-flex; vertical-align:-3px;"></span>
+                        إضافة مصدر
+                    </button>
                 </div>
+
+                <div class="card ask-card">
+                    <h3 style="margin:0 0 0.7rem; display:flex; align-items:center; gap:0.4rem;">
+                        <span id="ic-ask" class="icon" style="display:inline-flex;"></span> اسأل مصادرك
+                    </h3>
+                    <div class="ask-row">
+                        <textarea id="ask-input" placeholder="مثلاً: اشرحلي الفرق بين present perfect و past simple بطريقة مناسبة لطالب مستوى A2"></textarea>
+                        <button type="button" class="btn btn-primary" id="btn-ask-submit">اسأل</button>
+                    </div>
+                    <div id="ask-result" style="display:none;">
+                        <div class="ask-answer" id="ask-answer-text"></div>
+                        <div class="ask-sources-list" id="ask-sources-list"></div>
+                    </div>
+                </div>
+
+                <div id="books-section">
+                    <div class="loading">جاري التحميل...</div>
+                </div>
+
             </div>
         </main>
     </div>
+
+    <!-- مودال إضافة مصدر جديد -->
+    <div class="modal" id="upload-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>إضافة مصدر جديد</h2>
+            <form id="upload-form">
+                <div class="file-type-choice">
+                    <label>
+                        <input type="radio" name="file-type" value="pdf" checked>
+                        <span id="ic-type-pdf" class="icon"></span>
+                        <span>PDF</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="file-type" value="docx">
+                        <span id="ic-type-docx" class="icon"></span>
+                        <span>Word</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="file-type" value="pptx">
+                        <span id="ic-type-pptx" class="icon"></span>
+                        <span>PowerPoint</span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label for="upload-file-input">اختاري الملف *</label>
+                    <input type="file" id="upload-file-input" accept=".pdf,.docx,.pptx" required>
+                </div>
+                <div class="form-group">
+                    <label for="upload-title-input">اسم الكتاب/المصدر *</label>
+                    <input type="text" id="upload-title-input" placeholder="مثلاً: Oxford English Grammar" required maxlength="200">
+                </div>
+                <p id="upload-status-text" style="display:none; font-size:0.85rem; color:var(--text-secondary); background:var(--bg-secondary); padding:0.6rem 0.8rem; border-radius:8px;"></p>
+                <div style="display:flex; gap:0.5rem; margin-top:1rem; flex-wrap:wrap;">
+                    <button type="submit" class="btn" id="upload-submit-btn">رفع المصدر</button>
+                    <button type="button" class="btn close-modal" style="background: var(--bg-muted); color: var(--text-primary);">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- مودال إدارة الوصول (مين يستخدم الكتاب ده) -->
+    <div class="modal" id="access-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>إدارة الاستخدام</h2>
+            <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:-0.5rem;" id="access-book-title"></p>
+            <div class="form-group">
+                <label><input type="radio" name="access-scope" value="all" checked> كل الطلاب</label><br>
+                <label><input type="radio" name="access-scope" value="students"> طلاب محددين</label>
+            </div>
+            <div class="student-check-list" id="access-student-list"></div>
+            <div style="display:flex; gap:0.5rem; margin-top:1rem; flex-wrap:wrap;">
+                <button type="button" class="btn" id="access-save-btn">حفظ</button>
+                <button type="button" class="btn close-modal" style="background: var(--bg-muted); color: var(--text-primary);">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال عرض نص المصدر (بديل مبسّط عن فتح الملف الأصلي بالكامل) -->
+    <div class="modal" id="source-view-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="source-view-title">المصدر</h2>
+            <p style="white-space:pre-wrap; line-height:1.7; font-size:0.9rem;" id="source-view-text"></p>
+        </div>
+    </div>
+
+    <div id="error-toast" style="display:none;"></div>
+    <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="js/config.js?v=4"></script>
@@ -47,14 +214,276 @@
         import { Auth } from './js/auth.js?v=4';
         import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=4';
         import { icon } from './js/icons.js?v=4';
+        import { api } from './js/api.js?v=4';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=4';
 
         renderSidebar('books');
-        renderTopHeader({ title: 'كتابي', subtitle: 'مكتبتك الخاصة من الكتب', showSearch: false });
-        document.getElementById('ic-books-big').innerHTML = icon('bookOpen', { size: 46, strokeWidth: 1.5 });
+        renderTopHeader({ title: 'مكتبتي', subtitle: 'مصادر التدريس الخاصة بك', showSearch: false });
+        document.getElementById('ic-add-source').innerHTML = icon('plus', { size: 15 });
+        document.getElementById('ic-ask').innerHTML = icon('sparkles', { size: 17 });
+        document.getElementById('ic-type-pdf').innerHTML = icon('clipboard', { size: 20 });
+        document.getElementById('ic-type-docx').innerHTML = icon('edit', { size: 20 });
+        document.getElementById('ic-type-pptx').innerHTML = icon('clipboardList', { size: 20 });
+
+        let books = [];
+        let allStudents = [];
+        let pollTimer = null;
+        let accessModalBookId = null;
+
+        document.querySelectorAll('.close-modal').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const modal = e.target.closest('.modal');
+                if (modal) modal.classList.remove('active');
+            });
+        });
+
+        const STATUS_LABELS = {
+            uploading: 'جاري الرفع...',
+            processing: 'جارِ التحليل...',
+            ready: 'تم تحليل الكتاب ✓',
+            failed: 'تعذّر التحليل'
+        };
+
+        function renderBooks() {
+            const section = document.getElementById('books-section');
+            if (books.length === 0) {
+                section.innerHTML = '<div class="card"><div class="empty-state">لسه مفيش أي مصادر مرفوعة. ابدئي بإضافة كتاب أو مذكرة.</div></div>';
+                return;
+            }
+            section.innerHTML = `<div class="books-grid">${books.map(b => {
+                const scopeLabel = (b.student_ids && b.student_ids.length > 0)
+                    ? `متاح لـ ${b.student_ids.length} طالب محدد`
+                    : 'متاح لكل الطلاب';
+                const metaLine = b.status === 'ready'
+                    ? `${b.chapter_count || 0} فصلًا · ${b.page_count || '؟'} صفحة`
+                    : (b.status === 'failed' ? Formatters.escapeHtml(b.error_message || 'حدث خطأ أثناء التحليل') : 'جارِ المعالجة...');
+                return `
+                    <div class="book-card" data-book-id="${b.id}">
+                        <div style="display:flex; align-items:flex-start; justify-content:space-between;">
+                            <div class="book-icon">${icon('bookOpen', { size: 20 })}</div>
+                            <button type="button" class="book-icon-btn danger" data-action="delete" title="حذف">${icon('trash', { size: 14 })}</button>
+                        </div>
+                        <p class="book-title">${Formatters.escapeHtml(b.title)}</p>
+                        <p class="book-meta">${metaLine}</p>
+                        <span class="book-status-badge status-${b.status}">${STATUS_LABELS[b.status] || b.status}</span>
+                        <span class="book-scope-tag">${scopeLabel}</span>
+                        <div class="book-card-actions">
+                            <button type="button" class="btn btn-primary" data-action="ask" ${b.status !== 'ready' ? 'disabled' : ''}>اسأل الكتاب</button>
+                            <button type="button" class="btn" style="background:var(--bg-muted); color:var(--text-primary);" data-action="manage">إدارة</button>
+                        </div>
+                    </div>
+                `;
+            }).join('')}</div>`;
+        }
+
+        document.getElementById('books-section').addEventListener('click', async (e) => {
+            const btn = e.target.closest('button[data-action]');
+            if (!btn) return;
+            const card = btn.closest('.book-card');
+            const bookId = card.dataset.bookId;
+            const book = books.find(b => b.id === bookId);
+            if (!book) return;
+
+            if (btn.dataset.action === 'delete') {
+                if (!confirm(`هل تريد حذف "${book.title}"؟ هيتم حذف كل ما يرتبط به.`)) return;
+                try {
+                    const res = await api.deleteBook(bookId);
+                    if (res.data && res.data.storage_path) {
+                        await api.deleteBookFile(res.data.storage_path);
+                    }
+                    ErrorHandler.showSuccess('تم حذف المصدر');
+                    await loadBooks();
+                } catch (error) {
+                    ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
+                }
+            } else if (btn.dataset.action === 'manage') {
+                openAccessModal(book);
+            } else if (btn.dataset.action === 'ask') {
+                const askInput = document.getElementById('ask-input');
+                askInput.value = `بخصوص كتاب "${book.title}": `;
+                askInput.focus();
+                askInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+
+        function anyProcessing() {
+            return books.some(b => b.status === 'processing' || b.status === 'uploading');
+        }
+
+        async function loadBooks() {
+            try {
+                const data = await api.listBooks();
+                books = data.books || [];
+                renderBooks();
+            } catch (error) {
+                document.getElementById('books-section').innerHTML = `<div class="card"><div class="empty-state">تعذّر تحميل المكتبة: ${Formatters.escapeHtml(ErrorHandler.getErrorMessage(error))}</div></div>`;
+            }
+
+            if (pollTimer) clearTimeout(pollTimer);
+            if (anyProcessing()) {
+                pollTimer = setTimeout(loadBooks, 4000);
+            }
+        }
+
+        // ==================== رفع مصدر جديد ====================
+        document.getElementById('btn-add-source').addEventListener('click', () => {
+            document.getElementById('upload-form').reset();
+            document.getElementById('upload-status-text').style.display = 'none';
+            document.getElementById('upload-modal').classList.add('active');
+        });
+
+        // اختيار الملف بيحاول يحدد النوع تلقائيًا من امتداد الملف
+        document.getElementById('upload-file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const ext = file.name.split('.').pop().toLowerCase();
+            const typeMap = { pdf: 'pdf', docx: 'docx', doc: 'docx', pptx: 'pptx', ppt: 'pptx' };
+            const detected = typeMap[ext];
+            if (detected) {
+                const radio = document.querySelector(`input[name="file-type"][value="${detected}"]`);
+                if (radio) radio.checked = true;
+            }
+            if (!document.getElementById('upload-title-input').value) {
+                document.getElementById('upload-title-input').value = file.name.replace(/\.[^.]+$/, '');
+            }
+        });
+
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const file = document.getElementById('upload-file-input').files[0];
+            const title = document.getElementById('upload-title-input').value.trim();
+            const fileType = document.querySelector('input[name="file-type"]:checked').value;
+            const submitBtn = document.getElementById('upload-submit-btn');
+            const statusText = document.getElementById('upload-status-text');
+
+            if (!file) {
+                ErrorHandler.showError('من فضلك اختاري ملفًا');
+                return;
+            }
+
+            try {
+                submitBtn.disabled = true;
+                statusText.style.display = 'block';
+
+                statusText.textContent = 'جاري إنشاء المصدر...';
+                const createRes = await api.createBookSource(title, file.name, fileType);
+                const { book_id, storage_path } = createRes.data;
+
+                statusText.textContent = 'جاري رفع الملف...';
+                const fileUrl = await api.uploadBookFile(storage_path, file);
+
+                statusText.textContent = 'جاري بدء التحليل...';
+                await api.processBook(book_id, fileUrl);
+
+                document.getElementById('upload-modal').classList.remove('active');
+                ErrorHandler.showSuccess('تم رفع الملف، وبدأ التحليل الآن');
+                await loadBooks();
+            } catch (error) {
+                ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
+            } finally {
+                submitBtn.disabled = false;
+                statusText.style.display = 'none';
+            }
+        });
+
+        // ==================== إدارة الوصول (مين يستخدم الكتاب) ====================
+        async function ensureStudentsLoaded() {
+            if (allStudents.length > 0) return;
+            try {
+                const data = await api.getStudents(1, 500);
+                allStudents = data.students || [];
+            } catch (e) {
+                allStudents = [];
+            }
+        }
+
+        async function openAccessModal(book) {
+            await ensureStudentsLoaded();
+            accessModalBookId = book.id;
+            document.getElementById('access-book-title').textContent = book.title;
+
+            const hasSpecific = book.student_ids && book.student_ids.length > 0;
+            document.querySelector(`input[name="access-scope"][value="${hasSpecific ? 'students' : 'all'}"]`).checked = true;
+
+            const list = document.getElementById('access-student-list');
+            list.innerHTML = allStudents.map(s => `
+                <label class="student-check-item">
+                    <input type="checkbox" value="${s.id}" ${book.student_ids && book.student_ids.includes(s.id) ? 'checked' : ''}>
+                    ${Formatters.escapeHtml(s.name)}
+                </label>
+            `).join('') || '<p style="font-size:0.85rem; color:var(--text-secondary);">لا يوجد طلاب مسجّلين بعد.</p>';
+            list.style.display = hasSpecific ? 'flex' : 'none';
+
+            document.getElementById('access-modal').classList.add('active');
+        }
+
+        document.querySelectorAll('input[name="access-scope"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                document.getElementById('access-student-list').style.display =
+                    document.querySelector('input[name="access-scope"]:checked').value === 'students' ? 'flex' : 'none';
+            });
+        });
+
+        document.getElementById('access-save-btn').addEventListener('click', async () => {
+            const scope = document.querySelector('input[name="access-scope"]:checked').value;
+            const studentIds = Array.from(document.querySelectorAll('#access-student-list input:checked')).map(i => i.value);
+
+            try {
+                await api.updateBookAccess(accessModalBookId, scope, studentIds);
+                document.getElementById('access-modal').classList.remove('active');
+                ErrorHandler.showSuccess('تم تحديث إعدادات الاستخدام');
+                await loadBooks();
+            } catch (error) {
+                ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
+            }
+        });
+
+        // ==================== اسأل مصادرك ====================
+        document.getElementById('btn-ask-submit').addEventListener('click', async () => {
+            const question = document.getElementById('ask-input').value.trim();
+            if (!question) return;
+            const btn = document.getElementById('btn-ask-submit');
+            const resultBox = document.getElementById('ask-result');
+
+            try {
+                btn.disabled = true;
+                btn.textContent = 'جاري البحث...';
+                const res = await api.askSources(question);
+                const { answer, sources } = res.data;
+
+                document.getElementById('ask-answer-text').textContent = answer;
+                const sourcesList = document.getElementById('ask-sources-list');
+                if (sources && sources.length > 0) {
+                    sourcesList.innerHTML = sources.map((s, i) => `
+                        <div class="ask-source-item">
+                            <span class="src-label">[مصدر ${i + 1}] <strong>${Formatters.escapeHtml(s.book_title)}</strong>${s.chapter ? ' - ' + Formatters.escapeHtml(s.chapter) : ''}${s.page ? ' - صفحة ' + s.page : ''}</span>
+                            <button type="button" class="btn btn-sm" style="background:var(--bg-muted); color:var(--text-primary);" data-idx="${i}">${icon('eye', { size: 12 })} عرض المصدر</button>
+                        </div>
+                    `).join('');
+                    sourcesList.querySelectorAll('button[data-idx]').forEach(b => {
+                        b.addEventListener('click', () => {
+                            const s = sources[parseInt(b.dataset.idx)];
+                            document.getElementById('source-view-title').textContent = `${s.book_title}${s.chapter ? ' - ' + s.chapter : ''}`;
+                            document.getElementById('source-view-text').textContent = s.excerpt;
+                            document.getElementById('source-view-modal').classList.add('active');
+                        });
+                    });
+                } else {
+                    sourcesList.innerHTML = '';
+                }
+                resultBox.style.display = 'block';
+            } catch (error) {
+                ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'اسأل';
+            }
+        });
 
         (async () => {
             const authInfo = await Auth.requireAuth();
             if (!authInfo) return;
+            await loadBooks();
         })();
     </script>
     <script src="js/pwa-install.js?v=4" defer></script>

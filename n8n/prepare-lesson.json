@@ -1,0 +1,364 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "prepare-lesson",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777701",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [-2400, 300],
+      "webhookId": "prl01-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\nconst body = $input.first().json.body || {};\n\nlet validationError = null;\nif (!body.student_id) validationError = 'رقم الطالب مطلوب';\n\nreturn {\n  teacherId: payload.sub,\n  studentId: body.student_id || null,\n  isValid: validationError === null,\n  validationError,\n  minIntervalSeconds: 5,\n  dailyLimit: 40,\n  topK: 5,\n  geminiModel: 'gemini-3.5-flash-lite',\n  embeddingModel: 'text-embedding-004'\n};"
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777702",
+      "name": "Decode JWT & Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-2192, 300]
+    },
+    {
+      "parameters": {
+        "conditions": { "boolean": [{ "value1": "={{ $json.isValid }}", "value2": true }] }
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777703",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [-1984, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"{{ $json.validationError }}\"\n  }\n}",
+        "options": {}
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777704",
+      "name": "Validation Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-1776, 460]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE teachers_manager.ai_rate_limiter\nSET last_request_at = now()\nWHERE id = 1\n  AND (last_request_at IS NULL OR now() - last_request_at >= ($1 || ' seconds')::interval)\nRETURNING last_request_at;",
+        "options": { "queryReplacement": "={{ $('Decode JWT & Config').item.json.minIntervalSeconds }}" }
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777705",
+      "name": "Reserve Global Rate Slot",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [-1776, 160],
+      "alwaysOutputData": true,
+      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
+    },
+    {
+      "parameters": {
+        "conditions": { "boolean": [{ "value1": "={{ !!$json.last_request_at }}", "value2": true }] }
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777706",
+      "name": "Rate Slot Reserved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [-1568, 160]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"BUSY\",\n    \"message\": \"النظام مشغول لحظة، من فضلك أعيدي المحاولة بعد ثوانٍ قليلة.\"\n  }\n}",
+        "options": {}
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777707",
+      "name": "Busy Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-1360, 320]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO teachers_manager.ai_usage_daily (teacher_id, usage_date, request_count)\nVALUES ($1::uuid, CURRENT_DATE, 1)\nON CONFLICT (teacher_id, usage_date)\nDO UPDATE SET request_count = teachers_manager.ai_usage_daily.request_count + 1\nWHERE teachers_manager.ai_usage_daily.request_count < $2\nRETURNING request_count;",
+        "options": { "queryReplacement": "={{ $('Decode JWT & Config').item.json.teacherId }},{{ $('Decode JWT & Config').item.json.dailyLimit }}" }
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777708",
+      "name": "Reserve Daily Quota",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [-1360, 40],
+      "alwaysOutputData": true,
+      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
+    },
+    {
+      "parameters": {
+        "conditions": { "boolean": [{ "value1": "={{ !!$json.request_count }}", "value2": true }] }
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777709",
+      "name": "Quota Reserved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [-1152, 40]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"DAILY_LIMIT\",\n    \"message\": \"وصلتِ للحد الأقصى المسموح به من الطلبات اليوم. حاولي مرة أخرى غدًا.\"\n  }\n}",
+        "options": {}
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777710",
+      "name": "Daily Limit Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-944, 200]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  s.id, s.name, s.subject, s.current_topic, s.current_surah, s.current_from_ayah, s.current_to_ayah,\n  (SELECT json_agg(row_to_json(l)) FROM (\n      SELECT lesson_date, lesson_content, memorization, recitation, performance, notes, next_assignment, homework\n      FROM teachers_manager.lessons\n      WHERE student_id = s.id AND teacher_id = s.teacher_id AND status = 'completed'\n      ORDER BY lesson_date DESC LIMIT 3\n  ) l) AS recent_lessons,\n  (SELECT json_agg(row_to_json(n)) FROM (\n      SELECT note, created_at FROM teachers_manager.student_notes\n      WHERE student_id = s.id AND teacher_id = s.teacher_id\n      ORDER BY created_at DESC LIMIT 5\n  ) n) AS notes\nFROM teachers_manager.students s\nWHERE s.id = $1::uuid AND s.teacher_id = $2::uuid;",
+        "options": { "queryReplacement": "={{ $('Decode JWT & Config').item.json.studentId }},{{ $('Decode JWT & Config').item.json.teacherId }}" }
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777711",
+      "name": "Get Student Context",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [-944, -140],
+      "alwaysOutputData": true,
+      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
+    },
+    {
+      "parameters": {
+        "conditions": { "boolean": [{ "value1": "={{ !!$json.id }}", "value2": true }] }
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777712",
+      "name": "Student Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [-736, -140]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"الطالب غير موجود أو لا يتبع لحسابك.\"\n  }\n}",
+        "options": {}
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777713",
+      "name": "Not Found Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-736, 20]
+    },
+    {
+      "parameters": {
+        "jsCode": "const student = $input.first().json;\nconst lessons = Array.isArray(student.recent_lessons) ? student.recent_lessons : [];\nconst latest = lessons[0] || {};\n\nconst parts = [student.subject, student.current_topic, latest.next_assignment, latest.notes].filter(Boolean);\nconst queryText = parts.join(' - ') || (student.subject || 'مادة عامة');\n\nreturn { json: { ...student, queryText } };"
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777714",
+      "name": "Build Search Query Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-528, -140]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'models/text-embedding-004', content: { parts: [{ text: $json.queryText }] } }) }}",
+        "options": { "timeout": 20000 }
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777715",
+      "name": "Embed Query",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-320, -140],
+      "credentials": { "httpHeaderAuth": { "id": "8Tc8LjAwoWExdl38", "name": "Gemini API Key" } },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const student = $('Build Search Query Text').item.json;\nconst cfg = $('Decode JWT & Config').item.json;\nconst raw = $input.first().json;\nconst values = raw && raw.embedding && Array.isArray(raw.embedding.values) ? raw.embedding.values : null;\n\nreturn {\n  json: {\n    ...student,\n    teacherId: cfg.teacherId,\n    studentId: cfg.studentId,\n    topK: cfg.topK,\n    embeddingLiteral: values ? ('[' + values.join(',') + ']') : null\n  }\n};"
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777716",
+      "name": "Parse Query Embedding",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-112, -140]
+    },
+    {
+      "parameters": {
+        "conditions": { "boolean": [{ "value1": "={{ !!$json.embeddingLiteral }}", "value2": true }] }
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777717",
+      "name": "Has Embedding?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [96, -140]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT c.content, c.chapter_title, c.page_number, c.book_id, b.title AS book_title\nFROM teachers_manager.book_chunks c\nJOIN teachers_manager.book_sources b ON b.id = c.book_id\nWHERE c.teacher_id = $1::uuid\n  AND b.status = 'ready'\n  AND (\n    NOT EXISTS (SELECT 1 FROM teachers_manager.book_student_links l WHERE l.book_id = b.id)\n    OR EXISTS (SELECT 1 FROM teachers_manager.book_student_links l WHERE l.book_id = b.id AND l.student_id = $2::uuid)\n  )\nORDER BY c.embedding <=> $3::vector\nLIMIT $4::integer;",
+        "options": {
+          "queryReplacement": "={{ $json.teacherId }},{{ $json.studentId }},{{ $json.embeddingLiteral }},{{ $json.topK }}"
+        }
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777718",
+      "name": "Search Relevant Chunks",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [304, -220],
+      "alwaysOutputData": true,
+      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const student = $('Parse Query Embedding').item.json;\nconst chunks = $input.all().map(i => i.json).filter(c => c.content);\n\nconst lessons = Array.isArray(student.recent_lessons) ? student.recent_lessons : [];\nconst notes = Array.isArray(student.notes) ? student.notes : [];\n\nconst lessonsText = lessons.length\n  ? lessons.map((l) => {\n      const date = (l.lesson_date || '').toString().substring(0, 10);\n      const parts = [];\n      if (l.lesson_content) parts.push(`المحتوى: ${l.lesson_content}`);\n      if (l.memorization) parts.push(`الحفظ: ${l.memorization}`);\n      if (l.recitation) parts.push(`الأداء الشفهي: ${l.recitation}`);\n      if (l.performance) parts.push(`الأداء العام: ${l.performance}`);\n      if (l.notes) parts.push(`ملاحظات: ${l.notes}`);\n      if (l.next_assignment) parts.push(`المهمة القادمة: ${l.next_assignment}`);\n      if (l.homework) parts.push(`الواجب: ${l.homework}`);\n      return `[حصة ${date}] ${parts.join(' - ') || 'بدون تفاصيل مسجّلة'}`;\n  }).join('\\n')\n  : 'لا يوجد سجل حصص سابقة بعد.';\n\nconst notesText = notes.length ? notes.map(n => `- ${n.note}`).join('\\n') : 'لا توجد ملاحظات مسجّلة عن هذا الطالب.';\n\nconst sourcesText = chunks.length\n  ? chunks.map((c, i) => `[مصدر ${i + 1}] من كتاب \"${c.book_title}\"${c.chapter_title ? ' - ' + c.chapter_title : ''}${c.page_number ? ' - صفحة ' + c.page_number : ''}:\\n${c.content}`).join('\\n\\n')\n  : 'لا توجد مصادر (كتب) مرتبطة بهذا الطالب بعد.';\n\nconst prompt = `أنتِ مساعد بيجهّز خطة حصة سريعة لمعلم قبل ما يدخل يشرح لطالبه \"${student.name}\".\n\n== بيانات الطالب ==\nالمادة: ${student.subject || 'غير محددة'}\nالموضوع الحالي: ${student.current_topic || 'غير محدد'}\n\n== سجل آخر الحصص ==\n${lessonsText}\n\n== ملاحظات المعلم عن الطالب ==\n${notesText}\n\n== مقاطع من مصادر المعلم (كتب/مذكرات) ذات صلة ==\n${sourcesText}\n\nجهّز خطة حصة مختصرة وعملية بالاعتماد على المصادر أعلاه قدر الإمكان (واستشهد برقم المصدر [مصدر N] لو استخدمتيه)، وأعد الناتج بصيغة JSON فقط بالشكل التالي بالظبط، بالعربية:\n{\n  \"goal\": \"هدف الحصة في جملة واحدة\",\n  \"review\": \"إيه اللي يستاهل مراجعته الأول\",\n  \"teaching_method\": \"طريقة شرح مقترحة\",\n  \"exercise\": \"تمرين مقترح للطالب\",\n  \"homework\": \"واجب مقترح\",\n  \"watch_point\": \"نقطة تحتاج انتباه خاص مع هذا الطالب تحديدًا\"\n}`;\n\nreturn {\n  json: {\n    teacherId: student.teacherId,\n    sources: chunks.map(c => ({ book_id: c.book_id, book_title: c.book_title, chapter: c.chapter_title, page: c.page_number })),\n    geminiRequestBody: {\n      contents: [{ role: 'user', parts: [{ text: prompt }] }],\n      generationConfig: { temperature: 0.4, maxOutputTokens: 1200, responseMimeType: 'application/json' }\n    }\n  }\n};"
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777719",
+      "name": "Build Lesson Prep Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [512, -220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.geminiRequestBody) }}",
+        "options": { "timeout": 30000 }
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777720",
+      "name": "Generate With Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, -220],
+      "credentials": { "httpHeaderAuth": { "id": "8Tc8LjAwoWExdl38", "name": "Gemini API Key" } },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $('Build Lesson Prep Prompt').item.json;\nconst raw = $input.first().json;\n\nfunction fail(message) {\n  return { json: { success: false, message } };\n}\n\nif (raw.error) {\n  return fail('تعذّر تجهيز الحصة، من فضلك حاولي مرة أخرى.');\n}\n\nconst candidate = raw.candidates && raw.candidates[0];\nconst text = candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text;\nif (!text) {\n  return fail('تعذّر توليد خطة مناسبة لهذه الحصة.');\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(text);\n} catch (e) {\n  return fail('تعذّر فهم استجابة تجهيز الحصة.');\n}\n\nreturn {\n  json: {\n    success: true,\n    plan: {\n      goal: parsed.goal || '',\n      review: parsed.review || '',\n      teaching_method: parsed.teaching_method || '',\n      exercise: parsed.exercise || '',\n      homework: parsed.homework || '',\n      watch_point: parsed.watch_point || ''\n    },\n    sources: prev.sources\n  }\n};"
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777721",
+      "name": "Extract Lesson Prep",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [928, -220]
+    },
+    {
+      "parameters": {
+        "conditions": { "boolean": [{ "value1": "={{ $json.success }}", "value2": true }] }
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777722",
+      "name": "Prep Success?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1136, -220]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, data: { plan: $json.plan, sources: $json.sources } }) }}",
+        "options": {}
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777723",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1344, -300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AI_ERROR\",\n    \"message\": \"{{ $json.message }}\"\n  }\n}",
+        "options": {}
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777724",
+      "name": "AI Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1344, -140]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AI_ERROR\",\n    \"message\": \"تعذّر تجهيز الحصة، من فضلك حاولي مرة أخرى.\"\n  }\n}",
+        "options": {}
+      },
+      "id": "b7b7b777-7777-4777-8777-777777777725",
+      "name": "Embed Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [304, -60]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Decode JWT & Config", "type": "main", "index": 0 }]] },
+    "Decode JWT & Config": { "main": [[{ "node": "Valid?", "type": "main", "index": 0 }]] },
+    "Valid?": {
+      "main": [
+        [{ "node": "Reserve Global Rate Slot", "type": "main", "index": 0 }],
+        [{ "node": "Validation Error Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Reserve Global Rate Slot": { "main": [[{ "node": "Rate Slot Reserved?", "type": "main", "index": 0 }]] },
+    "Rate Slot Reserved?": {
+      "main": [
+        [{ "node": "Reserve Daily Quota", "type": "main", "index": 0 }],
+        [{ "node": "Busy Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Reserve Daily Quota": { "main": [[{ "node": "Quota Reserved?", "type": "main", "index": 0 }]] },
+    "Quota Reserved?": {
+      "main": [
+        [{ "node": "Get Student Context", "type": "main", "index": 0 }],
+        [{ "node": "Daily Limit Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Get Student Context": { "main": [[{ "node": "Student Found?", "type": "main", "index": 0 }]] },
+    "Student Found?": {
+      "main": [
+        [{ "node": "Build Search Query Text", "type": "main", "index": 0 }],
+        [{ "node": "Not Found Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Build Search Query Text": { "main": [[{ "node": "Embed Query", "type": "main", "index": 0 }]] },
+    "Embed Query": { "main": [[{ "node": "Parse Query Embedding", "type": "main", "index": 0 }]] },
+    "Parse Query Embedding": { "main": [[{ "node": "Has Embedding?", "type": "main", "index": 0 }]] },
+    "Has Embedding?": {
+      "main": [
+        [{ "node": "Search Relevant Chunks", "type": "main", "index": 0 }],
+        [{ "node": "Embed Error Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Search Relevant Chunks": { "main": [[{ "node": "Build Lesson Prep Prompt", "type": "main", "index": 0 }]] },
+    "Build Lesson Prep Prompt": { "main": [[{ "node": "Generate With Gemini", "type": "main", "index": 0 }]] },
+    "Generate With Gemini": { "main": [[{ "node": "Extract Lesson Prep", "type": "main", "index": 0 }]] },
+    "Extract Lesson Prep": { "main": [[{ "node": "Prep Success?", "type": "main", "index": 0 }]] },
+    "Prep Success?": {
+      "main": [
+        [{ "node": "Success Response", "type": "main", "index": 0 }],
+        [{ "node": "AI Error Response", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": { "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597" }
+}

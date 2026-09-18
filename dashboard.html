@@ -68,6 +68,14 @@
                                     افتح ملف أي طالب من صفحة "الطلاب" لعرض وإضافة ملاحظاته.
                                 </div>
                             </div>
+
+                            <div class="card" id="library-card" style="display:none;">
+                                <div class="flex" style="margin-bottom:0.5rem;">
+                                    <h3 style="margin:0; font-size:0.95rem;"><span id="ic-library" class="icon"></span> مكتبتك</h3>
+                                </div>
+                                <p id="library-stats" style="font-size:0.85rem; color:var(--text-secondary); margin:0 0 0.8rem;"></p>
+                                <a href="books.html" class="btn" style="background:var(--bg-muted); color:var(--text-primary); width:100%; text-align:center; display:block;">فتح المكتبة</a>
+                            </div>
                         </div>
                     </div>
 
@@ -109,6 +117,7 @@
         document.getElementById('ic-ai').innerHTML = icon('sparkles', { size: 17 });
         document.getElementById('ic-ai-enter').innerHTML = icon('link', { size: 15 });
         document.getElementById('ic-notes').innerHTML = icon('clipboard', { size: 16 });
+        document.getElementById('ic-library').innerHTML = icon('bookOpen', { size: 16 });
         document.getElementById('ic-ql-add').innerHTML = icon('plus', { size: 19 });
         document.getElementById('ic-ql-schedule').innerHTML = icon('calendar', { size: 19 });
         document.getElementById('ic-ql-books').innerHTML = icon('bookOpen', { size: 19 });
@@ -267,6 +276,30 @@
             }
         });
 
+        // بطاقة "مكتبتك" الصغيرة: بتظهر بس لو فيه مصادر مرفوعة بالفعل (لو
+        // لسه مفيش، الرابط السريع "كتابي" تحت كفاية). فشل الطلب ده (مثلاً لو
+        // لسه ملهوش استيراد في n8n) بيتجاهل بصمت من غير ما يأثر على الداشبورد
+        async function loadLibraryCard() {
+            try {
+                const data = await api.listBooks();
+                const books = (data.books || []).filter(b => b.status === 'ready');
+                if (books.length === 0) return;
+
+                const totalPages = books.reduce((sum, b) => sum + (b.page_count || 0), 0);
+                const lastUpdated = books.reduce((latest, b) => {
+                    const d = new Date(b.updated_at || b.created_at);
+                    return (!latest || d > latest) ? d : latest;
+                }, null);
+                const isToday = lastUpdated && lastUpdated.toDateString() === new Date().toDateString();
+
+                document.getElementById('library-stats').textContent =
+                    `${books.length} مصدر · ${totalPages.toLocaleString('ar-EG')} صفحة${lastUpdated ? ` · آخر تحديث: ${isToday ? 'اليوم' : Formatters.formatDate(lastUpdated)}` : ''}`;
+                document.getElementById('library-card').style.display = 'block';
+            } catch (e) {
+                // تجاهل - البطاقة تفضل مخفية وخلاص
+            }
+        }
+
         async function loadDashboard() {
             try {
                 const data = await api.getDashboard();
@@ -296,6 +329,7 @@
                 renderTodayLessons(data.todayLessons);
                 renderTrialBanner();
                 updateAiCardHint();
+                loadLibraryCard();
 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('content').style.display = 'block';

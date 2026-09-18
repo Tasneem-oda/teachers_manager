@@ -75,7 +75,19 @@ export const CONFIG = {
             LESSON_SUMMARY: '/lesson-summary',
             // مساعد الذكاء الاصطناعي التفاعلي (شات بذاكرة خاصة بكل طالب) - منفصل
             // عن ASSISTANT اللي بيستخدمه زرار "طلب ملخص ذكي" الموجود بالفعل
-            CHAT: '/ai-chat'
+            CHAT: '/ai-chat',
+            // "✨ حضّرلي الحصة" في صفحة الطالب - خطة حصة مبنية على بيانات
+            // الطالب + مصادر مكتبة المعلم المرتبطة به
+            PREPARE_LESSON: '/prepare-lesson'
+        },
+        // 📚 مكتبتي: رفع كتب/مذكرات، تحليلها بالذكاء الاصطناعي، والسؤال عنها
+        BOOKS: {
+            CREATE_SOURCE: '/create-book-source',
+            PROCESS: '/process-book',
+            LIST: '/list-books',
+            DELETE: '/delete-book',
+            UPDATE_ACCESS: '/update-book-access',
+            ASK: '/ask-sources'
         }
     },
     

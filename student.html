@@ -69,9 +69,21 @@
                             <h1 id="student-name" style="margin:0 0 0.2rem;"></h1>
                             <p id="student-subject" style="color: var(--text-secondary); margin: 0;"></p>
                         </div>
-                        <div class="header-actions" style="display:flex; gap:0.5rem;">
+                        <div class="header-actions" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
                             <button class="btn" style="background: var(--secondary);" id="btn-open-student-appts" type="button"><span id="ic-add-appt" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> مواعيد الطالب</button>
+                            <button class="btn" style="background: var(--primary);" id="btn-prepare-lesson" type="button"><span id="ic-prepare-lesson" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> حضّرلي الحصة</button>
                             <button class="btn btn-primary" onclick="location.href='lesson.html?student_id=' + getStudentId()"><span id="ic-start-lesson" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> بدء الحصة</button>
+                        </div>
+                    </div>
+
+                    <!-- مودال "حضّرلي الحصة" -->
+                    <div class="modal" id="prepare-lesson-modal">
+                        <div class="modal-content">
+                            <span class="close-modal">&times;</span>
+                            <h2>🎯 اقتراح للحصة</h2>
+                            <div id="prepare-lesson-body">
+                                <div class="loading">جاري تجهيز الحصة...</div>
+                            </div>
                         </div>
                     </div>
 
@@ -307,6 +319,46 @@
         // (js/student-appointments.js) المستخدم في كل صفحات التطبيق.
         document.getElementById('btn-open-student-appts').addEventListener('click', () => {
             openStudentAppointments(studentId, student ? student.name : '');
+        });
+
+        // "✨ حضّرلي الحصة": بيجمع بيانات الطالب + مصادر مكتبة المعلم
+        // المرتبطة بيه، ويطلع خطة حصة مختصرة جاهزة
+        document.getElementById('ic-prepare-lesson').innerHTML = icon('sparkles', { size: 15 });
+        document.querySelector('#prepare-lesson-modal .close-modal').addEventListener('click', () => {
+            document.getElementById('prepare-lesson-modal').classList.remove('active');
+        });
+
+        const PREP_SECTIONS = [
+            { key: 'goal', label: '🎯 هدف الحصة' },
+            { key: 'review', label: '📖 ماذا تراجع' },
+            { key: 'teaching_method', label: '💡 طريقة شرح مقترحة' },
+            { key: 'exercise', label: '📝 تمرين مقترح' },
+            { key: 'homework', label: '🏠 واجب مقترح' },
+            { key: 'watch_point', label: '⚠️ نقطة تحتاج انتباه' }
+        ];
+
+        document.getElementById('btn-prepare-lesson').addEventListener('click', async () => {
+            const modal = document.getElementById('prepare-lesson-modal');
+            const body = document.getElementById('prepare-lesson-body');
+            body.innerHTML = '<div class="loading">جاري تجهيز الحصة...</div>';
+            modal.classList.add('active');
+
+            try {
+                const res = await api.prepareLesson(studentId);
+                const { plan, sources } = res.data;
+                const sourcesHtml = (sources && sources.length > 0)
+                    ? `<p style="font-size:0.78rem; color:var(--text-secondary); margin-top:1rem;">بالاعتماد على: ${sources.map(s => Formatters.escapeHtml(s.book_title)).join('، ')}</p>`
+                    : '<p style="font-size:0.78rem; color:var(--text-secondary); margin-top:1rem;">لا توجد مصادر مرتبطة بهذا الطالب بعد - ارفعي كتاب من "مكتبتي" وحدّدي استخدامه مع هذا الطالب للحصول على اقتراحات أدق.</p>';
+
+                body.innerHTML = PREP_SECTIONS.map(s => `
+                    <div style="margin-bottom: 0.9rem;">
+                        <h4 style="margin:0 0 0.3rem; font-size:0.85rem; color:var(--primary);">${s.label}</h4>
+                        <p style="margin:0; font-size:0.9rem; line-height:1.6;">${Formatters.escapeHtml(plan[s.key] || 'غير متاح')}</p>
+                    </div>
+                `).join('') + sourcesHtml;
+            } catch (error) {
+                body.innerHTML = `<div class="empty-state">تعذّر تجهيز الحصة: ${Formatters.escapeHtml(ErrorHandler.getErrorMessage(error))}</div>`;
+            }
         });
 
 

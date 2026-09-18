@@ -1,0 +1,91 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "delete-book",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "b4b4b444-4444-4444-8444-444444444401",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [-800, 160],
+      "webhookId": "dbk01-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\nconst body = $input.first().json.body || {};\nreturn { teacherId: payload.sub, bookId: body.book_id || null };"
+      },
+      "id": "b4b4b444-4444-4444-8444-444444444402",
+      "name": "Decode JWT",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-592, 160]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM teachers_manager.book_sources\nWHERE id = $1::uuid AND teacher_id = $2::uuid\nRETURNING id, storage_path;",
+        "options": {
+          "queryReplacement": "={{ $json.bookId }},{{ $json.teacherId }}"
+        }
+      },
+      "id": "b4b4b444-4444-4444-8444-444444444403",
+      "name": "Delete Book",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [-384, 160],
+      "alwaysOutputData": true,
+      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
+    },
+    {
+      "parameters": {
+        "conditions": { "boolean": [{ "value1": "={{ !!$json.id }}", "value2": true }] }
+      },
+      "id": "b4b4b444-4444-4444-8444-444444444404",
+      "name": "Deleted?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [-176, 160]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"data\": {\n    \"deleted\": true,\n    \"storage_path\": \"{{ $json.storage_path }}\"\n  }\n}",
+        "options": {}
+      },
+      "id": "b4b4b444-4444-4444-8444-444444444405",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [32, 80]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"الكتاب غير موجود أو لا يتبع لحسابك.\"\n  }\n}",
+        "options": {}
+      },
+      "id": "b4b4b444-4444-4444-8444-444444444406",
+      "name": "Not Found Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [32, 240]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Decode JWT", "type": "main", "index": 0 }]] },
+    "Decode JWT": { "main": [[{ "node": "Delete Book", "type": "main", "index": 0 }]] },
+    "Delete Book": { "main": [[{ "node": "Deleted?", "type": "main", "index": 0 }]] },
+    "Deleted?": {
+      "main": [
+        [{ "node": "Success Response", "type": "main", "index": 0 }],
+        [{ "node": "Not Found Response", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": { "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597" }
+}

@@ -280,6 +280,97 @@ export const api = {
             'POST',
             { student_id: studentId, message }
         );
+    },
+
+    // "✨ حضّرلي الحصة": خطة حصة مبنية على بيانات الطالب + مصادر مكتبة
+    // المعلم المرتبطة به (شوف صفحة الطالب)
+    async prepareLesson(studentId) {
+        return await apiCall(
+            CONFIG.API_ENDPOINTS.AI.PREPARE_LESSON,
+            'POST',
+            { student_id: studentId }
+        );
+    },
+
+    // ==================== 📚 مكتبتي (رفع كتب/مذكرات + RAG) ====================
+
+    // الخطوة الأولى من رفع كتاب: إنشاء صف في قاعدة البيانات والحصول على
+    // مسار تخزين فريد، قبل رفع بايتات الملف نفسها
+    async createBookSource(title, fileName, fileType) {
+        return await apiCall(
+            CONFIG.API_ENDPOINTS.BOOKS.CREATE_SOURCE,
+            'POST',
+            { title, file_name: fileName, file_type: fileType }
+        );
+    },
+
+    // رفع ملف الكتاب مباشرة إلى Supabase Storage من المتصفح (بدون ما يمر
+    // على n8n كبايتات خام) - أسرع وأبسط، وبيستخدم صلاحيات RLS الخاصة
+    // بالمعلم نفسه (كل معلم بيشوف/يرفع في مجلده بس). بترجع رابط موقّع
+    // (Signed URL) صالح لمدة قصيرة عشان n8n يقدر يحمّل الملف منه بعدين.
+    async uploadBookFile(storagePath, file) {
+        const { error: uploadError } = await window.supabaseClient.storage
+            .from('teacher-books')
+            .upload(storagePath, file, { contentType: file.type, upsert: false });
+        if (uploadError) throw uploadError;
+
+        const { data, error: signError } = await window.supabaseClient.storage
+            .from('teacher-books')
+            .createSignedUrl(storagePath, 600); // صالح 10 دقايق - كفاية لبدء التحليل
+        if (signError) throw signError;
+
+        return data.signedUrl;
+    },
+
+    // حذف ملف الكتاب من التخزين (بيتنادى بعد نجاح deleteBook في السيرفر)
+    async deleteBookFile(storagePath) {
+        try {
+            await window.supabaseClient.storage.from('teacher-books').remove([storagePath]);
+        } catch (e) {
+            // تجاهل - صف الكتاب في قاعدة البيانات اتمسح بالفعل على أي حال
+        }
+    },
+
+    // الخطوة الثالثة والأخيرة: نطلب من n8n يبدأ فعليًا يحلل الملف ويفهرسه
+    // (بيرد فورًا بحالة "processing"، والتحليل الفعلي بياخد وقت في الخلفية)
+    async processBook(bookId, fileUrl) {
+        return await apiCall(
+            CONFIG.API_ENDPOINTS.BOOKS.PROCESS,
+            'POST',
+            { book_id: bookId, file_url: fileUrl }
+        );
+    },
+
+    async listBooks() {
+        return await apiCall(CONFIG.API_ENDPOINTS.BOOKS.LIST, 'GET');
+    },
+
+    async deleteBook(bookId) {
+        return await apiCall(
+            CONFIG.API_ENDPOINTS.BOOKS.DELETE,
+            'POST',
+            { book_id: bookId }
+        );
+    },
+
+    // تحديد مين يستخدم الكتاب ده: 'all' (كل الطلاب) أو 'students' مع قائمة
+    // معرّفات الطلاب المحددين
+    async updateBookAccess(bookId, scope, studentIds = []) {
+        return await apiCall(
+            CONFIG.API_ENDPOINTS.BOOKS.UPDATE_ACCESS,
+            'POST',
+            { book_id: bookId, scope, student_ids: studentIds }
+        );
+    },
+
+    // "✨ اسأل مصادرك": سؤال حر يتم الإجابة عنه بالاعتماد على مقاطع الكتب
+    // المرفوعة فقط (مع الاستشهاد بالمصدر)، اختياريًا مقيّد بمصادر طالب معيّن
+    async askSources(question, studentId = null) {
+        return await apiCall(
+            CONFIG.API_ENDPOINTS.BOOKS.ASK,
+            'POST',
+            { question, student_id: studentId }
+        );
     }
 };
 
