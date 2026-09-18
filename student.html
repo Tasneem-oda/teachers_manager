@@ -43,6 +43,22 @@
         .note-text { color: var(--text-primary); margin-top: 0.35rem; font-size: 0.9rem; }
         .loading { text-align: center; padding: 2rem; color: var(--primary); }
         .empty-state { text-align: center; padding: 2rem; color: var(--text-secondary); }
+        .appt-item {
+            display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+            background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px;
+            padding: 0.75rem 0.9rem; margin-bottom: 0.7rem;
+        }
+        .appt-item-info { display: flex; flex-direction: column; gap: 0.15rem; }
+        .appt-item-day { font-weight: 700; color: var(--primary); font-size: 0.92rem; }
+        .appt-item-meta { font-size: 0.8rem; color: var(--text-secondary); }
+        .appt-item-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
+        .appt-icon-btn {
+            width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
+            background: var(--card-bg); color: var(--text-secondary); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .appt-icon-btn:hover { background: var(--bg-muted); color: var(--text-primary); }
+        .appt-icon-btn.danger:hover { background: #FBEAEA; color: var(--danger); border-color: #F0CFCF; }
         @media (max-width: 560px) {
             .header-actions { flex-direction: column; width: 100%; }
             .header-actions .btn { width: 100%; justify-content: center; display: inline-flex; }
@@ -70,7 +86,7 @@
                             <p id="student-subject" style="color: var(--text-secondary); margin: 0;"></p>
                         </div>
                         <div class="header-actions" style="display:flex; gap:0.5rem;">
-                            <button class="btn" style="background: var(--secondary);" onclick="location.href='schedule.html?add_student=' + getStudentId()"><span id="ic-add-appt" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> إضافة موعد</button>
+                            <button class="btn" style="background: var(--secondary);" id="btn-open-student-appts" type="button"><span id="ic-add-appt" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> مواعيد الطالب</button>
                             <button class="btn btn-primary" onclick="location.href='lesson.html?student_id=' + getStudentId()"><span id="ic-start-lesson" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> بدء الحصة</button>
                         </div>
                     </div>
@@ -145,6 +161,77 @@
         </main>
     </div>
 
+    <!-- مودال مواعيد الطالب: قائمة مواعيد هذا الطالب فقط (مش الجدول العام) -->
+    <div class="modal" id="student-appts-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>مواعيد الطالب</h2>
+            <div style="margin-bottom: 1rem;">
+                <button type="button" class="btn btn-primary" id="btn-add-student-appt">
+                    <span id="ic-add-appt-2" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> إضافة موعد جديد
+                </button>
+            </div>
+            <div id="student-appts-list">
+                <div class="empty-state">جاري التحميل...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال إضافة/تعديل موعد لهذا الطالب بعينه (نفس منطق schedule.html لكن بدون اختيار طالب) -->
+    <div class="modal" id="student-appt-form-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="student-appt-form-title">إضافة موعد</h2>
+            <form id="student-appt-form">
+                <input type="hidden" id="sa-id">
+                <input type="hidden" id="sa-recurrence-group">
+                <div class="form-group">
+                    <label for="sa-recurrence">تكرار الموعد *</label>
+                    <select id="sa-recurrence" required>
+                        <option value="weekly" selected>أسبوعيًا (كل أسبوع في نفس اليوم)</option>
+                        <option value="daily">يوميًا (كل يوم في نفس الوقت)</option>
+                        <option value="monthly">شهريًا (نفس التاريخ كل شهر)</option>
+                        <option value="none">بدون تكرار (مرة واحدة)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="sa-day-group">
+                    <label for="sa-day">اليوم *</label>
+                    <select id="sa-day" required>
+                        <option value="0">الأحد</option>
+                        <option value="1">الإثنين</option>
+                        <option value="2">الثلاثاء</option>
+                        <option value="3">الأربعاء</option>
+                        <option value="4">الخميس</option>
+                        <option value="5">الجمعة</option>
+                        <option value="6">السبت</option>
+                    </select>
+                </div>
+                <div class="form-group" id="sa-date-group" style="display:none;">
+                    <label for="sa-date">التاريخ *</label>
+                    <input type="date" id="sa-date">
+                </div>
+                <div class="form-group">
+                    <label for="sa-time">وقت البداية *</label>
+                    <input type="time" id="sa-time" required>
+                </div>
+                <div class="form-group">
+                    <label for="sa-duration">مدة الحصة (دقيقة) *</label>
+                    <select id="sa-duration" required>
+                        <option value="30">30 دقيقة</option>
+                        <option value="45" selected>45 دقيقة</option>
+                        <option value="60">60 دقيقة</option>
+                        <option value="90">90 دقيقة</option>
+                    </select>
+                </div>
+                <p id="sa-recurrence-note" style="display:none; font-size:0.8rem; color:var(--text-secondary); background:var(--bg-secondary); padding:0.6rem 0.8rem; border-radius:8px;"></p>
+                <div style="display:flex; gap:0.5rem; margin-top:1rem; flex-wrap:wrap;">
+                    <button type="submit" class="btn" id="sa-save-btn">حفظ الموعد</button>
+                    <button type="button" class="btn close-modal" style="background: var(--bg-muted); color: var(--text-primary);">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
 
@@ -163,6 +250,7 @@
         document.getElementById('ic-start-lesson').innerHTML = icon('play', { size: 15 });
         document.getElementById('ic-focus').innerHTML = icon('target', { size: 17 });
         document.getElementById('ic-notes-focus').innerHTML = icon('clipboard', { size: 17 });
+        document.getElementById('ic-add-appt-2').innerHTML = icon('plus', { size: 14 });
 
         const urlParams = new URLSearchParams(window.location.search);
         const studentId = urlParams.get('id');
@@ -299,6 +387,239 @@
                 loadNotes();
             } catch (error) {
                 ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
+            }
+        });
+
+        // ============================================================
+        // مواعيد الطالب (بوب أب): عرض مواعيد هذا الطالب المجدولة بالفعل
+        // فقط (مش الجدول الأسبوعي العام لكل الطلاب)، مع إمكانية إضافة
+        // موعد جديد أو تعديل/حذف موعد موجود من نفس البوب أب مباشرة.
+        // بتستخدم نفس الـ API الموجود بالفعل (api.getSchedules /
+        // createSchedule / updateSchedule / deleteSchedule) المتصل
+        // بنفس n8n webhooks المستخدمة في صفحة الجدول العام.
+        // ============================================================
+        const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+        const RECURRENCE_LABELS = { weekly: 'أسبوعيًا', daily: 'يوميًا', monthly: 'شهريًا', none: 'مرة واحدة' };
+        let studentSchedules = [];
+
+        function genGroupId() {
+            if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+            return 'grp-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+        }
+
+        async function loadStudentSchedulesList() {
+            const list = document.getElementById('student-appts-list');
+            list.innerHTML = '<div class="empty-state">جاري التحميل...</div>';
+            try {
+                const data = await api.getSchedules();
+                const all = data.schedules || [];
+                studentSchedules = all.filter(s => s.student_id === studentId);
+                renderStudentApptsList();
+            } catch (error) {
+                list.innerHTML = `<div class="empty-state">تعذّر تحميل المواعيد: ${Formatters.escapeHtml(ErrorHandler.getErrorMessage(error))}</div>`;
+            }
+        }
+
+        function renderStudentApptsList() {
+            const list = document.getElementById('student-appts-list');
+            if (studentSchedules.length === 0) {
+                list.innerHTML = '<div class="empty-state">لا توجد مواعيد مجدولة لهذا الطالب بعد</div>';
+                return;
+            }
+            const sorted = [...studentSchedules].sort((a, b) => a.day_of_week - b.day_of_week || a.start_time.localeCompare(b.start_time));
+            list.innerHTML = sorted.map(sch => `
+                <div class="appt-item" data-id="${sch.id}">
+                    <div class="appt-item-info">
+                        <span class="appt-item-day">${DAY_NAMES[sch.day_of_week] || ''} - ${Formatters.formatTime(sch.start_time)}</span>
+                        <span class="appt-item-meta">${sch.duration_minutes} دقيقة${sch.recurrence_type ? ' · ' + (RECURRENCE_LABELS[sch.recurrence_type] || '') : ''}</span>
+                    </div>
+                    <div class="appt-item-actions">
+                        <button type="button" class="appt-icon-btn" title="تعديل الموعد" data-action="edit" data-id="${sch.id}">${icon('edit', { size: 14 })}</button>
+                        <button type="button" class="appt-icon-btn danger" title="حذف الموعد" data-action="delete" data-id="${sch.id}">${icon('trash', { size: 14 })}</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('student-appts-list').addEventListener('click', async (e) => {
+            const btn = e.target.closest('button[data-action]');
+            if (!btn) return;
+            const sch = studentSchedules.find(s => String(s.id) === String(btn.dataset.id));
+            if (!sch) return;
+
+            if (btn.dataset.action === 'edit') {
+                openEditApptModal(sch);
+            } else if (btn.dataset.action === 'delete') {
+                if (!confirm('هل تريد حذف هذا الموعد؟')) return;
+                try {
+                    await api.deleteSchedule(sch.id);
+                    ErrorHandler.showSuccess('تم حذف الموعد');
+                    await loadStudentSchedulesList();
+                } catch (error) {
+                    ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
+                }
+            }
+        });
+
+        function updateApptRecurrenceFields() {
+            const type = document.getElementById('sa-recurrence').value;
+            const dayGroup = document.getElementById('sa-day-group');
+            const dateGroup = document.getElementById('sa-date-group');
+            const note = document.getElementById('sa-recurrence-note');
+            const daySelect = document.getElementById('sa-day');
+            const dateInput = document.getElementById('sa-date');
+
+            if (type === 'weekly') {
+                dayGroup.style.display = 'block';
+                dateGroup.style.display = 'none';
+                daySelect.required = true;
+                dateInput.required = false;
+                note.style.display = 'none';
+            } else if (type === 'daily') {
+                dayGroup.style.display = 'none';
+                dateGroup.style.display = 'none';
+                daySelect.required = false;
+                dateInput.required = false;
+                note.style.display = 'block';
+                note.textContent = 'سيتم إضافة هذا الموعد في نفس الوقت في كل أيام الأسبوع السبعة.';
+            } else {
+                dayGroup.style.display = 'none';
+                dateGroup.style.display = 'block';
+                daySelect.required = false;
+                dateInput.required = true;
+                note.style.display = 'block';
+                note.textContent = type === 'monthly'
+                    ? 'يظهر الموعد في الجدول الأسبوعي على يوم الأسبوع المطابق للتاريخ المحدد، كتذكير بالتكرار الشهري.'
+                    : 'هذا موعد لمرة واحدة فقط في التاريخ المحدد.';
+            }
+        }
+        document.getElementById('sa-recurrence').addEventListener('change', updateApptRecurrenceFields);
+
+        function openAddApptModal() {
+            document.getElementById('student-appt-form-title').textContent = 'إضافة موعد';
+            document.getElementById('sa-id').value = '';
+            document.getElementById('sa-recurrence-group').value = '';
+            document.getElementById('sa-recurrence').value = 'weekly';
+            document.getElementById('sa-day').value = '0';
+            document.getElementById('sa-date').value = '';
+            document.getElementById('sa-time').value = '16:00';
+            document.getElementById('sa-duration').value = '45';
+            updateApptRecurrenceFields();
+            document.getElementById('student-appt-form-modal').classList.add('active');
+        }
+
+        function openEditApptModal(sch) {
+            document.getElementById('student-appt-form-title').textContent = 'تعديل الموعد';
+            document.getElementById('sa-id').value = sch.id;
+            document.getElementById('sa-recurrence-group').value = sch.recurrence_group_id || '';
+            document.getElementById('sa-recurrence').value = sch.recurrence_type || 'weekly';
+            document.getElementById('sa-day').value = sch.day_of_week;
+            document.getElementById('sa-date').value = sch.start_date ? String(sch.start_date).substring(0, 10) : '';
+            document.getElementById('sa-time').value = sch.start_time.substring(0, 5);
+            document.getElementById('sa-duration').value = String(sch.duration_minutes);
+            updateApptRecurrenceFields();
+            document.getElementById('student-appt-form-modal').classList.add('active');
+        }
+
+        document.getElementById('btn-open-student-appts').addEventListener('click', async () => {
+            document.getElementById('student-appts-modal').classList.add('active');
+            await loadStudentSchedulesList();
+        });
+
+        document.getElementById('btn-add-student-appt').addEventListener('click', () => {
+            openAddApptModal();
+        });
+
+        document.querySelectorAll('.close-modal').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const modal = e.target.closest('.modal');
+                if (modal) modal.classList.remove('active');
+            });
+        });
+
+        document.getElementById('student-appt-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('sa-id').value;
+            const recurrenceType = document.getElementById('sa-recurrence').value;
+            const startTime = document.getElementById('sa-time').value;
+            const duration = parseInt(document.getElementById('sa-duration').value);
+            const dateValue = document.getElementById('sa-date').value;
+            const existingGroupId = document.getElementById('sa-recurrence-group').value || null;
+            const saveBtn = document.getElementById('sa-save-btn');
+
+            try {
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'جاري الحفظ...';
+
+                if (!id && recurrenceType === 'daily') {
+                    // نفس منطق "يوميًا" الموجود في صفحة الجدول العام: إنشاء 7 مواعيد
+                    // (كل أيام الأسبوع) بنفس معرّف مجموعة التكرار، بالتوازي.
+                    const groupId = genGroupId();
+                    const dayNames = DAY_NAMES;
+
+                    const results = await Promise.allSettled(
+                        Array.from({ length: 7 }, (_, day) => api.createSchedule({
+                            student_id: studentId,
+                            day_of_week: day,
+                            start_time: startTime,
+                            duration_minutes: duration,
+                            recurrence_type: 'daily',
+                            recurrence_group_id: groupId
+                        }))
+                    );
+
+                    const failedDays = [];
+                    let successCount = 0;
+                    results.forEach((r, day) => {
+                        if (r.status === 'fulfilled') {
+                            successCount++;
+                        } else {
+                            failedDays.push(`${dayNames[day]} (${ErrorHandler.getErrorMessage(r.reason)})`);
+                        }
+                    });
+
+                    if (successCount === 0) {
+                        throw new Error('لم يتم إنشاء أي موعد: ' + failedDays.join('، '));
+                    }
+                    if (failedDays.length > 0) {
+                        ErrorHandler.showError(`تم إنشاء ${successCount} من 7 أيام فقط. الأيام التي بها تعارض ولم تُضف: ${failedDays.join('، ')}`);
+                    } else {
+                        ErrorHandler.showSuccess('تم حفظ الموعد بنجاح في كل أيام الأسبوع');
+                    }
+                    document.getElementById('student-appt-form-modal').classList.remove('active');
+                    await loadStudentSchedulesList();
+                    return;
+                }
+
+                const payload = {
+                    student_id: studentId,
+                    start_time: startTime,
+                    duration_minutes: duration,
+                    recurrence_type: recurrenceType,
+                    recurrence_group_id: recurrenceType === 'daily' ? existingGroupId : null
+                };
+                if (recurrenceType === 'weekly' || recurrenceType === 'daily') {
+                    payload.day_of_week = parseInt(document.getElementById('sa-day').value || '0');
+                    payload.start_date = null;
+                } else {
+                    if (!dateValue) throw new Error('يرجى اختيار التاريخ');
+                    payload.start_date = dateValue;
+                    payload.day_of_week = new Date(dateValue + 'T00:00:00').getDay();
+                }
+                if (id) {
+                    await api.updateSchedule(id, payload);
+                } else {
+                    await api.createSchedule(payload);
+                }
+
+                ErrorHandler.showSuccess('تم حفظ الموعد بنجاح');
+                document.getElementById('student-appt-form-modal').classList.remove('active');
+                await loadStudentSchedulesList();
+            } catch (error) {
+                ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'حفظ الموعد';
             }
         });
 
