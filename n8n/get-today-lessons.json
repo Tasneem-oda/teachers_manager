@@ -7,13 +7,13 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "a1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
+      "id": "90a61ea5-8330-448d-87fb-deb93357eb4a",
       "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [
-        -1008,
-        160
+        0,
+        0
       ],
       "webhookId": "gtl01-webhook"
     },
@@ -21,30 +21,30 @@
       "parameters": {
         "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\nreturn { teacherId: payload.sub };"
       },
-      "id": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6f",
+      "id": "ab1a2bbc-992d-41d5-a19d-213e1194a548",
       "name": "Decode JWT",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -800,
-        160
+        208,
+        0
       ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "WITH today_schedules AS (\n  SELECT s.id AS schedule_id, s.student_id, s.start_time, s.duration_minutes, st.name AS student_name\n  FROM teachers_manager.schedules s\n  JOIN teachers_manager.students st ON st.id = s.student_id\n  WHERE s.teacher_id = $1::uuid\n    AND (\n      (\n        s.recurrence_type IN ('weekly','daily')\n        AND s.day_of_week = EXTRACT(DOW FROM CURRENT_DATE)::int\n        AND (s.start_date IS NULL OR s.start_date <= CURRENT_DATE)\n      )\n      OR (\n        s.recurrence_type = 'monthly'\n        AND s.start_date IS NOT NULL\n        AND s.start_date <= CURRENT_DATE\n        AND EXTRACT(DAY FROM s.start_date) = EXTRACT(DAY FROM CURRENT_DATE)\n      )\n      OR (\n        s.recurrence_type = 'none'\n        AND s.start_date = CURRENT_DATE\n      )\n    )\n),\ntoday_with_status AS (\n  SELECT\n    ts.schedule_id,\n    ts.student_id,\n    ts.student_name,\n    ts.start_time,\n    ts.duration_minutes,\n    l.id AS lesson_id,\n    l.status AS lesson_status\n  FROM today_schedules ts\n  LEFT JOIN LATERAL (\n    SELECT id, status\n    FROM teachers_manager.lessons\n    WHERE student_id = ts.student_id AND teacher_id = $1::uuid AND lesson_date = CURRENT_DATE\n    ORDER BY start_time DESC\n    LIMIT 1\n  ) l ON true\n)\nSELECT COALESCE(json_agg(row_to_json(today_with_status) ORDER BY start_time), '[]'::json) AS lessons\nFROM today_with_status;",
+        "query": "WITH today_schedules AS (\n  SELECT s.id AS schedule_id, s.student_id, s.start_time, s.duration_minutes, st.name AS student_name\n  FROM teachers_manager.schedules s\n  JOIN teachers_manager.students st ON st.id = s.student_id\n  WHERE s.teacher_id = $1::uuid\n    AND (\n      (\n        s.recurrence_type IN ('weekly','daily')\n        AND s.day_of_week = EXTRACT(DOW FROM CURRENT_DATE)::int\n        AND (s.start_date IS NULL OR s.start_date <= CURRENT_DATE)\n      )\n      OR (\n        s.recurrence_type = 'monthly'\n        AND s.start_date IS NOT NULL\n        AND s.start_date <= CURRENT_DATE\n        AND EXTRACT(DAY FROM s.start_date) = EXTRACT(DAY FROM CURRENT_DATE)\n      )\n      OR (\n        s.recurrence_type = 'none'\n        AND s.start_date = CURRENT_DATE\n      )\n    )\n),\ntoday_with_status AS (\n  SELECT\n    ts.schedule_id,\n    ts.student_id,\n    ts.student_name,\n    ts.start_time,\n    ts.duration_minutes,\n    l.id AS lesson_id,\n    l.status AS lesson_status\n  FROM today_schedules ts\n  LEFT JOIN LATERAL (\n    SELECT id, status\n    FROM teachers_manager.lessons\n    WHERE student_id = ts.student_id\n      AND teacher_id = $1::uuid\n      AND lesson_date::date = CURRENT_DATE\n    ORDER BY created_at DESC\n    LIMIT 1\n  ) l ON true\n)\nSELECT COALESCE(json_agg(row_to_json(today_with_status) ORDER BY start_time), '[]'::json) AS lessons\nFROM today_with_status;",
         "options": {
           "queryReplacement": "={{ $json.teacherId }}"
         }
       },
-      "id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
+      "id": "51a001d5-2d5a-4b25-b167-9727d19ac2f9",
       "name": "Get Today Lessons",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.4,
       "position": [
-        -592,
-        160
+        416,
+        0
       ],
       "alwaysOutputData": true,
       "credentials": {
@@ -60,13 +60,13 @@
         "responseBody": "={{ JSON.stringify({ success: true, data: { lessons: $json.lessons } }) }}",
         "options": {}
       },
-      "id": "d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a",
+      "id": "a5f455ac-37e9-4148-b07b-4222fbe613ee",
       "name": "Success Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
-        -384,
-        160
+        624,
+        0
       ]
     }
   ],

@@ -1,4 +1,4 @@
-import { api } from './api.js?v=3';
+import { api } from './api.js?v=4';
 
 document.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('add-student-modal');

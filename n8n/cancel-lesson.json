@@ -33,7 +33,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT\n  EXISTS(SELECT 1 FROM teachers_manager.students WHERE id = $1::uuid AND teacher_id = $2::uuid) AS student_owned,\n  EXISTS(SELECT 1 FROM teachers_manager.lessons WHERE student_id = $1::uuid AND teacher_id = $2::uuid AND lesson_date = CURRENT_DATE) AS lesson_exists_today;",
+        "query": "SELECT\n  EXISTS(SELECT 1 FROM teachers_manager.students WHERE id = $1::uuid AND teacher_id = $2::uuid) AS student_owned,\n  EXISTS(SELECT 1 FROM teachers_manager.lessons WHERE student_id = $1::uuid AND teacher_id = $2::uuid AND lesson_date::date = CURRENT_DATE) AS lesson_exists_today;",
         "options": {
           "queryReplacement": "={{ $json.studentId }},{{ $json.teacherId }}"
         }
@@ -97,7 +97,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO teachers_manager.lessons (id, student_id, teacher_id, lesson_date, start_time, status)\nVALUES (gen_random_uuid(), $1::uuid, $2::uuid, CURRENT_DATE, CURRENT_TIME, 'cancelled')\nRETURNING id;",
+        "query": "INSERT INTO teachers_manager.lessons (id, student_id, teacher_id, lesson_date, start_time, status)\nVALUES (gen_random_uuid(), $1::uuid, $2::uuid, now(), CURRENT_TIME, 'cancelled')\nRETURNING id;",
         "options": {
           "queryReplacement": "={{ $('Decode JWT').item.json.studentId }},{{ $('Decode JWT').item.json.teacherId }}"
         }

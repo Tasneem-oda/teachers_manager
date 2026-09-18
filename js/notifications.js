@@ -33,9 +33,9 @@
  * كل جزء بيفشل بصمت (من غير ما يكسر باقي الصفحة) لو لسه معمولش الإعداد بتاعه.
  * ============================================================================
  */
-import { CONFIG } from './config.js?v=3';
-import { Auth } from './auth.js?v=3';
-import { api } from './api.js?v=3';
+import { CONFIG } from './config.js?v=4';
+import { Auth } from './auth.js?v=4';
+import { api } from './api.js?v=4';
 
 const PROMPT_DISMISS_KEY = 'tm_notif_prompt_dismissed';
 const BADGE_CACHE_KEY = 'tm_notif_badge_cache_v1';
