@@ -231,7 +231,14 @@
         .ai-chat-hint { font-size: 0.82rem; color: var(--text-secondary, #716A74); text-align: center; padding: 1rem; }
         .ai-chat-bubble { max-width: 85%; padding: 0.65rem 0.9rem; border-radius: 12px; font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
         .ai-chat-bubble.role-user { align-self: flex-end; background: var(--primary, #4B3A5A); color: #fff; border-bottom-left-radius: 4px; }
-        .ai-chat-bubble.role-assistant { align-self: flex-start; background: #fff; border: 1px solid var(--border, #E7E1E8); color: var(--text-primary, #29252D); border-bottom-right-radius: 4px; }
+        .ai-chat-bubble.role-assistant { align-self: flex-start; background: #fff; border: 1px solid var(--border, #E7E1E8); color: var(--text-primary, #29252D); border-bottom-right-radius: 4px; white-space: normal; }
+        .ai-chat-bubble.role-assistant p { margin: 0 0 0.55em; }
+        .ai-chat-bubble.role-assistant p:last-child { margin-bottom: 0; }
+        .ai-chat-bubble.role-assistant ul { margin: 0.2em 0 0.6em; padding-inline-start: 1.35em; }
+        .ai-chat-bubble.role-assistant ul:last-child { margin-bottom: 0; }
+        .ai-chat-bubble.role-assistant li { margin-bottom: 0.3em; }
+        .ai-chat-bubble.role-assistant li:last-child { margin-bottom: 0; }
+        .ai-chat-bubble.role-assistant strong { color: var(--primary, #4B3A5A); font-weight: 700; }
         .ai-chat-bubble.role-error { align-self: center; background: #FBEAEA; color: #B85C5C; border: 1px solid #F0CFCF; font-size: 0.82rem; }
         .ai-chat-bubble.role-loading { align-self: flex-start; background: #fff; border: 1px solid var(--border, #E7E1E8); color: var(--text-secondary, #716A74); font-size: 0.85rem; }
         .ai-chat-quota { padding: 0.3rem 1.25rem; font-size: 0.72rem; color: var(--text-secondary, #716A74); text-align: center; flex-shrink: 0; }
@@ -446,6 +453,42 @@
         const aiChatQuota = document.getElementById('ai-chat-quota');
         let aiChatBusy = false;
 
+        // تنسيق آمن لماركداون بسيط راجع من الذكاء الاصطناعي (Gemini) - بيحول
+        // **نص عريض** لـ <strong> وأسطر "* " أو "- " لقائمة نقطية <ul><li>،
+        // ويحوّل الفقرات لعناصر <p> بدل ما يفضل يعرض علامات * الخام للمستخدم.
+        // النص بيتعمله escape أول حاجة (Formatters.escapeHtml) قبل أي تنسيق
+        // عشان أي HTML/سكريبت جاي من رد الموديل ميتفذش في الصفحة (حماية XSS).
+        function formatAiMarkdown(rawText) {
+            const escaped = Formatters.escapeHtml(rawText || '');
+            const inlineFormat = (s) => s
+                // **عريض** أو __عريض__
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/__(.+?)__/g, '<strong>$1</strong>')
+                // *مائل* (مفرد) بعد ما خلصنا من الأزواج المزدوجة فوق
+                .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+
+            const lines = escaped.split('\n');
+            let html = '';
+            let inList = false;
+            const closeList = () => { if (inList) { html += '</ul>'; inList = false; } };
+
+            lines.forEach((line) => {
+                const trimmed = line.trim();
+                const bulletMatch = trimmed.match(/^[*\-•]\s+(.*)$/);
+                if (bulletMatch) {
+                    if (!inList) { html += '<ul>'; inList = true; }
+                    html += `<li>${inlineFormat(bulletMatch[1])}</li>`;
+                } else {
+                    closeList();
+                    if (trimmed !== '') {
+                        html += `<p>${inlineFormat(trimmed)}</p>`;
+                    }
+                }
+            });
+            closeList();
+            return html || '<p></p>';
+        }
+
         function renderAiChatMessage(role, text) {
             // نشيل أي رسالة "جاري التفكير..." أو نص الترحيب قبل ما نضيف رسالة حقيقية
             const loadingEl = aiChatMessages.querySelector('.role-loading');
@@ -455,7 +498,13 @@
 
             const bubble = document.createElement('div');
             bubble.className = `ai-chat-bubble role-${role}`;
-            bubble.textContent = text;
+            if (role === 'assistant') {
+                // ردود المساعد الذكي بس هي اللي بتتنسق كماركداون (عناوين/تعداد نقطي/Bold)،
+                // أما رسالة المستخدم ورسائل الخطأ فبتفضل نص عادي زي ما هي
+                bubble.innerHTML = formatAiMarkdown(text);
+            } else {
+                bubble.textContent = text;
+            }
             aiChatMessages.appendChild(bubble);
             aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
         }
