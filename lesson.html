@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الحصة - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=5">
+    <link rel="stylesheet" href="css/style.css?v=6">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -265,13 +265,13 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=5"></script>
+    <script type="module" src="js/config.js?v=6"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=5';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=5';
-        import { api } from './js/api.js?v=5';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=5';
-        import { icon } from './js/icons.js?v=5';
+        import { Auth } from './js/auth.js?v=6';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=6';
+        import { api } from './js/api.js?v=6';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=6';
+        import { icon } from './js/icons.js?v=6';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'سجّل تفاصيل الحصة وأنهها بضغطة زر', showSearch: false });
@@ -586,6 +586,6 @@
             }
         });
     </script>
-    <script src="js/pwa-install.js?v=5" defer></script>
+    <script src="js/pwa-install.js?v=6" defer></script>
 </body>
 </html>

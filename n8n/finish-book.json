@@ -1,0 +1,218 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "finish-book",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeee01",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -1400,
+        300
+      ],
+      "webhookId": "bfin01-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\nconst body = $input.first().json.body || {};\nconst UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\n\nconst bookId = UUID_RE.test(String(body.book_id || '')) ? String(body.book_id) : null;\nconst status = body.status === 'ready' ? 'ready' : (body.status === 'failed' ? 'failed' : null);\nlet err = null;\nif (!bookId) err = 'معرّف الكتاب غير صالح';\nelse if (!status) err = 'حالة غير صالحة';\n\nconst posInt = (v) => { const n = Number(v); return Number.isInteger(n) && n > 0 && n < 10000000 ? String(n) : ''; };\nconst chapters = (Array.isArray(body.chapters) ? body.chapters : []).slice(0, 500).map(c => ({\n  title: String((c && c.title) || '').slice(0, 200),\n  page: Number.isInteger(Number(c && c.page)) && Number(c.page) > 0 ? Number(c.page) : null,\n  level: Number.isInteger(Number(c && c.level)) && Number(c.level) > 0 ? Number(c.level) : 1\n})).filter(c => c.title);\n\nreturn {\n  teacherId: payload.sub,\n  bookId,\n  status,\n  errorMessage: String(body.error_message || '').slice(0, 500),\n  pageCount: posInt(body.page_count),\n  chapterCount: String(chapters.length),\n  chaptersJson: chapters.length ? JSON.stringify(chapters) : '',\n  isScanned: body.is_scanned === true ? 'true' : 'false',\n  ocrPages: String(Math.max(0, Math.min(100000, parseInt(body.ocr_page_count, 10) || 0))),\n  isValid: err === null,\n  validationError: err\n};\n"
+      },
+      "id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeee02",
+      "name": "Validate & Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.isValid }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeee03",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'VALIDATION_ERROR', message: $json.validationError } }) }}",
+        "options": {}
+      },
+      "id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeee04",
+      "name": "Validation Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -1000,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH cnt AS (\n  SELECT count(*)::integer AS n FROM teachers_manager.book_chunks WHERE book_id = $1::uuid\n)\nUPDATE teachers_manager.book_sources b\nSET status = CASE WHEN $2 = 'ready' AND (SELECT n FROM cnt) > 0 THEN 'ready' ELSE 'failed' END,\n    error_message = CASE WHEN $2 = 'ready' AND (SELECT n FROM cnt) > 0 THEN NULL\n                         ELSE COALESCE(NULLIF($3, ''), 'لم يتم استخراج أي نص قابل للفهرسة من هذا الملف.') END,\n    page_count = NULLIF($4, '')::integer,\n    chapter_count = NULLIF($5, '')::integer,\n    chapters = NULLIF($6, '')::jsonb,\n    is_scanned = ($7 = 'true'),\n    ocr_page_count = COALESCE(NULLIF($8, '')::integer, 0),\n    progress = CASE WHEN $2 = 'ready' AND (SELECT n FROM cnt) > 0 THEN 100 ELSE b.progress END,\n    updated_at = now()\nWHERE b.id = $1::uuid AND b.teacher_id = $9::uuid\nRETURNING b.id, b.status, b.error_message, b.page_count, b.chapter_count, (SELECT n FROM cnt) AS chunk_count;",
+        "options": {
+          "queryReplacement": "={{ $json.bookId }},{{ $json.status }},{{ $json.errorMessage }},{{ $json.pageCount }},{{ $json.chapterCount }},{{ $json.chaptersJson }},{{ $json.isScanned }},{{ $json.ocrPages }},{{ $json.teacherId }}"
+        }
+      },
+      "id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeee05",
+      "name": "Finish Book",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        -800,
+        200
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !!$json.id }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeee06",
+      "name": "Book Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, data: { book_id: $json.id, status: $json.status, chunk_count: $json.chunk_count, error_message: $json.error_message } }) }}",
+        "options": {}
+      },
+      "id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeee07",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'NOT_FOUND', message: \"الكتاب غير موجود أو لا يتبع لحسابك.\" } }) }}",
+        "options": {}
+      },
+      "id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeee08",
+      "name": "Not Found Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate & Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate & Config": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid?": {
+      "main": [
+        [
+          {
+            "node": "Finish Book",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validation Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finish Book": {
+      "main": [
+        [
+          {
+            "node": "Book Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Book Found?": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not Found Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597"
+  }
+}

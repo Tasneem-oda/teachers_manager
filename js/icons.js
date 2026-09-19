@@ -41,7 +41,27 @@ const PATHS = {
     userCheck: '<circle cx="9.5" cy="8" r="3.5"/><path d="M3.5 20c.5-3.4 3-5.4 6-5.4s5.5 2 6 5.4"/><path d="M16.5 11l2 2 3.5-3.5"/>',
     warning: '<path d="M12 4.5 21 19.5H3L12 4.5Z"/><path d="M12 10.5v4"/><path d="M12 17.2h.01"/>',
     info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><path d="M12 7.6h.01"/>',
-    eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/>'
+    eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/>',
+    // أيقونات إضافية لقارئ الكتب والشات (📚)
+    download: '<path d="M12 4v11"/><path d="M7.5 11 12 15.5 16.5 11"/><path d="M5 19.5h14"/>',
+    upload: '<path d="M12 16V5"/><path d="M7.5 9 12 4.5 16.5 9"/><path d="M5 19.5h14"/>',
+    send: '<path d="M21 3 10.5 13.5"/><path d="M21 3 14.5 21l-4-7.5L3 9.5 21 3Z"/>',
+    stop: '<rect x="6.5" y="6.5" width="11" height="11" rx="2.2" fill="currentColor"/>',
+    copy: '<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6.5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2"/>',
+    refresh: '<path d="M20 11a8 8 0 0 0-14.3-4.6L4 8.5"/><path d="M4 4v4.5h4.5"/><path d="M4 13a8 8 0 0 0 14.3 4.6L20 15.5"/><path d="M20 20v-4.5h-4.5"/>',
+    zoomIn: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8"/><path d="M10.5 8v5"/><path d="M8 10.5h5"/>',
+    zoomOut: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8"/><path d="M8 10.5h5"/>',
+    chevronUp: '<path d="M6 15l6-6 6 6"/>',
+    chevronLeft: '<path d="M15 6l-6 6 6 6"/>',
+    chevronRight: '<path d="M9 6l6 6-6 6"/>',
+    arrowDown: '<path d="M12 5v14"/><path d="M6 13l6 6 6-6"/>',
+    file: '<path d="M14 3.5H7.5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V8L14 3.5Z"/><path d="M14 3.5V8h4.5"/>',
+    fileText: '<path d="M14 3.5H7.5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V8L14 3.5Z"/><path d="M14 3.5V8h4.5"/><path d="M9 13h6"/><path d="M9 16.5h6"/>',
+    textLines: '<path d="M4 6h16"/><path d="M4 10h10"/><path d="M4 14h16"/><path d="M4 18h10"/>',
+    list: '<path d="M8 6h12"/><path d="M8 12h12"/><path d="M8 18h12"/><path d="M4 6h.01"/><path d="M4 12h.01"/><path d="M4 18h.01"/>',
+    image: '<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4.5 3.5 3 3-2.5L20 16"/>',
+    minus: '<path d="M5 12h14"/>',
+    rotateCcw: '<path d="M4 4v5h5"/><path d="M4.6 14a8 8 0 1 0 1.8-8.4L4 9"/>'
 };
 
 /**

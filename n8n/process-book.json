@@ -7,22 +7,28 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "b2b2b222-2222-4222-8222-222222222201",
+      "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb01",
       "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [-1600, 300],
+      "position": [
+        -1400,
+        300
+      ],
       "webhookId": "pbk01-webhook"
     },
     {
       "parameters": {
-        "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\nconst body = $input.first().json.body || {};\nreturn {\n  teacherId: payload.sub,\n  bookId: body.book_id || null,\n  fileUrl: body.file_url || null\n};"
+        "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\nconst body = $input.first().json.body || {};\nconst UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\n\nconst bookId = UUID_RE.test(String(body.book_id || '')) ? String(body.book_id) : '00000000-0000-0000-0000-000000000000';\nreturn { teacherId: payload.sub, bookId };\n"
       },
-      "id": "b2b2b222-2222-4222-8222-222222222202",
+      "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb02",
       "name": "Decode JWT",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-1392, 300]
+      "position": [
+        -1192,
+        300
+      ]
     },
     {
       "parameters": {
@@ -32,240 +38,216 @@
           "queryReplacement": "={{ $json.bookId }},{{ $json.teacherId }}"
         }
       },
-      "id": "b2b2b222-2222-4222-8222-222222222203",
+      "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb03",
       "name": "Get Book",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.4,
-      "position": [-1184, 300],
+      "position": [
+        -984,
+        300
+      ],
       "alwaysOutputData": true,
-      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
     },
     {
       "parameters": {
-        "conditions": { "boolean": [{ "value1": "={{ !!$json.id }}", "value2": true }] }
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !!$json.id }}",
+              "value2": true
+            }
+          ]
+        }
       },
-      "id": "b2b2b222-2222-4222-8222-222222222204",
+      "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb04",
       "name": "Book Found?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [-976, 300]
+      "position": [
+        -776,
+        300
+      ]
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"الكتاب غير موجود أو لا يتبع لحسابك.\"\n  }\n}",
+        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'NOT_FOUND', message: \"الكتاب غير موجود أو لا يتبع لحسابك.\" } }) }}",
         "options": {}
       },
-      "id": "b2b2b222-2222-4222-8222-222222222205",
+      "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb05",
       "name": "Not Found Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [-976, 480]
+      "position": [
+        -776,
+        480
+      ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "UPDATE teachers_manager.book_sources\nSET status = 'processing', updated_at = now()\nWHERE id = $1::uuid\nRETURNING id, file_type, title;",
+        "query": "WITH upd AS (\n  UPDATE teachers_manager.book_sources\n  SET status = 'processing', progress = 0, error_message = NULL,\n      is_scanned = false, ocr_page_count = 0, updated_at = now()\n  WHERE id = $1::uuid AND teacher_id = $2::uuid\n    AND NOT (status = 'processing' AND updated_at > now() - interval '2 minutes')\n  RETURNING id, title, file_type, status\n), del AS (\n  DELETE FROM teachers_manager.book_chunks WHERE book_id IN (SELECT id FROM upd)\n)\nSELECT id, title, file_type, status FROM upd;",
         "options": {
-          "queryReplacement": "={{ $('Get Book').item.json.id }}"
+          "queryReplacement": "={{ $('Get Book').item.json.id }},{{ $('Decode JWT').item.json.teacherId }}"
         }
       },
-      "id": "b2b2b222-2222-4222-8222-222222222206",
-      "name": "Mark Processing",
+      "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb06",
+      "name": "Start Processing",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.4,
-      "position": [-768, 300],
-      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
+      "position": [
+        -568,
+        200
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !!$json.id }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb07",
+      "name": "Started?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -360,
+        200
+      ]
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"success\": true,\n  \"data\": {\n    \"book_id\": \"{{ $json.id }}\",\n    \"status\": \"processing\"\n  }\n}",
+        "responseBody": "={{ JSON.stringify({ success: true, data: { book_id: $json.id, status: $json.status, file_type: $json.file_type } }) }}",
         "options": {}
       },
-      "id": "b2b2b222-2222-4222-8222-222222222207",
-      "name": "Immediate Ack Response",
+      "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb08",
+      "name": "Success Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [-560, 160]
+      "position": [
+        -152,
+        120
+      ]
     },
     {
       "parameters": {
-        "jsCode": "// هذا الكود بيحمّل الملف الخام من الرابط الموقّع (Signed URL) اللي بعته\n// الفرونت إند (مالوش داعي أي مصادقة إضافية لأن التوكن جوه الرابط نفسه)،\n// وبعدين لو الملف Word أو PowerPoint، بيستخرج النص منه يدويًا (الملفين دول\n// أصلهم أرشيف ZIP فيه ملفات XML - بنفك الضغط ونقرأ الـ XML بكود بسيط من\n// غير أي مكتبات خارجية، لأن كل اللي محتاجينه (zlib) مدمج في Node أصلًا).\n// لو الملف PDF، منعملش استخراج يدوي خالص - بنسيب Gemini يقرأ الـ PDF\n// مباشرة (بيدعم PDF بشكل أصلي وبيفهم شكل الصفحات والفصول بنفسه، ده أدق\n// بكتير من أي استخراج نصوص يدوي لملفات PDF).\nconst zlib = require('zlib');\n\nconst teacherId = $('Decode JWT').item.json.teacherId;\nconst bookId = $('Decode JWT').item.json.bookId;\nconst fileUrl = $('Decode JWT').item.json.fileUrl;\nconst fileType = $('Get Book').item.json.file_type;\nconst title = $('Get Book').item.json.title;\n\nif (!fileUrl) {\n  throw new Error('MISSING_FILE_URL: الفرونت إند لازم يبعت رابط الملف الموقّع بعد رفعه لـ Supabase Storage.');\n}\n\nlet fileBuffer;\ntry {\n  const response = await this.helpers.httpRequest({\n    url: fileUrl,\n    method: 'GET',\n    encoding: 'arraybuffer',\n    returnFullResponse: false\n  });\n  fileBuffer = Buffer.isBuffer(response) ? response : Buffer.from(response);\n} catch (e) {\n  throw new Error('DOWNLOAD_FAILED: تعذّر تحميل الملف من التخزين - ' + e.message);\n}\n\n// -------- استخراج نصوص من ملفات ZIP (Word/PowerPoint) --------\nfunction findEOCD(buf) {\n  const searchWindow = Math.min(buf.length, 66000);\n  const start = buf.length - searchWindow;\n  for (let i = buf.length - 22; i >= start; i--) {\n    if (buf.readUInt32LE(i) === 0x06054b50) return i;\n  }\n  throw new Error('EOCD_NOT_FOUND: الملف تالف أو مش أرشيف ZIP سليم (docx/pptx غير صالح؟)');\n}\n\nfunction listZipEntries(buf) {\n  const eocdOffset = findEOCD(buf);\n  const totalEntries = buf.readUInt16LE(eocdOffset + 10);\n  let cdOffset = buf.readUInt32LE(eocdOffset + 16);\n  const entries = [];\n  for (let i = 0; i < totalEntries; i++) {\n    const sig = buf.readUInt32LE(cdOffset);\n    if (sig !== 0x02014b50) break;\n    const compressionMethod = buf.readUInt16LE(cdOffset + 10);\n    const compressedSize = buf.readUInt32LE(cdOffset + 20);\n    const fileNameLength = buf.readUInt16LE(cdOffset + 28);\n    const extraLength = buf.readUInt16LE(cdOffset + 30);\n    const commentLength = buf.readUInt16LE(cdOffset + 32);\n    const localHeaderOffset = buf.readUInt32LE(cdOffset + 42);\n    const fileName = buf.toString('utf8', cdOffset + 46, cdOffset + 46 + fileNameLength);\n    entries.push({ fileName, compressionMethod, compressedSize, localHeaderOffset });\n    cdOffset += 46 + fileNameLength + extraLength + commentLength;\n  }\n  return entries;\n}\n\nfunction readZipEntryContent(buf, entry) {\n  const lh = entry.localHeaderOffset;\n  if (buf.readUInt32LE(lh) !== 0x04034b50) throw new Error('LOCAL_HEADER_INVALID');\n  const fileNameLength = buf.readUInt16LE(lh + 26);\n  const extraLength = buf.readUInt16LE(lh + 28);\n  const dataStart = lh + 30 + fileNameLength + extraLength;\n  const compressed = buf.slice(dataStart, dataStart + entry.compressedSize);\n  if (entry.compressionMethod === 0) return compressed;\n  if (entry.compressionMethod === 8) return zlib.inflateRawSync(compressed);\n  throw new Error('UNSUPPORTED_COMPRESSION_METHOD_' + entry.compressionMethod);\n}\n\nfunction xmlToPlainText(xml) {\n  return xml\n    .replace(/<\\/w:p>/g, '\\n')\n    .replace(/<\\/a:p>/g, '\\n')\n    .replace(/<[^>]+>/g, '')\n    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')\n    .replace(/&quot;/g, '\"').replace(/&apos;/g, \"'\")\n    .replace(/[ \\t]+/g, ' ')\n    .replace(/\\n{3,}/g, '\\n\\n')\n    .trim();\n}\n\nfunction extractDocx(buf) {\n  const entries = listZipEntries(buf);\n  const docEntry = entries.find(e => e.fileName === 'word/document.xml');\n  if (!docEntry) throw new Error('DOCX_MISSING_DOCUMENT_XML: تعذّر إيجاد محتوى الملف - تأكدي إنه ملف Word سليم (.docx)');\n  const xmlBuf = readZipEntryContent(buf, docEntry);\n  return xmlToPlainText(xmlBuf.toString('utf8'));\n}\n\nfunction extractPptx(buf) {\n  const entries = listZipEntries(buf);\n  const slideEntries = entries\n    .filter(e => /^ppt\\/slides\\/slide\\d+\\.xml$/.test(e.fileName))\n    .map(e => ({ ...e, num: parseInt(e.fileName.match(/slide(\\d+)\\.xml/)[1]) }))\n    .sort((a, b) => a.num - b.num);\n  if (slideEntries.length === 0) throw new Error('PPTX_NO_SLIDES: تعذّر إيجاد أي شرائح - تأكدي إنه ملف PowerPoint سليم (.pptx)');\n  return slideEntries.map(e => {\n    const xmlBuf = readZipEntryContent(buf, e);\n    const text = xmlToPlainText(xmlBuf.toString('utf8'));\n    return `--- شريحة ${e.num} ---\\n${text}`;\n  }).join('\\n\\n');\n}\n\nlet geminiContentPart;\nif (fileType === 'pdf') {\n  geminiContentPart = { inlineData: { mimeType: 'application/pdf', data: fileBuffer.toString('base64') } };\n} else if (fileType === 'docx') {\n  const text = extractDocx(fileBuffer);\n  geminiContentPart = { text: text.slice(0, 400000) };\n} else if (fileType === 'pptx') {\n  const text = extractPptx(fileBuffer);\n  geminiContentPart = { text: text.slice(0, 400000) };\n} else {\n  throw new Error('UNSUPPORTED_FILE_TYPE: ' + fileType);\n}\n\nconst analysisPrompt = `أنت مساعد بيحلل مصدر تعليمي (كتاب/مذكرة) رفعه معلم. اسم الملف كما أدخله المعلم: \"${title}\".\n\nمهمتك: اقرأ المحتوى المرفق بالكامل واستخرج منه:\n1. عنوان الكتاب الحقيقي (لو ظاهر في المحتوى، وإلا استخدم الاسم المُعطى).\n2. تقدير عدد الصفحات (لو المحتوى PDF قدّر من عدد الصفحات الفعلي؛ لو مستند Word/PowerPoint قدّر تقديرًا معقولًا بناءً على طول المحتوى، بمعدل ~300 كلمة للصفحة).\n3. قائمة الفصول/الأقسام الرئيسية بعناوينها.\n4. تقسيم المحتوى بالكامل إلى مقاطع (chunks) متتالية، كل مقطع بين 100 و300 كلمة تقريبًا، بحيث يمثل فكرة أو جزء متماسك، مع تحديد اسم الفصل الذي ينتمي إليه كل مقطع، ورقم الصفحة التقريبي له إن أمكن (استخدم null لو مش معروف).\n\nأعد الناتج بصيغة JSON فقط بدون أي نص إضافي، بالشكل التالي بالظبط:\n{\n  \"title\": \"...\",\n  \"page_count\": 0,\n  \"chapters\": [{\"title\": \"...\"}],\n  \"chunks\": [{\"chapter\": \"...\", \"page\": 0, \"content\": \"...\"}]\n}`;\n\nconst geminiRequestBody = {\n  contents: [{ role: 'user', parts: [{ text: analysisPrompt }, geminiContentPart] }],\n  generationConfig: { temperature: 0.2, maxOutputTokens: 8192, responseMimeType: 'application/json' }\n};\n\nreturn { teacherId, bookId, title, fileType, geminiRequestBody };"
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'ALREADY_PROCESSING', message: \"الكتاب ده بيتعالج حاليًا في نافذة تانية. استني دقيقتين وحاولي تاني لو اتوقفت.\" } }) }}",
+        "options": {}
       },
-      "id": "b2b2b222-2222-4222-8222-222222222208",
-      "name": "Download & Prepare Content",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [-560, 400]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify($json.geminiRequestBody) }}",
-        "options": { "timeout": 90000 }
-      },
-      "id": "b2b2b222-2222-4222-8222-222222222209",
-      "name": "Analyze With Gemini",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [-352, 400],
-      "credentials": { "httpHeaderAuth": { "id": "8Tc8LjAwoWExdl38", "name": "Gemini API Key" } },
-      "continueOnFail": true
-    },
-    {
-      "parameters": {
-        "jsCode": "const prev = $('Download & Prepare Content').item.json;\nconst raw = $input.first().json;\n\nfunction failItem(message) {\n  return [{ json: { itemType: 'error', bookId: prev.bookId, teacherId: prev.teacherId, errorMessage: message } }];\n}\n\nif (raw.error) {\n  return failItem('تعذّر تحليل الملف عبر الذكاء الاصطناعي: ' + JSON.stringify(raw.error).slice(0, 300));\n}\n\nconst candidate = raw.candidates && raw.candidates[0];\nconst text = candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text;\nif (!text) {\n  return failItem('لم يرجّع الذكاء الاصطناعي أي محتوى قابل للتحليل لهذا الملف.');\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(text);\n} catch (e) {\n  return failItem('تعذّر فهم استجابة تحليل الملف (تنسيق غير صالح).');\n}\n\nconst chunks = Array.isArray(parsed.chunks) ? parsed.chunks.filter(c => c && c.content && c.content.toString().trim()) : [];\nif (chunks.length === 0) {\n  return failItem('لم يتم استخراج أي محتوى قابل للفهرسة من هذا الملف.');\n}\n\nconst chapters = Array.isArray(parsed.chapters) ? parsed.chapters : [];\nconst items = [];\nitems.push({\n  json: {\n    itemType: 'summary',\n    bookId: prev.bookId,\n    teacherId: prev.teacherId,\n    title: (parsed.title || prev.title || '').toString().slice(0, 200),\n    pageCount: parseInt(parsed.page_count) || null,\n    chapterCount: chapters.length,\n    chaptersJson: JSON.stringify(chapters)\n  }\n});\nchunks.forEach((c, i) => {\n  items.push({\n    json: {\n      itemType: 'chunk',\n      bookId: prev.bookId,\n      teacherId: prev.teacherId,\n      chunkIndex: i,\n      chapter: (c.chapter || '').toString().slice(0, 200) || null,\n      page: c.page ? parseInt(c.page) : null,\n      content: c.content.toString().slice(0, 4000)\n    }\n  });\n});\nreturn items;"
-      },
-      "id": "b2b2b222-2222-4222-8222-222222222210",
-      "name": "Parse Gemini Analysis",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [-144, 400]
-    },
-    {
-      "parameters": {
-        "conditions": { "string": [{ "value1": "={{ $json.itemType }}", "value2": "summary" }] }
-      },
-      "id": "b2b2b222-2222-4222-8222-222222222211",
-      "name": "Is Summary?",
-      "type": "n8n-nodes-base.if",
+      "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb09",
+      "name": "Already Processing Response",
+      "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [64, 400]
-    },
-    {
-      "parameters": {
-        "conditions": { "string": [{ "value1": "={{ $json.itemType }}", "value2": "chunk" }] }
-      },
-      "id": "b2b2b222-2222-4222-8222-222222222212",
-      "name": "Is Chunk?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
-      "position": [272, 560]
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "UPDATE teachers_manager.book_sources\nSET status = 'ready', title = $2, page_count = $3, chapter_count = $4, chapters = $5::jsonb, error_message = NULL, updated_at = now()\nWHERE id = $1::uuid;",
-        "options": {
-          "queryReplacement": "={{ $json.bookId }},{{ $json.title }},{{ $json.pageCount }},{{ $json.chapterCount }},{{ $json.chaptersJson }}"
-        }
-      },
-      "id": "b2b2b222-2222-4222-8222-222222222213",
-      "name": "Update Book Ready",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.4,
-      "position": [272, 240],
-      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "UPDATE teachers_manager.book_sources\nSET status = 'failed', error_message = $2, updated_at = now()\nWHERE id = $1::uuid;",
-        "options": {
-          "queryReplacement": "={{ $json.bookId }},{{ $json.errorMessage }}"
-        }
-      },
-      "id": "b2b2b222-2222-4222-8222-222222222214",
-      "name": "Mark Failed",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.4,
-      "position": [480, 720],
-      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "=https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ model: 'models/text-embedding-004', content: { parts: [{ text: $json.content }] } }) }}",
-        "options": {
-          "timeout": 30000,
-          "batching": { "batch": { "batchSize": 1, "batchInterval": 1100 } }
-        }
-      },
-      "id": "b2b2b222-2222-4222-8222-222222222215",
-      "name": "Embed Chunk",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [480, 560],
-      "credentials": { "httpHeaderAuth": { "id": "8Tc8LjAwoWExdl38", "name": "Gemini API Key" } },
-      "continueOnFail": true
-    },
-    {
-      "parameters": {
-        "jsCode": "const chunkData = $('Is Chunk?').item.json;\nconst raw = $input.first().json;\n\nconst values = raw && raw.embedding && Array.isArray(raw.embedding.values) ? raw.embedding.values : null;\nif (!values) {\n  // فشل embedding المقطع ده تحديدًا - نتجاهله بدل ما نكسر باقي الكتاب\n  return [];\n}\n\nreturn [{\n  json: {\n    bookId: chunkData.bookId,\n    teacherId: chunkData.teacherId,\n    chunkIndex: chunkData.chunkIndex,\n    chapter: chunkData.chapter,\n    page: chunkData.page,\n    content: chunkData.content,\n    embeddingLiteral: '[' + values.join(',') + ']'\n  }\n}];"
-      },
-      "id": "b2b2b222-2222-4222-8222-222222222216",
-      "name": "Build Insert Row",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [688, 560]
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "INSERT INTO teachers_manager.book_chunks (book_id, teacher_id, chunk_index, chapter_title, page_number, content, embedding)\nVALUES ($1::uuid, $2::uuid, $3::integer, $4, $5::integer, $6, $7::vector);",
-        "options": {
-          "queryReplacement": "={{ $json.bookId }},{{ $json.teacherId }},{{ $json.chunkIndex }},{{ $json.chapter }},{{ $json.page }},{{ $json.content }},{{ $json.embeddingLiteral }}"
-        }
-      },
-      "id": "b2b2b222-2222-4222-8222-222222222217",
-      "name": "Insert Chunk",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.4,
-      "position": [896, 560],
-      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
+      "position": [
+        -152,
+        300
+      ]
     }
   ],
   "connections": {
-    "Webhook": { "main": [[{ "node": "Decode JWT", "type": "main", "index": 0 }]] },
-    "Decode JWT": { "main": [[{ "node": "Get Book", "type": "main", "index": 0 }]] },
-    "Get Book": { "main": [[{ "node": "Book Found?", "type": "main", "index": 0 }]] },
-    "Book Found?": {
-      "main": [
-        [{ "node": "Mark Processing", "type": "main", "index": 0 }],
-        [{ "node": "Not Found Response", "type": "main", "index": 0 }]
-      ]
-    },
-    "Mark Processing": {
+    "Webhook": {
       "main": [
         [
-          { "node": "Immediate Ack Response", "type": "main", "index": 0 },
-          { "node": "Download & Prepare Content", "type": "main", "index": 0 }
+          {
+            "node": "Decode JWT",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
-    "Download & Prepare Content": { "main": [[{ "node": "Analyze With Gemini", "type": "main", "index": 0 }]] },
-    "Analyze With Gemini": { "main": [[{ "node": "Parse Gemini Analysis", "type": "main", "index": 0 }]] },
-    "Parse Gemini Analysis": { "main": [[{ "node": "Is Summary?", "type": "main", "index": 0 }]] },
-    "Is Summary?": {
+    "Decode JWT": {
       "main": [
-        [{ "node": "Update Book Ready", "type": "main", "index": 0 }],
-        [{ "node": "Is Chunk?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Get Book",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Is Chunk?": {
+    "Get Book": {
       "main": [
-        [{ "node": "Embed Chunk", "type": "main", "index": 0 }],
-        [{ "node": "Mark Failed", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Book Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Embed Chunk": { "main": [[{ "node": "Build Insert Row", "type": "main", "index": 0 }]] },
-    "Build Insert Row": { "main": [[{ "node": "Insert Chunk", "type": "main", "index": 0 }]] }
+    "Book Found?": {
+      "main": [
+        [
+          {
+            "node": "Start Processing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not Found Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Processing": {
+      "main": [
+        [
+          {
+            "node": "Started?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Started?": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Already Processing Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "pinData": {},
-  "meta": { "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597" }
+  "meta": {
+    "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597"
+  }
 }

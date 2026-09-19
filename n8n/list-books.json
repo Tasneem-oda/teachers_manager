@@ -11,7 +11,10 @@
       "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [-800, 160],
+      "position": [
+        -800,
+        160
+      ],
       "webhookId": "lbk01-webhook"
     },
     {
@@ -22,12 +25,15 @@
       "name": "Decode JWT",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-592, 160]
+      "position": [
+        -592,
+        160
+      ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT\n  b.id, b.title, b.file_name, b.file_type, b.status, b.error_message,\n  b.page_count, b.chapter_count, b.chapters, b.created_at, b.updated_at,\n  COALESCE(\n    (SELECT json_agg(l.student_id) FROM teachers_manager.book_student_links l WHERE l.book_id = b.id),\n    '[]'::json\n  ) AS student_ids\nFROM teachers_manager.book_sources b\nWHERE b.teacher_id = $1::uuid\nORDER BY b.created_at DESC;",
+        "query": "SELECT\n  b.id, b.title, b.file_name, b.file_type, b.storage_path, b.status, b.error_message,\n  b.progress, b.is_scanned, b.ocr_page_count,\n  b.page_count, b.chapter_count, b.chapters, b.created_at, b.updated_at,\n  COALESCE(\n    (SELECT json_agg(l.student_id) FROM teachers_manager.book_student_links l WHERE l.book_id = b.id),\n    '[]'::json\n  ) AS student_ids\nFROM teachers_manager.book_sources b\nWHERE b.teacher_id = $1::uuid\nORDER BY b.created_at DESC;",
         "options": {
           "queryReplacement": "={{ $json.teacherId }}"
         }
@@ -36,9 +42,17 @@
       "name": "Get Books",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.4,
-      "position": [-384, 160],
+      "position": [
+        -384,
+        160
+      ],
       "alwaysOutputData": true,
-      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
     },
     {
       "parameters": {
@@ -48,7 +62,10 @@
       "name": "Build Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-176, 160]
+      "position": [
+        -176,
+        160
+      ]
     },
     {
       "parameters": {
@@ -60,15 +77,60 @@
       "name": "Success Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [32, 160]
+      "position": [
+        32,
+        160
+      ]
     }
   ],
   "connections": {
-    "Webhook": { "main": [[{ "node": "Decode JWT", "type": "main", "index": 0 }]] },
-    "Decode JWT": { "main": [[{ "node": "Get Books", "type": "main", "index": 0 }]] },
-    "Get Books": { "main": [[{ "node": "Build Response", "type": "main", "index": 0 }]] },
-    "Build Response": { "main": [[{ "node": "Success Response", "type": "main", "index": 0 }]] }
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Decode JWT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decode JWT": {
+      "main": [
+        [
+          {
+            "node": "Get Books",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Books": {
+      "main": [
+        [
+          {
+            "node": "Build Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Response": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "pinData": {},
-  "meta": { "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597" }
+  "meta": {
+    "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597"
+  }
 }

@@ -83,7 +83,14 @@ export const CONFIG = {
         // 📚 مكتبتي: رفع كتب/مذكرات، تحليلها بالذكاء الاصطناعي، والسؤال عنها
         BOOKS: {
             CREATE_SOURCE: '/create-book-source',
+            // خط معالجة الكتاب (المتصفح بيستخرج النص، والسيرفر بيعمل OCR + فهرسة):
+            //   PROCESS (start) → OCR (اختياري للصفحات الممسوحة) → INDEX (فهرسة دفعات) → FINISH
             PROCESS: '/process-book',
+            OCR: '/book-ocr',
+            INDEX: '/book-index',
+            FINISH: '/finish-book',
+            // نص الكتاب المفهرس (عرض نصي بديل + تحديد مكان الاستشهادات)
+            CONTENT: '/get-book-content',
             LIST: '/list-books',
             DELETE: '/delete-book',
             UPDATE_ACCESS: '/update-book-access',
@@ -104,6 +111,27 @@ export const CONFIG = {
         MAX_STUDENTS_TRIAL: 10,
         API_TIMEOUT: 30000,
         AI_TIMEOUT: 60000
+    },
+
+    // 📚 إعدادات مكتبة الكتب
+    BOOKS_SETTINGS: {
+        BUCKET: 'teacher-books',
+        // لازم يطابق نموذج الـ embedding المستخدم في n8n (ask-sources / book-index / prepare-lesson) - و vector(768) في قاعدة البيانات
+        EMBEDDING_MODEL: 'gemini-embedding-001',   // بأبعاد 768 (outputDimensionality) - text-embedding-004 مش شغال
+        // حد Supabase المجاني لحجم الملف الواحد 50MB
+        MAX_FILE_MB: 50,
+        // أقصى عدد صفحات للقراءة بالذكاء الاصطناعي (OCR) في كتاب واحد (بيحمي حصة Gemini)
+        MAX_OCR_PAGES: 400,
+        // أقصى عدد صفحات/وحدات للكتاب الواحد
+        MAX_UNITS: 1500,
+        // عدد صفحات الـ OCR في الطلب الواحد وعدد المقاطع في طلب الفهرسة الواحد
+        OCR_BATCH_PAGES: 5,
+        INDEX_BATCH_CHUNKS: 12,
+        // بعد كام دقيقة من غير أي تقدم نعتبر المعالجة "متوقفة" (المتصفح اتقفل مثلًا)
+        STALE_PROCESSING_MINUTES: 8,
+        // أقصى طول لسؤال الشات وعدد الرسائل السابقة المرسلة كسياق
+        MAX_QUESTION_CHARS: 1000,
+        HISTORY_MESSAGES: 8
     },
     
     // Validation Patterns

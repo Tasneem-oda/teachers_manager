@@ -11,28 +11,44 @@
       "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [-2400, 300],
+      "position": [
+        -2400,
+        300
+      ],
       "webhookId": "prl01-webhook"
     },
     {
       "parameters": {
-        "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\nconst body = $input.first().json.body || {};\n\nlet validationError = null;\nif (!body.student_id) validationError = 'رقم الطالب مطلوب';\n\nreturn {\n  teacherId: payload.sub,\n  studentId: body.student_id || null,\n  isValid: validationError === null,\n  validationError,\n  minIntervalSeconds: 5,\n  dailyLimit: 40,\n  topK: 5,\n  geminiModel: 'gemini-3.5-flash-lite',\n  embeddingModel: 'text-embedding-004'\n};"
+        "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\nconst body = $input.first().json.body || {};\n\nlet validationError = null;\nif (!body.student_id) validationError = 'رقم الطالب مطلوب';\n\nreturn {\n  teacherId: payload.sub,\n  studentId: body.student_id || null,\n  isValid: validationError === null,\n  validationError,\n  minIntervalSeconds: 5,\n  dailyLimit: 40,\n  topK: 5,\n  geminiModel: 'gemini-3.5-flash-lite',\n  embeddingModel: 'gemini-embedding-001'\n};"
       },
       "id": "b7b7b777-7777-4777-8777-777777777702",
       "name": "Decode JWT & Config",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-2192, 300]
+      "position": [
+        -2192,
+        300
+      ]
     },
     {
       "parameters": {
-        "conditions": { "boolean": [{ "value1": "={{ $json.isValid }}", "value2": true }] }
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.isValid }}",
+              "value2": true
+            }
+          ]
+        }
       },
       "id": "b7b7b777-7777-4777-8777-777777777703",
       "name": "Valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [-1984, 300]
+      "position": [
+        -1984,
+        300
+      ]
     },
     {
       "parameters": {
@@ -44,31 +60,54 @@
       "name": "Validation Error Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [-1776, 460]
+      "position": [
+        -1776,
+        460
+      ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
         "query": "UPDATE teachers_manager.ai_rate_limiter\nSET last_request_at = now()\nWHERE id = 1\n  AND (last_request_at IS NULL OR now() - last_request_at >= ($1 || ' seconds')::interval)\nRETURNING last_request_at;",
-        "options": { "queryReplacement": "={{ $('Decode JWT & Config').item.json.minIntervalSeconds }}" }
+        "options": {
+          "queryReplacement": "={{ $('Decode JWT & Config').item.json.minIntervalSeconds }}"
+        }
       },
       "id": "b7b7b777-7777-4777-8777-777777777705",
       "name": "Reserve Global Rate Slot",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.4,
-      "position": [-1776, 160],
+      "position": [
+        -1776,
+        160
+      ],
       "alwaysOutputData": true,
-      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
     },
     {
       "parameters": {
-        "conditions": { "boolean": [{ "value1": "={{ !!$json.last_request_at }}", "value2": true }] }
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !!$json.last_request_at }}",
+              "value2": true
+            }
+          ]
+        }
       },
       "id": "b7b7b777-7777-4777-8777-777777777706",
       "name": "Rate Slot Reserved?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [-1568, 160]
+      "position": [
+        -1568,
+        160
+      ]
     },
     {
       "parameters": {
@@ -80,31 +119,54 @@
       "name": "Busy Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [-1360, 320]
+      "position": [
+        -1360,
+        320
+      ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
         "query": "INSERT INTO teachers_manager.ai_usage_daily (teacher_id, usage_date, request_count)\nVALUES ($1::uuid, CURRENT_DATE, 1)\nON CONFLICT (teacher_id, usage_date)\nDO UPDATE SET request_count = teachers_manager.ai_usage_daily.request_count + 1\nWHERE teachers_manager.ai_usage_daily.request_count < $2\nRETURNING request_count;",
-        "options": { "queryReplacement": "={{ $('Decode JWT & Config').item.json.teacherId }},{{ $('Decode JWT & Config').item.json.dailyLimit }}" }
+        "options": {
+          "queryReplacement": "={{ $('Decode JWT & Config').item.json.teacherId }},{{ $('Decode JWT & Config').item.json.dailyLimit }}"
+        }
       },
       "id": "b7b7b777-7777-4777-8777-777777777708",
       "name": "Reserve Daily Quota",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.4,
-      "position": [-1360, 40],
+      "position": [
+        -1360,
+        40
+      ],
       "alwaysOutputData": true,
-      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
     },
     {
       "parameters": {
-        "conditions": { "boolean": [{ "value1": "={{ !!$json.request_count }}", "value2": true }] }
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !!$json.request_count }}",
+              "value2": true
+            }
+          ]
+        }
       },
       "id": "b7b7b777-7777-4777-8777-777777777709",
       "name": "Quota Reserved?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [-1152, 40]
+      "position": [
+        -1152,
+        40
+      ]
     },
     {
       "parameters": {
@@ -116,31 +178,54 @@
       "name": "Daily Limit Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [-944, 200]
+      "position": [
+        -944,
+        200
+      ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
         "query": "SELECT\n  s.id, s.name, s.subject, s.current_topic, s.current_surah, s.current_from_ayah, s.current_to_ayah,\n  (SELECT json_agg(row_to_json(l)) FROM (\n      SELECT lesson_date, lesson_content, memorization, recitation, performance, notes, next_assignment, homework\n      FROM teachers_manager.lessons\n      WHERE student_id = s.id AND teacher_id = s.teacher_id AND status = 'completed'\n      ORDER BY lesson_date DESC LIMIT 3\n  ) l) AS recent_lessons,\n  (SELECT json_agg(row_to_json(n)) FROM (\n      SELECT note, created_at FROM teachers_manager.student_notes\n      WHERE student_id = s.id AND teacher_id = s.teacher_id\n      ORDER BY created_at DESC LIMIT 5\n  ) n) AS notes\nFROM teachers_manager.students s\nWHERE s.id = $1::uuid AND s.teacher_id = $2::uuid;",
-        "options": { "queryReplacement": "={{ $('Decode JWT & Config').item.json.studentId }},{{ $('Decode JWT & Config').item.json.teacherId }}" }
+        "options": {
+          "queryReplacement": "={{ $('Decode JWT & Config').item.json.studentId }},{{ $('Decode JWT & Config').item.json.teacherId }}"
+        }
       },
       "id": "b7b7b777-7777-4777-8777-777777777711",
       "name": "Get Student Context",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.4,
-      "position": [-944, -140],
+      "position": [
+        -944,
+        -140
+      ],
       "alwaysOutputData": true,
-      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
     },
     {
       "parameters": {
-        "conditions": { "boolean": [{ "value1": "={{ !!$json.id }}", "value2": true }] }
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !!$json.id }}",
+              "value2": true
+            }
+          ]
+        }
       },
       "id": "b7b7b777-7777-4777-8777-777777777712",
       "name": "Student Found?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [-736, -140]
+      "position": [
+        -736,
+        -140
+      ]
     },
     {
       "parameters": {
@@ -152,7 +237,10 @@
       "name": "Not Found Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [-736, 20]
+      "position": [
+        -736,
+        20
+      ]
     },
     {
       "parameters": {
@@ -162,27 +250,47 @@
       "name": "Build Search Query Text",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-528, -140]
+      "position": [
+        -528,
+        -140
+      ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
-        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ model: 'models/text-embedding-004', content: { parts: [{ text: $json.queryText }] } }) }}",
-        "options": { "timeout": 20000 }
+        "jsonBody": "={{ JSON.stringify({ model: 'models/gemini-embedding-001', content: { parts: [{ text: $json.queryText }] }, outputDimensionality: 768 }) }}",
+        "options": {
+          "timeout": 20000
+        }
       },
       "id": "b7b7b777-7777-4777-8777-777777777715",
       "name": "Embed Query",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [-320, -140],
-      "credentials": { "httpHeaderAuth": { "id": "8Tc8LjAwoWExdl38", "name": "Gemini API Key" } },
+      "position": [
+        -320,
+        -140
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "8Tc8LjAwoWExdl38",
+          "name": "Gemini API Key"
+        }
+      },
       "continueOnFail": true
     },
     {
@@ -193,17 +301,30 @@
       "name": "Parse Query Embedding",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-112, -140]
+      "position": [
+        -112,
+        -140
+      ]
     },
     {
       "parameters": {
-        "conditions": { "boolean": [{ "value1": "={{ !!$json.embeddingLiteral }}", "value2": true }] }
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !!$json.embeddingLiteral }}",
+              "value2": true
+            }
+          ]
+        }
       },
       "id": "b7b7b777-7777-4777-8777-777777777717",
       "name": "Has Embedding?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [96, -140]
+      "position": [
+        96,
+        -140
+      ]
     },
     {
       "parameters": {
@@ -217,9 +338,17 @@
       "name": "Search Relevant Chunks",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.4,
-      "position": [304, -220],
+      "position": [
+        304,
+        -220
+      ],
       "alwaysOutputData": true,
-      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
     },
     {
       "parameters": {
@@ -229,7 +358,10 @@
       "name": "Build Lesson Prep Prompt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [512, -220]
+      "position": [
+        512,
+        -220
+      ]
     },
     {
       "parameters": {
@@ -238,18 +370,35 @@
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
-        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json.geminiRequestBody) }}",
-        "options": { "timeout": 30000 }
+        "options": {
+          "timeout": 30000
+        }
       },
       "id": "b7b7b777-7777-4777-8777-777777777720",
       "name": "Generate With Gemini",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [720, -220],
-      "credentials": { "httpHeaderAuth": { "id": "8Tc8LjAwoWExdl38", "name": "Gemini API Key" } },
+      "position": [
+        720,
+        -220
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "8Tc8LjAwoWExdl38",
+          "name": "Gemini API Key"
+        }
+      },
       "continueOnFail": true
     },
     {
@@ -260,17 +409,30 @@
       "name": "Extract Lesson Prep",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [928, -220]
+      "position": [
+        928,
+        -220
+      ]
     },
     {
       "parameters": {
-        "conditions": { "boolean": [{ "value1": "={{ $json.success }}", "value2": true }] }
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.success }}",
+              "value2": true
+            }
+          ]
+        }
       },
       "id": "b7b7b777-7777-4777-8777-777777777722",
       "name": "Prep Success?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [1136, -220]
+      "position": [
+        1136,
+        -220
+      ]
     },
     {
       "parameters": {
@@ -282,7 +444,10 @@
       "name": "Success Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [1344, -300]
+      "position": [
+        1344,
+        -300
+      ]
     },
     {
       "parameters": {
@@ -294,7 +459,10 @@
       "name": "AI Error Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [1344, -140]
+      "position": [
+        1344,
+        -140
+      ]
     },
     {
       "parameters": {
@@ -306,59 +474,256 @@
       "name": "Embed Error Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [304, -60]
+      "position": [
+        304,
+        -60
+      ]
     }
   ],
   "connections": {
-    "Webhook": { "main": [[{ "node": "Decode JWT & Config", "type": "main", "index": 0 }]] },
-    "Decode JWT & Config": { "main": [[{ "node": "Valid?", "type": "main", "index": 0 }]] },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Decode JWT & Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decode JWT & Config": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Valid?": {
       "main": [
-        [{ "node": "Reserve Global Rate Slot", "type": "main", "index": 0 }],
-        [{ "node": "Validation Error Response", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Reserve Global Rate Slot",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validation Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Reserve Global Rate Slot": { "main": [[{ "node": "Rate Slot Reserved?", "type": "main", "index": 0 }]] },
+    "Reserve Global Rate Slot": {
+      "main": [
+        [
+          {
+            "node": "Rate Slot Reserved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Rate Slot Reserved?": {
       "main": [
-        [{ "node": "Reserve Daily Quota", "type": "main", "index": 0 }],
-        [{ "node": "Busy Response", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Reserve Daily Quota",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Busy Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Reserve Daily Quota": { "main": [[{ "node": "Quota Reserved?", "type": "main", "index": 0 }]] },
+    "Reserve Daily Quota": {
+      "main": [
+        [
+          {
+            "node": "Quota Reserved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Quota Reserved?": {
       "main": [
-        [{ "node": "Get Student Context", "type": "main", "index": 0 }],
-        [{ "node": "Daily Limit Response", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Get Student Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Daily Limit Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Get Student Context": { "main": [[{ "node": "Student Found?", "type": "main", "index": 0 }]] },
+    "Get Student Context": {
+      "main": [
+        [
+          {
+            "node": "Student Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Student Found?": {
       "main": [
-        [{ "node": "Build Search Query Text", "type": "main", "index": 0 }],
-        [{ "node": "Not Found Response", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Build Search Query Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not Found Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Build Search Query Text": { "main": [[{ "node": "Embed Query", "type": "main", "index": 0 }]] },
-    "Embed Query": { "main": [[{ "node": "Parse Query Embedding", "type": "main", "index": 0 }]] },
-    "Parse Query Embedding": { "main": [[{ "node": "Has Embedding?", "type": "main", "index": 0 }]] },
+    "Build Search Query Text": {
+      "main": [
+        [
+          {
+            "node": "Embed Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embed Query": {
+      "main": [
+        [
+          {
+            "node": "Parse Query Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Query Embedding": {
+      "main": [
+        [
+          {
+            "node": "Has Embedding?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Has Embedding?": {
       "main": [
-        [{ "node": "Search Relevant Chunks", "type": "main", "index": 0 }],
-        [{ "node": "Embed Error Response", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Search Relevant Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Embed Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Search Relevant Chunks": { "main": [[{ "node": "Build Lesson Prep Prompt", "type": "main", "index": 0 }]] },
-    "Build Lesson Prep Prompt": { "main": [[{ "node": "Generate With Gemini", "type": "main", "index": 0 }]] },
-    "Generate With Gemini": { "main": [[{ "node": "Extract Lesson Prep", "type": "main", "index": 0 }]] },
-    "Extract Lesson Prep": { "main": [[{ "node": "Prep Success?", "type": "main", "index": 0 }]] },
+    "Search Relevant Chunks": {
+      "main": [
+        [
+          {
+            "node": "Build Lesson Prep Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Lesson Prep Prompt": {
+      "main": [
+        [
+          {
+            "node": "Generate With Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate With Gemini": {
+      "main": [
+        [
+          {
+            "node": "Extract Lesson Prep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Lesson Prep": {
+      "main": [
+        [
+          {
+            "node": "Prep Success?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Prep Success?": {
       "main": [
-        [{ "node": "Success Response", "type": "main", "index": 0 }],
-        [{ "node": "AI Error Response", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
   "pinData": {},
-  "meta": { "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597" }
+  "meta": {
+    "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597"
+  }
 }
