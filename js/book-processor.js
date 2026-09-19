@@ -330,12 +330,12 @@ async function extractPdf(buffer, { signal, onStep }) {
     try {
         pdf = await pdfjs.getDocument(pdfDocumentParams({ data: new Uint8Array(buffer).slice() })).promise;
     } catch (e) {
-        if (e && e.name === 'PasswordException') throw new BookProcessError('ملف الـ PDF محمي بكلمة مرور. أزيلي الحماية وارفعيه من جديد.');
+        if (e && e.name === 'PasswordException') throw new BookProcessError('ملف الـ PDF محمي بكلمة مرور. أزل الحماية وارفعه من جديد.');
         throw new BookProcessError('تعذّر فتح ملف الـ PDF (ممكن يكون تالفًا).');
     }
     const n = pdf.numPages;
     if (n > S().MAX_UNITS) {
-        throw new BookProcessError(`الكتاب كبير جدًا (${n} صفحة). الحد الأقصى ${S().MAX_UNITS} صفحة للملف الواحد، قسّميه لجزئين.`);
+        throw new BookProcessError(`الكتاب كبير جدًا (${n} صفحة). الحد الأقصى ${S().MAX_UNITS} صفحة للملف الواحد، قسّمه لجزئين.`);
     }
 
     const pages = [];   // { page, text, q }
@@ -447,7 +447,7 @@ function makeZipImageTask(zip, path, key, page, mode) {
 async function extractDocx(buffer, { signal, onStep }) {
     const JSZip = await loadJsZip();
     let zip;
-    try { zip = await JSZip.loadAsync(buffer); } catch (e) { throw new BookProcessError('تعذّر فتح ملف Word (ممكن يكون تالفًا أو بصيغة .doc القديمة - احفظيه كـ .docx).'); }
+    try { zip = await JSZip.loadAsync(buffer); } catch (e) { throw new BookProcessError('تعذّر فتح ملف Word (ممكن يكون تالفًا أو بصيغة .doc القديمة - احفظه كـ .docx).'); }
     const docXml = await zipText(zip, 'word/document.xml');
     if (!docXml) throw new BookProcessError('ملف Word غير صالح (لا يحتوي على word/document.xml).');
     const rels = parseRels(await zipText(zip, 'word/_rels/document.xml.rels'));
@@ -582,7 +582,7 @@ function paragraphsText(container) {
 async function extractPptx(buffer, { signal, onStep }) {
     const JSZip = await loadJsZip();
     let zip;
-    try { zip = await JSZip.loadAsync(buffer); } catch (e) { throw new BookProcessError('تعذّر فتح ملف PowerPoint (ممكن يكون تالفًا أو بصيغة .ppt القديمة - احفظيه كـ .pptx).'); }
+    try { zip = await JSZip.loadAsync(buffer); } catch (e) { throw new BookProcessError('تعذّر فتح ملف PowerPoint (ممكن يكون تالفًا أو بصيغة .ppt القديمة - احفظه كـ .pptx).'); }
 
     // ترتيب الشرائح الحقيقي من presentation.xml
     let slidePaths = [];
@@ -867,7 +867,7 @@ export async function processBook({ api, book, file, onProgress, signal }) {
             await api.startBookProcessing(bookId, { file_type: fileType });
             started = true;
         } catch (err) {
-            throw new BookProcessError(errMessage(err) + (errCode(err) ? '' : ' — تأكدي إنك استوردتِ n8n/process-book.json الجديد.'), errCode(err) || 'START_FAILED');
+            throw new BookProcessError(errMessage(err) + (errCode(err) ? '' : ' — تأكد إنك استوردت n8n/process-book.json الجديد.'), errCode(err) || 'START_FAILED');
         }
         throwIfAborted(signal);
 
@@ -902,7 +902,7 @@ export async function processBook({ api, book, file, onProgress, signal }) {
 
         const ocrTasks = extracted.ocr;
         if (ocrTasks.length > S().MAX_OCR_PAGES) {
-            throw new BookProcessError(`الكتاب ممسوح ضوئيًا وعدد صفحاته اللي محتاجة قراءة (${ocrTasks.length}) أكبر من الحد المسموح (${S().MAX_OCR_PAGES}). قسّمي الملف لأجزاء.`);
+            throw new BookProcessError(`الكتاب ممسوح ضوئيًا وعدد صفحاته اللي محتاجة قراءة (${ocrTasks.length}) أكبر من الحد المسموح (${S().MAX_OCR_PAGES}). قسّم الملف لأجزاء.`);
         }
         const hasOcr = ocrTasks.length > 0;
         emit('plan', 20, hasOcr ? `الكتاب محتاج قراءة ${ocrTasks.length} صفحة بالذكاء الاصطناعي` : 'النص واضح - مفيش حاجة للقراءة الضوئية', { ocrPages: ocrTasks.length, pageCount: extracted.pageCount });
@@ -918,10 +918,10 @@ export async function processBook({ api, book, file, onProgress, signal }) {
             ocrResults = r.results;
             failedKeys = r.failed;
             if (r.limitHit) {
-                throw new BookProcessError(`وصلتِ للحد اليومي لقراءة الصفحات بالذكاء الاصطناعي (اتقرأ ${ocrResults.size} من ${ocrTasks.length} صفحة). الصفحات دي اتحفظت، أعيدي المعالجة بكرة وهتكمل من حيث توقفت.`, 'DAILY_LIMIT');
+                throw new BookProcessError(`وصلت للحد اليومي لقراءة الصفحات بالذكاء الاصطناعي (اتقرأ ${ocrResults.size} من ${ocrTasks.length} صفحة). الصفحات دي اتحفظت، أعد المعالجة بكرة وهتكمل من حيث توقفت.`, 'DAILY_LIMIT');
             }
             if (failedKeys.length > ocrTasks.length * 0.4) {
-                throw new BookProcessError(`تعذّرت قراءة أغلب الصفحات (${failedKeys.length} من ${ocrTasks.length}). جرّبي إعادة المعالجة، أو ارفعي نسخة أوضح من الكتاب.`, 'OCR_FAILED');
+                throw new BookProcessError(`تعذّرت قراءة أغلب الصفحات (${failedKeys.length} من ${ocrTasks.length}). جرّب إعادة المعالجة، أو ارفع نسخة أوضح من الكتاب.`, 'OCR_FAILED');
             }
         }
 
@@ -960,7 +960,7 @@ export async function processBook({ api, book, file, onProgress, signal }) {
         });
         if (chunks.length === 0) {
             throw new BookProcessError(hasOcr
-                ? 'لم يتم استخراج أي نص من الكتاب حتى بعد القراءة الضوئية. تأكدي إن الصور واضحة.'
+                ? 'لم يتم استخراج أي نص من الكتاب حتى بعد القراءة الضوئية. تأكد إن الصور واضحة.'
                 : 'لم يتم استخراج أي نص قابل للفهرسة من هذا الملف.');
         }
 
@@ -1006,7 +1006,7 @@ export async function processBook({ api, book, file, onProgress, signal }) {
         };
     } catch (err) {
         const aborted = !!(err && (err.aborted || err.name === 'AbortError'));
-        const message = aborted ? 'تم إلغاء المعالجة. تقدري تعيديها من بطاقة الكتاب.' : errMessage(err);
+        const message = aborted ? 'تم إلغاء المعالجة. تقدر تعيدها من بطاقة الكتاب.' : errMessage(err);
         if (started) {
             try { await api.finishBook(bookId, { status: 'failed', error_message: message }); } catch (e) { /* تجاهل */ }
         }

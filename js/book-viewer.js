@@ -1,5 +1,5 @@
 /**
- * book-viewer.js - عارض الكتاب الكامل بصيغته الأصلية (بيفتح لما تضغطي على الكتاب)
+ * book-viewer.js - عارض الكتاب الكامل بصيغته الأصلية (بيفتح لما تضغط على الكتاب)
  *
  *   PDF        → PDF.js (صفحات بتتحمّل عند الحاجة فقط، مع طبقة نص للتحديد والنسخ)
  *   Word       → docx-preview (نفس تنسيق الملف)
@@ -384,7 +384,7 @@ export class BookViewer {
         this.page = 1;
         this.pageInput.value = '1';
         this.chat.refreshContext();
-        if (!this.chat.isOpen) this.stage.focus({ preventScroll: true });   // ماناخدش الـ focus من الشات وإنتِ بتكتبي
+        if (!this.chat.isOpen) this.stage.focus({ preventScroll: true });   // ماناخدش الـ focus من الشات وإنت بتكتب
     }
 
     _destroyAdapter() {

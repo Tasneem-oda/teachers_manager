@@ -1,5 +1,5 @@
 -- ملحوظة (تحديث): ميزة المكتبة اتطوّرت لنسخة 2 (دعم الكتب المصوّرة/الممسوحة، عرض الكتاب، شات داخل الكتاب).
--- بعد تنفيذ الملف ده نفّذي كمان n8n/BOOKS_LIBRARY_V2_MIGRATION.sql، وراجعي BOOKS_V2_SETUP.md في جذر المشروع.
+-- بعد تنفيذ الملف ده نفّذ كمان n8n/BOOKS_LIBRARY_V2_MIGRATION.sql، وراجع BOOKS_V2_SETUP.md في جذر المشروع.
 -- (الملاحظة رقم 3 و 4 تحت عن حد الـ 8192 token وقراءة الـ PDF مباشرة اتحلّت في النسخة 2: المعالجة بقت في المتصفح + OCR.)
 -- ============================================================
 -- migration مطلوبة لميزة "📚 مكتبتي" (رفع كتب/مذكرات، تحليلها بالذكاء
@@ -7,7 +7,7 @@
 -- n8n/process-book.json، n8n/list-books.json، n8n/delete-book.json،
 -- n8n/update-book-access.json، n8n/ask-sources.json، n8n/prepare-lesson.json
 --
--- نفّذي كل الكود ده مرة واحدة في محرر SQL في Supabase (SQL Editor) بالترتيب.
+-- نفّذ كل الكود ده مرة واحدة في محرر SQL في Supabase (SQL Editor) بالترتيب.
 -- ============================================================
 
 -- ------------------------------------------------------------
@@ -64,7 +64,7 @@ create index if not exists idx_book_chunks_book on teachers_manager.book_chunks 
 -- ملحوظة: مفيش فهرس (index) خاص بالـ embedding نفسه دلوقتي (زي ivfflat) لأن
 -- عدد المقاطع لسه صغير على الأغلب. البحث بالـ "<=>": بيشتغل صح من غير فهرس،
 -- بس أبطأ تدريجيًا مع آلاف المقاطع. لو المكتبة كبرت جدًا مستقبلًا (كذا كتاب
--- ضخم)، ينفع تضيفي:
+-- ضخم)، ينفع تضيف:
 --   create index on teachers_manager.book_chunks using ivfflat (embedding vector_cosine_ops) with (lists = 100);
 -- بعد ما يبقى عندك بيانات كفاية (الفهرس ده محتاج بيانات موجودة الأول عشان يتبني كويس).
 
@@ -110,7 +110,7 @@ using (bucket_id = 'teacher-books' and (storage.foldername(name))[1] = auth.uid(
 with check (bucket_id = 'teacher-books' and (storage.foldername(name))[1] = auth.uid()::text);
 
 -- ============================================================
--- ملاحظات تشغيلية مهمة (اقرأيها قبل التفعيل)
+-- ملاحظات تشغيلية مهمة (اقرأها قبل التفعيل)
 -- ============================================================
 -- 1) لازم يكون عندك مفتاح Gemini API شغال ومربوط في n8n (نفس "Gemini API
 --    Key" credential المستخدم في n8n/ai-chat-assistant.json) - نفس المفتاح

@@ -28,8 +28,8 @@
  *
  * ملحوظة: لازم تحط الـ ONESIGNAL_APP_ID الحقيقي في js/config.js (تحت
  * CONFIG.PUSH_NOTIFICATIONS.ONESIGNAL_APP_ID) عشان جزء الـ Push يشتغل، ولازم
- * تستوردي n8n/get-notifications.json و n8n/mark-notifications-read.json
- * وتنفّذي n8n/NOTIFICATIONS_DB_MIGRATION.sql عشان جزء مركز الإشعارات يشتغل.
+ * تستورد n8n/get-notifications.json و n8n/mark-notifications-read.json
+ * وتنفّذ n8n/NOTIFICATIONS_DB_MIGRATION.sql عشان جزء مركز الإشعارات يشتغل.
  * كل جزء بيفشل بصمت (من غير ما يكسر باقي الصفحة) لو لسه معمولش الإعداد بتاعه.
  * ============================================================================
  */
@@ -119,7 +119,7 @@ async function initAndLinkTeacher() {
             // اشتراك الإشعارات بصمت - وده كان السبب الفعلي وراء عدم ظهور
             // الإشعار اليومي غير لو التطبيق مفتوح وقت وصوله بالظبط.
             // sw.js دلوقتي فيه importScripts لكود OneSignal بالإضافة لكوده
-            // الأصلي، فأصبح ملف واحد بيغطي الوظيفتين. راجعي التعليق الكامل
+            // الأصلي، فأصبح ملف واحد بيغطي الوظيفتين. راجع التعليق الكامل
             // أعلى sw.js لتفاصيل أكتر.
             serviceWorkerPath: 'sw.js',
             serviceWorkerParam: { scope: '/' }
@@ -238,7 +238,7 @@ function dismissPrompt() {
 export async function requestPermission() {
     if ('Notification' in window && Notification.permission === 'denied') {
         ErrorHandler.showError(
-            'إذن الإشعارات محظور لهذا الموقع من إعدادات المتصفح. افتحي إعدادات الموقع (أيقونة القفل 🔒 بجانب رابط الموقع) ← الإشعارات ← اختاري "سماح"، ثم أعيدي تحميل الصفحة.'
+            'إذن الإشعارات محظور لهذا الموقع من إعدادات المتصفح. افتح إعدادات الموقع (أيقونة القفل 🔒 بجانب رابط الموقع) ← الإشعارات ← اختر "سماح"، ثم أعد تحميل الصفحة.'
         );
         return;
     }
@@ -250,7 +250,7 @@ export async function requestPermission() {
             } catch (e) {
                 console.warn('تعذّر طلب إذن الإشعارات:', e);
                 ErrorHandler.showError(
-                    'تعذّر تفعيل الإشعارات. تأكدي إن الإشعارات مش محظورة من إعدادات المتصفح لهذا الموقع، ولو بتستخدمي آيفون، تأكدي إنك فتحتي الموقع من الشاشة الرئيسية بعد إضافته (Add to Home Screen) لا من متصفح Safari مباشرة.'
+                    'تعذّر تفعيل الإشعارات. تأكد إن الإشعارات مش محظورة من إعدادات المتصفح لهذا الموقع، ولو بتستخدم آيفون، تأكد إنك فتحت الموقع من الشاشة الرئيسية بعد إضافته (Add to Home Screen) لا من متصفح Safari مباشرة.'
                 );
             }
             resolve();
@@ -462,7 +462,7 @@ async function fetchAndRenderNotifications() {
         cache.unread = Array.isArray(data?.unread) ? data.unread : [];
         cache.read = Array.isArray(data?.read) ? data.read : [];
     } catch (e) {
-        console.warn('تعذّر تحميل الإشعارات (تأكدي من استيراد وتفعيل n8n/get-notifications.json):', e);
+        console.warn('تعذّر تحميل الإشعارات (تأكد من استيراد وتفعيل n8n/get-notifications.json):', e);
         cache.unread = [];
         cache.read = [];
         if (listEl) listEl.innerHTML = '<div class="tm-notif-empty">تعذّر تحميل الإشعارات حاليًا</div>';

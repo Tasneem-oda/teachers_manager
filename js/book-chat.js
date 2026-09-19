@@ -3,11 +3,11 @@
  *
  * تجربة الكتابة والمحادثة:
  *  - الإرسال بـ Enter (Shift+Enter سطر جديد؛ على الموبايل Enter بيعمل سطر جديد)، مع حماية من الـ IME
- *  - مربع الكتابة بيتمسح فورًا لما تبعتي، وبيرجع لو ضغتي "إيقاف" أو حصل خطأ (مافيش سؤال بيضيع)
+ *  - مربع الكتابة بيتمسح فورًا لما تبعت، وبيرجع لو ضغت "إيقاف" أو حصل خطأ (مافيش سؤال بيضيع)
  *  - إجابات Markdown منسّقة + استشهادات [مصدر N] تتحول لأزرار تفتح مكانها في الكتاب
  *  - ظهور تدريجي للإجابة (يمكن تخطّيه بنقرة)، نسخ الإجابة، إعادة المحاولة، محادثة جديدة
  *  - المحادثة بتتحفظ لكل كتاب طول الجلسة، وبتتبعت كسياق لأسئلة المتابعة
- *  - سؤال عن "الصفحة الحالية" اللي بتقرأيها (PDF / PowerPoint / صورة)
+ *  - سؤال عن "الصفحة الحالية" اللي بتقرأها (PDF / PowerPoint / صورة)
  */
 
 import { CONFIG } from './config.js?v=6';
@@ -49,7 +49,7 @@ export class BookChat {
      * @param {{id:string,title:string}} o.book
      * @param {HTMLElement} o.host  العنصر اللي هتتحط فيه النافذة (position: relative/fixed)
      * @param {() => {page:number|null, supported:boolean}} [o.getPageContext]
-     * @param {(source:object) => boolean|void} [o.onCite]  بيتنادى لما تضغطي على استشهاد
+     * @param {(source:object) => boolean|void} [o.onCite]  بيتنادى لما تضغط على استشهاد
      * @param {(open:boolean) => void} [o.onOpenChange]
      */
     constructor({ api, book, host, getPageContext, onCite, onOpenChange }) {
@@ -106,12 +106,12 @@ export class BookChat {
                 </div>
             </header>
             <div class="bc-body" role="log" aria-live="polite" aria-relevant="additions"></div>
-            <button type="button" class="bc-jump" hidden aria-label="انزلي لآخر رسالة">${icon('arrowDown', { size: 16 })}</button>
+            <button type="button" class="bc-jump" hidden aria-label="انزل لآخر رسالة">${icon('arrowDown', { size: 16 })}</button>
             <div class="bc-ctx" hidden>
                 <label class="bc-ctx-label"><input type="checkbox" class="bc-ctx-check"> <span class="bc-ctx-text"></span></label>
             </div>
             <form class="bc-composer" autocomplete="off">
-                <textarea class="bc-input" rows="1" maxlength="${maxLen}" placeholder="اكتبي سؤالك عن الكتاب..." aria-label="سؤالك عن الكتاب" enterkeyhint="send"></textarea>
+                <textarea class="bc-input" rows="1" maxlength="${maxLen}" placeholder="اكتب سؤالك عن الكتاب..." aria-label="سؤالك عن الكتاب" enterkeyhint="send"></textarea>
                 <button type="submit" class="bc-send" aria-label="إرسال">${icon('send', { size: 18 })}</button>
                 <button type="button" class="bc-stop" aria-label="إيقاف" hidden>${icon('stop', { size: 16 })}</button>
             </form>
@@ -218,7 +218,7 @@ export class BookChat {
         const ctx = this.getPageContext() || {};
         if (ctx.supported && ctx.page) {
             this.ctxEl.hidden = false;
-            this.ctxText.textContent = `اسألي عن الصفحة الحالية (${ctx.page})`;
+            this.ctxText.textContent = `اسأل عن الصفحة الحالية (${ctx.page})`;
         } else {
             this.ctxEl.hidden = true;
             this.ctxCheck.checked = false;
@@ -259,17 +259,17 @@ export class BookChat {
     _renderEmpty() {
         const ctx = this.getPageContext() || {};
         const suggestions = [
-            { label: 'لخّصي لي الكتاب في نقاط', q: 'لخّص لي محتوى هذا الكتاب في نقاط رئيسية.' },
+            { label: 'لخّص لي الكتاب في نقاط', q: 'لخّص لي محتوى هذا الكتاب في نقاط رئيسية.' },
             { label: 'أهم المفاهيم في الكتاب', q: 'ما أهم المفاهيم والمصطلحات في هذا الكتاب؟ اشرحها باختصار.' },
             { label: 'أسئلة تدريبية للطلاب', q: 'اقترح 5 أسئلة تدريبية متنوعة من هذا الكتاب مع إجاباتها.' }
         ];
-        if (ctx.supported) suggestions.unshift({ label: 'اشرحي الصفحة الحالية', q: 'اشرح لي محتوى الصفحة الحالية ببساطة.', page: true });
+        if (ctx.supported) suggestions.unshift({ label: 'اشرح الصفحة الحالية', q: 'اشرح لي محتوى الصفحة الحالية ببساطة.', page: true });
         const box = document.createElement('div');
         box.className = 'bc-empty';
         box.innerHTML = `
             <div class="bc-empty-icon">${icon('bookOpen', { size: 26 })}</div>
-            <p class="bc-empty-title">اسألي أي حاجة عن الكتاب</p>
-            <p class="bc-empty-sub">الإجابة بتيجي من الكتاب نفسه، ومعاها رقم الصفحة اللي تقدري تضغطي عليه.</p>
+            <p class="bc-empty-title">اسأل أي حاجة عن الكتاب</p>
+            <p class="bc-empty-sub">الإجابة بتيجي من الكتاب نفسه، ومعاها رقم الصفحة اللي تقدر تضغط عليه.</p>
             <div class="bc-suggest"></div>`;
         const wrap = box.querySelector('.bc-suggest');
         for (const s of suggestions) {
@@ -534,7 +534,7 @@ export class BookChat {
             const code = errCode(error);
             const message = code === 'DAILY_LIMIT' || code === 'BUSY' || code === 'VALIDATION_ERROR'
                 ? errMsg(error)
-                : (errMsg(error) || 'تعذّر الحصول على إجابة. حاولي مرة أخرى.');
+                : (errMsg(error) || 'تعذّر الحصول على إجابة. حاول مرة أخرى.');
             const errMessage = { id: uid(), role: 'error', text: message, question: code === 'DAILY_LIMIT' ? null : text, withPage: withPage, ts: Date.now() };
             if (idx >= 0) this.messages[idx] = errMessage;
             const el = this._buildMessage(errMessage);
@@ -545,7 +545,7 @@ export class BookChat {
                 id: uid(), role: 'assistant', text: answer,
                 sources: Array.isArray(res && res.sources) ? res.sources : [], ts: Date.now()
             };
-            if (res && res.truncated) aiMsg.text += '\n\n_(الإجابة طويلة واتقطعت — اطلبي "كمّل" لو محتاجة باقي الشرح.)_';
+            if (res && res.truncated) aiMsg.text += '\n\n_(الإجابة طويلة واتقطعت — اطلب "كمّل" لو محتاج باقي الشرح.)_';
             if (typeof (res && res.remaining) === 'number') { this.remaining = res.remaining; this._renderQuota(); }
             if (idx >= 0) this.messages[idx] = aiMsg;
             const el = this._buildMessage(aiMsg, { deferText: true });   // النص هيتملى تدريجيًا
@@ -618,7 +618,7 @@ export class BookChat {
         }
         // ضغطتين للتأكيد (أخف من نافذة confirm)
         this.resetBtn.classList.add('is-armed');
-        this.resetBtn.title = 'اضغطي مرة تانية لمسح المحادثة';
+        this.resetBtn.title = 'اضغط مرة تانية لمسح المحادثة';
         this._resetArmed = setTimeout(() => {
             this._resetArmed = null;
             this.resetBtn.classList.remove('is-armed');

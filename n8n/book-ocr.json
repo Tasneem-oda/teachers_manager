@@ -112,7 +112,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'NOT_PROCESSING', message: \"الكتاب مش في حالة معالجة. ابدئي المعالجة من جديد (إعادة المعالجة).\" } }) }}",
+        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'NOT_PROCESSING', message: \"الكتاب مش في حالة معالجة. ابدأ المعالجة من جديد (إعادة المعالجة).\" } }) }}",
         "options": {}
       },
       "id": "cccccccc-cccc-4ccc-8ccc-cccccccccc07",
@@ -230,7 +230,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'DAILY_LIMIT', message: \"وصلتِ للحد اليومي لقراءة الصفحات بالذكاء الاصطناعي. كمّلي بكرة (الصفحات اللي اتقرأت اتحفظت).\" } }) }}",
+        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'DAILY_LIMIT', message: \"وصلت للحد اليومي لقراءة الصفحات بالذكاء الاصطناعي. كمّل بكرة (الصفحات اللي اتقرأت اتحفظت).\" } }) }}",
         "options": {}
       },
       "id": "cccccccc-cccc-4ccc-8ccc-cccccccccc0d",

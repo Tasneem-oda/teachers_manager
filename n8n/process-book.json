@@ -151,7 +151,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'ALREADY_PROCESSING', message: \"الكتاب ده بيتعالج حاليًا في نافذة تانية. استني دقيقتين وحاولي تاني لو اتوقفت.\" } }) }}",
+        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'ALREADY_PROCESSING', message: \"الكتاب ده بيتعالج حاليًا في نافذة تانية. استنى دقيقتين وحاول تاني لو اتوقفت.\" } }) }}",
         "options": {}
       },
       "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb09",

@@ -112,7 +112,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'NOT_PROCESSING', message: \"الكتاب مش في حالة معالجة. ابدئي المعالجة من جديد (إعادة المعالجة).\" } }) }}",
+        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'NOT_PROCESSING', message: \"الكتاب مش في حالة معالجة. ابدأ المعالجة من جديد (إعادة المعالجة).\" } }) }}",
         "options": {}
       },
       "id": "dddddddd-dddd-4ddd-8ddd-dddddddddd07",
@@ -188,7 +188,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const cfg = $('Validate & Config').first().json;\nconst items = $input.all().map(i => i.json || {});\nconst fail = (code, message) => ({ json: { ok: false, code, message } });\n\nif (items.length !== cfg.chunks.length) return fail('AI_ERROR', 'عدد نتائج الـ embedding لا يطابق عدد المقاطع.');\n\nconst rows = [];\nfor (let i = 0; i < items.length; i++) {\n  const raw = items[i];\n  const v = raw.embedding && Array.isArray(raw.embedding.values) ? raw.embedding.values : null;\n  if (!v) {\n    const s = JSON.stringify(raw.error || raw).slice(0, 400);\n    if (/429|RESOURCE_EXHAUSTED|quota|rate.?limit|overloaded|503|UNAVAILABLE/i.test(s)) {\n      return fail('BUSY', 'خدمة الفهرسة مشغولة (حد Gemini)، هنعيد المحاولة تلقائيًا.');\n    }\n    return fail('AI_ERROR', 'تعذّرت فهرسة المقاطع (خطأ من خدمة الـ embedding).');\n  }\n  // vector(768) في قاعدة البيانات - لو الحجم مختلف نوقف بدل ما نحفظ بيانات غلط\n  if (v.length !== 768) return fail('EMBED_DIM', 'حجم الـ embedding غير متوقع (المطلوب 768). راجعي outputDimensionality في n8n.');\n  const c = cfg.chunks[i];\n  rows.push({ chunk_index: c.chunk_index, chapter: c.chapter, page: c.page, content: c.content, embedding: '[' + v.join(',') + ']' });\n}\nreturn { json: { ok: true, rowsJson: JSON.stringify(rows), count: rows.length } };\n"
+        "jsCode": "const cfg = $('Validate & Config').first().json;\nconst items = $input.all().map(i => i.json || {});\nconst fail = (code, message) => ({ json: { ok: false, code, message } });\n\nif (items.length !== cfg.chunks.length) return fail('AI_ERROR', 'عدد نتائج الـ embedding لا يطابق عدد المقاطع.');\n\nconst rows = [];\nfor (let i = 0; i < items.length; i++) {\n  const raw = items[i];\n  const v = raw.embedding && Array.isArray(raw.embedding.values) ? raw.embedding.values : null;\n  if (!v) {\n    const s = JSON.stringify(raw.error || raw).slice(0, 400);\n    if (/429|RESOURCE_EXHAUSTED|quota|rate.?limit|overloaded|503|UNAVAILABLE/i.test(s)) {\n      return fail('BUSY', 'خدمة الفهرسة مشغولة (حد Gemini)، هنعيد المحاولة تلقائيًا.');\n    }\n    return fail('AI_ERROR', 'تعذّرت فهرسة المقاطع (خطأ من خدمة الـ embedding).');\n  }\n  // vector(768) في قاعدة البيانات - لو الحجم مختلف نوقف بدل ما نحفظ بيانات غلط\n  if (v.length !== 768) return fail('EMBED_DIM', 'حجم الـ embedding غير متوقع (المطلوب 768). راجع outputDimensionality في n8n.');\n  const c = cfg.chunks[i];\n  rows.push({ chunk_index: c.chunk_index, chapter: c.chapter, page: c.page, content: c.content, embedding: '[' + v.join(',') + ']' });\n}\nreturn { json: { ok: true, rowsJson: JSON.stringify(rows), count: rows.length } };\n"
       },
       "id": "dddddddd-dddd-4ddd-8ddd-dddddddddd0a",
       "name": "Collect Embeddings",

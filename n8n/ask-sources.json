@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\nconst body = $input.first().json.body || {};\nconst UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\n\nconst question = (body.question || '').toString().trim();\nlet validationError = null;\nif (!question) validationError = 'من فضلك اكتبي سؤالك';\nelse if (question.length > 1000) validationError = 'السؤال طويل جدًا (الحد الأقصى 1000 حرف)';\n\n// كل القيم بتتحوّل لنص ('' = مفيش) عشان الاستعلامات تستخدم NULLIF(...)\nconst bookId = UUID_RE.test(String(body.book_id || '')) ? String(body.book_id) : '';\nconst studentId = UUID_RE.test(String(body.student_id || '')) ? String(body.student_id) : '';\nconst pageNum = parseInt(body.page, 10);\nconst page = Number.isInteger(pageNum) && pageNum > 0 && pageNum < 100000 ? String(pageNum) : '';\n\n// سياق المحادثة (آخر 8 رسائل) لأسئلة المتابعة\nconst history = (Array.isArray(body.history) ? body.history : [])\n  .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.text === 'string' && m.text.trim())\n  .slice(-8)\n  .map(m => ({ role: m.role, text: m.text.trim().slice(0, 1200) }));\nconst lastUser = history.slice().reverse().find(m => m.role === 'user');\n// سؤال قصير (متابعة) بيتضاف له سؤال المعلم السابق عشان البحث بالمعنى يلاقي المقاطع الصح\nconst retrievalText = (question.length < 60 && lastUser) ? (lastUser.text.slice(0, 300) + '\\n' + question) : question;\n\nreturn {\n  teacherId: payload.sub,\n  studentId,\n  bookId,\n  bookScoped: !!bookId,\n  page,\n  question,\n  history,\n  retrievalText,\n  isValid: validationError === null,\n  validationError,\n  minIntervalSeconds: 5,\n  dailyLimit: 40,\n  topK: bookId ? 8 : 6,\n  geminiModel: 'gemini-3.5-flash-lite',\n  embeddingModel: 'gemini-embedding-001'\n};\n"
+        "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\nconst body = $input.first().json.body || {};\nconst UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\n\nconst question = (body.question || '').toString().trim();\nlet validationError = null;\nif (!question) validationError = 'من فضلك اكتب سؤالك';\nelse if (question.length > 1000) validationError = 'السؤال طويل جدًا (الحد الأقصى 1000 حرف)';\n\n// كل القيم بتتحوّل لنص ('' = مفيش) عشان الاستعلامات تستخدم NULLIF(...)\nconst bookId = UUID_RE.test(String(body.book_id || '')) ? String(body.book_id) : '';\nconst studentId = UUID_RE.test(String(body.student_id || '')) ? String(body.student_id) : '';\nconst pageNum = parseInt(body.page, 10);\nconst page = Number.isInteger(pageNum) && pageNum > 0 && pageNum < 100000 ? String(pageNum) : '';\n\n// سياق المحادثة (آخر 8 رسائل) لأسئلة المتابعة\nconst history = (Array.isArray(body.history) ? body.history : [])\n  .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.text === 'string' && m.text.trim())\n  .slice(-8)\n  .map(m => ({ role: m.role, text: m.text.trim().slice(0, 1200) }));\nconst lastUser = history.slice().reverse().find(m => m.role === 'user');\n// سؤال قصير (متابعة) بيتضاف له سؤال المعلم السابق عشان البحث بالمعنى يلاقي المقاطع الصح\nconst retrievalText = (question.length < 60 && lastUser) ? (lastUser.text.slice(0, 300) + '\\n' + question) : question;\n\nreturn {\n  teacherId: payload.sub,\n  studentId,\n  bookId,\n  bookScoped: !!bookId,\n  page,\n  question,\n  history,\n  retrievalText,\n  isValid: validationError === null,\n  validationError,\n  minIntervalSeconds: 5,\n  dailyLimit: 40,\n  topK: bookId ? 8 : 6,\n  geminiModel: 'gemini-3.5-flash-lite',\n  embeddingModel: 'gemini-embedding-001'\n};\n"
       },
       "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa02",
       "name": "Decode JWT & Config",
@@ -112,7 +112,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'BUSY', message: \"النظام مشغول لحظة، من فضلك أعيدي المحاولة بعد ثوانٍ قليلة.\" } }) }}",
+        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'BUSY', message: \"النظام مشغول لحظة، من فضلك أعد المحاولة بعد ثوانٍ قليلة.\" } }) }}",
         "options": {}
       },
       "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa07",
@@ -171,7 +171,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'DAILY_LIMIT', message: \"وصلتِ للحد الأقصى المسموح به من الطلبات اليوم. حاولي مرة أخرى غدًا.\" } }) }}",
+        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'DAILY_LIMIT', message: \"وصلت للحد الأقصى المسموح به من الطلبات اليوم. حاول مرة أخرى غدًا.\" } }) }}",
         "options": {}
       },
       "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa0a",
@@ -286,7 +286,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'AI_ERROR', message: \"تعذّر معالجة السؤال، من فضلك حاولي مرة أخرى.\" } }) }}",
+        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'AI_ERROR', message: \"تعذّر معالجة السؤال، من فضلك حاول مرة أخرى.\" } }) }}",
         "options": {}
       },
       "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa0f",
@@ -382,7 +382,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ success: true, data: { answer: $('Decode JWT & Config').item.json.bookScoped ? 'مقدرتش ألاقي في الكتاب ده نص أقدر أرجع له. ممكن يكون لسه بيتحلل أو ما فيهوش نص مقروء. جرّبي إعادة المعالجة من صفحة مكتبتي.' : 'لسه مفيش مصادر مرفوعة أو متاحة بخصوص هذا الطالب. ارفعي كتاب من صفحة مكتبتي أولًا.', sources: [] } }) }}",
+        "responseBody": "={{ JSON.stringify({ success: true, data: { answer: $('Decode JWT & Config').item.json.bookScoped ? 'مقدرتش ألاقي في الكتاب ده نص أقدر أرجع له. ممكن يكون لسه بيتحلل أو ما فيهوش نص مقروء. جرّب إعادة المعالجة من صفحة مكتبتي.' : 'لسه مفيش مصادر مرفوعة أو متاحة بخصوص هذا الطالب. ارفع كتاب من صفحة مكتبتي أولًا.', sources: [] } }) }}",
         "options": {}
       },
       "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa14",
@@ -439,7 +439,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const prev = $('Build Answer Prompt').item.json;\nconst cfg = $('Decode JWT & Config').item.json;\nconst raw = $input.first().json || {};\n\nif (raw.error) {\n  const s = JSON.stringify(raw.error).slice(0, 300);\n  if (/429|RESOURCE_EXHAUSTED|quota|rate.?limit|overloaded|503|UNAVAILABLE/i.test(s)) {\n    return { json: { success: false, code: 'BUSY', message: 'خدمة الذكاء الاصطناعي مشغولة الآن، من فضلك أعيدي المحاولة بعد لحظات.' } };\n  }\n  return { json: { success: false, code: 'AI_ERROR', message: 'تعذّر توليد الإجابة، من فضلك حاولي مرة أخرى.' } };\n}\n\nconst candidate = raw.candidates && raw.candidates[0];\nconst text = candidate && candidate.content && Array.isArray(candidate.content.parts)\n  ? candidate.content.parts.map(p => p.text || '').join('') : '';\nif (!text.trim()) {\n  return { json: { success: false, code: 'AI_ERROR', message: 'تعذّر توليد إجابة مناسبة لهذا السؤال.' } };\n}\n\nconst used = Number($('Reserve Daily Quota').item.json.request_count) || 0;\nreturn {\n  json: {\n    success: true,\n    answer: text.trim(),\n    sources: prev.sources,\n    remaining: Math.max(0, cfg.dailyLimit - used),\n    truncated: candidate && candidate.finishReason === 'MAX_TOKENS'\n  }\n};\n"
+        "jsCode": "const prev = $('Build Answer Prompt').item.json;\nconst cfg = $('Decode JWT & Config').item.json;\nconst raw = $input.first().json || {};\n\nif (raw.error) {\n  const s = JSON.stringify(raw.error).slice(0, 300);\n  if (/429|RESOURCE_EXHAUSTED|quota|rate.?limit|overloaded|503|UNAVAILABLE/i.test(s)) {\n    return { json: { success: false, code: 'BUSY', message: 'خدمة الذكاء الاصطناعي مشغولة الآن، من فضلك أعد المحاولة بعد لحظات.' } };\n  }\n  return { json: { success: false, code: 'AI_ERROR', message: 'تعذّر توليد الإجابة، من فضلك حاول مرة أخرى.' } };\n}\n\nconst candidate = raw.candidates && raw.candidates[0];\nconst text = candidate && candidate.content && Array.isArray(candidate.content.parts)\n  ? candidate.content.parts.map(p => p.text || '').join('') : '';\nif (!text.trim()) {\n  return { json: { success: false, code: 'AI_ERROR', message: 'تعذّر توليد إجابة مناسبة لهذا السؤال.' } };\n}\n\nconst used = Number($('Reserve Daily Quota').item.json.request_count) || 0;\nreturn {\n  json: {\n    success: true,\n    answer: text.trim(),\n    sources: prev.sources,\n    remaining: Math.max(0, cfg.dailyLimit - used),\n    truncated: candidate && candidate.finishReason === 'MAX_TOKENS'\n  }\n};\n"
       },
       "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa16",
       "name": "Extract Answer",

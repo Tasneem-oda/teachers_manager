@@ -85,7 +85,7 @@ export function initBooksPage() {
         } else if (st === 'failed') {
             body = `<p class="book-error-text">${esc(b.error_message || 'حدث خطأ أثناء التحليل')}</p>`;
         } else if (st === 'stalled') {
-            body = `<p class="book-error-text">${b.status === 'uploading' ? 'الرفع لم يكتمل.' : 'المعالجة توقفت (ربما اتقفلت الصفحة).'} اضغطي "إعادة المعالجة" لإكمالها.</p>`;
+            body = `<p class="book-error-text">${b.status === 'uploading' ? 'الرفع لم يكتمل.' : 'المعالجة توقفت (ربما اتقفلت الصفحة).'} اضغط "إعادة المعالجة" لإكمالها.</p>`;
         }
         const reprocess = (st === 'failed' || st === 'stalled')
             ? `<button type="button" class="btn" data-action="reprocess">${icon('refresh', { size: 13 })} إعادة المعالجة</button>` : '';
@@ -114,7 +114,7 @@ export function initBooksPage() {
     function renderBooks() {
         const section = $('books-section');
         if (books.length === 0) {
-            section.innerHTML = '<div class="card"><div class="empty-state">لسه مفيش أي مصادر مرفوعة. ابدئي بإضافة كتاب أو مذكرة.</div></div>';
+            section.innerHTML = '<div class="card"><div class="empty-state">لسه مفيش أي مصادر مرفوعة. ابدأ بإضافة كتاب أو مذكرة.</div></div>';
             return;
         }
         section.innerHTML = `<div class="books-grid">${books.map(cardHtml).join('')}</div>`;
@@ -134,7 +134,7 @@ export function initBooksPage() {
     // ------------------------------------------------------------------ أحداث القائمة
     async function handleCardAction(action, book) {
         if (action === 'delete') {
-            if (active.has(book.id)) { ErrorHandler.showError('الكتاب بيتعالج حاليًا. اضغطي "إلغاء" الأول.'); return; }
+            if (active.has(book.id)) { ErrorHandler.showError('الكتاب بيتعالج حاليًا. اضغط "إلغاء" الأول.'); return; }
             if (!confirm(`هل تريد حذف "${book.title}"؟ هيتم حذف كل ما يرتبط به.`)) return;
             try {
                 const res = await api.deleteBook(book.id);
@@ -211,7 +211,7 @@ export function initBooksPage() {
     });
 
     async function startProcessing(book, file) {
-        if (active.size > 0) { ErrorHandler.showError('في كتاب بيتعالج حاليًا. استني لحد ما يخلص وبعدين كمّلي.'); return; }
+        if (active.size > 0) { ErrorHandler.showError('في كتاب بيتعالج حاليًا. استنى لحد ما يخلص وبعدين كمّل.'); return; }
         const ctl = new AbortController();
         const live = { ctl, percent: 1, message: 'جاري البدء...', stage: 'start' };
         active.set(book.id, live);
@@ -225,12 +225,12 @@ export function initBooksPage() {
                 }
             });
             if (res.failedPages > 0) {
-                ErrorHandler.showSuccess(`تم تحليل "${book.title}"، لكن تعذّرت قراءة ${res.failedPages} صفحة (ممكن تعيدي المعالجة لتحسين النتيجة).`, 7000);
+                ErrorHandler.showSuccess(`تم تحليل "${book.title}"، لكن تعذّرت قراءة ${res.failedPages} صفحة (ممكن تعيد المعالجة لتحسين النتيجة).`, 7000);
             } else {
                 ErrorHandler.showSuccess(res.isScanned ? `تم تحليل الكتاب المصوّر "${book.title}" (اتقرأت ${res.ocrPages} صفحة) ✓` : `تم تحليل "${book.title}" ✓`);
             }
         } catch (err) {
-            if (err && err.aborted) ErrorHandler.showSuccess('تم إلغاء المعالجة. تقدري تعيديها في أي وقت.');
+            if (err && err.aborted) ErrorHandler.showSuccess('تم إلغاء المعالجة. تقدر تعيدها في أي وقت.');
             else ErrorHandler.showError((err && err.message) || 'تعذّرت معالجة الكتاب', 9000);
         } finally {
             active.delete(book.id);
@@ -266,11 +266,11 @@ export function initBooksPage() {
         const progress = $('upload-progress');
         const progressText = $('upload-progress-text');
 
-        if (!file) { ErrorHandler.showError('من فضلك اختاري ملفًا'); return; }
+        if (!file) { ErrorHandler.showError('من فضلك اختار ملفًا'); return; }
         const fileType = detectFileType(file);
         if (!fileType) { ErrorHandler.showError('نوع الملف غير مدعوم. المدعوم: PDF، Word (.docx)، PowerPoint (.pptx)، نص (.txt)، أو صورة (JPG/PNG).'); return; }
-        if (file.size > MAX_BYTES) { ErrorHandler.showError(`حجم الملف أكبر من ${CONFIG.BOOKS_SETTINGS.MAX_FILE_MB} ميجا. قسّميه لأجزاء أو اضغطيه.`); return; }
-        if (active.size > 0) { ErrorHandler.showError('في كتاب بيتعالج حاليًا. استني لحد ما يخلص.'); return; }
+        if (file.size > MAX_BYTES) { ErrorHandler.showError(`حجم الملف أكبر من ${CONFIG.BOOKS_SETTINGS.MAX_FILE_MB} ميجا. قسّمه لأجزاء أو اضغطه.`); return; }
+        if (active.size > 0) { ErrorHandler.showError('في كتاب بيتعالج حاليًا. استنى لحد ما يخلص.'); return; }
 
         let bookId = null;
         try {
@@ -282,7 +282,7 @@ export function initBooksPage() {
             try {
                 createRes = await api.createBookSource(title, file.name, fileType);
             } catch (err) {
-                throw new Error('تعذّر إنشاء المصدر: ' + ErrorHandler.getErrorMessage(err) + ' — تأكدي إنك حدّثتِ n8n/create-book-source.json ونفّذتِ n8n/BOOKS_LIBRARY_V2_MIGRATION.sql.');
+                throw new Error('تعذّر إنشاء المصدر: ' + ErrorHandler.getErrorMessage(err) + ' — تأكد إنك حدّثت n8n/create-book-source.json ونفّذت n8n/BOOKS_LIBRARY_V2_MIGRATION.sql.');
             }
             bookId = createRes.book_id;
 
@@ -290,7 +290,7 @@ export function initBooksPage() {
             try {
                 await api.uploadBookFile(createRes.storage_path, file);
             } catch (err) {
-                throw new Error('تعذّر رفع الملف إلى التخزين: ' + ErrorHandler.getErrorMessage(err) + ' — تأكدي إنك نفّذتِ ملفات SQL في Supabase (بينشئ bucket اسمه teacher-books).');
+                throw new Error('تعذّر رفع الملف إلى التخزين: ' + ErrorHandler.getErrorMessage(err) + ' — تأكد إنك نفّذت ملفات SQL في Supabase (بينشئ bucket اسمه teacher-books).');
             }
 
             $('upload-modal').classList.remove('active');
