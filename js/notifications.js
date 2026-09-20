@@ -33,10 +33,10 @@
  * كل جزء بيفشل بصمت (من غير ما يكسر باقي الصفحة) لو لسه معمولش الإعداد بتاعه.
  * ============================================================================
  */
-import { CONFIG } from './config.js?v=6';
-import { Auth } from './auth.js?v=6';
-import { api } from './api.js?v=6';
-import { ErrorHandler } from './utils.js?v=6';
+import { CONFIG } from './config.js?v=7';
+import { Auth } from './auth.js?v=7';
+import { api } from './api.js?v=7';
+import { ErrorHandler } from './utils.js?v=7';
 
 const PROMPT_DISMISS_KEY = 'tm_notif_prompt_dismissed';
 const BADGE_CACHE_KEY = 'tm_notif_badge_cache_v1';
@@ -155,17 +155,26 @@ function showEnablePrompt() {
                 position: fixed;
                 inset-inline: 0;
                 bottom: 0;
-                z-index: 9998;
+                /* أقل من النوافذ المنبثقة (1000) وعارض الكتاب (9000) عشان مايغطيش زر الشات ولا حقل الكتابة */
+                z-index: 899;
                 display: flex;
                 align-items: center;
                 gap: 0.75rem;
                 background: var(--card-bg, #FFFFFF);
                 border-top: 1px solid var(--border, #E7E1E8);
                 box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
-                padding: 0.85rem 1rem;
+                padding: 0.85rem 1rem calc(0.85rem + env(safe-area-inset-bottom, 0px));
                 font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif;
                 direction: rtl;
                 animation: tm-notif-slide-up 0.3s ease-out;
+            }
+            /* بانر واحد بس في نفس الوقت: لو بانر تثبيت التطبيق ظاهر، بانر الإشعارات بيستنى لحد ما يتقفل */
+            body:has(#tm-install-banner) #tm-notif-banner { display: none; }
+            @media (max-width: 900px) {
+                body:has(.sidebar) #tm-notif-banner {
+                    bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+                    padding-bottom: 0.85rem;
+                }
             }
             @keyframes tm-notif-slide-up {
                 from { transform: translateY(100%); opacity: 0; }

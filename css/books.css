@@ -11,10 +11,13 @@
 .ask-card { margin-bottom: 1.5rem; }
 .ask-card .ask-row { display: flex; gap: 0.6rem; align-items: flex-start; flex-wrap: wrap; }
 .ask-card textarea {
-    flex: 1; min-width: 220px; resize: vertical; min-height: 46px; max-height: 160px;
+    flex: 1; min-width: 220px; resize: vertical; min-height: 76px; max-height: 200px; margin: 0;
     padding: 0.7rem 0.9rem; border: 1px solid var(--border); border-radius: 10px;
-    font-family: inherit; font-size: 0.9rem; background: var(--bg-secondary);
+    font-family: inherit; font-size: 1rem; line-height: 1.6; background: var(--bg-secondary);
 }
+.ask-card textarea:focus { background: #fff; }
+.ask-card .ask-row .btn { min-height: 46px; }
+#upload-detected { margin-top: -0.55rem !important; margin-bottom: 0.9rem; }
 .ask-answer {
     margin-top: 1rem; background: var(--bg-secondary); border: 1px solid var(--border);
     border-radius: 10px; padding: 1rem 1.1rem; font-size: 0.9rem; line-height: 1.7;
@@ -217,8 +220,9 @@ mark.bv-mark { background: rgba(197, 154, 74, 0.45); color: inherit; border-radi
 .bc-icon-btn.is-armed { background: var(--danger); }
 .bc-icon-btn:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
 
-.bc-body { flex: 1 1 auto; overflow-y: auto; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.7rem; background: var(--bg-secondary); overscroll-behavior: contain; scroll-behavior: auto; }
-.bc-jump { position: absolute; left: 50%; transform: translateX(-50%); bottom: 7.4rem; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); background: #fff; color: var(--primary); box-shadow: 0 4px 12px rgba(41,37,45,.18); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2; }
+.bc-main { position: relative; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.bc-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.7rem; background: var(--bg-secondary); overscroll-behavior: contain; scroll-behavior: auto; }
+.bc-jump { position: absolute; left: 50%; transform: translateX(-50%); bottom: 0.75rem; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); background: #fff; color: var(--primary); box-shadow: 0 4px 12px rgba(41,37,45,.18); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2; }
 .bc-jump[hidden] { display: none; }
 
 .bc-empty { margin: auto 0; text-align: center; padding: 0.5rem 0.4rem; }
@@ -275,12 +279,12 @@ mark.bv-mark { background: rgba(197, 154, 74, 0.45); color: inherit; border-radi
 .bc-ctx { padding: 0.4rem 0.9rem 0; background: var(--card-bg); border-top: 1px solid var(--border); flex-shrink: 0; }
 .bc-ctx[hidden] { display: none; }
 .bc-ctx-label { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; color: var(--text-secondary); cursor: pointer; }
-.bc-ctx-label input { accent-color: var(--primary); width: 15px; height: 15px; }
-.bc-composer { display: flex; align-items: flex-end; gap: 0.5rem; padding: 0.6rem 0.8rem 0.3rem; background: var(--card-bg); flex-shrink: 0; }
+.bc-ctx-label input { accent-color: var(--primary); width: 16px; height: 16px; margin: 0; padding: 0; flex-shrink: 0; box-shadow: none; }
+.bc-composer { display: flex; align-items: flex-end; gap: 0.55rem; padding: 0.6rem 0.8rem 0.4rem; background: var(--card-bg); flex-shrink: 0; }
 .bc-ctx[hidden] + .bc-composer { border-top: 1px solid var(--border); }
-.bc-input { flex: 1; min-width: 0; resize: none; max-height: 132px; padding: 0.6rem 0.8rem; border: 1px solid var(--border); border-radius: 12px; font: inherit; font-size: 1rem; line-height: 1.5; background: var(--bg-primary); color: var(--text-primary); }
+.bc-input { display: block; flex: 1; min-width: 0; width: auto; margin: 0; resize: none; min-height: 44px; max-height: 132px; overflow-y: auto; padding: 0.55rem 0.9rem; border: 1px solid var(--border); border-radius: 14px; font: inherit; font-size: 1rem; line-height: 1.5; background: var(--bg-primary); color: var(--text-primary); }
 .bc-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(75, 58, 90, .16); background: #fff; }
-.bc-send, .bc-stop { flex-shrink: 0; width: 42px; height: 42px; border: none; border-radius: 12px; background: var(--primary); color: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.bc-send, .bc-stop { flex-shrink: 0; align-self: flex-end; width: 44px; height: 44px; margin: 0; padding: 0; border: none; border-radius: 14px; background: var(--primary); color: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
 .bc-send:hover { background: var(--primary-hover); }
 .bc-send svg { transform: scaleX(-1); }
 .bc-stop { background: var(--danger); }
@@ -288,6 +292,11 @@ mark.bv-mark { background: rgba(197, 154, 74, 0.45); color: inherit; border-radi
 .bc-send:focus-visible, .bc-stop:focus-visible { outline: 2px solid var(--secondary); outline-offset: 2px; }
 .bc-foot { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0 0.9rem 0.55rem; font-size: 0.7rem; color: var(--text-light); min-height: 1.2rem; background: var(--card-bg); flex-shrink: 0; }
 .bc-count.is-limit { color: var(--danger); font-weight: 700; }
+
+/* اللابتوب/الشاشات العريضة: النافذة بتاخد جنب الشاشة والكتاب بيتزحزح بدل ما يتغطى */
+@media (min-width: 1100px) {
+    .bv.bc-open .bv-stage { margin-left: calc(min(410px, 100vw - 2.2rem) + 2.2rem); }
+}
 
 /* ============================== الموبايل ============================== */
 @media (max-width: 720px) {
@@ -305,14 +314,16 @@ mark.bv-mark { background: rgba(197, 154, 74, 0.45); color: inherit; border-radi
     .bc-fab span { display: none; }
     .bc-fab { padding: 0.9rem; }
     .bc-panel {
-        left: 0; right: 0; bottom: 0; top: auto; width: 100%; height: var(--bc-vh, 100dvh); max-height: 100%;
+        left: 0; right: 0; bottom: auto; top: var(--bc-top, 0px); width: 100%; height: var(--bc-vh, 100dvh); max-height: 100%;
         border-radius: 0; border: none; animation: none;
     }
     .bc-head { padding-top: calc(0.8rem + env(safe-area-inset-top, 0px)); }
     .bc-foot { padding-bottom: calc(0.55rem + env(safe-area-inset-bottom, 0px)); }
-    .bc-jump { bottom: 8.2rem; }
     .bc-msg { max-width: 96%; }
     .file-type-choice { grid-template-columns: repeat(3, 1fr); }
+    .ask-card .ask-row { flex-direction: column; align-items: stretch; }
+    .ask-card textarea { min-width: 0; width: 100%; min-height: 96px; }
+    .ask-card .ask-row .btn { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
     .bc-panel, .bc-fab, .bv-spinner, .bc-dots i, .bv-progress.is-indeterminate i { animation: none !important; transition: none !important; }

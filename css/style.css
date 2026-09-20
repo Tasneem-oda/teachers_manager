@@ -378,10 +378,13 @@ input:focus, textarea:focus, select:focus {
     .mobile-only-flex { display: flex !important; }
 
     /* تصغير الحشو العام على الشاشات الصغيرة */
-    .top-header { padding: 0.85rem 1rem; }
+    .top-header { padding: 0.85rem 1rem; flex-wrap: nowrap; gap: 0.6rem; }
+    .top-header .greeting { flex: 1 1 auto; min-width: 0; }
+    .top-header .greeting h2, .top-header .greeting p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .page-body { padding: 1rem; }
     .search-box { min-width: 0; flex: 1; }
-    .top-header-right { flex: 1; justify-content: flex-end; }
+    .top-header-right { flex: 0 0 auto; justify-content: flex-end; gap: 0.5rem; }
+    .top-header-right:has(.search-box) { flex: 1 1 auto; }
     .header-avatar .name, .header-avatar .role { display: none; }
 
     .quick-links-grid { grid-template-columns: repeat(2, 1fr); }
@@ -404,7 +407,7 @@ input:focus, textarea:focus, select:focus {
 
     .modal-content { padding: 1.25rem; border-radius: 14px; }
 
-    #error-toast, #success-toast { left: 12px; right: 12px; max-width: none; top: 12px; }
+    #error-toast, #success-toast { left: 12px; right: 12px; max-width: none; top: calc(12px + env(safe-area-inset-top, 0px)); }
 }
 
 @media (max-width: 480px) {
@@ -447,15 +450,15 @@ svg.i { flex-shrink: 0; vertical-align: -3px; }
 .modal.active { display: flex; justify-content: center; align-items: center; padding: 1rem; }
 .modal-content {
     background: var(--card-bg); padding: 1.75rem; border-radius: 16px;
-    max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto;
+    max-width: 500px; width: 100%; max-height: 90vh; max-height: 90dvh; overflow-y: auto; overscroll-behavior: contain;
     box-shadow: 0 12px 40px rgba(41,37,45,0.25);
 }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
 .modal-header h2 { margin: 0; }
-.close-modal {
-    float: left; cursor: pointer; color: var(--text-secondary); font-size: 1.4rem; line-height: 1;
-}
+.close-modal { cursor: pointer; }
+/* علامة × فقط (span). زرار "إلغاء" اللي بياخد نفس الكلاس لازم يفضل بحجم وشكل .btn العادي */
 span.close-modal {
+    float: left; color: var(--text-secondary); font-size: 1.4rem; line-height: 1;
     display: inline-flex; align-items: center; justify-content: center;
     width: 30px; height: 30px; border-radius: 8px;
 }

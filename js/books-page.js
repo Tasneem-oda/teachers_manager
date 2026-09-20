@@ -5,15 +5,15 @@
  *   - إعادة معالجة الكتب المتعثّرة، إدارة الوصول، و"اسأل مصادرك" العام
  */
 
-import { CONFIG } from './config.js?v=6';
-import { Auth } from './auth.js?v=6';
-import { renderSidebar, renderTopHeader } from './sidebar.js?v=6';
-import { icon } from './icons.js?v=6';
-import { api } from './api.js?v=6';
-import { ErrorHandler, Formatters } from './utils.js?v=6';
-import { detectFileType, processBook } from './book-processor.js?v=6';
-import { openBookViewer } from './book-viewer.js?v=6';
-import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=6';
+import { CONFIG } from './config.js?v=7';
+import { Auth } from './auth.js?v=7';
+import { renderSidebar, renderTopHeader } from './sidebar.js?v=7';
+import { icon } from './icons.js?v=7';
+import { api } from './api.js?v=7';
+import { ErrorHandler, Formatters } from './utils.js?v=7';
+import { detectFileType, processBook } from './book-processor.js?v=7';
+import { openBookViewer } from './book-viewer.js?v=7';
+import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=7';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => Formatters.escapeHtml(String(s == null ? '' : s));

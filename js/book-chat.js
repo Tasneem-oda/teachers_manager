@@ -10,9 +10,9 @@
  *  - سؤال عن "الصفحة الحالية" اللي بتقرأها (PDF / PowerPoint / صورة)
  */
 
-import { CONFIG } from './config.js?v=6';
-import { icon } from './icons.js?v=6';
-import { renderMarkdown, safePrefix, extractCitationNumbers } from './md-lite.js?v=6';
+import { CONFIG } from './config.js?v=7';
+import { icon } from './icons.js?v=7';
+import { renderMarkdown, safePrefix, extractCitationNumbers } from './md-lite.js?v=7';
 
 const STORE_PREFIX = 'tm-bookchat:';
 const MAX_STORED = 30;
@@ -105,8 +105,10 @@ export class BookChat {
                     <button type="button" class="bc-icon-btn" data-act="close" title="إغلاق" aria-label="إغلاق">${icon('x', { size: 17 })}</button>
                 </div>
             </header>
-            <div class="bc-body" role="log" aria-live="polite" aria-relevant="additions"></div>
-            <button type="button" class="bc-jump" hidden aria-label="انزل لآخر رسالة">${icon('arrowDown', { size: 16 })}</button>
+            <div class="bc-main">
+                <div class="bc-body" role="log" aria-live="polite" aria-relevant="additions"></div>
+                <button type="button" class="bc-jump" hidden aria-label="انزل لآخر رسالة">${icon('arrowDown', { size: 16 })}</button>
+            </div>
             <div class="bc-ctx" hidden>
                 <label class="bc-ctx-label"><input type="checkbox" class="bc-ctx-check"> <span class="bc-ctx-text"></span></label>
             </div>
@@ -158,26 +160,36 @@ export class BookChat {
             if (e.key === 'Escape') { e.stopPropagation(); this.close(); }
         });
         this.inputEl.value = this._loadDraft();
-        this._autoGrow();
         this._updateCount();
+        // ملحوظة: مانحسبش ارتفاع مربع الكتابة هنا - النافذة لسه مخفية (scrollHeight = 0)
+        // وده كان بيخلي المربع ينهار لشريط رفيع أول ما تتفتح. بنحسبه في open().
     }
 
     _bindViewport() {
-        // على الموبايل: لما الكيبورد يظهر نصغّر النافذة بدل ما تتغطى
+        // على الموبايل: النافذة بتتبع الشاشة المرئية فعليًا (ارتفاعها + إزاحتها من أعلى الصفحة)،
+        // فلما الكيبورد يظهر مربع الكتابة وزر الإرسال يفضلوا فوقه بدل ما يستخبوا تحته
         const vv = window.visualViewport;
         if (!vv) return;
-        this._vvHandler = () => {
+        this._vvLayout = () => {
             this.panel.style.setProperty('--bc-vh', `${Math.round(vv.height)}px`);
+            this.panel.style.setProperty('--bc-top', `${Math.max(0, Math.round(vv.offsetTop))}px`);
+        };
+        this._vvHandler = () => {
+            this._vvLayout();
             if (this.isOpen && document.activeElement === this.inputEl) this._scrollToBottom(false);
         };
         vv.addEventListener('resize', this._vvHandler);
-        this._vvHandler();
+        vv.addEventListener('scroll', this._vvLayout);
+        this._vvLayout();
     }
 
     destroy() {
         if (this.abortCtl) this.abortCtl.abort();
         this._stopReveal(false);
-        if (window.visualViewport && this._vvHandler) window.visualViewport.removeEventListener('resize', this._vvHandler);
+        if (window.visualViewport && this._vvHandler) {
+            window.visualViewport.removeEventListener('resize', this._vvHandler);
+            window.visualViewport.removeEventListener('scroll', this._vvLayout);
+        }
         this.fab.remove();
         this.panel.remove();
     }
@@ -190,6 +202,7 @@ export class BookChat {
         this.panel.hidden = false;
         this.fab.hidden = true;
         this._refreshContextChip();
+        this._autoGrow();          // دلوقتي النافذة ظاهرة فالقياس صحيح
         this._scrollToBottom(false);
         setTimeout(() => { try { this.inputEl.focus({ preventScroll: true }); } catch (e) { /* تجاهل */ } }, 30);
         this.onOpenChange(true);
@@ -417,7 +430,10 @@ export class BookChat {
     _autoGrow() {
         const t = this.inputEl;
         t.style.height = 'auto';
-        t.style.height = Math.min(t.scrollHeight, 132) + 'px';
+        const content = t.scrollHeight;
+        if (!content || !t.offsetParent) { t.style.height = ''; return; }   // النافذة مخفية: الـ CSS (min-height) يحدد الارتفاع
+        const border = t.offsetHeight - t.clientHeight;
+        t.style.height = Math.max(44, Math.min(content + border, 132)) + 'px';
     }
 
     _updateCount() {
@@ -600,8 +616,11 @@ export class BookChat {
         this.reveal = null;
         if (r.timer) clearTimeout(r.timer);
         if (showFull && r.bubble) {
+            const wasNear = this._nearBottom();
             r.bubble.innerHTML = renderMarkdown(r.full);
             if (r.tools) r.tools.hidden = false;
+            // ظهور أزرار المصادر/النسخ بيزوّد الارتفاع: لو كنت تحت خالص نكمل نزول عشان مايتقصّوش
+            if (wasNear && this.isOpen) this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
         }
     }
 

@@ -1,15 +1,15 @@
 /**
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
-import { Auth } from './auth.js?v=6';
-import { icon } from './icons.js?v=6';
-import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=6';
+import { Auth } from './auth.js?v=7';
+import { icon } from './icons.js?v=7';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=7';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
     { key: 'students', href: 'students.html', icon: 'users', label: 'الطلاب' },
     { key: 'schedule', href: 'schedule.html', icon: 'calendar', label: 'المواعيد' },
-    { key: 'books', href: 'books.html', icon: 'bookOpen', label: 'كتابي' },
+    { key: 'books', href: 'books.html', icon: 'bookOpen', label: 'مكتبتي' },
     { key: 'settings', href: 'settings.html', icon: 'gear', label: 'الإعدادات' }
 ];
 
