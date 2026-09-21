@@ -11,9 +11,9 @@
  * من غير أي تعديل أو إضافة على أي workflow في n8n.
  */
 
-import { api } from './api.js?v=4';
-import { ErrorHandler, Formatters } from './utils.js?v=4';
-import { icon } from './icons.js?v=4';
+import { api } from './api.js?v=9';
+import { ErrorHandler, Formatters } from './utils.js?v=9';
+import { icon } from './icons.js?v=9';
 
 const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const RECURRENCE_LABELS = { weekly: 'أسبوعيًا', daily: 'يوميًا', monthly: 'شهريًا', none: 'مرة واحدة' };
@@ -336,5 +336,5 @@ export async function openStudentAppointments(studentId, studentName = '') {
 }
 
 // إتاحتها عالميًا كمان عشان أي صفحة تقدر تستخدمها بـ onclick مباشر
-// من غير ما تعمل import لو حابة (اختياري، الاستخدام الموصى به هو الـ import)
+// من غير ما تعمل import لو حابب (اختياري، الاستخدام الموصى به هو الـ import)
 window.openStudentAppointments = openStudentAppointments;

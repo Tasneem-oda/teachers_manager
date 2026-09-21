@@ -78,17 +78,25 @@
                 position: fixed;
                 inset-inline: 0;
                 bottom: 0;
-                z-index: 9999;
+                /* أقل من النوافذ المنبثقة (1000) وعارض الكتاب (9000) عشان مايغطيش زر الشات ولا حقل الكتابة */
+                z-index: 900;
                 display: flex;
                 align-items: center;
                 gap: 0.75rem;
                 background: var(--card-bg, #FFFFFF);
                 border-top: 1px solid var(--border, #E7E1E8);
                 box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
-                padding: 0.85rem 1rem;
+                padding: 0.85rem 1rem calc(0.85rem + env(safe-area-inset-bottom, 0px));
                 font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif;
                 direction: rtl;
                 animation: tm-slide-up 0.3s ease-out;
+            }
+            /* على الموبايل في الصفحات اللي فيها شريط التنقل السفلي: البانر يقعد فوقه مش فوق الأزرار */
+            @media (max-width: 900px) {
+                body:has(.sidebar) #tm-install-banner {
+                    bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+                    padding-bottom: 0.85rem;
+                }
             }
             @keyframes tm-slide-up {
                 from { transform: translateY(100%); opacity: 0; }

@@ -10,8 +10,8 @@
     <!-- End Google Tag Manager -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>كتابي - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=4">
+    <title>مكتبتي - Teachers Manager</title>
+    <link rel="stylesheet" href="css/style.css?v=9">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,6 +19,7 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
+    <link rel="stylesheet" href="css/books.css?v=9">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -30,33 +31,107 @@
         <main class="main-content">
             <div id="top-header-root"></div>
             <div class="page-body">
-                <div class="card" style="text-align:center; padding: 4rem 2rem;">
-                    <div id="ic-books-big" style="display:flex; align-items:center; justify-content:center; margin-bottom: 1rem; color: var(--primary);"></div>
-                    <h2>كتابي قريبًا</h2>
-                    <p style="color: var(--text-secondary); max-width: 420px; margin: 0.5rem auto 0;">
-                        هنا هتقدر ترفع كتبك الخاصة (أكتر من كتاب) وتعرضها أثناء التدريس. الميزة دي جزء من المرحلة القادمة.
-                    </p>
+
+                <div class="card lib-intro">
+                    <div class="lib-intro-text">
+                        <h2>مصادر التدريس الخاصة بك</h2>
+                        <p>ارفع كتبك وملفاتك (حتى الكتب المصوّرة والممسوحة ضوئيًا)، افتحها كاملة، واسأل المساعد عنها.</p>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="btn-add-source">
+                        <span id="ic-add-source" class="icon" style="display:inline-flex; vertical-align:-3px;"></span>
+                        إضافة مصدر
+                    </button>
                 </div>
+
+                <div class="card ask-card">
+                    <h3 style="margin:0 0 0.7rem; display:flex; align-items:center; gap:0.4rem;">
+                        <span id="ic-ask" class="icon" style="display:inline-flex;"></span> اسأل مصادرك
+                    </h3>
+                    <div class="ask-row">
+                        <textarea id="ask-input" placeholder="مثلاً: اشرحلي الفرق بين present perfect و past simple بطريقة مناسبة لطالب مستوى A2" aria-label="سؤالك لكل مصادرك"></textarea>
+                        <button type="button" class="btn btn-primary" id="btn-ask-submit">اسأل</button>
+                    </div>
+                    <p style="margin:0.5rem 0 0; font-size:0.74rem; color:var(--text-light);">للسؤال عن كتاب واحد بالتحديد: افتحه واضغط "اسأل الكتاب".</p>
+                    <div id="ask-result" style="display:none;">
+                        <div class="ask-answer bc-md" id="ask-answer-text"></div>
+                        <div class="ask-sources-list" id="ask-sources-list"></div>
+                    </div>
+                </div>
+
+                <div id="books-section">
+                    <div class="loading">جاري التحميل...</div>
+                </div>
+
             </div>
         </main>
     </div>
 
+    <!-- مودال إضافة مصدر جديد -->
+    <div class="modal" id="upload-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>إضافة مصدر جديد</h2>
+            <form id="upload-form">
+                <p class="upload-hint">المدعوم: PDF · Word (.docx) · PowerPoint (.pptx) · نص (.txt) · صور (JPG / PNG).<br>الكتب المصوّرة والممسوحة ضوئيًا بتتقرأ بالذكاء الاصطناعي تلقائيًا (ممكن ياخد دقائق حسب عدد الصفحات).</p>
+                <div class="form-group">
+                    <label for="upload-file-input">اختار الملف *</label>
+                    <input type="file" id="upload-file-input" accept=".pdf,.docx,.pptx,.txt,.md,image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" required>
+                    <small id="upload-detected" style="display:block; margin-top:0.35rem; font-size:0.78rem;"></small>
+                </div>
+                <div class="form-group">
+                    <label for="upload-title-input">اسم الكتاب/المصدر *</label>
+                    <input type="text" id="upload-title-input" placeholder="مثلاً: Oxford English Grammar" required maxlength="200">
+                </div>
+                <div class="upload-progress" id="upload-progress" aria-live="polite">
+                    <div class="book-progress-bar"><i style="width:100%; opacity:.35"></i></div>
+                    <p class="upload-progress-text" id="upload-progress-text"></p>
+                </div>
+                <div style="display:flex; gap:0.5rem; margin-top:1rem; flex-wrap:wrap;">
+                    <button type="submit" class="btn" id="upload-submit-btn">رفع المصدر</button>
+                    <button type="button" class="btn close-modal" style="background: var(--bg-muted); color: var(--text-primary);">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- مودال إدارة الوصول (مين يستخدم الكتاب ده) -->
+    <div class="modal" id="access-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>إدارة الاستخدام</h2>
+            <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:-0.5rem;" id="access-book-title"></p>
+            <div class="form-group">
+                <div class="access-scope-choice">
+                    <label><input type="radio" name="access-scope" value="all" checked> كل الطلاب</label>
+                    <label><input type="radio" name="access-scope" value="students"> طلاب محددين</label>
+                </div>
+            </div>
+            <div class="student-check-list" id="access-student-list"></div>
+            <div style="display:flex; gap:0.5rem; margin-top:1rem; flex-wrap:wrap;">
+                <button type="button" class="btn" id="access-save-btn">حفظ</button>
+                <button type="button" class="btn close-modal" style="background: var(--bg-muted); color: var(--text-primary);">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال عرض مقتطف المصدر (بديل لو الكتاب مش متاح للفتح) -->
+    <div class="modal" id="source-view-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="source-view-title">المصدر</h2>
+            <p style="white-space:pre-wrap; line-height:1.7; font-size:0.9rem;" id="source-view-text"></p>
+        </div>
+    </div>
+
+    <div id="error-toast" style="display:none;"></div>
+    <div id="success-toast" style="display:none;"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=4"></script>
+    <script type="module" src="js/config.js?v=9"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=4';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=4';
-        import { icon } from './js/icons.js?v=4';
-
-        renderSidebar('books');
-        renderTopHeader({ title: 'كتابي', subtitle: 'مكتبتك الخاصة من الكتب', showSearch: false });
-        document.getElementById('ic-books-big').innerHTML = icon('bookOpen', { size: 46, strokeWidth: 1.5 });
-
-        (async () => {
-            const authInfo = await Auth.requireAuth();
-            if (!authInfo) return;
-        })();
+        import { initBooksPage } from './js/books-page.js?v=9';
+        window.booksPage = initBooksPage();
     </script>
-    <script src="js/pwa-install.js?v=4" defer></script>
+    <script src="js/pwa-install.js?v=9" defer></script>
 </body>
 </html>

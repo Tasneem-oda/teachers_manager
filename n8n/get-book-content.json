@@ -1,0 +1,189 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "get-book-content",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "ffffffff-ffff-4fff-8fff-ffffffffff01",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -1200,
+        300
+      ],
+      "webhookId": "bcnt01-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\nconst body = $input.first().json.body || {};\nconst UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\n\nconst bookId = UUID_RE.test(String(body.book_id || '')) ? String(body.book_id) : null;\nconst off = parseInt(body.offset, 10);\nconst lim = parseInt(body.limit, 10);\nreturn {\n  teacherId: payload.sub,\n  bookId,\n  offset: Number.isInteger(off) && off >= 0 && off < 1000000 ? off : 0,\n  limit: Number.isInteger(lim) && lim > 0 ? Math.min(lim, 500) : 300,\n  isValid: !!bookId,\n  validationError: bookId ? null : 'معرّف الكتاب غير صالح'\n};\n"
+      },
+      "id": "ffffffff-ffff-4fff-8fff-ffffffffff02",
+      "name": "Validate & Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.isValid }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "ffffffff-ffff-4fff-8fff-ffffffffff03",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'VALIDATION_ERROR', message: $json.validationError } }) }}",
+        "options": {}
+      },
+      "id": "ffffffff-ffff-4fff-8fff-ffffffffff04",
+      "name": "Validation Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT c.chunk_index, c.chapter_title AS chapter, c.page_number AS page, c.content,\n       count(*) OVER () AS total\nFROM teachers_manager.book_chunks c\nJOIN teachers_manager.book_sources b ON b.id = c.book_id\nWHERE c.book_id = $1::uuid AND b.teacher_id = $2::uuid\nORDER BY c.chunk_index\nOFFSET $3::integer LIMIT $4::integer;",
+        "options": {
+          "queryReplacement": "={{ $json.bookId }},{{ $json.teacherId }},{{ $json.offset }},{{ $json.limit }}"
+        }
+      },
+      "id": "ffffffff-ffff-4fff-8fff-ffffffffff05",
+      "name": "Get Chunks",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        -600,
+        200
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const cfg = $('Validate & Config').first().json;\nconst rows = $input.all().map(i => i.json).filter(r => r && r.content);\nreturn {\n  json: {\n    chunks: rows.map(r => ({ chunk_index: Number(r.chunk_index), chapter: r.chapter || null, page: r.page == null ? null : Number(r.page), content: r.content })),\n    total: rows.length ? Number(rows[0].total) : 0,\n    offset: cfg.offset\n  }\n};\n"
+      },
+      "id": "ffffffff-ffff-4fff-8fff-ffffffffff06",
+      "name": "Build Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, data: { chunks: $json.chunks, total: $json.total, offset: $json.offset } }) }}",
+        "options": {}
+      },
+      "id": "ffffffff-ffff-4fff-8fff-ffffffffff07",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        200
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate & Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate & Config": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid?": {
+      "main": [
+        [
+          {
+            "node": "Get Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validation Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Chunks": {
+      "main": [
+        [
+          {
+            "node": "Build Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Response": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597"
+  }
+}

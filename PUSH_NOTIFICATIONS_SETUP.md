@@ -37,41 +37,41 @@ scope - مفيش تعارض ولا استبدال. **الإصلاح ده في ا
 ## الخطوات المطلوبة منك (لازم تتعملوا قبل ما الميزة تشتغل فعليًا)
 
 ### 1) إنشاء حساب OneSignal وتطبيق Web Push
-1. افتحي https://onesignal.com وسجّلي حساب مجاني.
-2. من "New App/Website" اختاري **Web Push** واسمي التطبيق (مثلاً Teachers Manager).
-3. لما يطلب نوع الموقع، اختاري **Typical Site** وحطي الدومين: `https://teachers-manager.online`
-4. بعد الإنشاء، من `Settings → Keys & IDs` انسخي:
+1. افتح https://onesignal.com وسجّل حساب مجاني.
+2. من "New App/Website" اختار **Web Push** وسمّ التطبيق (مثلاً Teachers Manager).
+3. لما يطلب نوع الموقع، اختار **Typical Site** وحط الدومين: `https://teachers-manager.online`
+4. بعد الإنشاء، من `Settings → Keys & IDs` انسخ:
    - **OneSignal App ID**
    - **REST API Key**
 
 ### 2) ربط الـ App ID بالفرونت إند
-افتحي `js/config.js` وحطي الـ App ID بدل القيمة الافتراضية:
+افتح `js/config.js` وحط الـ App ID بدل القيمة الافتراضية:
 ```js
 PUSH_NOTIFICATIONS: {
-    ONESIGNAL_APP_ID: 'ضعي الـ App ID هنا'
+    ONESIGNAL_APP_ID: 'ضع الـ App ID هنا'
 },
 ```
 
 ### 3) ربط الـ App ID و REST API Key بـ n8n
-1. استوردي الملف `n8n/send-daily-lesson-notifications.json` في n8n (Import from File).
-2. افتحي عقدة **"Send OneSignal Notification"**، وفي حقل الـ Body استبدلي
-   النص `REPLACE_WITH_YOUR_ONESIGNAL_APP_ID` بنفس الـ App ID اللي استخدمتيه
+1. استورد الملف `n8n/send-daily-lesson-notifications.json` في n8n (Import from File).
+2. افتح عقدة **"Send OneSignal Notification"**، وفي حقل الـ Body استبدل
+   النص `REPLACE_WITH_YOUR_ONESIGNAL_APP_ID` بنفس الـ App ID اللي استخدمته
    في الخطوة 2.
-3. في نفس العقدة، اعملي Credential جديد من نوع **Header Auth** (لو لسه
+3. في نفس العقدة، اعمل Credential جديد من نوع **Header Auth** (لو لسه
    مش موجود) بالبيانات دي:
    - Name: `OneSignal REST API Key`
    - Header Name: `Authorization`
-   - Header Value: `Basic ضعي_الـ_REST_API_Key_هنا`
-   ثم اختاريه في خانة الـ Credential بالعقدة (لازم تختاريه يدويًا لأن
+   - Header Value: `Basic ضع_الـ_REST_API_Key_هنا`
+   ثم اختاره في خانة الـ Credential بالعقدة (لازم تختاره يدويًا لأن
    الاستيراد مش بيربط الـ credentials تلقائيًا لأسباب أمان).
 4. عقدة **"Get Today Schedules Per Teacher"** بتستخدم نفس Postgres
    credential المستخدم في باقي الـ workflows عندك (`Postgres account`)،
-   المفروض يترابط تلقائيًا لأنه بنفس الـ ID، لو ظهرت علامة تحذير أعيدي
+   المفروض يترابط تلقائيًا لأنه بنفس الـ ID، لو ظهرت علامة تحذير أعد
    اختياره يدويًا.
-5. فعّلي الـ workflow (زرار Active أعلى الصفحة).
+5. فعّل الـ workflow (زرار Active أعلى الصفحة).
 
 الـ workflow مضبوط يشتغل يوميًا الساعة **7:00 صباحًا بتوقيت القاهرة**
-(cron: `0 7 * * *`). تقدري تغيّري الوقت من عقدة "كل يوم الساعة 7 صباحًا".
+(cron: `0 7 * * *`). تقدر تغيّر الوقت من عقدة "كل يوم الساعة 7 صباحًا".
 
 ### 4) لا حاجة لأي migration في قاعدة البيانات
 الميزة دي **ما بتضيفش أي جدول جديد** في Postgres — OneSignal نفسها بتخزن
@@ -84,7 +84,7 @@ PUSH_NOTIFICATIONS: {
 2. بعد ثانيتين من تحميل أي صفحة رئيسية، بيظهر بانر بسيط تحت الشاشة
    يسأله "فعّل تذكير الحصص اليومي" — لو ضغط "تفعيل الإشعارات"، المتصفح
    بيطلب الإذن الرسمي.
-3. تقدر كمان تفعّلي الإشعارات في أي وقت من زرار الجرس 🔔 في الهيدر العلوي.
+3. تقدر كمان تفعّل الإشعارات في أي وقت من زرار الجرس 🔔 في الهيدر العلوي.
 4. كل يوم الساعة 7 صباحًا، workflow n8n بيجيب كل معلّم عنده حصة واحدة
    على الأقل اليوم (بناءً على `day_of_week` ونوع التكرار: أسبوعي/يومي/
    شهري/مرة واحدة — بنفس منطق صفحة الجدول تمامًا)، ويبعتله إشعار فيه
@@ -95,7 +95,7 @@ PUSH_NOTIFICATIONS: {
 ## ملاحظات مهمة
 - الموقع لازم يفضل شغال على HTTPS (متحقق بالفعل، منشور على دومين حقيقي).
 - الحد المجاني في OneSignal بيغطي عدد مستخدمين كبير جدًا، فمش المفروض
-  تحتاجي خطة مدفوعة في المدى القريب.
+  تحتاج خطة مدفوعة في المدى القريب.
 - لو معلّم سجّل دخول على أكتر من جهاز (موبايل + كمبيوتر)، OneSignal
   بتبعت الإشعار لكل الأجهزة المرتبطة بحسابه تلقائيًا.
 - عند تسجيل الخروج، الكود بيفك ربط الجهاز عن هوية المعلم (`OneSignal.logout()`)
@@ -123,20 +123,20 @@ PUSH_NOTIFICATIONS: {
 
 ### خطوات التفعيل (منفصلة تمامًا عن إعداد OneSignal فوق)
 
-1. **افتحي محرر SQL في Supabase** ونفّذي محتوى الملف
+1. **افتح محرر SQL في Supabase** ونفّذ محتوى الملف
    `n8n/NOTIFICATIONS_DB_MIGRATION.sql` مرة واحدة (بينشئ جدول
    `teachers_manager.notifications`).
-2. **استوردي في n8n** الملفين الجديدين:
+2. **استورد في n8n** الملفين الجديدين:
    - `n8n/get-notifications.json` (يرجّع قائمة إشعارات المعلم).
    - `n8n/mark-notifications-read.json` (يحدد إشعار واحد أو كل
      الإشعارات كمقروءة).
-   في كل واحد منهم، تأكدي إن عقد الـ Postgres مربوطة بنفس
+   في كل واحد منهم، تأكد إن عقد الـ Postgres مربوطة بنفس
    `Postgres account` credential المستخدم في باقي الـ workflows (زي ما
-   حصل مع `get-schedules`)، وفعّلي الـ workflow (زرار Active).
-3. **أعيدي استيراد `n8n/send-daily-lesson-notifications.json`** (اتعدّل
+   حصل مع `get-schedules`)، وفعّل الـ workflow (زرار Active).
+3. **أعد استيراد `n8n/send-daily-lesson-notifications.json`** (اتعدّل
    عشان يحفظ نسخة من كل إشعار يومي في جدول `notifications` كمان، ويمسح
    الإشعارات المقروءة اللي عدّت عليها 30 يوم تلقائيًا كل يوم الساعة 7
-   صباحًا). بعد الاستيراد، تأكدي إن:
+   صباحًا). بعد الاستيراد، تأكد إن:
    - عقدة "Send OneSignal Notification" لسه فيها الـ App ID الصحيح
      والـ credential بتاع REST API Key (زي الخطوة 3 فوق بالظبط - أحيانًا
      إعادة الاستيراد بتفضي إعدادات الـ credentials فبيتطلب اختيارها يدويًا

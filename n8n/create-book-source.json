@@ -1,0 +1,165 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "create-book-source",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "b1a1a111-1111-4111-8111-111111111101",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -1008,
+        160
+      ],
+      "webhookId": "cbs01-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\nconst body = $input.first().json.body || {};\n\nconst allowedTypes = ['pdf', 'docx', 'pptx', 'txt', 'image'];\nconst title = (body.title || '').toString().trim();\nconst fileName = (body.file_name || '').toString().trim();\nconst fileType = (body.file_type || '').toString().trim().toLowerCase();\n\nlet validationError = null;\nif (!title) validationError = 'اسم الكتاب مطلوب';\nelse if (title.length > 200) validationError = 'اسم الكتاب طويل جدًا';\nelse if (!fileName) validationError = 'اسم الملف مطلوب';\nelse if (!allowedTypes.includes(fileType)) validationError = 'نوع الملف غير مدعوم (PDF أو Word أو PowerPoint أو نص أو صورة فقط)';\n\n// اسم فريد وآمن للملف داخل مجلد المعلم في التخزين (يمنع تعارض الأسماء ويشيل أي رموز قد تكسر الرابط)\nconst safeName = fileName.replace(/[^a-zA-Z0-9\\u0600-\\u06FF._-]/g, '_').slice(-80);\nconst uniqueToken = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);\nconst storagePath = `${payload.sub}/${uniqueToken}-${safeName}`;\n\nreturn {\n  teacherId: payload.sub,\n  title,\n  fileName,\n  fileType,\n  storagePath,\n  isValid: validationError === null,\n  validationError\n};"
+      },
+      "id": "b1a1a111-1111-4111-8111-111111111102",
+      "name": "Validate & Build Path",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.isValid }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "b1a1a111-1111-4111-8111-111111111103",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"{{ $json.validationError }}\"\n  }\n}",
+        "options": {}
+      },
+      "id": "b1a1a111-1111-4111-8111-111111111104",
+      "name": "Validation Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO teachers_manager.book_sources (teacher_id, title, file_name, file_type, storage_path, status)\nVALUES ($1::uuid, $2, $3, $4, $5, 'uploading')\nRETURNING id, storage_path;",
+        "options": {
+          "queryReplacement": "={{ $json.teacherId }},{{ $json.title }},{{ $json.fileName }},{{ $json.fileType }},{{ $json.storagePath }}"
+        }
+      },
+      "id": "b1a1a111-1111-4111-8111-111111111105",
+      "name": "Insert Book Row",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        -384,
+        80
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"data\": {\n    \"book_id\": \"{{ $json.id }}\",\n    \"storage_path\": \"{{ $json.storage_path }}\",\n    \"bucket\": \"teacher-books\"\n  }\n}",
+        "options": {}
+      },
+      "id": "b1a1a111-1111-4111-8111-111111111106",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -176,
+        80
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate & Build Path",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate & Build Path": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid?": {
+      "main": [
+        [
+          {
+            "node": "Insert Book Row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validation Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Book Row": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597"
+  }
+}

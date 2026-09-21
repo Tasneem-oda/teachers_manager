@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الرئيسية - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=4">
+    <link rel="stylesheet" href="css/style.css?v=9">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,6 +19,51 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
+    <style>
+        /* بانر مجتمع واتساب الحصري للمشتركين */
+        .wa-community {
+            position: relative; overflow: hidden; margin-bottom: 1.5rem; padding: 1.25rem 1.4rem;
+            border-radius: 16px; color: #fff;
+            background: linear-gradient(135deg, #4B3A5A 0%, #7A6B83 100%);
+            display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; flex-wrap: wrap;
+            box-shadow: 0 6px 22px rgba(75, 58, 90, 0.22);
+        }
+        .wa-community::after {
+            content: ''; position: absolute; inset-inline-start: -40px; bottom: -60px; width: 190px; height: 190px;
+            border-radius: 50%; background: rgba(255, 255, 255, 0.07); pointer-events: none;
+        }
+        .wa-community-body { position: relative; z-index: 1; flex: 1 1 340px; min-width: 0; }
+        .wa-badge {
+            display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 700;
+            background: rgba(197, 154, 74, 0.95); color: #2b2114; padding: 0.22rem 0.65rem; border-radius: 999px; margin-bottom: 0.6rem;
+        }
+        .wa-community h3 { margin: 0 0 0.35rem; font-size: 1.12rem; color: #fff; line-height: 1.5; }
+        .wa-community p.wa-sub { margin: 0 0 0.85rem; font-size: 0.86rem; line-height: 1.75; color: rgba(255, 255, 255, 0.9); max-width: 620px; }
+        .wa-perks { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0; padding: 0; list-style: none; }
+        .wa-perks li {
+            display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; font-weight: 600;
+            background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 0.28rem 0.7rem; border-radius: 999px;
+        }
+        .wa-perks li::before { content: '✓'; font-weight: 800; color: #9BE7B5; }
+        .wa-cta-wrap { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 0.4rem; flex: 0 0 auto; }
+        .wa-cta {
+            display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem;
+            background: #25D366; color: #0d3320; font-weight: 800; font-size: 0.98rem; text-decoration: none;
+            padding: 0.85rem 1.6rem; border-radius: 12px; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+            transition: transform .15s ease, box-shadow .15s ease, background .15s ease; white-space: nowrap;
+        }
+        .wa-cta:hover { background: #2fe374; transform: translateY(-2px); box-shadow: 0 10px 22px rgba(0, 0, 0, 0.28); }
+        .wa-cta:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+        .wa-cta svg { flex-shrink: 0; }
+        .wa-note { font-size: 0.72rem; color: rgba(255, 255, 255, 0.78); }
+        @media (max-width: 640px) {
+            .wa-community { padding: 1.1rem 1rem; }
+            .wa-cta-wrap { width: 100%; }
+            .wa-cta { width: 100%; }
+        }
+        @media (prefers-reduced-motion: reduce) { .wa-cta { transition: none; } .wa-cta:hover { transform: none; } }
+    </style>
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -38,6 +83,27 @@
                     <div id="trial-banner-root"></div>
 
                     <div class="stats-row" id="stats-row"></div>
+
+                    <!-- مجتمع واتساب الحصري لمشتركي البرنامج -->
+                    <section class="wa-community" aria-labelledby="wa-title">
+                        <div class="wa-community-body">
+                            <span class="wa-badge">⭐ حصري لمستخدمي Teachers Manager</span>
+                            <h3 id="wa-title">انضم لمجتمع المعلمين المشتركين على واتساب</h3>
+                            <p class="wa-sub">مجموعة خاصة بمستخدمي البرنامج فقط: تواصل مباشر مع فريق البرنامج لمساعدتك في أي مشكلة، وتقدر تطلب المزايا اللي محتاجها وتشارك أفكارك للتحديثات القادمة — رأيك بيفرق في تطوير البرنامج.</p>
+                            <ul class="wa-perks">
+                                <li>مساعدة سريعة لأي مشكلة</li>
+                                <li>اطلب المزايا اللي تحتاجها</li>
+                                <li>شارك أفكار التحديثات</li>
+                            </ul>
+                        </div>
+                        <div class="wa-cta-wrap">
+                            <a class="wa-cta" href="https://chat.whatsapp.com/LRWtf3mTrmBK6CA0FBwg3I?s=cl&amp;p=a&amp;mlu=4&amp;ilr=4" target="_blank" rel="noopener noreferrer" aria-label="انضم لمجموعة واتساب الحصرية لمستخدمي البرنامج (يفتح في نافذة جديدة)">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                                انضم للمجموعة الآن
+                            </a>
+                            <span class="wa-note">مجموعة خاصة بالمشتركين فقط</span>
+                        </div>
+                    </section>
 
                     <div class="dashboard-grid">
                         <!-- حصص اليوم -->
@@ -68,6 +134,14 @@
                                     افتح ملف أي طالب من صفحة "الطلاب" لعرض وإضافة ملاحظاته.
                                 </div>
                             </div>
+
+                            <div class="card" id="library-card" style="display:none;">
+                                <div class="flex" style="margin-bottom:0.5rem;">
+                                    <h3 style="margin:0; font-size:0.95rem;"><span id="ic-library" class="icon"></span> مكتبتك</h3>
+                                </div>
+                                <p id="library-stats" style="font-size:0.85rem; color:var(--text-secondary); margin:0 0 0.8rem;"></p>
+                                <a href="books.html" class="btn" style="background:var(--bg-muted); color:var(--text-primary); width:100%; text-align:center; display:block;">فتح المكتبة</a>
+                            </div>
                         </div>
                     </div>
 
@@ -76,7 +150,7 @@
                         <div class="quick-links-grid">
                             <a href="students.html?action=add" class="quick-link-btn"><span class="icon" id="ic-ql-add"></span> إضافة طالب</a>
                             <a href="schedule.html" class="quick-link-btn"><span class="icon" id="ic-ql-schedule"></span> جدول المواعيد</a>
-                            <a href="books.html" class="quick-link-btn"><span class="icon" id="ic-ql-books"></span> كتابي</a>
+                            <a href="books.html" class="quick-link-btn"><span class="icon" id="ic-ql-books"></span> مكتبتي</a>
                             <a href="students.html" class="quick-link-btn"><span class="icon" id="ic-ql-notes"></span> ملاحظات الطلاب</a>
                             <a href="subscription.html" class="quick-link-btn"><span class="icon" id="ic-ql-sub"></span> الاشتراك</a>
                             <a href="settings.html" class="quick-link-btn"><span class="icon" id="ic-ql-settings"></span> الإعدادات</a>
@@ -91,13 +165,13 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=4"></script>
+    <script type="module" src="js/config.js?v=9"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=4';
-        import { api } from './js/api.js?v=4';
-        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=4';
-        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=4';
-        import { icon } from './js/icons.js?v=4';
+        import { Auth } from './js/auth.js?v=9';
+        import { api } from './js/api.js?v=9';
+        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=9';
+        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=9';
+        import { icon } from './js/icons.js?v=9';
 
         renderSidebar('dashboard');
 
@@ -109,6 +183,7 @@
         document.getElementById('ic-ai').innerHTML = icon('sparkles', { size: 17 });
         document.getElementById('ic-ai-enter').innerHTML = icon('link', { size: 15 });
         document.getElementById('ic-notes').innerHTML = icon('clipboard', { size: 16 });
+        document.getElementById('ic-library').innerHTML = icon('bookOpen', { size: 16 });
         document.getElementById('ic-ql-add').innerHTML = icon('plus', { size: 19 });
         document.getElementById('ic-ql-schedule').innerHTML = icon('calendar', { size: 19 });
         document.getElementById('ic-ql-books').innerHTML = icon('bookOpen', { size: 19 });
@@ -267,6 +342,30 @@
             }
         });
 
+        // بطاقة "مكتبتك" الصغيرة: بتظهر بس لو فيه مصادر مرفوعة بالفعل (لو
+        // لسه مفيش، الرابط السريع "كتابي" تحت كفاية). فشل الطلب ده (مثلاً لو
+        // لسه ملهوش استيراد في n8n) بيتجاهل بصمت من غير ما يأثر على الداشبورد
+        async function loadLibraryCard() {
+            try {
+                const data = await api.listBooks();
+                const books = (data.books || []).filter(b => b.status === 'ready');
+                if (books.length === 0) return;
+
+                const totalPages = books.reduce((sum, b) => sum + (b.page_count || 0), 0);
+                const lastUpdated = books.reduce((latest, b) => {
+                    const d = new Date(b.updated_at || b.created_at);
+                    return (!latest || d > latest) ? d : latest;
+                }, null);
+                const isToday = lastUpdated && lastUpdated.toDateString() === new Date().toDateString();
+
+                document.getElementById('library-stats').textContent =
+                    `${books.length} مصدر · ${totalPages.toLocaleString('ar-EG')} صفحة${lastUpdated ? ` · آخر تحديث: ${isToday ? 'اليوم' : Formatters.formatDate(lastUpdated)}` : ''}`;
+                document.getElementById('library-card').style.display = 'block';
+            } catch (e) {
+                // تجاهل - البطاقة تفضل مخفية وخلاص
+            }
+        }
+
         async function loadDashboard() {
             try {
                 const data = await api.getDashboard();
@@ -296,6 +395,7 @@
                 renderTodayLessons(data.todayLessons);
                 renderTrialBanner();
                 updateAiCardHint();
+                loadLibraryCard();
 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('content').style.display = 'block';
@@ -311,6 +411,6 @@
             await loadDashboard();
         })();
     </script>
-    <script src="js/pwa-install.js?v=4" defer></script>
+    <script src="js/pwa-install.js?v=9" defer></script>
 </body>
 </html>

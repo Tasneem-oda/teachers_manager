@@ -1,0 +1,150 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "update-book-access",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "b5b5b555-5555-4555-8555-555555555501",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [-1008, 160],
+      "webhookId": "uba01-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\nconst body = $input.first().json.body || {};\n\nconst scope = body.scope === 'students' ? 'students' : 'all';\nconst studentIds = Array.isArray(body.student_ids) ? body.student_ids.filter(Boolean) : [];\n\nreturn {\n  teacherId: payload.sub,\n  bookId: body.book_id || null,\n  scope,\n  studentIds,\n  hasStudents: scope === 'students' && studentIds.length > 0\n};"
+      },
+      "id": "b5b5b555-5555-4555-8555-555555555502",
+      "name": "Decode JWT",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-800, 160]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT EXISTS(SELECT 1 FROM teachers_manager.book_sources WHERE id = $1::uuid AND teacher_id = $2::uuid) AS owned;",
+        "options": {
+          "queryReplacement": "={{ $json.bookId }},{{ $json.teacherId }}"
+        }
+      },
+      "id": "b5b5b555-5555-4555-8555-555555555503",
+      "name": "Verify Book Owned",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [-592, 160],
+      "alwaysOutputData": true,
+      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
+    },
+    {
+      "parameters": {
+        "conditions": { "boolean": [{ "value1": "={{ $json.owned }}", "value2": true }] }
+      },
+      "id": "b5b5b555-5555-4555-8555-555555555504",
+      "name": "Owned?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [-384, 160]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"الكتاب غير موجود أو لا يتبع لحسابك.\"\n  }\n}",
+        "options": {}
+      },
+      "id": "b5b5b555-5555-4555-8555-555555555505",
+      "name": "Not Found Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-384, 320]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM teachers_manager.book_student_links WHERE book_id = $1::uuid;",
+        "options": {
+          "queryReplacement": "={{ $('Decode JWT').item.json.bookId }}"
+        }
+      },
+      "id": "b5b5b555-5555-4555-8555-555555555506",
+      "name": "Clear Existing Links",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [-176, 80],
+      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
+    },
+    {
+      "parameters": {
+        "conditions": { "boolean": [{ "value1": "={{ $('Decode JWT').item.json.hasStudents }}", "value2": true }] }
+      },
+      "id": "b5b5b555-5555-4555-8555-555555555507",
+      "name": "Has Specific Students?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [32, 80]
+    },
+    {
+      "parameters": {
+        "jsCode": "const teacherId = $('Decode JWT').item.json.teacherId;\nconst bookId = $('Decode JWT').item.json.bookId;\nconst studentIds = $('Decode JWT').item.json.studentIds;\nreturn studentIds.map(sid => ({ json: { teacherId, bookId, studentId: sid } }));"
+      },
+      "id": "b5b5b555-5555-4555-8555-555555555508",
+      "name": "Expand Student Ids",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO teachers_manager.book_student_links (book_id, student_id, teacher_id)\nSELECT $1::uuid, $2::uuid, $3::uuid\nWHERE EXISTS (SELECT 1 FROM teachers_manager.students WHERE id = $2::uuid AND teacher_id = $3::uuid)\nON CONFLICT (book_id, student_id) DO NOTHING;",
+        "options": {
+          "queryReplacement": "={{ $json.bookId }},{{ $json.studentId }},{{ $json.teacherId }}"
+        }
+      },
+      "id": "b5b5b555-5555-4555-8555-555555555509",
+      "name": "Insert New Links",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [448, 0],
+      "credentials": { "postgres": { "id": "bxJVKX8A8LBKYb6c", "name": "Postgres account" } }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"data\": {\n    \"updated\": true\n  }\n}",
+        "options": {}
+      },
+      "id": "b5b5b555-5555-4555-8555-555555555510",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [656, 80]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Decode JWT", "type": "main", "index": 0 }]] },
+    "Decode JWT": { "main": [[{ "node": "Verify Book Owned", "type": "main", "index": 0 }]] },
+    "Verify Book Owned": { "main": [[{ "node": "Owned?", "type": "main", "index": 0 }]] },
+    "Owned?": {
+      "main": [
+        [{ "node": "Clear Existing Links", "type": "main", "index": 0 }],
+        [{ "node": "Not Found Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Clear Existing Links": { "main": [[{ "node": "Has Specific Students?", "type": "main", "index": 0 }]] },
+    "Has Specific Students?": {
+      "main": [
+        [{ "node": "Expand Student Ids", "type": "main", "index": 0 }],
+        [{ "node": "Success Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Expand Student Ids": { "main": [[{ "node": "Insert New Links", "type": "main", "index": 0 }]] },
+    "Insert New Links": { "main": [[{ "node": "Success Response", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "meta": { "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597" }
+}

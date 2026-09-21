@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الحصة - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=4">
+    <link rel="stylesheet" href="css/style.css?v=9">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -223,7 +223,7 @@
             color: #fff; flex-shrink: 0;
         }
         .ai-chat-header-title { display: flex; align-items: center; gap: 0.65rem; }
-        .ai-chat-header-title h3 { margin: 0; font-size: 1rem; }
+        .ai-chat-header-title h3 { margin: 0; font-size: 1rem; color: #fff; }   /* بدونها القاعدة العامة h3 { color: var(--primary) } كانت بتخلي العنوان بنفسجي على خلفية بنفسجية */
         .ai-chat-header-title p { margin: 0.15rem 0 0; font-size: 0.8rem; opacity: 0.85; }
         .ai-chat-close-btn { background: rgba(255,255,255,0.15); border: none; color: #fff; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
         .ai-chat-close-btn:hover { background: rgba(255,255,255,0.3); }
@@ -242,12 +242,13 @@
         .ai-chat-bubble.role-error { align-self: center; background: #FBEAEA; color: #B85C5C; border: 1px solid #F0CFCF; font-size: 0.82rem; }
         .ai-chat-bubble.role-loading { align-self: flex-start; background: #fff; border: 1px solid var(--border, #E7E1E8); color: var(--text-secondary, #716A74); font-size: 0.85rem; }
         .ai-chat-quota { padding: 0.3rem 1.25rem; font-size: 0.72rem; color: var(--text-secondary, #716A74); text-align: center; flex-shrink: 0; }
-        .ai-chat-input-row { display: flex; gap: 0.6rem; padding: 0.85rem 1.25rem; border-top: 1px solid var(--border, #E7E1E8); flex-shrink: 0; background: var(--card-bg, #FFFFFF); }
+        .ai-chat-input-row { display: flex; align-items: flex-end; gap: 0.6rem; padding: 0.85rem 1.25rem; border-top: 1px solid var(--border, #E7E1E8); flex-shrink: 0; background: var(--card-bg, #FFFFFF); }
         /* font-size لازم يكون 16px (1rem) على الأقل، لأن أي حجل أصغر بيخلي
            سفاري في الآيفون يعمل zoom تلقائي للصفحة لما المستخدم يضغط
            على مربع الكتابة - وده كان بيكسر شكل الشات على الموبايل */
-        .ai-chat-input-row textarea { flex: 1; resize: none; max-height: 90px; padding: 0.6rem 0.8rem; border: 1px solid var(--border, #E7E1E8); border-radius: 10px; font-family: inherit; font-size: 1rem; }
-        .ai-chat-input-row .btn { flex-shrink: 0; padding: 0.6rem 1.1rem; }
+        .ai-chat-input-row textarea { display: block; flex: 1; min-width: 0; width: auto; margin: 0; resize: none; min-height: 44px; max-height: 120px; overflow-y: auto; padding: 0.55rem 0.85rem; border: 1px solid var(--border, #E7E1E8); border-radius: 12px; font-family: inherit; font-size: 1rem; line-height: 1.5; }
+        /* margin:0 مهم: القاعدة العامة في style.css بتضيف margin-bottom على أي textarea فكان الزر بيتمدد ويتزحلق عن المربع */
+        .ai-chat-input-row .btn { flex-shrink: 0; align-self: flex-end; height: 44px; margin: 0; padding: 0 1.2rem; border-radius: 12px; }
         @media (max-width: 480px) {
             /* على الموبايل: الشات بيبقى ملء الشاشة بدل كارت في النص.
                استخدمنا height:100% (بدل 92vh) عشان يطابق الحجم الحقيقي
@@ -265,13 +266,13 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=4"></script>
+    <script type="module" src="js/config.js?v=9"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=4';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=4';
-        import { api } from './js/api.js?v=4';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=4';
-        import { icon } from './js/icons.js?v=4';
+        import { Auth } from './js/auth.js?v=9';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=9';
+        import { api } from './js/api.js?v=9';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=9';
+        import { icon } from './js/icons.js?v=9';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'سجّل تفاصيل الحصة وأنهها بضغطة زر', showSearch: false });
@@ -364,8 +365,7 @@
 
                 // فتح شات المساعد الذكي أوتوماتيك لو الرابط طالب كده
                 if (openAiParam === '1') {
-                    aiChatOverlay.style.display = 'flex';
-                    setTimeout(() => aiChatInput.focus(), 50);
+                    openAiChat();
                 }
 
             } catch (error) {
@@ -517,10 +517,44 @@
             aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
         }
 
-        document.getElementById('btn-open-ai-chat').addEventListener('click', () => {
+        // بنخلّي الشات يتبع الشاشة المرئية الفعلية (ارتفاعها + إزاحتها) عشان مربع الكتابة
+        // وزر الإرسال يفضلوا فوق الكيبورد في أندرويد وآيفون، بدل ما يتثبتوا تحته
+        function fitAiChatToViewport() {
+            const vv = window.visualViewport;
+            if (!vv) return;
+            aiChatOverlay.style.top = Math.max(0, Math.round(vv.offsetTop)) + 'px';
+            aiChatOverlay.style.height = Math.round(vv.height) + 'px';
+            aiChatOverlay.style.bottom = 'auto';
+        }
+
+        function autoGrowAiChatInput() {
+            aiChatInput.style.height = 'auto';
+            const content = aiChatInput.scrollHeight;
+            if (!content || !aiChatInput.offsetParent) { aiChatInput.style.height = ''; return; }
+            const border = aiChatInput.offsetHeight - aiChatInput.clientHeight;
+            aiChatInput.style.height = Math.max(44, Math.min(content + border, 120)) + 'px';
+        }
+
+        function openAiChat() {
             if (!studentIdParam) return;
             aiChatOverlay.style.display = 'flex';
-            aiChatInput.focus();
+            document.body.style.overflow = 'hidden';
+            fitAiChatToViewport();
+            autoGrowAiChatInput();
+            aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
+            aiChatInput.focus({ preventScroll: true });
+        }
+
+        function closeAiChat() {
+            aiChatOverlay.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        document.getElementById('btn-open-ai-chat').addEventListener('click', openAiChat);
+        aiChatInput.addEventListener('input', autoGrowAiChatInput);
+        aiChatOverlay.addEventListener('mousedown', (e) => { if (e.target === aiChatOverlay) closeAiChat(); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && aiChatOverlay.style.display !== 'none') closeAiChat();
         });
 
         // معالجة ظهور كيبورد الموبايل: لما الكيبورد يفتح، الشاشة المرئية
@@ -530,19 +564,16 @@
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', () => {
                 if (aiChatOverlay.style.display !== 'none') {
+                    fitAiChatToViewport();
                     aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
                 }
             });
+            window.visualViewport.addEventListener('scroll', () => {
+                if (aiChatOverlay.style.display !== 'none') fitAiChatToViewport();
+            });
         }
-        aiChatInput.addEventListener('focus', () => {
-            setTimeout(() => {
-                aiChatInput.scrollIntoView({ block: 'end', behavior: 'smooth' });
-            }, 250);
-        });
 
-        document.getElementById('btn-close-ai-chat').addEventListener('click', () => {
-            aiChatOverlay.style.display = 'none';
-        });
+        document.getElementById('btn-close-ai-chat').addEventListener('click', closeAiChat);
 
         // إرسال بالـ Enter (وShift+Enter لسطر جديد بدل الإرسال)
         aiChatInput.addEventListener('keydown', (e) => {
@@ -565,6 +596,7 @@
 
             renderAiChatMessage('user', message);
             aiChatInput.value = '';
+            autoGrowAiChatInput();
             showAiChatLoading();
 
             try {
@@ -586,6 +618,6 @@
             }
         });
     </script>
-    <script src="js/pwa-install.js?v=4" defer></script>
+    <script src="js/pwa-install.js?v=9" defer></script>
 </body>
 </html>

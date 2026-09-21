@@ -1,0 +1,414 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "book-index",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "dddddddd-dddd-4ddd-8ddd-dddddddddd01",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -2000,
+        300
+      ],
+      "webhookId": "bidx01-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const headers = $input.first().json.headers || {};\nconst authHeader = headers.authorization || headers.Authorization;\nif (!authHeader || typeof authHeader !== 'string') { throw new Error('Unauthorized'); }\nconst parts = authHeader.split(' ');\nif (parts.length < 2 || !parts[1]) { throw new Error('Unauthorized'); }\nconst tokenParts = parts[1].split('.');\nif (tokenParts.length < 2) { throw new Error('Unauthorized'); }\nconst base64 = tokenParts[1].replace(/-/g, '+').replace(/_/g, '/');\nconst payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));\nconst body = $input.first().json.body || {};\nconst UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\n\nconst MAX_CHUNKS = 40;\nconst bookId = UUID_RE.test(String(body.book_id || '')) ? String(body.book_id) : null;\nconst chunks = Array.isArray(body.chunks) ? body.chunks : [];\nlet err = null;\nconst clean = [];\nconst seen = new Set();\nif (!bookId) err = 'معرّف الكتاب غير صالح';\nelse if (chunks.length < 1 || chunks.length > MAX_CHUNKS) err = 'عدد المقاطع في الطلب لازم يكون بين 1 و ' + MAX_CHUNKS;\nelse {\n  for (const c of chunks) {\n    const idx = Number(c && c.chunk_index);\n    const content = c && typeof c.content === 'string' ? c.content.trim() : '';\n    if (!Number.isInteger(idx) || idx < 0 || idx > 20000 || !content || seen.has(idx)) { err = 'مقطع غير صالح'; break; }\n    seen.add(idx);\n    const pg = Number(c.page);\n    clean.push({\n      chunk_index: idx,\n      chapter: c.chapter ? String(c.chapter).slice(0, 200) : '',\n      page: Number.isInteger(pg) && pg > 0 && pg < 1000000 ? pg : null,\n      content: content.slice(0, 4000)\n    });\n  }\n}\nconst prog = parseInt(body.progress, 10);\nreturn {\n  teacherId: payload.sub,\n  bookId,\n  chunks: err ? [] : clean,\n  progress: Number.isInteger(prog) ? Math.max(0, Math.min(99, prog)) : 0,\n  isValid: err === null,\n  validationError: err\n};\n"
+      },
+      "id": "dddddddd-dddd-4ddd-8ddd-dddddddddd02",
+      "name": "Validate & Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1800,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.isValid }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "dddddddd-dddd-4ddd-8ddd-dddddddddd03",
+      "name": "Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'VALIDATION_ERROR', message: $json.validationError } }) }}",
+        "options": {}
+      },
+      "id": "dddddddd-dddd-4ddd-8ddd-dddddddddd04",
+      "name": "Validation Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -1600,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id FROM teachers_manager.book_sources\nWHERE id = $1::uuid AND teacher_id = $2::uuid AND status = 'processing';",
+        "options": {
+          "queryReplacement": "={{ $json.bookId }},{{ $json.teacherId }}"
+        }
+      },
+      "id": "dddddddd-dddd-4ddd-8ddd-dddddddddd05",
+      "name": "Get Book",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        -1400,
+        200
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !!$json.id }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "dddddddd-dddd-4ddd-8ddd-dddddddddd06",
+      "name": "Book Processing?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1200,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: { code: 'NOT_PROCESSING', message: \"الكتاب مش في حالة معالجة. ابدأ المعالجة من جديد (إعادة المعالجة).\" } }) }}",
+        "options": {}
+      },
+      "id": "dddddddd-dddd-4ddd-8ddd-dddddddddd07",
+      "name": "Not Processing Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -1200,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cfg = $('Validate & Config').first().json;\n// عنصر لكل مقطع: بنعمل embedding لكل واحد لوحده (زي النسخة اللي اشتغلت) عشان ترتيب النتائج مضمون\nreturn cfg.chunks.map((c, i) => ({ json: { idx: i, text: c.content } }));\n"
+      },
+      "id": "dddddddd-dddd-4ddd-8ddd-dddddddddd08",
+      "name": "Build Embed Requests",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1000,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'models/gemini-embedding-001', content: { parts: [{ text: $json.text }] }, outputDimensionality: 768 }) }}",
+        "options": {
+          "timeout": 20000,
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 1100
+            }
+          }
+        }
+      },
+      "id": "dddddddd-dddd-4ddd-8ddd-dddddddddd09",
+      "name": "Embed Chunk",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -800,
+        100
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "8Tc8LjAwoWExdl38",
+          "name": "Gemini API Key"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const cfg = $('Validate & Config').first().json;\nconst items = $input.all().map(i => i.json || {});\nconst fail = (code, message) => ({ json: { ok: false, code, message } });\n\nif (items.length !== cfg.chunks.length) return fail('AI_ERROR', 'عدد نتائج الـ embedding لا يطابق عدد المقاطع.');\n\nconst rows = [];\nfor (let i = 0; i < items.length; i++) {\n  const raw = items[i];\n  const v = raw.embedding && Array.isArray(raw.embedding.values) ? raw.embedding.values : null;\n  if (!v) {\n    const s = JSON.stringify(raw.error || raw).slice(0, 400);\n    if (/429|RESOURCE_EXHAUSTED|quota|rate.?limit|overloaded|503|UNAVAILABLE/i.test(s)) {\n      return fail('BUSY', 'خدمة الفهرسة مشغولة (حد Gemini)، هنعيد المحاولة تلقائيًا.');\n    }\n    return fail('AI_ERROR', 'تعذّرت فهرسة المقاطع (خطأ من خدمة الـ embedding).');\n  }\n  // vector(768) في قاعدة البيانات - لو الحجم مختلف نوقف بدل ما نحفظ بيانات غلط\n  if (v.length !== 768) return fail('EMBED_DIM', 'حجم الـ embedding غير متوقع (المطلوب 768). راجع outputDimensionality في n8n.');\n  const c = cfg.chunks[i];\n  rows.push({ chunk_index: c.chunk_index, chapter: c.chapter, page: c.page, content: c.content, embedding: '[' + v.join(',') + ']' });\n}\nreturn { json: { ok: true, rowsJson: JSON.stringify(rows), count: rows.length } };\n"
+      },
+      "id": "dddddddd-dddd-4ddd-8ddd-dddddddddd0a",
+      "name": "Collect Embeddings",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !!$json.ok }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "dddddddd-dddd-4ddd-8ddd-dddddddddd0b",
+      "name": "Embed OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH ins AS (\n  INSERT INTO teachers_manager.book_chunks (book_id, teacher_id, chunk_index, chapter_title, page_number, content, embedding)\n  SELECT $1::uuid, $2::uuid, x.chunk_index, NULLIF(x.chapter, ''), x.page, x.content, x.embedding::vector\n  FROM jsonb_to_recordset($3::jsonb) AS x(chunk_index integer, chapter text, page integer, content text, embedding text)\n  ON CONFLICT (book_id, chunk_index) DO UPDATE\n    SET chapter_title = EXCLUDED.chapter_title, page_number = EXCLUDED.page_number,\n        content = EXCLUDED.content, embedding = EXCLUDED.embedding\n  RETURNING 1\n), prog AS (\n  UPDATE teachers_manager.book_sources\n  SET progress = GREATEST(progress, $4::integer), updated_at = now()\n  WHERE id = $1::uuid\n  RETURNING id\n)\nSELECT (SELECT count(*) FROM ins)::integer AS inserted;",
+        "options": {
+          "queryReplacement": "={{ $('Validate & Config').item.json.bookId }},{{ $('Validate & Config').item.json.teacherId }},{{ $('Collect Embeddings').first().json.rowsJson }},{{ $('Validate & Config').item.json.progress }}"
+        }
+      },
+      "id": "dddddddd-dddd-4ddd-8ddd-dddddddddd0c",
+      "name": "Insert Chunks",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        -200,
+        0
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "bxJVKX8A8LBKYb6c",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, data: { inserted: $json.inserted } }) }}",
+        "options": {}
+      },
+      "id": "dddddddd-dddd-4ddd-8ddd-dddddddddd0d",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: { code: $('Collect Embeddings').first().json.code, message: $('Collect Embeddings').first().json.message } }) }}",
+        "options": {}
+      },
+      "id": "dddddddd-dddd-4ddd-8ddd-dddddddddd0e",
+      "name": "Embed Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        220
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate & Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate & Config": {
+      "main": [
+        [
+          {
+            "node": "Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid?": {
+      "main": [
+        [
+          {
+            "node": "Get Book",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validation Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Book": {
+      "main": [
+        [
+          {
+            "node": "Book Processing?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Book Processing?": {
+      "main": [
+        [
+          {
+            "node": "Build Embed Requests",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not Processing Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Embed Requests": {
+      "main": [
+        [
+          {
+            "node": "Embed Chunk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embed Chunk": {
+      "main": [
+        [
+          {
+            "node": "Collect Embeddings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Embeddings": {
+      "main": [
+        [
+          {
+            "node": "Embed OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embed OK?": {
+      "main": [
+        [
+          {
+            "node": "Insert Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Embed Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Chunks": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "83453a461c6d807e2b75fadea945aa5e17e10f5a5373937dc5e2596b44a2f597"
+  }
+}
