@@ -10,11 +10,11 @@
  * + زر شات صغير بيفتح نافذة أسئلة عن الكتاب ده بالذات، والاستشهادات فيها بتفتح مكانها هنا.
  */
 
-import { icon } from './icons.js?v=7';
-import { CONFIG } from './config.js?v=7';
-import { loadPdfJs, pdfDocumentParams, loadDocxPreview, loadPptxPreview, loadJsZip, loadStyle, CDN } from './book-libs.js?v=7';
-import { detectDir } from './book-chunker.js?v=7';
-import { BookChat } from './book-chat.js?v=7';
+import { icon } from './icons.js?v=9';
+import { CONFIG } from './config.js?v=9';
+import { loadPdfJs, pdfDocumentParams, loadDocxPreview, loadPptxPreview, loadJsZip, loadStyle, CDN, repairPdfBytes } from './book-libs.js?v=9';
+import { detectDir } from './book-chunker.js?v=9';
+import { BookChat } from './book-chat.js?v=9';
 
 const ZOOM_STEPS = [0.5, 0.67, 0.8, 1, 1.25, 1.5, 2, 2.5, 3];
 const TYPE_LABEL = { pdf: 'PDF', docx: 'Word', pptx: 'PowerPoint', txt: 'نص', image: 'صورة' };
@@ -222,6 +222,9 @@ export class BookViewer {
         this.root.addEventListener('click', (e) => {
             const btn = e.target.closest('[data-act]');
             if (!btn) return;
+            // أزرار الشات (إغلاق / إعادة المحاولة / نسخ...) ليها معالجها الخاص: لو سبناها توصل هنا،
+            // زر ✕ بتاع الشات كان بيقفل الكتاب كله وزر "إعادة المحاولة" كان بيعيد تحميل الكتاب
+            if (btn.closest('.bc-panel')) return;
             const act = btn.dataset.act;
             if (act === 'close') this.close();
             else if (act === 'prev') this.goToPage(this.page - 1);
@@ -481,12 +484,51 @@ export class BookViewer {
     // ------------------------------------------------------------------ PDF
     async _pdfAdapter() {
         const pdfjs = await loadPdfJs();
-        loadStyle(CDN.pdfViewerCss);
-        const pdf = await pdfjs.getDocument(pdfDocumentParams({ data: new Uint8Array(this.buffer).slice() })).promise;
+        // ماتحمّلش pdf_viewer.css: قواعده العامة (.sidebar وغيرها) بتكسر تصميم البرنامج. قواعد طبقة النص متضمّنة في books.css
+        const openDoc = (bytes) => pdfjs.getDocument(pdfDocumentParams({ data: new Uint8Array(bytes).slice() })).promise;
+        // أول صفحة قابلة للقراءة (من أول ١٢) بتحدد المقاس الافتراضي لكل الصفحات
+        const probeSize = async (doc) => {
+            const lim = Math.min(doc.numPages, 12);
+            for (let i = 1; i <= lim; i++) {
+                try {
+                    const pg = await doc.getPage(i);
+                    const vp = pg.getViewport({ scale: 1 });
+                    pg.cleanup();
+                    return { width: vp.width, height: vp.height };
+                } catch (e) { /* الصفحة دي تالفة: نجرّب اللي بعدها */ }
+            }
+            return null;
+        };
+        let pdf = null;
+        let base = null;
+        try {
+            pdf = await openDoc(this.buffer);
+            base = await probeSize(pdf);
+        } catch (e) {
+            if (e && e.name === 'PasswordException') throw new Error('ملف الـ PDF محمي بكلمة مرور. أزل الحماية وارفعه من جديد.');
+            pdf = null;
+        }
+        if (!pdf || !base) {
+            // الملف مابيتفتحش أو صفحاته الأولى تالفة: نجرّب نصلّح بنيته بمحلل أكثر تسامحًا
+            if (pdf) { try { pdf.destroy(); } catch (e) { /* تجاهل */ } pdf = null; }
+            for (const mode of ['resave', 'rebuild']) {
+                try {
+                    const fixed = await repairPdfBytes(this.buffer, mode);
+                    const doc = await openDoc(fixed);
+                    const size = await probeSize(doc);
+                    if (size) {
+                        pdf = doc; base = size;
+                        this.buffer = fixed.buffer.slice(fixed.byteOffset, fixed.byteOffset + fixed.byteLength);
+                        break;
+                    }
+                    try { doc.destroy(); } catch (e) { /* تجاهل */ }
+                } catch (e) { /* نجرّب الطريقة اللي بعدها */ }
+            }
+        }
+        if (!pdf || !base) {
+            throw new Error('ملف الـ PDF تالف ولا يمكن عرضه. افتحه في Chrome ← Ctrl+P ← "حفظ كـ PDF" وارفع النسخة الجديدة، أو جرّب "عرض النص المستخرج".');
+        }
         const n = pdf.numPages;
-        const first = await pdf.getPage(1);
-        const base = first.getViewport({ scale: 1 });
-        first.cleanup();
 
         const host = document.createElement('div');
         host.className = 'bv-pdf';
@@ -586,7 +628,11 @@ export class BookViewer {
                     const cur = self.page;
                     const p = Array.from(st.pending).sort((a, b) => Math.abs(a - cur) - Math.abs(b - cur))[0];
                     st.pending.delete(p);
-                    try { await renderPage(p); } catch (e) { console.warn('[pdf] render failed for page', p, e); }
+                    try { await renderPage(p); } catch (e) {
+                        console.warn('[pdf] render failed for page', p, e);
+                        st.rendered.delete(p);
+                        if (els[p - 1]) els[p - 1].classList.add('bv-page-failed');   // صفحة تالفة في الملف: نوضّح بدل ما تفضل فاضية
+                    }
                 }
             } finally { st.pumping = false; }
         };

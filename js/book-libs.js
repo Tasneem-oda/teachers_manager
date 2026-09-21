@@ -133,6 +133,26 @@ export function loadPptxPreview() {
     });
 }
 
+/**
+ * محاولة إصلاح بنية ملف PDF تالف بمكتبة pdf-lib (بتقرأ الملف بمحلل تاني أكثر تسامحًا من PDF.js).
+ *   resave  : إعادة حفظ الملف كما هو (بيبني جدول المراجع من جديد، ويحافظ على الفهرس/العناوين)
+ *   rebuild : نسخ الصفحات لملف جديد تمامًا (بيصلّح شجرة الصفحات التالفة لكن بيفقد الفهرس)
+ * بترجّع Uint8Array، أو بترمي خطأ لو pdf-lib نفسها معرفتش تقرأ الملف.
+ */
+export async function repairPdfBytes(buffer, mode = 'resave') {
+    const PDFLib = await loadPdfLib();
+    const opts = { ignoreEncryption: true, throwOnInvalidObject: false, updateMetadata: false };
+    const src = await PDFLib.PDFDocument.load(new Uint8Array(buffer), opts);
+    let doc = src;
+    if (mode === 'rebuild') {
+        doc = await PDFLib.PDFDocument.create();
+        const copied = await doc.copyPages(src, src.getPageIndices());
+        copied.forEach((pg) => doc.addPage(pg));
+    }
+    if (doc.getPageCount() < 1) throw new Error('لا توجد صفحات قابلة للقراءة');
+    return await doc.save({ useObjectStreams: false });
+}
+
 export function loadPdfLib() {
     return once('pdf-lib', async () => {
         if (!window.PDFLib) await loadScript(CDN.pdfLib, 'مكتبة إنشاء PDF');

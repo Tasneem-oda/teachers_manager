@@ -143,8 +143,23 @@
 .bv-page canvas { display: block; }
 .bv-page .textLayer { position: absolute; inset: 0; overflow: clip; line-height: 1; z-index: 1; }
 .bv-page .textLayer ::selection { background: rgba(75, 58, 90, 0.28); }
+/* طبقة النص (نفس قواعد PDF.js الضرورية فقط ومحصورة جوه .bv-page).
+   ملحوظة مهمة: ماتحمّلش pdf_viewer.css كاملًا من الـ CDN — فيه قواعد عامة بأسماء زي .sidebar
+   كانت بتتطبّق على السايدبار بتاع البرنامج وبتبوّظ شكله (خلفية بيضاء + تغيير مكانه) بعد فتح أي كتاب PDF. */
+.bv-page .textLayer { text-align: initial; opacity: 1; -webkit-text-size-adjust: none; text-size-adjust: none; forced-color-adjust: none; transform-origin: 0 0; caret-color: CanvasText; color-scheme: only light;
+    --min-font-size: 1; --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size)); --min-font-size-inv: calc(1 / var(--min-font-size)); }
+.bv-page .textLayer :is(span, br) { color: transparent; position: absolute; white-space: pre; cursor: text; transform-origin: 0% 0%; }
+.bv-page .textLayer > :not(.markedContent), .bv-page .textLayer .markedContent span:not(.markedContent) {
+    z-index: 1; --font-height: 0; font-size: calc(var(--text-scale-factor) * var(--font-height));
+    --scale-x: 1; --rotate: 0deg; transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv)); }
+.bv-page .textLayer .markedContent { display: contents; }
+.bv-page .textLayer span[role="img"] { -webkit-user-select: none; user-select: none; cursor: default; }
+.bv-page .textLayer br::selection { background: transparent; }
+.bv-page .textLayer .endOfContent { display: block; position: absolute; inset: 100% 0 0; z-index: 0; cursor: default; -webkit-user-select: none; user-select: none; }
+.bv-page .textLayer.selecting .endOfContent { top: 0; }
 .bv-page-num { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.2rem; font-weight: 700; color: rgba(41, 37, 45, 0.08); pointer-events: none; }
 .bv-page canvas ~ .bv-page-num, .bv-page:has(canvas) .bv-page-num { display: none; }
+.bv-page-failed::after { content: 'تعذّر عرض هذه الصفحة (الملف الأصلي تالف في هذا الموضع)'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1rem; text-align: center; direction: rtl; font-size: 0.85rem; font-weight: 600; color: var(--danger); background: repeating-linear-gradient(45deg, #fff, #fff 10px, #faf5f5 10px, #faf5f5 20px); }
 .bv-flash { box-shadow: 0 0 0 3px var(--secondary), 0 6px 24px rgba(197, 154, 74, 0.35) !important; }
 mark.bv-mark { background: rgba(197, 154, 74, 0.45); color: inherit; border-radius: 2px; box-shadow: 0 0 0 2px rgba(197, 154, 74, 0.25); }
 .bv-page .textLayer mark.bv-mark { color: transparent; background: rgba(197, 154, 74, 0.5); }

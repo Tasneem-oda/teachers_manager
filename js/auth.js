@@ -7,8 +7,8 @@
  * في كل مكان (وليس window.supabase، لأن هذا الأخير هو مكتبة supabase-js
  * الخام القادمة من الـ CDN وليس عميلاً مهيّأً، وليس لديه خاصية .auth).
  */
-import { CONFIG } from './config.js?v=7';
-import { APIUtils, Storage, ErrorHandler, Validators } from './utils.js?v=7';
+import { CONFIG } from './config.js?v=9';
+import { APIUtils, Storage, ErrorHandler, Validators } from './utils.js?v=9';
 
 // ملحوظة: لا نصدّر "supabase" كقيمة ثابتة هنا لأن window.supabaseClient
 // قد لا يكون جاهزًا بعد وقت تحميل هذه الوحدة. أي كود يحتاج العميل مباشرة

@@ -12,9 +12,9 @@
  * والسيرفر بيعمل بس الحاجات اللي محتاجة مفتاح Gemini (OCR + embeddings) وقاعدة البيانات.
  */
 
-import { CONFIG } from './config.js?v=7';
-import { normalizeText, assessTextQuality, chunkUnits, paginateBlocks } from './book-chunker.js?v=7';
-import { loadPdfJs, pdfDocumentParams, loadJsZip } from './book-libs.js?v=7';
+import { CONFIG } from './config.js?v=9';
+import { normalizeText, assessTextQuality, chunkUnits, paginateBlocks } from './book-chunker.js?v=9';
+import { loadPdfJs, pdfDocumentParams, loadJsZip, repairPdfBytes } from './book-libs.js?v=9';
 
 const S = () => CONFIG.BOOKS_SETTINGS;
 const OCR_MAX_SIDE = 1800;          // أقصى بُعد لصورة الصفحة المرسلة للـ OCR (بكسل)
@@ -324,44 +324,119 @@ export async function renderPdfPageToJpeg(page, { maxSide = OCR_MAX_SIDE } = {})
     return { skip: true };
 }
 
-async function extractPdf(buffer, { signal, onStep }) {
-    const pdfjs = await loadPdfJs();
-    let pdf;
-    try {
-        pdf = await pdfjs.getDocument(pdfDocumentParams({ data: new Uint8Array(buffer).slice() })).promise;
-    } catch (e) {
-        if (e && e.name === 'PasswordException') throw new BookProcessError('ملف الـ PDF محمي بكلمة مرور. أزل الحماية وارفعه من جديد.');
-        throw new BookProcessError('تعذّر فتح ملف الـ PDF (ممكن يكون تالفًا).');
-    }
-    const n = pdf.numPages;
-    if (n > S().MAX_UNITS) {
-        throw new BookProcessError(`الكتاب كبير جدًا (${n} صفحة). الحد الأقصى ${S().MAX_UNITS} صفحة للملف الواحد، قسّمه لجزئين.`);
-    }
+// أقصى نسبة صفحات تالفة نقبلها قبل ما نحاول نصلّح الملف، وأقصى نسبة نقبلها بعد المحاولة
+const PDF_BAD_RATIO_REPAIR = 0.05;
+const PDF_BAD_RATIO_FATAL = 0.3;
+const PDF_CORRUPT_HELP = 'افتحه في Chrome ← اضغط Ctrl+P ← اختر "حفظ كـ PDF" ← ثم ارفع النسخة الجديدة.';
 
-    const pages = [];   // { page, text, q }
+async function openPdfBytes(pdfjs, bytes) {
+    return pdfjs.getDocument(pdfDocumentParams({ data: new Uint8Array(bytes).slice() })).promise;
+}
+
+/**
+ * بيقرأ نص كل صفحة. الصفحة اللي PDF.js مش قادر يفتحها (بنية تالفة داخل الملف، زي
+ * "Invalid number: Æ") بتتعلّم broken بدل ما تفشّل معالجة الكتاب كله.
+ */
+async function scanPdfPages(pdf, { signal, onStep }) {
+    const n = pdf.numPages;
+    const pages = [];    // { page, text, q, broken }
+    let broken = 0;
     for (let i = 1; i <= n; i++) {
         throwIfAborted(signal);
-        const page = await pdf.getPage(i);
         let text = '';
-        try { text = joinPdfItems((await page.getTextContent()).items); } catch (e) { text = ''; }
-        pages.push({ page: i, text: normalizeText(text), q: assessTextQuality(text) });
-        page.cleanup();
+        let bad = false;
+        try {
+            const page = await pdf.getPage(i);
+            try { text = joinPdfItems((await page.getTextContent()).items); } catch (e) { text = ''; }
+            page.cleanup();
+        } catch (e) {
+            bad = true;
+            broken++;
+        }
+        pages.push({ page: i, text: normalizeText(text), q: assessTextQuality(text), broken: bad });
         if (i % 5 === 0 || i === n) onStep(i / n);
     }
+    return { pages, broken, total: n };
+}
 
-    const okCount = pages.filter((p) => p.q.ok).length;
-    const textBased = okCount / n >= 0.6;
+async function extractPdf(buffer, { signal, onStep }) {
+    const pdfjs = await loadPdfJs();
+
+    // فتح الملف + قراءة كل الصفحات. بيرجّع { doc, scan } أو بيرمي خطأ لو الملف مش بيتفتح أصلًا
+    const attempt = async (bytes) => {
+        let doc = null;
+        try {
+            doc = await openPdfBytes(pdfjs, bytes);
+            if (doc.numPages > S().MAX_UNITS) {
+                throw new BookProcessError(`الكتاب كبير جدًا (${doc.numPages} صفحة). الحد الأقصى ${S().MAX_UNITS} صفحة للملف الواحد، قسّمه لجزئين.`);
+            }
+            return { doc, scan: await scanPdfPages(doc, { signal, onStep }) };
+        } catch (e) {
+            if (doc) { try { doc.destroy(); } catch (e2) { /* تجاهل */ } }
+            throw e;
+        }
+    };
+    const ratio = (r) => (r.scan.total ? r.scan.broken / r.scan.total : 1);
+
+    let best = null;
+    try {
+        best = await attempt(buffer);
+    } catch (e) {
+        if (e && (e.aborted || e instanceof BookProcessError)) throw e;
+        if (e && e.name === 'PasswordException') throw new BookProcessError('ملف الـ PDF محمي بكلمة مرور. أزل الحماية وارفعه من جديد.');
+        console.warn('[pdf] تعذّر فتح الملف:', e);
+    }
+
+    // الملف مابيتفتحش أو فيه صفحات تالفة كتير: نجرّب نصلّح بنيته (محلل pdf-lib أكثر تسامحًا)
+    if (!best || ratio(best) > PDF_BAD_RATIO_REPAIR) {
+        for (const mode of ['resave', 'rebuild']) {
+            throwIfAborted(signal);
+            let fixed = null;
+            try { fixed = await repairPdfBytes(buffer, mode); } catch (e) { console.warn('[pdf] فشل إصلاح الملف (' + mode + '):', e); continue; }
+            try {
+                const cand = await attempt(fixed);
+                if (!best || ratio(cand) < ratio(best)) {
+                    if (best) { try { best.doc.destroy(); } catch (e) { /* تجاهل */ } }
+                    best = cand;
+                } else {
+                    try { cand.doc.destroy(); } catch (e) { /* تجاهل */ }
+                }
+                if (ratio(best) <= PDF_BAD_RATIO_REPAIR) break;
+            } catch (e) {
+                if (e && (e.aborted || e instanceof BookProcessError)) throw e;
+            }
+        }
+    }
+
+    if (!best) {
+        throw new BookProcessError(`تعذّر فتح ملف الـ PDF لأن بنيته الداخلية تالفة. ${PDF_CORRUPT_HELP}`, 'PDF_CORRUPT');
+    }
+    const { doc: pdf, scan } = best;
+    const n = scan.total;
+    if (scan.broken > 0) console.warn(`[pdf] ${scan.broken} من ${n} صفحة تالفة وهتتخطّى`);
+    if (scan.broken === n || scan.broken / n > PDF_BAD_RATIO_FATAL) {
+        try { pdf.destroy(); } catch (e) { /* تجاهل */ }
+        throw new BookProcessError(`الملف تالف: تعذّرت قراءة ${scan.broken} من ${n} صفحة. ${PDF_CORRUPT_HELP}`, 'PDF_CORRUPT');
+    }
+
+    const pages = scan.pages;
+    const skippedPages = pages.filter((p) => p.broken).map((p) => p.page);
+    const readable = pages.filter((p) => !p.broken);
+    const okCount = readable.filter((p) => p.q.ok).length;
+    const textBased = okCount / Math.max(1, readable.length) >= 0.6;
 
     const ocr = [];
-    for (const p of pages) {
+    for (const p of readable) {
         if (p.q.ok) continue;
         let need = false;
         if (!textBased) need = true;                              // كتاب ممسوح: كل صفحة غير سليمة تتقرأ
         else if (p.q.reason !== 'short') need = true;            // نص تالف/معكوس/متقطع
         else if (p.q.len < 100) {                                 // صفحة قصيرة في كتاب نصي: نقرأها بس لو فيها صور
-            const pg = await pdf.getPage(p.page);
-            need = await pageHasImages(pdfjs, pg);
-            pg.cleanup();
+            try {
+                const pg = await pdf.getPage(p.page);
+                need = await pageHasImages(pdfjs, pg);
+                pg.cleanup();
+            } catch (e) { need = false; }
         }
         if (need) {
             ocr.push({
@@ -371,10 +446,11 @@ async function extractPdf(buffer, { signal, onStep }) {
         }
     }
 
-    const outline = await pdfOutline(pdf);
+    let outline = [];
+    try { outline = await pdfOutline(pdf); } catch (e) { outline = []; }
     const units = pages.map((p) => ({ page: p.page, text: p.text }));
     return {
-        kind: 'pdf', units, ocr, outline, pageCount: n, textBased,
+        kind: 'pdf', units, ocr, outline, pageCount: n, textBased, skippedPages,
         dispose: () => { try { pdf.destroy(); } catch (e) { /* تجاهل */ } }
     };
 }
@@ -905,7 +981,8 @@ export async function processBook({ api, book, file, onProgress, signal }) {
             throw new BookProcessError(`الكتاب ممسوح ضوئيًا وعدد صفحاته اللي محتاجة قراءة (${ocrTasks.length}) أكبر من الحد المسموح (${S().MAX_OCR_PAGES}). قسّم الملف لأجزاء.`);
         }
         const hasOcr = ocrTasks.length > 0;
-        emit('plan', 20, hasOcr ? `الكتاب محتاج قراءة ${ocrTasks.length} صفحة بالذكاء الاصطناعي` : 'النص واضح - مفيش حاجة للقراءة الضوئية', { ocrPages: ocrTasks.length, pageCount: extracted.pageCount });
+        const skippedNote = extracted.skippedPages && extracted.skippedPages.length ? ` — اتخطّينا ${extracted.skippedPages.length} صفحة تالفة في الملف` : '';
+        emit('plan', 20, (hasOcr ? `الكتاب محتاج قراءة ${ocrTasks.length} صفحة بالذكاء الاصطناعي` : 'النص واضح - مفيش حاجة للقراءة الضوئية') + skippedNote, { ocrPages: ocrTasks.length, pageCount: extracted.pageCount });
 
         // ---- OCR ----
         let ocrResults = new Map();
