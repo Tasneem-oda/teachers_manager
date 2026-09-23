@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>تسجيل الدخول - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=9">
+    <link rel="stylesheet" href="css/style.css?v=10">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -54,6 +54,7 @@
     <div class="login-container">
         <div class="login-logo" id="login-logo"></div>
         <h2>تسجيل الدخول</h2>
+        <div id="reset-notice" role="status" style="display:none; background:#E8F5E9; color:#4F6F52; padding:0.85rem 1rem; border-radius:8px; margin:-1rem 0 1.5rem; font-size:0.9rem; text-align:center;">تم تغيير كلمة المرور بنجاح. سجّل الدخول بكلمة المرور الجديدة.</div>
         
         <form id="loginForm">
             <div class="form-group">
@@ -89,13 +90,14 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=9"></script>
+    <script type="module" src="js/config.js?v=10"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=9';
-        import { Validators, ErrorHandler } from './js/utils.js?v=9';
-        import { icon } from './js/icons.js?v=9';
+        import { Auth } from './js/auth.js?v=10';
+        import { Validators, ErrorHandler } from './js/utils.js?v=10';
+        import { icon } from './js/icons.js?v=10';
 
         document.getElementById('login-logo').innerHTML = icon('graduationCap', { size: 28 });
+        if (new URLSearchParams(window.location.search).get('reset') === '1') document.getElementById('reset-notice').style.display = 'block';
 
         const form = document.getElementById('loginForm');
         const submitBtn = document.getElementById('submitBtn');
@@ -155,6 +157,6 @@
             }
         });
     </script>
-    <script src="js/pwa-install.js?v=9" defer></script>
+    <script src="js/pwa-install.js?v=10" defer></script>
 </body>
 </html>

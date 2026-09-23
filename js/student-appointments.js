@@ -11,9 +11,9 @@
  * من غير أي تعديل أو إضافة على أي workflow في n8n.
  */
 
-import { api } from './api.js?v=9';
-import { ErrorHandler, Formatters } from './utils.js?v=9';
-import { icon } from './icons.js?v=9';
+import { api } from './api.js?v=10';
+import { ErrorHandler, Formatters } from './utils.js?v=10';
+import { icon } from './icons.js?v=10';
 
 const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const RECURRENCE_LABELS = { weekly: 'أسبوعيًا', daily: 'يوميًا', monthly: 'شهريًا', none: 'مرة واحدة' };

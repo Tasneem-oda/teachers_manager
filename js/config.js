@@ -158,7 +158,28 @@ const { createClient } = window.supabase;
 
 // تهيئة وتصدير الكائن بالاسم الذي تعتمد عليه باقي الملفات
 // إضافة هذا الكود في نهاية ملف config.js أسفل كائن CONFIG
-if (typeof window !== 'undefined' && window.supabase && !window.supabaseClient) {
+// ---------------------------------------------------------------------------
+// رابط استعادة كلمة المرور
+// Supabase بيرجّع المستخدم من رابط الإيميل ومعاه التوكن في الرابط (#access_token=...&type=recovery
+// أو ?token_hash=...&type=recovery). بنحفظ الرابط الأصلي قبل ما مكتبة Supabase تقرأه وتمسحه،
+// عشان صفحة reset-password تعرف إن المستخدم جاي من رابط استعادة.
+// ولو الرابط وصل لصفحة تانية (مثلًا لو Site URL في Supabase مضبوط على الصفحة الرئيسية
+// أو الرابط مش موجود في Redirect URLs) بنحوّله لصفحة الاستعادة بنفس التوكن.
+// ---------------------------------------------------------------------------
+let __redirectingToReset = false;
+if (typeof window !== 'undefined') {
+    window.__authUrlAtLoad = window.location.href;
+    const h = window.location.hash || '';
+    const q = window.location.search || '';
+    const isRecoveryLink = /(^|[#&])type=recovery(&|$)/.test(h) || (/[?&]type=recovery(&|$)/.test(q) && /[?&]token_hash=/.test(q));
+    const onResetPage = /\/reset-password(\.html)?$/.test(window.location.pathname);
+    if (isRecoveryLink && !onResetPage) {
+        __redirectingToReset = true;
+        window.location.replace(new URL('reset-password.html', window.location.href).pathname + q + h);
+    }
+}
+
+if (typeof window !== 'undefined' && window.supabase && !window.supabaseClient && !__redirectingToReset) {
     // إنشاء العميل مرة واحدة فقط وتخزينه في window.supabaseClient
     window.supabaseClient = window.supabase.createClient(
         CONFIG.SUPABASE_URL,

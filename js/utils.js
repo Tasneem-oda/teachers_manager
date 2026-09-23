@@ -2,7 +2,7 @@
  * utils.js - دوال مساعدة موحدة للتطبيق
  */
 
-import { CONFIG } from './config.js?v=9';
+import { CONFIG } from './config.js?v=10';
 
 /**
  * التحقق من البيانات (Validation)
