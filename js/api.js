@@ -3,8 +3,8 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=10';
-import { APIUtils, Storage } from './utils.js?v=10';
+import { CONFIG } from './config.js?v=11';
+import { APIUtils, Storage } from './utils.js?v=11';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -85,6 +85,38 @@ async function apiCall(endpoint, method = 'GET', body = null, options = {}) {
     }
 }
 
+// الـ webhook مش متسجل في n8n (workflow جديد لسه متستوردش) ← n8n بيرجّع 404
+function isMissingWebhook(error) {
+    return !!error && error.status === 404;
+}
+
+async function legacyOverview(apiObj, studentId, offset, limit) {
+    const page = Math.floor(offset / limit) + 1;
+    const [student, lessonsData, schedulesData] = await Promise.all([
+        apiObj.getStudent(studentId),
+        apiObj.getLessons(studentId, page, limit).catch(() => ({ lessons: [] })),
+        apiObj.getSchedules().catch(() => ({ schedules: [] }))
+    ]);
+    const all = (lessonsData && lessonsData.lessons) || [];
+    const lessons = all.filter((l) => !l.status || l.status === 'completed');
+    const total = (lessonsData && (lessonsData.total || (lessonsData.pagination && lessonsData.pagination.total))) || null;
+    return {
+        legacy: true,
+        student,
+        stats: {
+            completed: total != null ? total : lessons.length,
+            completed_exact: total != null,
+            last_lesson: lessons[0] ? lessons[0].lesson_date : null
+        },
+        lessons,
+        in_progress: null,
+        schedules: ((schedulesData && schedulesData.schedules) || []).filter((s) => s.student_id === studentId),
+        billing: { available: false },
+        payments: [],
+        server_now: new Date().toISOString()
+    };
+}
+
 /**
  * كائن API الرئيسي
  */
@@ -121,6 +153,33 @@ export const api = {
             'POST',
             { id: studentId, ...studentData }
         );
+    },
+
+    /**
+     * ملف الطالب كامل في طلب واحد: بيانات الطالب + إحصائيات + آخر الحصص + الحصة الجارية + المواعيد + الدفع
+     * لو workflow "student-overview" لسه متستوردش، بنجمّع نفس الشكل من الطلبات القديمة (من غير الدفع)
+     */
+    async getStudentOverview(studentId, { offset = 0, limit = 20 } = {}) {
+        try {
+            return await apiCall(`${CONFIG.API_ENDPOINTS.STUDENTS.OVERVIEW}?student_id=${encodeURIComponent(studentId)}&offset=${offset}&limit=${limit}`, 'GET');
+        } catch (error) {
+            if (!isMissingWebhook(error)) throw error;
+            return await legacyOverview(this, studentId, offset, limit);
+        }
+    },
+
+    async updateStudentInfo(studentId, data) {
+        try {
+            return await apiCall(CONFIG.API_ENDPOINTS.STUDENTS.UPDATE_INFO, 'POST', { student_id: studentId, ...data });
+        } catch (error) {
+            if (!isMissingWebhook(error)) throw error;
+            return await apiCall(CONFIG.API_ENDPOINTS.STUDENTS.UPDATE, 'POST', { id: studentId, ...data });
+        }
+    },
+
+    // action: settings | disable | add_payment | adjust | delete_payment
+    async studentBilling(studentId, action, data = {}) {
+        return await apiCall(CONFIG.API_ENDPOINTS.STUDENTS.BILLING, 'POST', { student_id: studentId, action, ...data });
     },
 
     async deleteStudent(studentId) {
@@ -160,11 +219,33 @@ export const api = {
     // ==================== LESSONS ====================
     
     async startLesson(studentId) {
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
         return await apiCall(
             CONFIG.API_ENDPOINTS.LESSONS.START,
             'POST',
-            { student_id: studentId }
+            {
+                student_id: studentId,
+                // تاريخ ووقت الجهاز (بدل توقيت السيرفر) عشان حصة بعد نص الليل تتسجل في يومها الصحيح
+                local_date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+                local_time: `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
+            }
         );
+    },
+
+    /**
+     * حفظ الحصة: بيحدّث الحصة الجارية (lesson_id) ويخليها مكتملة، أو بيسجل حصة مكتملة جديدة
+     * لو مفيش حصة جارية. action: 'discard' بيحذف حصة جارية بدأت بالغلط.
+     * لو workflow الجديد لسه متستوردش في n8n بنرجع للطريقة القديمة (finalize-lesson).
+     */
+    async saveLesson(data) {
+        try {
+            return await apiCall(CONFIG.API_ENDPOINTS.LESSONS.SAVE, 'POST', data);
+        } catch (error) {
+            if (!isMissingWebhook(error) || data.action === 'discard') throw error;
+            const legacy = { ...data, performance_notes: data.performance };
+            return await apiCall(CONFIG.API_ENDPOINTS.LESSONS.FINALIZE, 'POST', { id: data.lesson_id || data.student_id, ...legacy });
+        }
     },
 
     async finalizeLesson(lessonId, lessonData) {

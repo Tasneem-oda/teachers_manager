@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الحصة - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=10">
+    <link rel="stylesheet" href="css/style.css?v=11">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,34 +19,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <style>
-        body { margin: 0; }
-        .lesson-header { background: linear-gradient(135deg, #4B3A5A 0%, #7A6B83 100%); color: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem; }
-        .lesson-header h1 { margin: 0; font-size: 2rem; color: #fff; }
-        .lesson-header p { margin: 0.5rem 0 0 0; opacity: 0.9; }
-        .lesson-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 1rem; }
-        .meta-item { background: rgba(255, 255, 255, 0.1); padding: 0.75rem; border-radius: 8px; }
-        .meta-label { font-size: 0.85rem; opacity: 0.8; }
-        .meta-value { font-weight: 600; font-size: 1.1rem; margin-top: 0.25rem; }
-        .action-buttons { display: flex; gap: 1rem; justify-content: center; margin: 1.5rem 0; }
-        .action-buttons .btn { padding: 0.75rem 1.5rem; display: inline-flex; align-items: center; gap: 0.4rem; }
-        .section { background: var(--card-bg); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 1.5rem; }
-        .section h2 { color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; font-size: 1.15rem; }
-        .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-primary); }
-        .form-group textarea, .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 1rem; }
-        .form-group textarea { min-height: 100px; resize: vertical; }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        .loader { text-align: center; padding: 3rem; color: var(--primary); font-weight: bold; }
-        @media (max-width: 600px) {
-            .lesson-header { padding: 1.25rem; }
-            .lesson-header h1 { font-size: 1.4rem; }
-            .action-buttons { flex-direction: column; }
-            .action-buttons .btn { width: 100%; justify-content: center; }
-            .form-row { grid-template-columns: 1fr; }
-            .section { padding: 1rem; }
-        }
-    </style>
+    <link rel="stylesheet" href="css/lessons.css?v=11">
+    <style>body { margin: 0; }</style>
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -54,127 +28,138 @@
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
     <div class="app-shell">
-    <div id="sidebar-root"></div>
-    <main class="main-content">
-    <div id="top-header-root"></div>
-    <div class="page-body">
-    <div class="container" style="max-width: 900px; margin: 0; padding: 0;">
-        <div class="loader" id="loader">جاري تحميل بيانات الحصة...</div>
+        <div id="sidebar-root"></div>
+        <main class="main-content">
+            <div id="top-header-root"></div>
+            <div class="page-body">
+                <div class="container" style="max-width: 1100px; margin: 0; padding: 0;">
+                    <div class="ls-loader" id="loader">جاري تحميل بيانات الحصة...</div>
 
-        <div id="lesson-content-view" style="display: none;">
-            <!-- Lesson Header -->
-            <div class="lesson-header">
-                <h1 id="student-name">اسم الطالب</h1>
-                <p id="lesson-date">التاريخ</p>
-                <div class="lesson-meta">
-                    <div class="meta-item">
-                        <div class="meta-label">المادة</div>
-                        <div class="meta-value" id="subject">-</div>
-                    </div>
-                    <div class="meta-item">
-                        <div class="meta-label">الموضوع الحالي</div>
-                        <div class="meta-value" id="current-topic">-</div>
-                    </div>
-                </div>
-            </div>
+                    <div id="lesson-app" style="display: none;">
+                        <!-- ===================== قبل البدء ===================== -->
+                        <section class="ls-state" id="state-ready">
+                            <div class="ls-hero">
+                                <h1 id="r-name"></h1>
+                                <div class="ls-hero-sub" id="r-sub"></div>
+                            </div>
+                            <div class="ls-start">
+                                <button type="button" class="btn btn-start-big" id="btn-start"></button>
+                                <div class="muted" id="r-start-hint" style="font-size: 0.82rem;"></div>
+                                <div class="ls-start-links">
+                                    <a id="r-link" target="_blank" rel="noopener" hidden>فتح رابط الحصة فقط</a>
+                                    <button type="button" id="btn-manual">تسجيل حصة تمت بدون مؤقت</button>
+                                    <button type="button" id="btn-ai-ready">المساعد الذكي</button>
+                                </div>
+                            </div>
+                            <div class="sp-grid2">
+                                <div class="x-card" id="r-last"></div>
+                                <div id="r-bill"></div>
+                            </div>
+                        </section>
 
-            <!-- Open Lesson Link -->
-            <div class="action-buttons">
-                <a href="#" id="lesson-link" class="btn" target="_blank" style="display: none;"><span id="ic-link" class="icon" style="display:inline-flex;"></span> فتح رابط الحصة</a>
-                <button class="btn" id="btn-start-timer"><span id="ic-timer" class="icon" style="display:inline-flex;"></span> بدء الحصة</button>
-                <button type="button" class="btn btn-ai-pulse" id="btn-open-ai-chat"><span id="ic-ai-chat-btn" class="icon" style="display:inline-flex;"></span> مساعد الذكاء الاصطناعي</button>
-            </div>
+                        <!-- ===================== أثناء الحصة ===================== -->
+                        <section class="ls-state" id="state-live">
+                            <div class="ls-bar" id="ls-bar">
+                                <div class="ls-bar-status">
+                                    <span class="ls-dot" aria-hidden="true"></span>
+                                    <div class="ls-bar-text">
+                                        <div class="ls-bar-name" id="bar-name"></div>
+                                        <div class="ls-timer" id="bar-timer" aria-live="off">00:00</div>
+                                    </div>
+                                </div>
+                                <a class="sp-icon-btn" id="bar-link" target="_blank" rel="noopener" title="فتح رابط الحصة" aria-label="فتح رابط الحصة" hidden></a>
+                                <button type="button" class="sp-icon-btn" id="btn-open-ai-chat" title="المساعد الذكي" aria-label="المساعد الذكي"><span id="ic-ai-chat-btn" class="icon" style="display:inline-flex;"></span></button>
+                                <button type="button" class="btn btn-finish" id="btn-finish"></button>
+                            </div>
 
-            <!-- Lesson Content -->
-            <form id="lesson-form">
-                <!-- What was taught? -->
-                <div class="section">
-                    <h2>ماذا تم تدريسه في هذه الحصة؟</h2>
-                    <div class="form-group">
-                        <label for="lesson-content">محتوى الحصة</label>
-                        <textarea id="lesson-content" name="lesson_content" placeholder="اكتب ملخص ما تم تغطيته في الحصة..."></textarea>
-                    </div>
-                </div>
+                            <div class="ls-seg" id="ls-seg" role="tablist">
+                                <button type="button" data-view="now" class="active">الحصة الآن</button>
+                                <button type="button" data-view="history">الحصص السابقة <span id="seg-count"></span></button>
+                            </div>
 
-                <!-- Student Performance -->
-                <div class="section">
-                    <h2>أداء الطالب</h2>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="memorization">الحفظ / الاستيعاب</label>
-                            <select id="memorization" name="memorization">
-                                <option value="">اختر...</option>
-                                <option value="excellent">ممتاز</option>
-                                <option value="very_good">جيد جداً</option>
-                                <option value="good">جيد</option>
-                                <option value="fair">مقبول</option>
-                                <option value="poor">ضعيف</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="recitation">الأداء الشفهي / المشاركة</label>
-                            <select id="recitation" name="recitation">
-                                <option value="">اختر...</option>
-                                <option value="excellent">ممتاز</option>
-                                <option value="very_good">جيد جداً</option>
-                                <option value="good">جيد</option>
-                                <option value="fair">مقبول</option>
-                                <option value="poor">ضعيف</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="performance-notes">ملاحظات عن الأداء</label>
-                        <textarea id="performance-notes" name="performance_notes" placeholder="ملاحظاتك عن أداء الطالب..."></textarea>
-                    </div>
-                </div>
+                            <div class="ls-grid" id="ls-grid" data-view="now">
+                                <form class="ls-form" id="lesson-form" novalidate>
+                                    <div class="ls-block" id="blk-date" hidden>
+                                        <label class="ls-label" for="f-date">تاريخ الحصة</label>
+                                        <input type="date" id="f-date">
+                                    </div>
 
-                <!-- Homework & Next Assignment -->
-                <div class="section">
-                    <h2>الواجب والمهمة القادمة</h2>
-                    <div class="form-group">
-                        <label for="homework">الواجب المنزلي</label>
-                        <textarea id="homework" name="homework" placeholder="ما الواجب المنزلي للطالب؟"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="next-assignment">المهمة / الموضوع القادم</label>
-                        <textarea id="next-assignment" name="next_assignment" placeholder="ما الذي ستشمله الحصة القادمة؟"></textarea>
-                    </div>
-                </div>
+                                    <div class="ls-block" id="blk-prev-hw" hidden>
+                                        <span class="ls-label">هل تم الواجب السابق؟</span>
+                                        <div class="ls-prev-hw" id="prev-hw-text"></div>
+                                        <div class="chip-group" data-field="revision"></div>
+                                    </div>
 
-                <!-- General Notes -->
-                <div class="section">
-                    <h2>ملاحظات عامة</h2>
-                    <div class="form-group">
-                        <label for="notes">ملاحظاتك الشخصية</label>
-                        <textarea id="notes" name="notes" placeholder="أي ملاحظات مهمة عن الطالب أو الحصة..."></textarea>
+                                    <div class="ls-block">
+                                        <label class="ls-label" for="f-content">ماذا تم في الحصة؟</label>
+                                        <textarea id="f-content" class="ls-main" data-field="lesson_content" placeholder="اكتب باختصار ما تم شرحه أو مراجعته..."></textarea>
+                                        <button type="button" class="ls-suggest" id="sug-content" hidden></button>
+                                    </div>
+
+                                    <div class="ls-block">
+                                        <span class="ls-label">تقييم الطالب</span>
+                                        <div class="ls-rating-row"><span class="ls-rating-name" id="lbl-memorization"></span><div class="chip-group" data-field="memorization"></div></div>
+                                        <div class="ls-rating-row"><span class="ls-rating-name" id="lbl-recitation"></span><div class="chip-group" data-field="recitation"></div></div>
+                                    </div>
+
+                                    <div class="ls-block ls-two">
+                                        <div>
+                                            <label class="ls-label" for="f-homework">الواجب الجديد</label>
+                                            <textarea id="f-homework" data-field="homework" placeholder="المطلوب من الطالب قبل الحصة الجاية"></textarea>
+                                        </div>
+                                        <div>
+                                            <label class="ls-label" for="f-next">المخطط للحصة الجاية</label>
+                                            <textarea id="f-next" data-field="next_assignment" placeholder="هيظهر لك أول الحصة الجاية"></textarea>
+                                            <label class="ls-check"><input type="checkbox" id="f-set-topic"> اجعله الموضوع الحالي للطالب</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="ls-block">
+                                        <details class="ls-more" id="ls-more">
+                                            <summary><span id="ic-more" style="display:inline-flex"></span> ملاحظات إضافية</summary>
+                                            <div class="ls-sub">
+                                                <label class="ls-label" for="f-performance">ملاحظات عن الأداء</label>
+                                                <textarea id="f-performance" data-field="performance" placeholder="نقاط القوة والضعف..."></textarea>
+                                            </div>
+                                            <div>
+                                                <label class="ls-label" for="f-notes">ملاحظات عامة</label>
+                                                <textarea id="f-notes" data-field="notes" placeholder="أي ملاحظة مهمة عن الطالب أو الحصة..."></textarea>
+                                            </div>
+                                        </details>
+                                    </div>
+
+                                    <div class="ls-footer">
+                                        <span class="ls-saved" id="saved-ind"></span>
+                                        <button type="button" class="ls-discard" id="btn-discard"></button>
+                                    </div>
+                                </form>
+
+                                <aside class="ls-aside" id="ls-aside" aria-label="الحصص السابقة">
+                                    <div class="ls-aside-title"><h3>الحصص السابقة</h3><a id="aside-all" href="#">كل الحصص</a></div>
+                                    <div id="aside-list"></div>
+                                </aside>
+                            </div>
+                        </section>
+
+                        <!-- ===================== بعد الإنهاء ===================== -->
+                        <section class="ls-state" id="state-done">
+                            <div class="x-card ls-done">
+                                <div class="ls-done-icon" id="done-icon"></div>
+                                <h2>تم حفظ الحصة</h2>
+                                <p id="done-sub"></p>
+                                <div class="ls-done-bill" id="done-bill"></div>
+                                <div class="ls-done-actions">
+                                    <a class="btn" id="done-student" href="#">ملف الطالب</a>
+                                    <a class="btn btn-ghost" href="dashboard.html">الرئيسية</a>
+                                </div>
+                            </div>
+                        </section>
                     </div>
-                </div>
 
-                <!-- AI Assistant (Optional) -->
-                <div class="section">
-                    <h2><span id="ic-ai-section" class="icon" style="display:inline-flex;"></span> المساعد الذكي (اختياري)</h2>
-                    <p style="color: var(--text-secondary); font-size: 0.9rem;">احصل على اقتراحات وملخصات لهذه الحصة</p>
-                    <button type="button" id="btn-ai-summary" class="btn" style="background: #9C5FA3;">اطلب ملخص ذكي</button>
-                    <div id="ai-summary" style="display: none; margin-top: 1rem; padding: 1rem; background: #F5F3F0; border-radius: 8px;">
-                        <p id="ai-summary-text"></p>
-                    </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div style="text-align: center; margin-top: 2rem;">
-                    <button type="submit" class="btn" style="padding: 1rem 2rem; font-size: 1.1rem;"><span id="ic-finish" class="icon" style="display:inline-flex;"></span> إنهاء الحصة</button>
-                    <a href="student.html" class="btn" style="background: #E7E1E8; color: var(--text-primary); margin-right: 1rem; text-decoration: none;">إلغاء</a>
-                </div>
-            </form>
-
-            <!-- ============================================================
-                 مودال مساعد الذكاء الاصطناعي (شات تفاعلي مع ذاكرة خاصة بالطالب)
-                 مخفي افتراضيًا، بيتفتح بالضغط على زرار "مساعد الذكاء الاصطناعي"
-                 فوق. منفصل تمامًا عن قسم "المساعد الذكي (اختياري)" (طلب ملخص
-                 ذكي) الموجود جوه الفورم - مفيش أي تعديل على الجزء ده.
-                 ============================================================ -->
-            <div id="ai-chat-overlay" style="display:none;">
+                    <!-- ============================================================
+                         مساعد الذكاء الاصطناعي (شات تفاعلي مع ذاكرة خاصة بالطالب)
+                         ============================================================ -->
+                    <div id="ai-chat-overlay" style="display:none;">
                 <div class="ai-chat-card">
                     <div class="ai-chat-header">
                         <div class="ai-chat-header-title">
@@ -189,7 +174,13 @@
                         </button>
                     </div>
                     <div id="ai-chat-messages" class="ai-chat-messages">
-                        <div class="ai-chat-hint">اكتب طلبك للمساعد، مثلاً: "اشرح من آية ٥ لآية ١٠" أو "اشرح الصفحة التالية للطالب" — المساعد شايف سجل حصص الطالب وملاحظاتك عليه.</div>
+                        <div class="ai-chat-hint">اكتب طلبك للمساعد، مثلاً: "اشرح الصفحة التالية للطالب" — المساعد شايف سجل حصص الطالب وملاحظاتك عليه.
+                            <div class="ai-quick">
+                                <button type="button" data-quick="summary">لخّص الحصة الحالية</button>
+                                <button type="button" data-quick="homework">اقترح واجب</button>
+                                <button type="button" data-quick="activity">نشاط سريع للبداية</button>
+                            </div>
+                        </div>
                     </div>
                     <div id="ai-chat-quota" class="ai-chat-quota"></div>
                     <form id="ai-chat-form" class="ai-chat-input-row">
@@ -198,10 +189,9 @@
                     </form>
                 </div>
             </div>
-        </div>
-    </div>
-    </div>
-    </main>
+                </div>
+            </div>
+        </main>
     </div>
 
     <style>
@@ -266,179 +256,442 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=10"></script>
+    <script type="module" src="js/config.js?v=11"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=10';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=10';
-        import { api } from './js/api.js?v=10';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=10';
-        import { icon } from './js/icons.js?v=10';
+        import { Auth } from './js/auth.js?v=11';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=11';
+        import { api } from './js/api.js?v=11';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=11';
+        import { icon } from './js/icons.js?v=11';
+        import {
+            subjectLabel, ratingFieldLabels, RATINGS, HOMEWORK_STATUS, relativeDay, localDateISO, localTimeISO,
+            formatDuration, minutesText, LessonDraft, lessonHasContent, lessonDetailsHtml, nextOccurrence, formatNextOccurrence
+        } from './js/lesson-utils.js?v=11';
+        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge } from './js/billing.js?v=11';
 
         renderSidebar('students');
-        renderTopHeader({ title: 'الحصة', subtitle: 'سجّل تفاصيل الحصة وأنهها بضغطة زر', showSearch: false });
-        document.getElementById('ic-link').innerHTML = icon('link', { size: 15 });
-        document.getElementById('ic-timer').innerHTML = icon('play', { size: 15 });
-        document.getElementById('ic-ai-section').innerHTML = icon('sparkles', { size: 18 });
-        document.getElementById('ic-finish').innerHTML = icon('checkCircle', { size: 17 });
-        document.getElementById('ic-ai-chat-btn').innerHTML = icon('messageSquare', { size: 15 });
-        document.getElementById('ic-ai-chat-header').innerHTML = icon('sparkles', { size: 18 });
-        document.getElementById('ic-ai-chat-close').innerHTML = icon('x', { size: 16 });
+        renderTopHeader({ title: 'الحصة', subtitle: 'ابدأ الحصة وتابعها وسجّلها في مكان واحد', showSearch: false });
 
-        const loader = document.getElementById('loader');
-        const content = document.getElementById('lesson-content-view');
-        const form = document.getElementById('lesson-form');
+        const $ = (id) => document.getElementById(id);
+        const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
         const urlSearchParams = new URLSearchParams(window.location.search);
         const studentIdParam = urlSearchParams.get('student_id');
-        // لو الرابط جاي من زرار "فتح المساعد الذكي" في الداشبورد (?open_ai=1)
-        // بيتفتح شات المساعد أوتوماتيك بعد تحميل بيانات الحصة
         const openAiParam = urlSearchParams.get('open_ai');
 
-        let currentLessonId = null;
-        let lessonStartedAt = null;
-        let timerInterval = null;
+        $('ic-ai-chat-btn').innerHTML = icon('sparkles', { size: 18 });
+        $('ic-ai-chat-header').innerHTML = icon('sparkles', { size: 18 });
+        $('ic-ai-chat-close').innerHTML = icon('x', { size: 16 });
+        $('ic-more').innerHTML = icon('plus', { size: 15 });
+        $('bar-link').innerHTML = icon('link', { size: 18 });
+        $('done-icon').innerHTML = icon('checkCircle', { size: 34 });
+        $('btn-start').innerHTML = icon('play', { size: 18 }) + ' ابدأ الحصة';
 
-        function startElapsedTimer() {
-            const btn = document.getElementById('btn-start-timer');
-            clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                const secs = Math.floor((Date.now() - lessonStartedAt) / 1000);
-                const m = String(Math.floor(secs / 60)).padStart(2, '0');
-                const s = String(secs % 60).padStart(2, '0');
-                btn.innerHTML = icon('clock', { size: 15 }) + ` جارية الآن... ${m}:${s}`;
-            }, 1000);
+        // ------------------------------------------------------------ الحالة
+        let ov = null;          // student-overview
+        let student = null;
+        let billView = null;
+        let mode = null;        // 'live' (حصة جارية بمؤقت) | 'manual' (تسجيل بدون مؤقت)
+        let lesson = { id: null, startedAt: null };
+        let timerInt = null;
+        let draftTimer = null;
+        let saving = false;
+        const TEXT_FIELDS = { lesson_content: 'f-content', homework: 'f-homework', next_assignment: 'f-next', performance: 'f-performance', notes: 'f-notes' };
+        const CHIP_FIELDS = ['memorization', 'recitation', 'revision'];
+
+        function showState(name) {
+            document.querySelectorAll('.ls-state').forEach((s) => s.classList.toggle('active', s.id === `state-${name}`));
+            window.scrollTo({ top: 0 });
         }
 
-        document.getElementById('btn-start-timer').addEventListener('click', async () => {
-            const btn = document.getElementById('btn-start-timer');
-            if (btn.disabled || lessonStartedAt) return;
+        // ------------------------------------------------------------ أزرار الاختيار (تقييم / الواجب السابق)
+        function buildChips(field, options) {
+            const group = document.querySelector(`.chip-group[data-field="${field}"]`);
+            group.innerHTML = options.map((o) => `<button type="button" data-value="${o.value}" aria-pressed="false">${esc(o.label)}</button>`).join('');
+            group.addEventListener('click', (e) => {
+                const b = e.target.closest('button[data-value]');
+                if (!b) return;
+                const was = b.getAttribute('aria-pressed') === 'true';
+                group.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', 'false'));
+                if (!was) b.setAttribute('aria-pressed', 'true');
+                scheduleDraft();
+            });
+        }
+        function chipValue(field) {
+            const b = document.querySelector(`.chip-group[data-field="${field}"] button[aria-pressed="true"]`);
+            return b ? b.dataset.value : null;
+        }
+        function setChip(field, value) {
+            document.querySelectorAll(`.chip-group[data-field="${field}"] button`).forEach((b) => b.setAttribute('aria-pressed', b.dataset.value === value ? 'true' : 'false'));
+        }
+        buildChips('memorization', RATINGS);
+        buildChips('recitation', RATINGS);
+        buildChips('revision', HOMEWORK_STATUS);
 
-            try {
-                btn.disabled = true;
-                btn.innerHTML = icon('clock', { size: 15 }) + ' جاري البدء...';
+        function getFields() {
+            const f = {};
+            Object.entries(TEXT_FIELDS).forEach(([k, id]) => { f[k] = $(id).value.trim(); });
+            CHIP_FIELDS.forEach((k) => { f[k] = chipValue(k); });
+            return f;
+        }
+        function setFields(f) {
+            if (!f) return;
+            Object.entries(TEXT_FIELDS).forEach(([k, id]) => { $(id).value = f[k] || ''; });
+            CHIP_FIELDS.forEach((k) => setChip(k, f[k] || null));
+            if (f.performance || f.notes) $('ls-more').open = true;
+            updateSuggest();
+        }
+        function clearForm() { setFields(Object.fromEntries([...Object.keys(TEXT_FIELDS), ...CHIP_FIELDS].map((k) => [k, null]))); $('f-set-topic').checked = false; }
 
-                const result = await api.startLesson(studentIdParam);
-                currentLessonId = (result && (result.lesson_id || result.id)) || null;
-                lessonStartedAt = Date.now();
-                btn.disabled = false;
-                startElapsedTimer();
+        // ------------------------------------------------------------ مسودة تلقائية (مابتضيعش لو الصفحة اتقفلت أو اتحدّثت)
+        function scheduleDraft() {
+            if (!mode) return;
+            clearTimeout(draftTimer);
+            draftTimer = setTimeout(saveDraftNow, 700);
+        }
+        function saveDraftNow() {
+            if (!mode) return;
+            const ok = LessonDraft.save(studentIdParam, {
+                mode, lessonId: lesson.id, startedAt: lesson.startedAt,
+                date: $('f-date').value || null, fields: getFields(), setTopic: $('f-set-topic').checked
+            });
+            if (ok) $('saved-ind').textContent = `✓ محفوظ على الجهاز تلقائيًا (${new Date().toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit' })})`;
+        }
+        $('lesson-form').addEventListener('input', scheduleDraft);
+        $('lesson-form').addEventListener('change', scheduleDraft);
 
-                ErrorHandler.showSuccess('بدأت الحصة الآن، بالتوفيق!');
-
-                const linkEl = document.getElementById('lesson-link');
-                if (linkEl && linkEl.style.display !== 'none' && linkEl.href) {
-                    window.open(linkEl.href, '_blank');
-                }
-            } catch (error) {
-                btn.disabled = false;
-                btn.innerHTML = icon('play', { size: 15 }) + ' بدء الحصة';
-                ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
-            }
-        });
-
-        // Check auth and load lesson
+        // ------------------------------------------------------------ التحميل
         window.addEventListener('load', async () => {
             const authInfo = await Auth.requireAuth();
-            if (!authInfo || !studentIdParam) {
-                window.location.href = 'dashboard.html';
+            if (!authInfo || !studentIdParam) { window.location.href = 'dashboard.html'; return; }
+            try {
+                await loadOverview();
+                decideInitialState();
+                $('loader').style.display = 'none';
+                $('lesson-app').style.display = 'block';
+                if (openAiParam === '1') openAiChat();
+            } catch (error) {
+                $('loader').textContent = 'حدث خطأ: ' + ErrorHandler.getErrorMessage(error);
+                $('loader').style.color = 'var(--danger)';
+            }
+        });
+
+        async function loadOverview() {
+            ov = await api.getStudentOverview(studentIdParam, { limit: 10 });
+            student = ov.student || {};
+            billView = computeBilling(ov.billing);
+            renderCommon();
+        }
+
+        function decideInitialState() {
+            const draft = LessonDraft.load(studentIdParam);
+            const ip = ov.in_progress;
+            if (ip && ip.id) {
+                const serverNow = Date.parse(ov.server_now) || Date.now();
+                const started = Date.parse(ip.started_at);
+                lesson = { id: ip.id, startedAt: Number.isFinite(started) ? Date.now() - (serverNow - started) : Date.now() };
+                enterLive();
+                if (draft && draft.lessonId === ip.id) { setFields(draft.fields); $('f-set-topic').checked = !!draft.setTopic; }
+                ErrorHandler.showSuccess('تم استكمال الحصة الجارية');
                 return;
             }
-
-            try {
-                const student = await api.getStudent(studentIdParam);
-                
-                // Populate header
-                document.getElementById('student-name').textContent = student.name || 'بدون اسم';
-                document.getElementById('lesson-date').textContent = Formatters.formatDate(new Date());
-                document.getElementById('subject').textContent = student.subject || '-';
-                document.getElementById('current-topic').textContent = student.current_topic || '-';
-                document.getElementById('ai-chat-student-name').textContent = student.name || '';
-
-                // Setup lesson link
-                if (student.lesson_link) {
-                    const linkEl = document.getElementById('lesson-link');
-                    linkEl.href = student.lesson_link;
-                    linkEl.style.display = 'inline-block';
-                }
-
-                loader.style.display = 'none';
-                content.style.display = 'block';
-
-                // فتح شات المساعد الذكي أوتوماتيك لو الرابط طالب كده
-                if (openAiParam === '1') {
-                    openAiChat();
-                }
-
-            } catch (error) {
-                loader.innerText = 'حدث خطأ: ' + ErrorHandler.getErrorMessage(error);
-                loader.style.color = '#B85C5C';
+            if (draft && draft.mode === 'live' && draft.lessonId && ov.legacy) {
+                // الخادم القديم مابيرجعش الحصة الجارية: نكمّل من المسودة المحفوظة
+                lesson = { id: draft.lessonId, startedAt: draft.startedAt || Date.now() };
+                enterLive();
+                setFields(draft.fields);
+                $('f-set-topic').checked = !!draft.setTopic;
+                return;
             }
+            if (draft && draft.mode === 'manual' && lessonHasContent(draft.fields)) {
+                enterManual(draft.date);
+                setFields(draft.fields);
+                $('f-set-topic').checked = !!draft.setTopic;
+                ErrorHandler.showSuccess('تم استرجاع المسودة غير المحفوظة');
+                return;
+            }
+            if (draft) LessonDraft.clear(studentIdParam);   // الحصة اتقفلت من جهاز تاني أو خلصت
+            showReady();
+        }
+
+        // ------------------------------------------------------------ العرض
+        function renderCommon() {
+            const labels = ratingFieldLabels(student.subject);
+            $('lbl-memorization').textContent = labels.memorization;
+            $('lbl-recitation').textContent = labels.recitation;
+            $('bar-name').textContent = student.name || '';
+            $('ai-chat-student-name').textContent = student.name || '';
+            $('done-student').href = `student.html?id=${encodeURIComponent(studentIdParam)}`;
+            $('aside-all').href = `student.html?id=${encodeURIComponent(studentIdParam)}#lessons`;
+            if (student.lesson_link) {
+                $('r-link').href = student.lesson_link; $('r-link').hidden = false;
+                $('bar-link').href = student.lesson_link; $('bar-link').hidden = false;
+            }
+            renderAside();
+        }
+
+        function lessonsCount() { return ov && ov.stats ? Number(ov.stats.completed) || 0 : 0; }
+        function lastLesson() { return ov && ov.lessons && ov.lessons[0] ? ov.lessons[0] : null; }
+
+        function showReady() {
+            mode = null;
+            stopTimer();
+            $('r-name').textContent = student.name || 'بدون اسم';
+            const sub = [`<span>${icon('bookOpen', { size: 14 })} ${esc(subjectLabel(student.subject))}</span>`];
+            if (!ov.legacy || (ov.stats && ov.stats.completed_exact)) sub.push(`<span>${icon('clipboardList', { size: 14 })} الحصة رقم ${lessonsCount() + 1}</span>`);
+            const next = formatNextOccurrence(nextOccurrence(ov.schedules));
+            if (next) sub.push(`<span>${icon('clock', { size: 14 })} الموعد: ${esc(next)}</span>`);
+            const badge = billingBadge(billView);
+            if (badge) sub.push(`<span class="ls-badge st-${badge.status}">${esc(badge.text)}</span>`);
+            $('r-sub').innerHTML = sub.join('');
+            $('r-start-hint').textContent = student.lesson_link ? 'رابط الحصة هيفتح تلقائيًا في تبويب جديد' : '';
+
+            const last = lastLesson();
+            $('r-last').innerHTML = last
+                ? `<div class="x-card-title"><h3>${icon('clipboard', { size: 17 })} آخر حصة · ${esc(relativeDay(last.lesson_date))}</h3>
+                       <a class="x-link" href="student.html?id=${encodeURIComponent(studentIdParam)}#lessons">كل الحصص</a></div>
+                   ${lessonDetailsHtml(last, student.subject, icon, { highlightNext: true })}`
+                : `<div class="x-card-title"><h3>${icon('clipboard', { size: 17 })} آخر حصة</h3></div><div class="x-empty">دي أول حصة مسجّلة مع الطالب 🎉</div>`;
+
+            renderBilling($('r-bill'), true);
+            showState('ready');
+        }
+
+        function renderBilling(container, compact) {
+            if (!billView || !billView.available) { container.innerHTML = ''; return; }
+            container.innerHTML = billingCardHtml(billView, { compact });
+            bindBillingActions(container, {
+                getState: () => ({ student, view: billView }),
+                onChange: async () => {
+                    try { await loadOverview(); } catch (e) { return; }
+                    renderBilling(container, compact);
+                    if (mode === null && document.getElementById('state-ready').classList.contains('active')) showReady();
+                }
+            });
+        }
+
+        function renderAside() {
+            const lessons = (ov && ov.lessons) || [];
+            const total = lessonsCount();
+            $('seg-count').textContent = lessons.length ? `(${total || lessons.length})` : '';
+            if (!lessons.length) { $('aside-list').innerHTML = '<div class="x-empty">لا توجد حصص سابقة</div>'; return; }
+            $('aside-list').innerHTML = lessons.map((l, i) => {
+                const peek = (l.lesson_content || l.homework || '').split('\n')[0];
+                const num = total ? total - i : '';
+                return `<details class="lh-item" ${i === 0 ? 'open' : ''}>
+                    <summary>${num ? `<span class="lh-num">#${num}</span>` : ''}<span class="lh-date">${esc(relativeDay(l.lesson_date))}</span>
+                        <span class="lh-peek">${esc(peek)}</span><span class="lh-caret">${icon('chevronDown', { size: 16 })}</span></summary>
+                    <div class="lh-body">${lessonDetailsHtml(l, student.subject, icon, { highlightNext: i === 0 })}</div>
+                </details>`;
+            }).join('');
+        }
+
+        function prepareForm() {
+            const last = lastLesson();
+            // متابعة الواجب السابق
+            if (last && last.homework) {
+                $('prev-hw-text').textContent = last.homework;
+                $('blk-prev-hw').hidden = false;
+            } else {
+                $('blk-prev-hw').hidden = true;
+            }
+            updateSuggest();
+        }
+        // اقتراح: المخطط من الحصة السابقة (بيختفي لو اتضاف للخانة بالفعل)
+        function updateSuggest() {
+            const last = lastLesson();
+            const sug = $('sug-content');
+            const planned = last && last.next_assignment ? last.next_assignment.trim() : '';
+            if (planned && !$('f-content').value.includes(planned)) {
+                sug.innerHTML = `${icon('arrowNext', { size: 14 })} <span>استخدم المخطط: ${esc(planned)}</span>`;
+                sug.hidden = false;
+            } else {
+                sug.hidden = true;
+            }
+        }
+        $('sug-content').addEventListener('click', () => {
+            const last = lastLesson();
+            if (!last || !last.next_assignment) return;
+            const ta = $('f-content');
+            ta.value = ta.value.trim() ? `${ta.value.trim()}\n${last.next_assignment}` : last.next_assignment;
+            $('sug-content').hidden = true;
+            ta.focus();
+            scheduleDraft();
         });
 
-        // Handle form submission
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        // ------------------------------------------------------------ الحالات
+        function enterLive() {
+            mode = 'live';
+            $('ls-bar').classList.remove('ls-bar-manual');
+            $('blk-date').hidden = true;
+            $('btn-finish').innerHTML = icon('checkCircle', { size: 17 }) + ' <span class="ls-finish-text">إنهاء الحصة</span>';
+            $('btn-discard').textContent = 'بدأت بالغلط؟ احذف الحصة الجارية';
+            prepareForm();
+            startTimer();
+            showState('live');
+        }
 
-            const formData = {
-                student_id: studentIdParam,
-                lesson_content: document.getElementById('lesson-content').value,
-                memorization: document.getElementById('memorization').value || null,
-                recitation: document.getElementById('recitation').value || null,
-                performance_notes: document.getElementById('performance-notes').value,
-                homework: document.getElementById('homework').value,
-                next_assignment: document.getElementById('next-assignment').value,
-                notes: document.getElementById('notes').value
+        function enterManual(date) {
+            mode = 'manual';
+            stopTimer();
+            lesson = { id: null, startedAt: null };
+            $('ls-bar').classList.add('ls-bar-manual');
+            $('bar-timer').textContent = 'تسجيل بدون مؤقت';
+            $('blk-date').hidden = false;
+            $('f-date').value = date || localDateISO();
+            $('f-date').max = localDateISO();
+            $('btn-finish').innerHTML = icon('checkCircle', { size: 17 }) + ' <span class="ls-finish-text">حفظ الحصة</span>';
+            $('btn-discard').textContent = 'إلغاء';
+            prepareForm();
+            showState('live');
+        }
+
+        function startTimer() {
+            stopTimer();
+            const tick = () => {
+                const t = formatDuration(Date.now() - (lesson.startedAt || Date.now()));
+                $('bar-timer').textContent = t;
+                document.title = `● ${t} - الحصة`;
             };
+            tick();
+            timerInt = setInterval(tick, 1000);
+        }
+        function stopTimer() {
+            clearInterval(timerInt);
+            timerInt = null;
+            document.title = 'الحصة - Teachers Manager';
+        }
 
+        // ------------------------------------------------------------ بدء الحصة
+        $('btn-start').addEventListener('click', async () => {
+            const btn = $('btn-start');
+            if (btn.disabled) return;
+            // الرابط بيتفتح مباشرة مع الضغطة (بعد أي انتظار المتصفح بيمنع النوافذ الجديدة)
+            if (student.lesson_link) { try { window.open(student.lesson_link, '_blank', 'noopener'); } catch (e) { /* تجاهل */ } }
+            btn.disabled = true;
+            btn.innerHTML = icon('clock', { size: 18 }) + ' جاري البدء...';
             try {
-                const btn = form.querySelector('button[type="submit"]');
-                btn.disabled = true;
-                btn.textContent = 'جاري الحفظ...';
-
-                await api.finalizeLesson(currentLessonId || studentIdParam, formData);
-                clearInterval(timerInterval);
-
-                ErrorHandler.showSuccess('تم حفظ الحصة بنجاح!');
-                setTimeout(() => {
-                    window.location.href = `student.html?id=${studentIdParam}`;
-                }, 1500);
-
+                const res = await api.startLesson(studentIdParam);
+                const serverNow = Date.parse(res && res.server_now);
+                const started = Date.parse(res && res.started_at);
+                lesson = {
+                    id: (res && (res.lesson_id || res.id)) || null,
+                    startedAt: Number.isFinite(serverNow) && Number.isFinite(started) ? Date.now() - (serverNow - started) : Date.now()
+                };
+                clearForm();
+                enterLive();
+                saveDraftNow();
+                ErrorHandler.showSuccess(res && res.resumed ? 'تم استكمال الحصة الجارية' : 'بدأت الحصة، بالتوفيق!');
             } catch (error) {
                 ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
-                const btn = form.querySelector('button[type="submit"]');
-                btn.disabled = false;
-                btn.innerHTML = icon('checkCircle', { size: 17 }) + ' إنهاء الحصة';
-            }
-        });
-
-        // AI Summary button
-        document.getElementById('btn-ai-summary').addEventListener('click', async (e) => {
-            e.preventDefault();
-            const btn = e.target;
-            const summaryDiv = document.getElementById('ai-summary');
-            const summaryText = document.getElementById('ai-summary-text');
-
-            try {
-                btn.disabled = true;
-                btn.textContent = 'جاري التحليل...';
-
-                const content = document.getElementById('lesson-content').value;
-                const notes = document.getElementById('performance-notes').value;
-
-                const result = await api.getAIAssistance(
-                    `يرجى تحليل الحصة التالية وإعطائي ملخصاً وتوصيات:\n\nمحتوى الحصة: ${content}\n\nملاحظات الأداء: ${notes}`,
-                    { student_id: studentIdParam }
-                );
-
-                summaryText.textContent = result.suggestion || 'لا يتوفر اقتراحات في الوقت الحالي';
-                summaryDiv.style.display = 'block';
-
-            } catch (error) {
-                ErrorHandler.showError('فشل جلب المساعدة الذكية');
             } finally {
                 btn.disabled = false;
-                btn.textContent = 'اطلب ملخص ذكي';
+                btn.innerHTML = icon('play', { size: 18 }) + ' ابدأ الحصة';
             }
         });
+
+        $('btn-manual').addEventListener('click', () => { clearForm(); enterManual(); saveDraftNow(); });
+        $('btn-ai-ready').addEventListener('click', () => openAiChat());
+
+        // تبويبات الموبايل: الحصة الآن / الحصص السابقة
+        $('ls-seg').addEventListener('click', (e) => {
+            const b = e.target.closest('button[data-view]');
+            if (!b) return;
+            $('ls-seg').querySelectorAll('button').forEach((x) => x.classList.toggle('active', x === b));
+            $('ls-grid').dataset.view = b.dataset.view;
+        });
+
+        // ------------------------------------------------------------ حذف الحصة الجارية / إلغاء التسجيل اليدوي
+        $('btn-discard').addEventListener('click', async () => {
+            if (mode === 'manual') {
+                if (lessonHasContent(getFields()) && !confirm('إلغاء تسجيل الحصة؟ المكتوب مش هيتحفظ.')) return;
+                LessonDraft.clear(studentIdParam);
+                clearForm();
+                showReady();
+                return;
+            }
+            if (!confirm('حذف الحصة الجارية؟ مش هتتسجل ولا هتتحسب في عدد الحصص.')) return;
+            try {
+                if (lesson.id) await api.saveLesson({ action: 'discard', student_id: studentIdParam, lesson_id: lesson.id });
+                LessonDraft.clear(studentIdParam);
+                clearForm();
+                await loadOverview();
+                showReady();
+                ErrorHandler.showSuccess('تم حذف الحصة الجارية');
+            } catch (error) {
+                ErrorHandler.showError(error && error.status === 404
+                    ? 'حذف الحصة الجارية يحتاج استيراد workflow "save-lesson" في n8n.'
+                    : ErrorHandler.getErrorMessage(error));
+            }
+        });
+
+        // ------------------------------------------------------------ إنهاء الحصة
+        $('btn-finish').addEventListener('click', async () => {
+            if (saving) return;
+            const fields = getFields();
+            if (!lessonHasContent(fields) && !confirm('لم يُكتب أي شيء عن الحصة. إنهاء الحصة على أي حال؟')) return;
+            const payload = {
+                action: 'complete',
+                student_id: studentIdParam,
+                lesson_id: lesson.id,
+                ...fields,
+                local_date: mode === 'manual' ? ($('f-date').value || localDateISO()) : localDateISO(),
+                local_time: mode === 'manual' ? null : localTimeISO(),
+                current_topic: $('f-set-topic').checked && fields.next_assignment ? fields.next_assignment.slice(0, 300) : null
+            };
+            const btn = $('btn-finish');
+            saving = true;
+            btn.disabled = true;
+            const label = btn.innerHTML;
+            btn.innerHTML = icon('clock', { size: 17 }) + ' <span class="ls-finish-text">جاري الحفظ...</span>';
+            try {
+                await api.saveLesson(payload);
+                const duration = mode === 'live' && lesson.startedAt ? Date.now() - lesson.startedAt : null;
+                LessonDraft.clear(studentIdParam);
+                stopTimer();
+                mode = null;
+                try { await loadOverview(); } catch (e) { /* الحصة اتحفظت، الملخص بس اللي ماتحمّلش */ }
+                showDone(duration);
+            } catch (error) {
+                ErrorHandler.showError(ErrorHandler.getErrorMessage(error) + ' — المكتوب محفوظ على الجهاز، حاول مرة أخرى.');
+                btn.innerHTML = label;
+            } finally {
+                saving = false;
+                btn.disabled = false;
+            }
+        });
+
+        function showDone(duration) {
+            const parts = [];
+            if (duration) parts.push(`مدة الحصة ${minutesText(duration)}`);
+            if (lessonsCount()) parts.push(`إجمالي حصص ${student.name ? student.name.split(' ')[0] : 'الطالب'}: ${lessonsCount()}`);
+            $('done-sub').textContent = parts.join(' · ');
+            renderBilling($('done-bill'), false);
+            clearForm();
+            showState('done');
+        }
+
+        // ------------------------------------------------------------ المساعد الذكي: اقتراحات سريعة
+        function aiQuickSend(text) {
+            const input = $('ai-chat-input');
+            input.value = text;
+            $('ai-chat-form').requestSubmit();
+        }
+        document.querySelectorAll('.ai-quick button[data-quick]').forEach((b) => b.addEventListener('click', () => {
+            const kind = b.dataset.quick;
+            if (kind === 'summary') {
+                const f = getFields();
+                const lines = ['لخّص الحصة الحالية في نقاط قصيرة، واقترح المطلوب في الحصة الجاية.'];
+                if (f.lesson_content) lines.push(`ماذا تم: ${f.lesson_content}`);
+                if (f.homework) lines.push(`الواجب: ${f.homework}`);
+                if (f.performance) lines.push(`ملاحظات الأداء: ${f.performance}`);
+                if (f.notes) lines.push(`ملاحظات: ${f.notes}`);
+                aiQuickSend(lines.join('\n').slice(0, 600));
+            } else if (kind === 'homework') {
+                aiQuickSend('اقترح واجب قصير ومناسب للطالب بناءً على آخر الحصص.');
+            } else if (kind === 'activity') {
+                aiQuickSend('اقترح نشاط سريع (5 دقائق) أبدأ بيه الحصة دي مع الطالب.');
+            }
+        }));
 
         // ============================================================
         // مساعد الذكاء الاصطناعي (شات تفاعلي) - ميزة منفصلة تمامًا عن
@@ -617,7 +870,7 @@
                 aiChatInput.focus();
             }
         });
-    </script>
-    <script src="js/pwa-install.js?v=10" defer></script>
+        </script>
+    <script src="js/pwa-install.js?v=11" defer></script>
 </body>
 </html>

@@ -34,7 +34,11 @@ export const CONFIG = {
             GET_ALL: '/get-students',
             GET_ONE: '/get-student',
             UPDATE: '/update-student',
-            DELETE: '/delete-student'
+            DELETE: '/delete-student',
+            // ملف الطالب الجديد: ملخص + حصص + دفع في طلب واحد، وتعديل البيانات الأساسية
+            OVERVIEW: '/student-overview',
+            UPDATE_INFO: '/update-student-info',
+            BILLING: '/student-billing'
         },
         SCHEDULES: {
             CREATE: '/create-schedule',
@@ -49,7 +53,9 @@ export const CONFIG = {
             GET_HISTORY: '/get-lesson-history',
             // مواعيد اليوم بحالتها (فات ميعادها/قيد التنفيذ/تمت/اتلغت) + إلغاء حصة اليوم يدويًا
             GET_TODAY: '/get-today-lessons',
-            CANCEL: '/cancel-lesson'
+            CANCEL: '/cancel-lesson',
+            // حفظ الحصة (تحديث الحصة الجارية أو تسجيل حصة مكتملة) + حذف حصة بدأت بالغلط
+            SAVE: '/save-lesson'
         },
         NOTES: {
             CREATE: '/create-note',

@@ -18,7 +18,7 @@
    - معدّلة (استبدل القديمة): `process-book.json` · `ask-sources.json` · `create-book-source.json` · `list-books.json`
    - لو استوردت نسخة بنفس الـ path (`process-book`، `ask-sources`...) لازم تلغي/تمسح القديمة الأول عشان ما يحصلش تعارض في الـ webhook.
    - في كل Postgres node وكل HTTP node تأكد إن الـ credentials هي بتاعتك (الملفات بتشير لنفس أسماء الـ credentials الموجودة في باقي الـ workflows: `Postgres account` و`Gemini API Key`).
-3. **انشر الواجهة** (Cloudflare Pages) بالمجلد كله. كل الصفحات اتعمل لها cache-busting (`?v=10`).
+3. **انشر الواجهة** (Cloudflare Pages) بالمجلد كله. كل الصفحات اتعمل لها cache-busting (`?v=11`).
 4. جرّب: ارفع PDF نصي صغير، بعدين كتاب ممسوح (أو صورة صفحة).
 
 > الواجهة الجديدة **لا تعمل** قبل الخطوتين 1 و2 (رفع الكتب بيمرّ على الـ endpoints الجديدة).
@@ -67,4 +67,4 @@ finish-book ──────────────────────�
 ## الملفات
 
 - **جديدة:** `js/book-processor.js` · `js/book-viewer.js` · `js/book-chat.js` · `js/book-chunker.js` · `js/book-libs.js` · `js/md-lite.js` · `js/books-page.js` · `css/books.css` · `n8n/{book-ocr,book-index,finish-book,get-book-content}.json` · `n8n/BOOKS_LIBRARY_V2_MIGRATION.sql`
-- **معدّلة:** `books.html` · `js/api.js` · `js/config.js` · `js/icons.js` · `n8n/{process-book,ask-sources,create-book-source,list-books}.json` — وكل الصفحات (رقم الإصدار `?v=10`).
+- **معدّلة:** `books.html` · `js/api.js` · `js/config.js` · `js/icons.js` · `n8n/{process-book,ask-sources,create-book-source,list-books}.json` — وكل الصفحات (رقم الإصدار `?v=11`).
