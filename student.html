@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>ملف الطالب - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=9">
+    <link rel="stylesheet" href="css/style.css?v=11">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,35 +19,16 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
+    <link rel="stylesheet" href="css/lessons.css?v=11">
     <style>
-        .tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 1.5rem; gap: 1rem; }
-        .tab-btn { background: none; border: none; padding: 1rem; font-size: 0.95rem; cursor: pointer; color: var(--text-secondary); font-weight: 600; border-bottom: 3px solid transparent; }
-        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .info-row { display: flex; justify-content: space-between; margin-bottom: 0.9rem; font-size: 0.9rem; }
-        .info-label { color: var(--text-secondary); font-weight: 500; }
-        .info-value { color: var(--text-primary); font-weight: 600; }
-        .focus-card {
-            background: linear-gradient(180deg, rgba(75,58,90,0.05), var(--card-bg));
-            border: 2px solid var(--primary);
-            border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem;
-        }
-        .focus-card h3 { display:flex; align-items:center; gap:0.5rem; }
-        .focus-card .sub { color: var(--text-secondary); font-size: 0.85rem; margin: -0.5rem 0 1.25rem; }
-        .lesson-hist-item { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-bottom: 0.9rem; }
-        .lesson-date { color: var(--primary); font-weight: 700; }
-        .lesson-detail { color: var(--text-secondary); font-size: 0.88rem; margin-top: 0.4rem; }
-        .note-item { background: var(--bg-secondary); border-right: 4px solid var(--primary); padding: 0.9rem; margin-bottom: 0.8rem; border-radius: 6px; }
-        .note-date { color: var(--text-light); font-size: 0.78rem; }
-        .note-text { color: var(--text-primary); margin-top: 0.35rem; font-size: 0.9rem; }
         .loading { text-align: center; padding: 2rem; color: var(--primary); }
         .empty-state { text-align: center; padding: 2rem; color: var(--text-secondary); }
-        @media (max-width: 560px) {
-            .header-actions { flex-direction: column; width: 100%; }
-            .header-actions .btn { width: 100%; justify-content: center; display: inline-flex; }
-            .tabs { overflow-x: auto; }
-        }
+        .bill-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; margin-top: 1rem; }
+        .bill-summary div { background: var(--bg-secondary); border-radius: 12px; padding: 0.7rem 0.8rem; }
+        .bill-summary span { display: block; font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; }
+        .bill-summary strong { display: block; font-size: 1.1rem; color: var(--primary); margin-top: 0.15rem; }
+        .more-wrap { text-align: center; margin: 0.8rem 0 1.5rem; }
+        @media (max-width: 480px) { .bill-summary { grid-template-columns: 1fr 1fr; } }
     </style>
 </head>
 <body>
@@ -57,276 +38,491 @@
     <!-- End Google Tag Manager (noscript) -->
     <div class="app-shell">
         <div id="sidebar-root"></div>
-
         <main class="main-content">
             <div id="top-header-root"></div>
-
             <div class="page-body">
                 <div id="loading" class="loading">جاري تحميل بيانات الطالب...</div>
                 <div id="content" style="display: none;">
-                    <div class="flex" style="margin-bottom: 1.5rem;">
-                        <div>
-                            <h1 id="student-name" style="margin:0 0 0.2rem;"></h1>
-                            <p id="student-subject" style="color: var(--text-secondary); margin: 0;"></p>
+                    <!-- رأس الملف -->
+                    <div class="sp-head">
+                        <div style="min-width:0; flex:1;">
+                            <h1 class="sp-name" id="sp-name"></h1>
+                            <div class="sp-sub" id="sp-sub"></div>
+                            <div class="sp-contact" id="sp-contact"></div>
                         </div>
-                        <div class="header-actions" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-                            <button class="btn" style="background: var(--secondary);" id="btn-open-student-appts" type="button"><span id="ic-add-appt" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> مواعيد الطالب</button>
-                            <button class="btn" style="background: var(--primary);" id="btn-prepare-lesson" type="button"><span id="ic-prepare-lesson" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> حضّرلي الحصة</button>
-                            <button class="btn btn-primary" onclick="location.href='lesson.html?student_id=' + getStudentId()"><span id="ic-start-lesson" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> بدء الحصة</button>
+                        <div class="sp-cta">
+                            <a class="btn" id="btn-lesson" href="#"></a>
+                            <div class="sp-cta-row">
+                                <button class="btn btn-sm btn-ghost" id="btn-prepare-lesson" type="button"></button>
+                                <button class="btn btn-sm btn-ghost" id="btn-open-student-appts" type="button"></button>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- ملخص سريع -->
+                    <div class="sp-stats" id="sp-stats"></div>
+
+                    <nav class="sp-tabs" id="sp-tabs" role="tablist">
+                        <button class="sp-tab active" data-tab="overview" type="button">نظرة عامة</button>
+                        <button class="sp-tab" data-tab="lessons" type="button">الحصص <span class="sp-count" id="cnt-lessons"></span></button>
+                        <button class="sp-tab" data-tab="billing" type="button">الدفع</button>
+                        <button class="sp-tab" data-tab="notes" type="button">الملاحظات <span class="sp-count" id="cnt-notes"></span></button>
+                        <button class="sp-tab" data-tab="info" type="button">البيانات</button>
+                    </nav>
+
+                    <section class="sp-panel active" id="tab-overview">
+                        <div class="sp-grid2">
+                            <div>
+                                <div class="x-card" id="ov-last"></div>
+                            </div>
+                            <div>
+                                <div id="ov-bill" style="margin-bottom: 1rem;"></div>
+                                <div class="x-card" id="ov-profile"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="sp-panel" id="tab-lessons">
+                        <div id="lessons-list"></div>
+                        <div class="more-wrap"><button type="button" class="btn btn-ghost btn-sm" id="btn-more-lessons" hidden>عرض حصص أقدم</button></div>
+                    </section>
+
+                    <section class="sp-panel" id="tab-billing">
+                        <div id="bill-main" style="margin-bottom: 1rem;"></div>
+                        <div class="x-card" id="bill-history" hidden></div>
+                    </section>
+
+                    <section class="sp-panel" id="tab-notes">
+                        <div class="x-card">
+                            <form id="note-form" class="note-form2">
+                                <textarea id="note-text" placeholder="أضف ملاحظة عن تقدّم الطالب..." required></textarea>
+                                <button type="submit" class="btn">إضافة</button>
+                            </form>
+                            <div id="notes-list"><div class="x-empty">لا توجد ملاحظات</div></div>
+                        </div>
+                    </section>
+
+                    <section class="sp-panel" id="tab-info">
+                        <div class="x-card">
+                            <div class="x-card-title"><h3 id="info-title"></h3><button type="button" class="x-link" id="btn-edit-info">تعديل</button></div>
+                            <dl class="sp-info" id="info-list"></dl>
+                        </div>
+                        <div class="x-card sp-danger">
+                            <div class="x-card-title"><h3>حذف الطالب</h3></div>
+                            <p>سيتم حذف كل حصص الطالب وملاحظاته ومواعيده ودفعاته نهائيًا.</p>
+                            <button type="button" class="btn btn-danger btn-sm" id="btn-delete-student">حذف الطالب</button>
+                        </div>
+                    </section>
 
                     <!-- مودال "حضّرلي الحصة" -->
                     <div class="modal" id="prepare-lesson-modal">
                         <div class="modal-content">
                             <span class="close-modal">&times;</span>
                             <h2>🎯 اقتراح للحصة</h2>
-                            <div id="prepare-lesson-body">
-                                <div class="loading">جاري تجهيز الحصة...</div>
-                            </div>
+                            <div id="prepare-lesson-body"><div class="loading">جاري تجهيز الحصة...</div></div>
                         </div>
                     </div>
 
-                    <div class="tabs">
-                        <button class="tab-btn active" onclick="switchTab(event, 'info')">المعلومات</button>
-                        <button class="tab-btn" onclick="switchTab(event, 'history')">سجل الحصص</button>
-                    </div>
-
-                    <!-- تبويب المعلومات (مدمج فيه نمط التدريس والملاحظات مع التركيز عليهم) -->
-                    <div id="info" class="tab-content active">
-                        <div class="card">
-                            <div class="info-row"><span class="info-label">البريد الإلكتروني</span><span class="info-value" id="student-email">-</span></div>
-                            <div class="info-row"><span class="info-label">رقم الهاتف</span><span class="info-value" id="student-phone">-</span></div>
-                            <div class="info-row"><span class="info-label">رابط الحصة</span><span class="info-value" id="student-link" style="word-break: break-all;">-</span></div>
-                            <div class="info-row"><span class="info-label">الموضوع الحالي</span><span class="info-value" id="student-current-topic">-</span></div>
-                            <div class="info-row"><span class="info-label">تاريخ الالتحاق</span><span class="info-value" id="student-joined">-</span></div>
-                            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                                <button class="btn btn-primary" onclick="editStudent()">تعديل المعلومات</button>
-                                <button class="btn btn-danger" onclick="deleteStudent()">حذف الطالب</button>
-                            </div>
-                        </div>
-
-                        <!-- الجزء المُركَّز عليه: نمط التدريس -->
-                        <div class="focus-card">
-                            <h3><span id="ic-focus" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> نمط التدريس</h3>
-                            <p class="sub">هذا القسم يساعد المساعد الذكي على فهم أسلوب هذا الطالب بدقة</p>
-                            <div id="teaching-profile-display" style="margin-bottom: 1.25rem;">
-                                <div class="empty-state">جاري التحميل...</div>
-                            </div>
-                            <form id="teaching-form">
-                                <div class="form-group">
-                                    <label>نمط التدريس</label>
-                                    <textarea id="teaching-style" placeholder="وصف نمط التدريس المفضل لهذا الطالب..."></textarea>
+                    <!-- مودال تعديل البيانات -->
+                    <div class="modal bill-modal" id="edit-modal">
+                        <div class="modal-content">
+                            <button type="button" class="bm-close" data-close-modal="edit-modal" aria-label="إغلاق"></button>
+                            <h2 class="bm-title">تعديل بيانات الطالب</h2>
+                            <div class="bm-error" id="edit-error" role="alert"></div>
+                            <form id="edit-form" class="x-form" novalidate>
+                                <div class="form-group"><label for="e-name">الاسم *</label><input type="text" id="e-name" required maxlength="120"></div>
+                                <div class="bm-grid">
+                                    <div class="form-group"><label for="e-phone">رقم الهاتف</label><input type="tel" id="e-phone" dir="ltr" maxlength="40" placeholder="01xxxxxxxxx"><small>يُستخدم لرسائل واتساب</small></div>
+                                    <div class="form-group"><label for="e-email">البريد الإلكتروني</label><input type="email" id="e-email" dir="ltr" maxlength="200"></div>
                                 </div>
-                                <div class="form-group">
-                                    <label>تفضيلات الطالب</label>
-                                    <textarea id="student-preferences" placeholder="تفضيلات الطالب في التعلم..."></textarea>
+                                <div class="form-group"><label for="e-subject">المادة</label>
+                                    <select id="e-subject">
+                                        <option value="">بدون مادة</option>
+                                        <option value="quran">القرآن الكريم</option>
+                                        <option value="english">اللغة الإنجليزية</option>
+                                        <option value="arabic">اللغة العربية</option>
+                                        <option value="math">الرياضيات</option>
+                                        <option value="science">العلوم</option>
+                                    </select></div>
+                                <div class="form-group"><label for="e-link">رابط الحصة</label><input type="url" id="e-link" dir="ltr" maxlength="500" placeholder="https://zoom.us/..."></div>
+                                <div class="form-group"><label for="e-topic">الموضوع الحالي</label><input type="text" id="e-topic" maxlength="300"></div>
+                                <div class="bm-buttons">
+                                    <button type="submit" class="btn" id="edit-save">حفظ</button>
+                                    <button type="button" class="btn btn-ghost" data-close-modal="edit-modal">إلغاء</button>
                                 </div>
-                                <div class="form-group">
-                                    <label>السياق للمساعد الذكي</label>
-                                    <textarea id="ai-context" placeholder="معلومات سياقية يستخدمها المساعد الذكي..."></textarea>
-                                </div>
-                                <button type="submit" class="btn btn-primary">حفظ نمط التدريس</button>
                             </form>
                         </div>
-
-                        <!-- الجزء المُركَّز عليه: الملاحظات -->
-                        <div class="focus-card">
-                            <h3><span id="ic-notes-focus" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> الملاحظات</h3>
-                            <p class="sub">سجّل أي ملاحظة عن تقدّم الطالب هنا لمتابعتها لاحقًا</p>
-                            <form id="note-form" style="margin-bottom: 1.25rem;">
-                                <div class="form-group">
-                                    <textarea id="note-text" placeholder="أضف ملاحظة جديدة..." required></textarea>
-                                </div>
-                                <button type="submit" class="btn btn-primary">إضافة الملاحظة</button>
-                            </form>
-                            <div id="notes-list">
-                                <div class="empty-state">لا توجد ملاحظات</div>
-                            </div>
-                        </div>
                     </div>
 
-                    <!-- تبويب سجل الحصص -->
-                    <div id="history" class="tab-content">
-                        <div id="lessons-list">
-                            <div class="empty-state">لا توجد حصص مسجلة</div>
+                    <!-- مودال أسلوب التعلم -->
+                    <div class="modal bill-modal" id="profile-modal">
+                        <div class="modal-content">
+                            <button type="button" class="bm-close" data-close-modal="profile-modal" aria-label="إغلاق"></button>
+                            <h2 class="bm-title">إزاي الطالب ده بيتعلم أحسن؟</h2>
+                            <form id="teaching-form" class="x-form">
+                                <div class="form-group"><label for="teaching-style">طريقة الشرح المناسبة</label>
+                                    <textarea id="teaching-style" placeholder="مثلًا: بيحب الأمثلة العملية والتكرار، ومحتاج شرح بطيء..."></textarea></div>
+                                <div class="form-group"><label for="student-preferences">اهتمامات وتفضيلات الطالب</label>
+                                    <textarea id="student-preferences" placeholder="مثلًا: بيحب كرة القدم، بيتشتت بسرعة..."></textarea></div>
+                                <div class="form-group"><label for="ai-context">معلومات إضافية للمساعد الذكي <small>(اختياري)</small></label>
+                                    <textarea id="ai-context" placeholder="أي تفاصيل تساعد المساعد يقترح بدقة (المستوى، الهدف، الامتحانات...)"></textarea></div>
+                                <div class="bm-buttons">
+                                    <button type="submit" class="btn">حفظ</button>
+                                    <button type="button" class="btn btn-ghost" data-close-modal="profile-modal">إلغاء</button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
-
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=9"></script>
+    <script type="module" src="js/config.js?v=11"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=9';
-        import { api } from './js/api.js?v=9';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=9';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=9';
-        import { icon } from './js/icons.js?v=9';
-        import { openStudentAppointments } from './js/student-appointments.js?v=9';
+        import { Auth } from './js/auth.js?v=11';
+        import { api } from './js/api.js?v=11';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=11';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=11';
+        import { icon } from './js/icons.js?v=11';
+        import { openStudentAppointments } from './js/student-appointments.js?v=11';
+        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence } from './js/lesson-utils.js?v=11';
+        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=11';
 
         renderSidebar('students');
-        renderTopHeader({ title: 'ملف الطالب', subtitle: 'المعلومات، نمط التدريس، والملاحظات في مكان واحد' });
-        document.getElementById('ic-add-appt').innerHTML = icon('calendar', { size: 15 });
-        document.getElementById('ic-start-lesson').innerHTML = icon('play', { size: 15 });
-        document.getElementById('ic-focus').innerHTML = icon('target', { size: 17 });
-        document.getElementById('ic-notes-focus').innerHTML = icon('clipboard', { size: 17 });
+        renderTopHeader({ title: 'ملف الطالب', subtitle: 'كل ما يخص الطالب في مكان واحد' });
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const studentId = urlParams.get('id');
+        const $ = (id) => document.getElementById(id);
+        const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
+        const studentId = new URLSearchParams(window.location.search).get('id');
         window.getStudentId = () => studentId;
+
+        let ov = null;
         let student = null;
+        let billView = null;
+        let lessons = [];
+        let profile = null;
+        const PAGE = 20;
+
+        $('btn-prepare-lesson').innerHTML = icon('sparkles', { size: 15 }) + ' حضّرلي الحصة';
+        $('btn-open-student-appts').innerHTML = icon('calendar', { size: 15 }) + ' المواعيد';
+        document.querySelectorAll('[data-close-modal]').forEach((b) => {
+            if (b.classList.contains('bm-close')) b.innerHTML = icon('x', { size: 18 });
+            b.addEventListener('click', () => $(b.dataset.closeModal).classList.remove('active'));
+        });
+        document.querySelectorAll('.modal').forEach((m) => m.addEventListener('mousedown', (e) => { if (e.target === m) m.classList.remove('active'); }));
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.modal.active').forEach((m) => m.classList.remove('active')); });
 
         (async () => {
             const authInfo = await Auth.requireAuth();
             if (!authInfo) return;
-
-            if (!studentId) {
-                document.getElementById('loading').innerText = 'معرف الطالب غير موجود';
-                return;
+            if (!studentId) { $('loading').innerText = 'معرف الطالب غير موجود'; return; }
+            try {
+                await Promise.all([loadOverview(), loadTeachingProfile(), loadNotes()]);
+                $('loading').style.display = 'none';
+                $('content').style.display = 'block';
+                const hashTab = (location.hash || '').replace('#', '');
+                if (['overview', 'lessons', 'billing', 'notes', 'info'].includes(hashTab)) switchTab(hashTab);
+            } catch (error) {
+                $('loading').innerText = 'خطأ: ' + ErrorHandler.getErrorMessage(error);
             }
-            await loadStudent();
         })();
 
-        async function loadStudent() {
-            try {
-                student = await api.getStudent(studentId);
-                renderStudentInfo();
-                await Promise.all([loadTeachingProfile(), loadLessons(), loadNotes()]);
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('content').style.display = 'block';
-            } catch (error) {
-                document.getElementById('loading').innerText = 'خطأ: ' + ErrorHandler.getErrorMessage(error);
+        async function loadOverview() {
+            ov = await api.getStudentOverview(studentId, { limit: PAGE });
+            student = ov.student || {};
+            lessons = ov.lessons || [];
+            billView = computeBilling(ov.billing);
+            renderAll();
+        }
+
+        function renderAll() {
+            renderHeader();
+            renderStats();
+            renderLastLesson();
+            renderBillingAreas();
+            renderLessons();
+            renderInfo();
+        }
+
+        // ------------------------------------------------------------ الرأس
+        function renderHeader() {
+            $('sp-name').textContent = student.name || 'بدون اسم';
+            const sub = [`<span>${icon('bookOpen', { size: 14 })} ${esc(subjectLabel(student.subject))}</span>`];
+            if (student.current_topic) sub.push(`<span>${icon('target', { size: 14 })} ${esc(student.current_topic)}</span>`);
+            $('sp-sub').innerHTML = sub.join('');
+
+            const phoneOk = !!normalizePhone(student.phone);
+            const btns = [];
+            btns.push(`<a class="sp-icon-btn wa" ${phoneOk ? `href="${esc(whatsappUrl(student.phone, ''))}" target="_blank" rel="noopener"` : 'aria-disabled="true"'} title="واتساب" aria-label="واتساب">${icon('messageCircle', { size: 18 })}</a>`);
+            btns.push(`<a class="sp-icon-btn" ${student.phone ? `href="tel:${esc(String(student.phone).replace(/[^\d+]/g, ''))}"` : 'aria-disabled="true"'} title="اتصال" aria-label="اتصال">${icon('phone', { size: 18 })}</a>`);
+            btns.push(`<a class="sp-icon-btn" ${student.lesson_link ? `href="${esc(student.lesson_link)}" target="_blank" rel="noopener"` : 'aria-disabled="true"'} title="رابط الحصة" aria-label="رابط الحصة">${icon('link', { size: 18 })}</a>`);
+            btns.push(`<button type="button" class="sp-icon-btn" id="hdr-edit" title="تعديل البيانات" aria-label="تعديل البيانات">${icon('edit', { size: 18 })}</button>`);
+            $('sp-contact').innerHTML = btns.join('');
+            $('hdr-edit').addEventListener('click', openEdit);
+
+            const btn = $('btn-lesson');
+            btn.href = `lesson.html?student_id=${encodeURIComponent(studentId)}`;
+            if (ov.in_progress) { btn.className = 'btn sp-live'; btn.innerHTML = ' استكمل الحصة الجارية'; }
+            else { btn.className = 'btn'; btn.innerHTML = icon('play', { size: 16 }) + ' ابدأ الحصة'; }
+        }
+
+        function renderStats() {
+            const st = ov.stats || {};
+            const total = Number(st.completed) || 0;
+            const cancelled = Number(st.cancelled) || 0;
+            const tiles = [];
+            tiles.push(`<button type="button" class="sp-stat" data-goto="lessons"><div class="sp-stat-label">${icon('clipboardList', { size: 13 })} إجمالي الحصص</div>
+                <div class="sp-stat-value">${total}${ov.legacy && !st.completed_exact && total >= PAGE ? '+' : ''}</div>
+                <div class="sp-stat-sub">${cancelled ? `و ${cancelled} ملغاة` : (st.first_lesson ? `منذ ${esc(formatLessonDate(st.first_lesson))}` : 'حصص مكتملة')}</div></button>`);
+            if (billView.available) {
+                const status = billView.enabled ? `st-${billView.status}` : '';
+                tiles.push(`<button type="button" class="sp-stat ${status}" data-goto="billing"><div class="sp-stat-label">${icon('creditCard', { size: 13 })} الدفع</div>
+                    <div class="sp-stat-value">${billView.enabled ? esc(billView.headline) : 'غير مفعّل'}</div>
+                    <div class="sp-stat-sub">${billView.enabled ? esc(billView.detail || '') : 'اضغط للتفعيل'}</div></button>`);
             }
+            const last = st.last_lesson || (lessons[0] && lessons[0].lesson_date);
+            tiles.push(`<div class="sp-stat"><div class="sp-stat-label">${icon('clock', { size: 13 })} آخر حصة</div>
+                <div class="sp-stat-value">${last ? esc(relativeDay(last)) : '—'}</div>
+                <div class="sp-stat-sub">${last ? esc(formatLessonDate(last)) : 'لا توجد حصص بعد'}</div></div>`);
+            const next = nextOccurrence(ov.schedules);
+            tiles.push(`<button type="button" class="sp-stat" data-goto="appts"><div class="sp-stat-label">${icon('calendar', { size: 13 })} الحصة القادمة</div>
+                <div class="sp-stat-value">${next ? esc(formatNextOccurrence(next)) : '—'}</div>
+                <div class="sp-stat-sub">${next ? `${next.duration} دقيقة` : 'لا يوجد موعد ثابت'}</div></button>`);
+            $('sp-stats').innerHTML = tiles.join('');
+            $('sp-stats').style.gridTemplateColumns = tiles.length === 3 ? 'repeat(3, minmax(0, 1fr))' : '';
+            $('sp-stats').querySelectorAll('[data-goto]').forEach((b) => b.addEventListener('click', () => {
+                if (b.dataset.goto === 'appts') openStudentAppointments(studentId, student.name || '');
+                else switchTab(b.dataset.goto);
+            }));
+            $('cnt-lessons').textContent = total || '';
         }
 
-        function renderStudentInfo() {
-            document.getElementById('student-name').innerText = student.name;
-            document.getElementById('student-subject').innerHTML = icon('bookOpen', { size: 14 }) + ' ' + Formatters.escapeHtml(student.subject || 'بدون مادة');
-            document.getElementById('student-email').innerText = student.email || '-';
-            document.getElementById('student-phone').innerText = student.phone || '-';
-            document.getElementById('student-link').innerHTML = student.lesson_link ? icon('link', { size: 13 }) + ' ' + Formatters.escapeHtml(student.lesson_link) : '-';
-            document.getElementById('student-current-topic').innerText = student.current_topic || '-';
-            document.getElementById('student-joined').innerText = Formatters.formatDate(student.created_at);
+        function renderLastLesson() {
+            const last = lessons[0];
+            $('ov-last').innerHTML = last
+                ? `<div class="x-card-title"><h3>${icon('clipboard', { size: 17 })} آخر حصة · ${esc(relativeDay(last.lesson_date))}</h3>
+                        <button type="button" class="x-link" data-goto-tab="lessons">كل الحصص</button></div>
+                   ${lessonDetailsHtml(last, student.subject, icon, { highlightNext: true })}`
+                : `<div class="x-card-title"><h3>${icon('clipboard', { size: 17 })} آخر حصة</h3></div>
+                   <div class="x-empty">لم تُسجَّل أي حصة بعد.<br><a href="lesson.html?student_id=${encodeURIComponent(studentId)}">ابدأ أول حصة</a></div>`;
+            $('ov-last').querySelectorAll('[data-goto-tab]').forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.gotoTab)));
         }
 
-        async function loadTeachingProfile() {
-            try {
-                const profile = await api.getTeachingProfile(studentId);
-                const display = document.getElementById('teaching-profile-display');
-                if (profile) {
-                    display.innerHTML = `
-                        <div class="info-row"><span class="info-label">نمط التدريس</span><span class="info-value">${Formatters.escapeHtml(profile.teaching_style || '-')}</span></div>
-                        <div class="info-row"><span class="info-label">تفضيلات الطالب</span><span class="info-value">${Formatters.escapeHtml(profile.student_preferences || '-')}</span></div>
-                        <div class="info-row"><span class="info-label">السياق للمساعد الذكي</span><span class="info-value">${Formatters.escapeHtml(profile.ai_context || '-')}</span></div>
-                    `;
-                    document.getElementById('teaching-style').value = profile.teaching_style || '';
-                    document.getElementById('student-preferences').value = profile.student_preferences || '';
-                    document.getElementById('ai-context').value = profile.ai_context || '';
-                } else {
-                    display.innerHTML = '<div class="empty-state">لم يتم تحديد نمط التدريس بعد</div>';
-                }
-            } catch (error) {
-                console.error('Error loading teaching profile:', error);
-            }
-        }
+        // ------------------------------------------------------------ الدفع
+        const billingCtx = {
+            getState: () => ({ student, view: billView }),
+            onChange: async () => { try { await loadOverview(); } catch (e) { ErrorHandler.showError(ErrorHandler.getErrorMessage(e)); } }
+        };
 
-        async function loadLessons() {
-            try {
-                const data = await api.getLessons(studentId, 1, 20);
-                const lessons = data.lessons || [];
-                const list = document.getElementById('lessons-list');
-                if (lessons.length === 0) {
-                    list.innerHTML = '<div class="empty-state">لا توجد حصص مسجلة</div>';
-                    return;
-                }
-                list.innerHTML = lessons.map(lesson => `
-                    <div class="lesson-hist-item">
-                        <div class="lesson-date">${Formatters.formatDate(lesson.lesson_date)}</div>
-                        ${lesson.lesson_content ? `<div class="lesson-detail">${icon('bookOpen', { size: 13 })} محتوى الحصة: ${Formatters.escapeHtml(lesson.lesson_content)}</div>` : ''}
-                        ${lesson.memorization ? `<div class="lesson-detail">${icon('bookOpen', { size: 13 })} الحفظ: ${Formatters.escapeHtml(lesson.memorization)}</div>` : ''}
-                        ${lesson.recitation ? `<div class="lesson-detail">${icon('messageCircle', { size: 13 })} الأداء الشفهي: ${Formatters.escapeHtml(lesson.recitation)}</div>` : ''}
-                        ${lesson.performance ? `<div class="lesson-detail">${icon('star', { size: 13 })} التقييم العام: ${Formatters.escapeHtml(lesson.performance)}</div>` : ''}
-                        ${lesson.homework ? `<div class="lesson-detail">${icon('clipboardList', { size: 13 })} الواجب: ${Formatters.escapeHtml(lesson.homework)}</div>` : ''}
-                        ${lesson.next_assignment ? `<div class="lesson-detail">${icon('arrowNext', { size: 13 })} للحصة القادمة: ${Formatters.escapeHtml(lesson.next_assignment)}</div>` : ''}
-                        ${lesson.notes ? `<div class="lesson-detail">${icon('messageSquare', { size: 13 })} ملاحظات: ${Formatters.escapeHtml(lesson.notes)}</div>` : ''}
+        function renderBillingAreas() {
+            // نظرة عامة: كارت مختصر (أو لا شيء لو الخادم مش جاهز)
+            const ovBill = $('ov-bill');
+            if (billView.available) { ovBill.innerHTML = billingCardHtml(billView, { compact: true }); bindBillingActions(ovBill, billingCtx); }
+            else ovBill.innerHTML = '';
+
+            // تبويب الدفع
+            const main = $('bill-main');
+            main.innerHTML = billingCardHtml(billView, { compact: false });
+            if (billView.enabled) {
+                main.firstElementChild.insertAdjacentHTML('beforeend', `
+                    <div class="bill-summary">
+                        <div><span>تمت منذ بداية المتابعة</span><strong>${billView.taken}</strong></div>
+                        <div><span>الحصص المدفوعة</span><strong>${billView.paid + billView.adjusted}</strong></div>
+                        <div><span>إجمالي المبالغ</span><strong>${billView.paidAmount ? esc(money(billView.paidAmount)) : '—'}</strong></div>
                     </div>
-                `).join('');
-            } catch (error) {
-                console.error('Error loading lessons:', error);
+                    <button type="button" class="bm-link-danger" style="color:var(--primary)" data-bill-act="settings">إعدادات الدفع (${billView.mode === 'prepaid' ? 'باقة' : 'دفع بعد الحصص'} · ${esc(lessonsText(billView.size))}${billView.price ? ` · ${esc(money(billView.price))} للحصة` : ''})</button>`);
             }
+            bindBillingActions(main, billingCtx);
+
+            const hist = $('bill-history');
+            const payments = ov.payments || [];
+            if (!billView.available || !payments.length) { hist.hidden = true; return; }
+            hist.hidden = false;
+            hist.innerHTML = `<div class="x-card-title"><h3>${icon('list', { size: 17 })} سجل الدفعات والتعديلات</h3></div>` + payments.map((p) => {
+                const n = Number(p.lessons_count) || 0;
+                const cls = n > 0 ? 'pay-plus' : n < 0 ? 'pay-minus' : '';
+                const title = n > 0 ? `+ ${lessonsText(n)}` : n < 0 ? `− ${lessonsText(n)}` : 'بداية المتابعة';
+                const meta = [Formatters.formatDate(p.created_at)];
+                if (p.amount != null && Number(p.amount) > 0) meta.push(money(p.amount));
+                if (p.note) meta.push(p.note);
+                return `<div class="pay-item ${cls}"><div class="pay-main"><strong>${esc(title)}</strong><small>${esc(meta.join(' · '))}</small></div>
+                    <button type="button" class="pay-del" data-del-payment="${esc(p.id)}" title="حذف" aria-label="حذف">${icon('trash', { size: 16 })}</button></div>`;
+            }).join('');
+            hist.querySelectorAll('[data-del-payment]').forEach((b) => b.addEventListener('click', async () => {
+                if (!confirm('حذف هذا القيد من سجل الدفع؟')) return;
+                b.disabled = true;
+                try { await api.studentBilling(studentId, 'delete_payment', { payment_id: b.dataset.delPayment }); ErrorHandler.showSuccess('تم الحذف'); await loadOverview(); }
+                catch (e) { b.disabled = false; ErrorHandler.showError(ErrorHandler.getErrorMessage(e)); }
+            }));
         }
 
+        // ------------------------------------------------------------ الحصص
+        function renderLessons() {
+            const total = Number((ov.stats || {}).completed) || 0;
+            const list = $('lessons-list');
+            if (!lessons.length) { list.innerHTML = '<div class="x-card"><div class="x-empty">لا توجد حصص مسجّلة</div></div>'; $('btn-more-lessons').hidden = true; return; }
+            list.innerHTML = lessons.map((l, i) => {
+                const peek = (l.lesson_content || l.homework || '').split('\n')[0];
+                const num = total && !ov.legacy ? total - i : '';
+                return `<details class="lh-item" ${i === 0 ? 'open' : ''}>
+                    <summary>${num ? `<span class="lh-num">#${num}</span>` : ''}<span class="lh-date">${esc(formatLessonDate(l.lesson_date))}</span>
+                        <span class="lh-peek">${esc(peek)}</span><span class="lh-caret">${icon('chevronDown', { size: 16 })}</span></summary>
+                    <div class="lh-body">${lessonDetailsHtml(l, student.subject, icon)}</div></details>`;
+            }).join('');
+            $('btn-more-lessons').hidden = total ? lessons.length >= total : lessons.length % PAGE !== 0 || lessons.length === 0;
+        }
+
+        $('btn-more-lessons').addEventListener('click', async () => {
+            const b = $('btn-more-lessons');
+            b.disabled = true; b.textContent = 'جاري التحميل...';
+            try {
+                const more = await api.getStudentOverview(studentId, { offset: lessons.length, limit: PAGE });
+                const extra = more.lessons || [];
+                lessons = lessons.concat(extra);
+                renderLessons();
+                if (!extra.length) b.hidden = true;
+            } catch (e) { ErrorHandler.showError(ErrorHandler.getErrorMessage(e)); }
+            finally { b.disabled = false; b.textContent = 'عرض حصص أقدم'; }
+        });
+
+        // ------------------------------------------------------------ أسلوب التعلم
+        async function loadTeachingProfile() {
+            try { profile = await api.getTeachingProfile(studentId); } catch (e) { profile = null; }
+            renderProfile();
+        }
+        function renderProfile() {
+            const box = $('ov-profile');
+            const p = profile || {};
+            const has = p.teaching_style || p.student_preferences || p.ai_context;
+            box.innerHTML = `<div class="x-card-title"><h3>${icon('target', { size: 17 })} إزاي الطالب ده بيتعلم أحسن؟</h3>
+                    <button type="button" class="x-link" id="btn-edit-profile">${has ? 'تعديل' : 'إضافة'}</button></div>
+                ${has ? `<dl class="sp-profile-text">
+                    ${p.teaching_style ? `<dt>طريقة الشرح المناسبة</dt><dd>${esc(p.teaching_style)}</dd>` : ''}
+                    ${p.student_preferences ? `<dt>الاهتمامات والتفضيلات</dt><dd>${esc(p.student_preferences)}</dd>` : ''}
+                    ${p.ai_context ? `<dt>معلومات للمساعد الذكي</dt><dd>${esc(p.ai_context)}</dd>` : ''}
+                </dl>` : '<div class="x-empty" style="padding:0.5rem 0">أضف معلومات بسيطة عن أسلوب الطالب، والمساعد الذكي هيستخدمها في اقتراحاته.</div>'}`;
+            $('btn-edit-profile').addEventListener('click', () => {
+                $('teaching-style').value = p.teaching_style || '';
+                $('student-preferences').value = p.student_preferences || '';
+                $('ai-context').value = p.ai_context || '';
+                $('profile-modal').classList.add('active');
+            });
+        }
+        $('teaching-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                teaching_style: $('teaching-style').value.trim(),
+                student_preferences: $('student-preferences').value.trim(),
+                ai_context: $('ai-context').value.trim()
+            };
+            try {
+                await api.createOrUpdateTeachingProfile(studentId, data);
+                profile = { ...(profile || {}), ...data };
+                renderProfile();
+                $('profile-modal').classList.remove('active');
+                ErrorHandler.showSuccess('تم الحفظ');
+            } catch (error) { ErrorHandler.showError(ErrorHandler.getErrorMessage(error)); }
+        });
+
+        // ------------------------------------------------------------ الملاحظات
         async function loadNotes() {
             try {
                 const data = await api.getStudentNotes(studentId, 1, 50);
                 const notes = data.notes || [];
-                const list = document.getElementById('notes-list');
-                if (notes.length === 0) {
-                    list.innerHTML = '<div class="empty-state">لا توجد ملاحظات</div>';
-                    return;
-                }
-                list.innerHTML = notes.map(note => `
-                    <div class="note-item">
-                        <div class="note-date">${Formatters.formatDate(note.created_at)}</div>
-                        <div class="note-text">${Formatters.escapeHtml(note.note || '')}</div>
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error('Error loading notes:', error);
-            }
+                $('cnt-notes').textContent = notes.length || '';
+                $('notes-list').innerHTML = notes.length
+                    ? notes.map((n) => `<div class="note-item2"><div class="nd">${esc(Formatters.formatDate(n.created_at))}</div><div class="nt">${esc(n.note || '')}</div></div>`).join('')
+                    : '<div class="x-empty">لا توجد ملاحظات</div>';
+            } catch (error) { console.error('Error loading notes:', error); }
         }
-
-        window.switchTab = (event, tabName) => {
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
-        };
-
-        document.getElementById('teaching-form').addEventListener('submit', async (e) => {
+        $('note-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const text = $('note-text').value.trim();
+            if (!text) return;
             try {
-                await api.createOrUpdateTeachingProfile(studentId, {
-                    teaching_style: document.getElementById('teaching-style').value,
-                    student_preferences: document.getElementById('student-preferences').value,
-                    ai_context: document.getElementById('ai-context').value
-                });
-                ErrorHandler.showSuccess('تم حفظ نمط التدريس');
-            } catch (error) {
-                ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
-            }
-        });
-
-        document.getElementById('note-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            try {
-                await api.createNote(studentId, document.getElementById('note-text').value);
-                document.getElementById('note-text').value = '';
+                await api.createNote(studentId, text);
+                $('note-text').value = '';
                 ErrorHandler.showSuccess('تمت إضافة الملاحظة');
                 loadNotes();
+            } catch (error) { ErrorHandler.showError(ErrorHandler.getErrorMessage(error)); }
+        });
+
+        // ------------------------------------------------------------ البيانات والتعديل
+        function renderInfo() {
+            $('info-title').innerHTML = icon('userCheck', { size: 17 }) + ' بيانات الطالب';
+            const row = (label, value) => `<dt>${label}</dt><dd>${value || '<span class="muted">—</span>'}</dd>`;
+            const phone = student.phone ? `<a href="tel:${esc(String(student.phone).replace(/[^\d+]/g, ''))}" dir="ltr">${esc(student.phone)}</a>` : '';
+            const email = student.email ? `<a href="mailto:${esc(student.email)}" dir="ltr">${esc(student.email)}</a>` : '';
+            const link = student.lesson_link ? `<a href="${esc(student.lesson_link)}" target="_blank" rel="noopener" dir="ltr">${esc(student.lesson_link)}</a>` : '';
+            $('info-list').innerHTML = [
+                row('المادة', esc(subjectLabel(student.subject))),
+                row('الموضوع الحالي', esc(student.current_topic || '')),
+                row('رقم الهاتف', phone),
+                row('البريد الإلكتروني', email),
+                row('رابط الحصة', link),
+                row('تاريخ الإضافة', student.created_at ? esc(Formatters.formatDate(student.created_at)) : '')
+            ].join('');
+        }
+
+        function openEdit() {
+            $('e-name').value = student.name || '';
+            $('e-phone').value = student.phone || '';
+            $('e-email').value = student.email || '';
+            const sel = $('e-subject');
+            if (student.subject && ![...sel.options].some((o) => o.value === student.subject)) sel.add(new Option(student.subject, student.subject));
+            sel.value = student.subject || '';
+            $('e-link').value = student.lesson_link || '';
+            $('e-topic').value = student.current_topic || '';
+            $('edit-error').style.display = 'none';
+            $('edit-modal').classList.add('active');
+            setTimeout(() => $('e-name').focus(), 50);
+        }
+        $('btn-edit-info').addEventListener('click', openEdit);
+        $('edit-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const err = $('edit-error');
+            const data = {
+                name: $('e-name').value.trim(), phone: $('e-phone').value.trim(), email: $('e-email').value.trim(),
+                subject: $('e-subject').value, lesson_link: $('e-link').value.trim(), current_topic: $('e-topic').value.trim()
+            };
+            if (!data.name) { err.textContent = 'اسم الطالب مطلوب'; err.style.display = 'block'; return; }
+            if (data.lesson_link && !/^https?:\/\//i.test(data.lesson_link)) { err.textContent = 'رابط الحصة لازم يبدأ بـ https://'; err.style.display = 'block'; return; }
+            const btn = $('edit-save');
+            btn.disabled = true; btn.textContent = 'جاري الحفظ...';
+            try {
+                await api.updateStudentInfo(studentId, data);
+                $('edit-modal').classList.remove('active');
+                ErrorHandler.showSuccess('تم تحديث البيانات');
+                await loadOverview();
             } catch (error) {
-                ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
-            }
+                err.textContent = ErrorHandler.getErrorMessage(error);
+                err.style.display = 'block';
+            } finally { btn.disabled = false; btn.textContent = 'حفظ'; }
         });
 
-        // زرار "مواعيد الطالب": بيفتح نفس بوب أب مواعيد الطالب الموحّد
-        // (js/student-appointments.js) المستخدم في كل صفحات التطبيق.
-        document.getElementById('btn-open-student-appts').addEventListener('click', () => {
-            openStudentAppointments(studentId, student ? student.name : '');
+        $('btn-delete-student').addEventListener('click', async () => {
+            if (!confirm('هل أنت متأكد من حذف هذا الطالب؟ سيتم حذف كل حصصه وملاحظاته ومواعيده أيضًا.')) return;
+            try {
+                await api.deleteStudent(studentId);
+                ErrorHandler.showSuccess('تم حذف الطالب');
+                setTimeout(() => window.location.href = 'students.html', 800);
+            } catch (error) { ErrorHandler.showError(ErrorHandler.getErrorMessage(error)); }
         });
 
-        // "✨ حضّرلي الحصة": بيجمع بيانات الطالب + مصادر مكتبة المعلم
-        // المرتبطة بيه، ويطلع خطة حصة مختصرة جاهزة
-        document.getElementById('ic-prepare-lesson').innerHTML = icon('sparkles', { size: 15 });
-        document.querySelector('#prepare-lesson-modal .close-modal').addEventListener('click', () => {
-            document.getElementById('prepare-lesson-modal').classList.remove('active');
-        });
+        // ------------------------------------------------------------ التبويبات
+        function switchTab(name) {
+            document.querySelectorAll('.sp-tab').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
+            document.querySelectorAll('.sp-panel').forEach((p) => p.classList.toggle('active', p.id === `tab-${name}`));
+            try { history.replaceState(null, '', `${location.pathname}${location.search}${name === 'overview' ? '' : '#' + name}`); } catch (e) { /* تجاهل */ }
+        }
+        $('sp-tabs').addEventListener('click', (e) => { const b = e.target.closest('.sp-tab'); if (b) switchTab(b.dataset.tab); });
+
+        // ------------------------------------------------------------ المواعيد + حضّرلي الحصة
+        $('btn-open-student-appts').addEventListener('click', () => openStudentAppointments(studentId, student ? student.name : ''));
+        document.querySelector('#prepare-lesson-modal .close-modal').addEventListener('click', () => $('prepare-lesson-modal').classList.remove('active'));
 
         const PREP_SECTIONS = [
             { key: 'goal', label: '🎯 هدف الحصة' },
@@ -336,44 +532,29 @@
             { key: 'homework', label: '🏠 واجب مقترح' },
             { key: 'watch_point', label: '⚠️ نقطة تحتاج انتباه' }
         ];
-
-        document.getElementById('btn-prepare-lesson').addEventListener('click', async () => {
-            const modal = document.getElementById('prepare-lesson-modal');
-            const body = document.getElementById('prepare-lesson-body');
+        $('btn-prepare-lesson').addEventListener('click', async () => {
+            const modal = $('prepare-lesson-modal');
+            const body = $('prepare-lesson-body');
             body.innerHTML = '<div class="loading">جاري تجهيز الحصة...</div>';
             modal.classList.add('active');
-
             try {
                 const res = await api.prepareLesson(studentId);
                 const { plan, sources } = res;
                 const sourcesHtml = (sources && sources.length > 0)
-                    ? `<p style="font-size:0.78rem; color:var(--text-secondary); margin-top:1rem;">بالاعتماد على: ${sources.map(s => Formatters.escapeHtml(s.book_title)).join('، ')}</p>`
-                    : '<p style="font-size:0.78rem; color:var(--text-secondary); margin-top:1rem;">لا توجد مصادر مرتبطة بهذا الطالب بعد - ارفع كتاب من "مكتبتي" وحدّد استخدامه مع هذا الطالب للحصول على اقتراحات أدق.</p>';
-
-                body.innerHTML = PREP_SECTIONS.map(s => `
+                    ? `<p style="font-size:0.78rem; color:var(--text-secondary); margin-top:1rem;">بالاعتماد على: ${sources.map((s) => esc(s.book_title)).join('، ')}</p>`
+                    : '<p style="font-size:0.78rem; color:var(--text-secondary); margin-top:1rem;">لا توجد مصادر مرتبطة بهذا الطالب بعد - ارفع كتاب من "مكتبتي" واربطه بالطالب لاقتراحات أدق.</p>';
+                body.innerHTML = PREP_SECTIONS.map((s) => `
                     <div style="margin-bottom: 0.9rem;">
                         <h4 style="margin:0 0 0.3rem; font-size:0.85rem; color:var(--primary);">${s.label}</h4>
-                        <p style="margin:0; font-size:0.9rem; line-height:1.6;">${Formatters.escapeHtml(plan[s.key] || 'غير متاح')}</p>
-                    </div>
-                `).join('') + sourcesHtml;
+                        <p style="margin:0; font-size:0.9rem; line-height:1.6;">${esc(plan[s.key] || 'غير متاح')}</p>
+                    </div>`).join('') + sourcesHtml;
             } catch (error) {
-                body.innerHTML = `<div class="empty-state">تعذّر تجهيز الحصة: ${Formatters.escapeHtml(ErrorHandler.getErrorMessage(error))}</div>`;
+                body.innerHTML = `<div class="empty-state">تعذّر تجهيز الحصة: ${esc(ErrorHandler.getErrorMessage(error))}</div>`;
             }
         });
 
-
-        window.editStudent = () => alert('تحديث البيانات الأساسية قيد التطوير حاليًا');
-        window.deleteStudent = async () => {
-            if (!confirm('هل أنت متأكد من حذف هذا الطالب؟ سيتم حذف كل حصصه وملاحظاته ومواعيده أيضًا.')) return;
-            try {
-                await api.deleteStudent(studentId);
-                ErrorHandler.showSuccess('تم حذف الطالب');
-                setTimeout(() => window.location.href = 'students.html', 800);
-            } catch (error) {
-                ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
-            }
-        };
+        window.openBillingSetup = () => openBillingSetup({ student, view: billView }, billingCtx.onChange);
     </script>
-    <script src="js/pwa-install.js?v=9" defer></script>
+    <script src="js/pwa-install.js?v=11" defer></script>
 </body>
 </html>
