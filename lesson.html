@@ -230,6 +230,8 @@
         .ai-chat-bubble.role-assistant li:last-child { margin-bottom: 0; }
         .ai-chat-bubble.role-assistant strong { color: var(--primary, #4B3A5A); font-weight: 700; }
         .ai-chat-bubble.role-error { align-self: center; background: #FBEAEA; color: #B85C5C; border: 1px solid #F0CFCF; font-size: 0.82rem; }
+        .ai-chat-bubble.is-streaming > :last-child::after { content: '▍'; margin-inline-start: 2px; color: var(--primary); animation: aiCaret 0.9s steps(1) infinite; }
+        @keyframes aiCaret { 50% { opacity: 0; } }
         .ai-chat-bubble.role-loading { align-self: flex-start; background: #fff; border: 1px solid var(--border, #E7E1E8); color: var(--text-secondary, #716A74); font-size: 0.85rem; }
         .ai-chat-quota { padding: 0.3rem 1.25rem; font-size: 0.72rem; color: var(--text-secondary, #716A74); text-align: center; flex-shrink: 0; }
         .ai-chat-input-row { display: flex; align-items: flex-end; gap: 0.6rem; padding: 0.85rem 1.25rem; border-top: 1px solid var(--border, #E7E1E8); flex-shrink: 0; background: var(--card-bg, #FFFFFF); }
@@ -852,16 +854,46 @@
             autoGrowAiChatInput();
             showAiChatLoading();
 
+            // الرد بيتكتب قدام المعلم أول بأول (بث مباشر) بدل ما يستنى الرد كامل
+            let liveBubble = null;
+            let pendingText = '';
+            let frame = 0;
+            const nearBottom = () => aiChatMessages.scrollHeight - aiChatMessages.scrollTop - aiChatMessages.clientHeight < 80;
+            const paint = () => {
+                frame = 0;
+                if (!liveBubble) {
+                    renderAiChatMessage('assistant', '');
+                    liveBubble = aiChatMessages.lastElementChild;
+                    liveBubble.classList.add('is-streaming');
+                }
+                const stick = nearBottom();
+                liveBubble.innerHTML = formatAiMarkdown(pendingText);
+                if (stick) aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
+            };
             try {
-                const result = await api.chatWithAIAssistant(studentIdParam, message);
-                renderAiChatMessage('assistant', (result && result.reply) || 'لم يصل رد من المساعد.');
-
-                if (result && typeof result.remaining_today === 'number') {
+                const result = await api.chatWithAIAssistantStream(studentIdParam, message, {
+                    onText: (text) => { pendingText = text; if (!frame) frame = requestAnimationFrame(paint); },
+                    onRetry: () => {
+                        const loading = aiChatMessages.querySelector('.role-loading');
+                        if (loading) loading.textContent = 'النظام مشغول لحظة، جاري إعادة المحاولة...';
+                    }
+                });
+                if (frame) { cancelAnimationFrame(frame); }
+                pendingText = result.reply;
+                paint();
+                liveBubble.classList.remove('is-streaming');
+                if (result.partialError) {
+                    renderAiChatMessage('error', ErrorHandler.getErrorMessage(result.partialError) || 'انقطع الرد قبل اكتماله.');
+                }
+                if (typeof result.remaining_today === 'number') {
                     aiChatQuota.textContent = `متبقٍ ${result.remaining_today} طلب اليوم`;
                 }
             } catch (error) {
-                // رسائل الأخطاء الخاصة (وصول الحد اليومي / ازدحام مؤقت مع الذكاء
-                // الاصطناعي / طلب غير صالح) بترجع بنص عربي واضح جاهز من الـ backend
+                if (frame) cancelAnimationFrame(frame);
+                if (liveBubble) liveBubble.classList.remove('is-streaming');
+                const loading = aiChatMessages.querySelector('.role-loading');
+                if (loading) loading.remove();
+                // رسائل الأخطاء (الحد اليومي / ازدحام / طلب غير صالح) بترجع بنص عربي واضح من الـ backend
                 renderAiChatMessage('error', ErrorHandler.getErrorMessage(error) || 'حدث خطأ أثناء التواصل مع المساعد الذكي.');
             } finally {
                 aiChatBusy = false;
