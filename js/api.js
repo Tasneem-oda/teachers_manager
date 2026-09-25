@@ -117,6 +117,106 @@ async function legacyOverview(apiObj, studentId, offset, limit) {
     };
 }
 
+// ------------------------------------------------------------------ بث رد المساعد الذكي
+// n8n في وضع Streaming بيبعت كائنات JSON ورا بعض (NDJSON):
+//   {"type":"begin"} ← {"type":"item","content":"جزء من النص"} ... ← {"type":"end"}
+// ردود عقد "Respond to Webhook" (خطأ / انتهاء) بتوصل كـ item محتواه JSON فيه success.
+// الفاصل بيقسم أي نص لكائنات JSON كاملة حتى لو الكائن اتقسم على أكتر من دفعة شبكة.
+export function createJsonStreamSplitter(onObject) {
+    let buf = '';
+    let depth = 0, inStr = false, esc = false, start = -1, pos = 0;
+    return {
+        push(text) {
+            buf += text;
+            for (; pos < buf.length; pos++) {
+                const ch = buf[pos];
+                if (inStr) {
+                    if (esc) esc = false;
+                    else if (ch === '\\') esc = true;
+                    else if (ch === '"') inStr = false;
+                    continue;
+                }
+                if (ch === '"') { if (depth > 0) inStr = true; continue; }
+                if (ch === '{') { if (depth === 0) start = pos; depth++; }
+                else if (ch === '}' && depth > 0) {
+                    depth--;
+                    if (depth === 0 && start >= 0) {
+                        const raw = buf.slice(start, pos + 1);
+                        try { onObject(JSON.parse(raw)); } catch (e) { /* كائن غير صالح: تجاهل */ }
+                        buf = buf.slice(pos + 1); pos = -1; start = -1;
+                    }
+                }
+            }
+        }
+    };
+}
+
+async function streamAiChatOnce(studentId, message, onText, signal) {
+    const { data: { session }, error } = await window.supabaseClient.auth.getSession();
+    if (error || !session) { window.location.href = 'login.html'; throw new Error('AUTH_EXPIRED'); }
+
+    let response;
+    try {
+        response = await fetch(APIUtils.buildUrl(CONFIG.API_ENDPOINTS.AI.CHAT), {
+            method: 'POST',
+            headers: APIUtils.buildHeaders(session.access_token),
+            body: JSON.stringify({ student_id: studentId, message }),
+            signal
+        });
+    } catch (netError) {
+        if (netError && netError.name === 'AbortError') throw { error: { code: 'ABORTED', message: 'تم إلغاء الطلب' }, aborted: true };
+        throw { error: { code: 'NETWORK', message: 'تعذّر الاتصال بالخادم. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.' } };
+    }
+    if (response.status === 401 || response.status === 403 || (!response.ok && response.status !== 200)) {
+        return await APIUtils.handleResponse(response);   // بيرمي الخطأ المناسب (وبيسجّل خروج لو الجلسة انتهت)
+    }
+
+    let reply = '';
+    let textNode = null;    // العقدة اللي بتكتب الرد (لو الأساسية فشلت وكمّلت الاحتياطية نبدأ من جديد)
+    let final = null;       // رد JSON (عقدة Respond أو workflow قديم)
+    let streamError = null;
+    const handleControl = (obj) => {
+        if (!obj || typeof obj !== 'object') return false;
+        if (obj.success === false) { streamError = { error: obj.error || { message: 'حدث خطأ أثناء التواصل مع المساعد الذكي.' } }; return true; }
+        if (obj.success === true) { final = obj.data || {}; return true; }
+        return false;
+    };
+    const splitter = createJsonStreamSplitter((obj) => {
+        if (obj.type === 'item') {
+            const content = obj.content == null ? '' : String(obj.content);
+            const fromResponder = obj.metadata && /Response$/.test(obj.metadata.nodeName || '');
+            if (fromResponder || /^\s*\{/.test(content)) {
+                try { if (handleControl(JSON.parse(content))) return; } catch (e) { /* نص عادي */ }
+            }
+            const node = (obj.metadata && obj.metadata.nodeName) || null;
+            if (content && node && textNode && node !== textNode) reply = '';
+            if (content) { if (node) textNode = node; reply += content; if (onText) onText(reply); }
+        } else if (obj.type === 'error') {
+            streamError = { error: { code: 'AI_ERROR', message: 'حدث خطأ غير متوقع أثناء التواصل مع المساعد الذكي، من فضلك حاول مرة أخرى.' } };
+        } else if (!obj.type) {
+            handleControl(obj);   // workflow قديم بيرد JSON واحد { success, data: { reply } }
+        }
+    });
+
+    if (response.body && response.body.getReader) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        for (;;) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            splitter.push(decoder.decode(value, { stream: true }));
+        }
+        splitter.push(decoder.decode());
+    } else {
+        splitter.push(await response.text());
+    }
+
+    if (!reply && final && final.reply) { reply = final.reply; if (onText) onText(reply); }
+    if (streamError && !reply) throw streamError;
+    if (!reply) throw { error: { code: 'EMPTY', message: 'لم يصل رد من المساعد، حاول مرة أخرى.' } };
+    return { reply, remaining_today: final ? final.remaining_today : undefined, partialError: streamError };
+}
+
 /**
  * كائن API الرئيسي
  */
@@ -391,6 +491,28 @@ export const api = {
             'POST',
             { student_id: studentId, message }
         );
+    },
+
+    /**
+     * نفس المساعد لكن بالبث المباشر: النص بيوصل كلمة بكلمة وبيتعرض فورًا (onText).
+     * بيشتغل مع workflow البث (Webhook بوضع Streaming + AI Agent)، ولو الـ workflow
+     * لسه القديم (رد JSON واحد) بيقرأه عادي. لو النظام "مشغول" بيعيد المحاولة تلقائيًا.
+     * بيرجّع { reply, remaining_today }
+     */
+    async chatWithAIAssistantStream(studentId, message, { onText, onRetry, signal } = {}) {
+        for (let attempt = 0; ; attempt++) {
+            try {
+                return await streamAiChatOnce(studentId, message, onText, signal);
+            } catch (error) {
+                const code = error && error.error && error.error.code;
+                if (code === 'BUSY' && attempt < 3 && !(signal && signal.aborted)) {
+                    if (onRetry) onRetry(attempt + 1);
+                    await new Promise((r) => setTimeout(r, 1500 + attempt * 1500));
+                    continue;
+                }
+                throw error;
+            }
+        }
     },
 
     // "✨ حضّرلي الحصة": خطة حصة مبنية على بيانات الطالب + مصادر مكتبة
