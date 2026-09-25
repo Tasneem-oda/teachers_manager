@@ -172,6 +172,8 @@ async function streamAiChatOnce(studentId, message, onText, signal) {
     }
 
     let reply = '';
+    let chunks = 0;
+    let streamed = false;
     let textNode = null;    // العقدة اللي بتكتب الرد (لو الأساسية فشلت وكمّلت الاحتياطية نبدأ من جديد)
     let final = null;       // رد JSON (عقدة Respond أو workflow قديم)
     let streamError = null;
@@ -182,15 +184,17 @@ async function streamAiChatOnce(studentId, message, onText, signal) {
         return false;
     };
     const splitter = createJsonStreamSplitter((obj) => {
-        if (obj.type === 'item') {
-            const content = obj.content == null ? '' : String(obj.content);
+        chunks++;
+        if (obj.type === 'item' || obj.type === 'chunk') {
+            const rawContent = obj.content != null ? obj.content : (obj.data != null ? obj.data : obj.output);
+            const content = rawContent == null ? '' : (typeof rawContent === 'string' ? rawContent : JSON.stringify(rawContent));
             const fromResponder = obj.metadata && /Response$/.test(obj.metadata.nodeName || '');
             if (fromResponder || /^\s*\{/.test(content)) {
                 try { if (handleControl(JSON.parse(content))) return; } catch (e) { /* نص عادي */ }
             }
             const node = (obj.metadata && obj.metadata.nodeName) || null;
             if (content && node && textNode && node !== textNode) reply = '';
-            if (content) { if (node) textNode = node; reply += content; if (onText) onText(reply); }
+            if (content) { if (node) textNode = node; streamed = true; reply += content; if (onText) onText(reply); }
         } else if (obj.type === 'error') {
             streamError = { error: { code: 'AI_ERROR', message: 'حدث خطأ غير متوقع أثناء التواصل مع المساعد الذكي، من فضلك حاول مرة أخرى.' } };
         } else if (!obj.type) {
@@ -211,7 +215,9 @@ async function streamAiChatOnce(studentId, message, onText, signal) {
         splitter.push(await response.text());
     }
 
-    if (!reply && final && final.reply) { reply = final.reply; if (onText) onText(reply); }
+    // لو البث مش شغال في n8n، الرد الكامل بيوصل في رسالة الانتهاء (Done Response)
+    if (final && final.reply && (!reply || !streamed)) { reply = String(final.reply); if (onText) onText(reply); }
+    if (!streamed) console.info('[AI chat] الرد وصل مرة واحدة (البث غير مفعّل في n8n). عدد الرسائل:', chunks);
     if (streamError && !reply) throw streamError;
     if (!reply) throw { error: { code: 'EMPTY', message: 'لم يصل رد من المساعد، حاول مرة أخرى.' } };
     return { reply, remaining_today: final ? final.remaining_today : undefined, partialError: streamError };
