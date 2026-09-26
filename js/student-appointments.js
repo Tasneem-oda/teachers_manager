@@ -11,9 +11,9 @@
  * من غير أي تعديل أو إضافة على أي workflow في n8n.
  */
 
-import { api } from './api.js?v=11';
-import { ErrorHandler, Formatters } from './utils.js?v=11';
-import { icon } from './icons.js?v=11';
+import { api } from './api.js?v=12';
+import { ErrorHandler, Formatters } from './utils.js?v=12';
+import { icon } from './icons.js?v=12';
 
 const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const RECURRENCE_LABELS = { weekly: 'أسبوعيًا', daily: 'يوميًا', monthly: 'شهريًا', none: 'مرة واحدة' };
@@ -130,6 +130,7 @@ function injectMarkup() {
                 await api.deleteSchedule(sch.id);
                 ErrorHandler.showSuccess('تم حذف الموعد');
                 await loadList();
+                notifySchedulesChanged();
             } catch (error) {
                 ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
             }
@@ -252,6 +253,7 @@ async function handleFormSubmit(e) {
             }
             document.getElementById('sapp-form-modal').classList.remove('active');
             await loadList();
+            notifySchedulesChanged();
             return;
         }
 
@@ -279,12 +281,18 @@ async function handleFormSubmit(e) {
         ErrorHandler.showSuccess('تم حفظ الموعد بنجاح');
         document.getElementById('sapp-form-modal').classList.remove('active');
         await loadList();
+        notifySchedulesChanged();
     } catch (error) {
         ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
     } finally {
         saveBtn.disabled = false;
         saveBtn.textContent = 'حفظ الموعد';
     }
+}
+
+// بيبلّغ أي صفحة مفتوحة (زي الرئيسية ودليل البداية) إن مواعيد الطالب اتغيرت
+function notifySchedulesChanged() {
+    try { window.dispatchEvent(new CustomEvent('tm:schedules-changed', { detail: { studentId: currentStudentId } })); } catch (e) { /* تجاهل */ }
 }
 
 function renderList() {

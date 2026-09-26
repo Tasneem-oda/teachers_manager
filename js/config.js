@@ -38,7 +38,9 @@ export const CONFIG = {
             // ملف الطالب الجديد: ملخص + حصص + دفع في طلب واحد، وتعديل البيانات الأساسية
             OVERVIEW: '/student-overview',
             UPDATE_INFO: '/update-student-info',
-            BILLING: '/student-billing'
+            BILLING: '/student-billing',
+            // حالة خطوات البداية (عدد الطلاب/المواعيد/الحصص) لدليل المستخدم الجديد
+            ONBOARDING: '/onboarding-status'
         },
         SCHEDULES: {
             CREATE: '/create-schedule',

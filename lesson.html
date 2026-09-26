@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الحصة - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=11">
+    <link rel="stylesheet" href="css/style.css?v=12">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,7 +19,7 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=11">
+    <link rel="stylesheet" href="css/lessons.css?v=12">
     <style>body { margin: 0; }</style>
 </head>
 <body>
@@ -47,6 +47,7 @@
                                 <div class="muted" id="r-start-hint" style="font-size: 0.82rem;"></div>
                                 <div class="ls-start-links">
                                     <a id="r-link" target="_blank" rel="noopener" hidden>فتح رابط الحصة فقط</a>
+                                    <button type="button" id="btn-absent-ready">الطالب غاب؟</button>
                                     <button type="button" id="btn-manual">تسجيل حصة تمت بدون مؤقت</button>
                                     <button type="button" id="btn-ai-ready">المساعد الذكي</button>
                                 </div>
@@ -87,7 +88,7 @@
                                     <div class="ls-block" id="blk-prev-hw" hidden>
                                         <span class="ls-label">هل تم الواجب السابق؟</span>
                                         <div class="ls-prev-hw" id="prev-hw-text"></div>
-                                        <div class="chip-group" data-field="revision"></div>
+                                        <div class="chip-group" data-field="homework_status"></div>
                                     </div>
 
                                     <div class="ls-block">
@@ -100,6 +101,7 @@
                                         <span class="ls-label">تقييم الطالب</span>
                                         <div class="ls-rating-row"><span class="ls-rating-name" id="lbl-memorization"></span><div class="chip-group" data-field="memorization"></div></div>
                                         <div class="ls-rating-row"><span class="ls-rating-name" id="lbl-recitation"></span><div class="chip-group" data-field="recitation"></div></div>
+                                        <div class="ls-rating-row"><span class="ls-rating-name" id="lbl-revision"></span><div class="chip-group" data-field="revision"></div></div>
                                     </div>
 
                                     <div class="ls-block ls-two">
@@ -130,7 +132,10 @@
 
                                     <div class="ls-footer">
                                         <span class="ls-saved" id="saved-ind"></span>
-                                        <button type="button" class="ls-discard" id="btn-discard"></button>
+                                        <span class="ls-footer-actions">
+                                            <button type="button" class="ls-absent-link" id="btn-absent-live">الطالب ما حضرش؟ سجّل غياب</button>
+                                            <button type="button" class="ls-discard" id="btn-discard"></button>
+                                        </span>
                                     </div>
                                 </form>
 
@@ -145,12 +150,12 @@
                         <section class="ls-state" id="state-done">
                             <div class="x-card ls-done">
                                 <div class="ls-done-icon" id="done-icon"></div>
-                                <h2>تم حفظ الحصة</h2>
+                                <h2 id="done-title">تم حفظ الحصة</h2>
                                 <p id="done-sub"></p>
                                 <div class="ls-done-bill" id="done-bill"></div>
                                 <div class="ls-done-actions">
                                     <a class="btn" id="done-student" href="#">ملف الطالب</a>
-                                    <a class="btn btn-ghost" href="dashboard.html">الرئيسية</a>
+                                    <a class="btn btn-ghost" id="done-home" href="dashboard.html">الرئيسية</a>
                                 </div>
                             </div>
                         </section>
@@ -258,18 +263,20 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=11"></script>
+    <script type="module" src="js/config.js?v=12"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=11';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=11';
-        import { api } from './js/api.js?v=11';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=11';
-        import { icon } from './js/icons.js?v=11';
+        import { Auth } from './js/auth.js?v=12';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=12';
+        import { api } from './js/api.js?v=12';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=12';
+        import { icon } from './js/icons.js?v=12';
         import {
             subjectLabel, ratingFieldLabels, RATINGS, HOMEWORK_STATUS, relativeDay, localDateISO, localTimeISO,
-            formatDuration, minutesText, LessonDraft, lessonHasContent, lessonDetailsHtml, nextOccurrence, formatNextOccurrence
-        } from './js/lesson-utils.js?v=11';
-        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge } from './js/billing.js?v=11';
+            formatDuration, minutesText, LessonDraft, lessonHasContent, lessonDetailsHtml, nextOccurrence, formatNextOccurrence,
+            normalizeLesson, isAbsenceRow, attendanceInfo
+        } from './js/lesson-utils.js?v=12';
+        import { openAttendanceModal } from './js/attendance.js?v=12';
+        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge } from './js/billing.js?v=12';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'ابدأ الحصة وتابعها وسجّلها في مكان واحد', showSearch: false });
@@ -279,6 +286,8 @@
         const urlSearchParams = new URLSearchParams(window.location.search);
         const studentIdParam = urlSearchParams.get('student_id');
         const openAiParam = urlSearchParams.get('open_ai');
+        const manualParam = urlSearchParams.get('manual') === '1';
+        const onboardingParam = urlSearchParams.get('onboarding') === '1';
 
         $('ic-ai-chat-btn').innerHTML = icon('sparkles', { size: 18 });
         $('ic-ai-chat-header').innerHTML = icon('sparkles', { size: 18 });
@@ -298,7 +307,7 @@
         let draftTimer = null;
         let saving = false;
         const TEXT_FIELDS = { lesson_content: 'f-content', homework: 'f-homework', next_assignment: 'f-next', performance: 'f-performance', notes: 'f-notes' };
-        const CHIP_FIELDS = ['memorization', 'recitation', 'revision'];
+        const CHIP_FIELDS = ['memorization', 'recitation', 'revision', 'homework_status'];
 
         function showState(name) {
             document.querySelectorAll('.ls-state').forEach((s) => s.classList.toggle('active', s.id === `state-${name}`));
@@ -327,7 +336,8 @@
         }
         buildChips('memorization', RATINGS);
         buildChips('recitation', RATINGS);
-        buildChips('revision', HOMEWORK_STATUS);
+        buildChips('revision', RATINGS);
+        buildChips('homework_status', HOMEWORK_STATUS);
 
         function getFields() {
             const f = {};
@@ -412,6 +422,7 @@
                 return;
             }
             if (draft) LessonDraft.clear(studentIdParam);   // الحصة اتقفلت من جهاز تاني أو خلصت
+            if (manualParam) { clearForm(); enterManual(); return; }
             showReady();
         }
 
@@ -420,6 +431,7 @@
             const labels = ratingFieldLabels(student.subject);
             $('lbl-memorization').textContent = labels.memorization;
             $('lbl-recitation').textContent = labels.recitation;
+            $('lbl-revision').textContent = labels.revision;
             $('bar-name').textContent = student.name || '';
             $('ai-chat-student-name').textContent = student.name || '';
             $('done-student').href = `student.html?id=${encodeURIComponent(studentIdParam)}`;
@@ -432,7 +444,13 @@
         }
 
         function lessonsCount() { return ov && ov.stats ? Number(ov.stats.completed) || 0 : 0; }
-        function lastLesson() { return ov && ov.lessons && ov.lessons[0] ? ov.lessons[0] : null; }
+        // آخر حصة "تمت" (الغياب مش بيتحسب) — منها المخطط والواجب السابق
+        function lastLesson() {
+            if (!ov) return null;
+            if (ov.last_completed) return normalizeLesson(ov.last_completed);
+            const l = (ov.lessons || []).find((x) => !isAbsenceRow(x));
+            return l ? normalizeLesson(l) : null;
+        }
 
         function showReady() {
             mode = null;
@@ -476,13 +494,19 @@
             const total = lessonsCount();
             $('seg-count').textContent = lessons.length ? `(${total || lessons.length})` : '';
             if (!lessons.length) { $('aside-list').innerHTML = '<div class="x-empty">لا توجد حصص سابقة</div>'; return; }
-            $('aside-list').innerHTML = lessons.map((l, i) => {
-                const peek = (l.lesson_content || l.homework || '').split('\n')[0];
-                const num = total ? total - i : '';
-                return `<details class="lh-item" ${i === 0 ? 'open' : ''}>
+            let doneSeen = 0;
+            let openedFirst = false;
+            $('aside-list').innerHTML = lessons.map((l) => {
+                const absent = isAbsenceRow(l);
+                const peek = absent ? attendanceInfo(l).label : (l.lesson_content || l.homework || '').split('\n')[0];
+                const num = !absent && total ? total - doneSeen : '';
+                if (!absent) doneSeen++;
+                const open = !absent && !openedFirst;
+                if (open) openedFirst = true;
+                return `<details class="lh-item${absent ? ' lh-absent' : ''}" ${open ? 'open' : ''}>
                     <summary>${num ? `<span class="lh-num">#${num}</span>` : ''}<span class="lh-date">${esc(relativeDay(l.lesson_date))}</span>
                         <span class="lh-peek">${esc(peek)}</span><span class="lh-caret">${icon('chevronDown', { size: 16 })}</span></summary>
-                    <div class="lh-body">${lessonDetailsHtml(l, student.subject, icon, { highlightNext: i === 0 })}</div>
+                    <div class="lh-body">${lessonDetailsHtml(l, student.subject, icon, { highlightNext: open })}</div>
                 </details>`;
             }).join('');
         }
@@ -527,6 +551,7 @@
             $('blk-date').hidden = true;
             $('btn-finish').innerHTML = icon('checkCircle', { size: 17 }) + ' <span class="ls-finish-text">إنهاء الحصة</span>';
             $('btn-discard').textContent = 'بدأت بالغلط؟ احذف الحصة الجارية';
+            $('btn-absent-live').hidden = false;
             prepareForm();
             startTimer();
             showState('live');
@@ -543,6 +568,7 @@
             $('f-date').max = localDateISO();
             $('btn-finish').innerHTML = icon('checkCircle', { size: 17 }) + ' <span class="ls-finish-text">حفظ الحصة</span>';
             $('btn-discard').textContent = 'إلغاء';
+            $('btn-absent-live').hidden = true;
             prepareForm();
             showState('live');
         }
@@ -593,6 +619,25 @@
 
         $('btn-manual').addEventListener('click', () => { clearForm(); enterManual(); saveDraftNow(); });
         $('btn-ai-ready').addEventListener('click', () => openAiChat());
+
+        // تسجيل غياب (قبل البدء أو بدل الحصة الجارية)
+        function openAbsence(fromLive) {
+            openAttendanceModal({
+                studentId: studentIdParam,
+                studentName: student.name || '',
+                lessonId: fromLive ? lesson.id : null,
+                onSaved: async (value) => {
+                    LessonDraft.clear(studentIdParam);
+                    stopTimer();
+                    mode = null;
+                    clearForm();
+                    try { await loadOverview(); } catch (e) { /* الغياب اتسجل */ }
+                    showDone(null, value);
+                }
+            });
+        }
+        $('btn-absent-ready').addEventListener('click', () => openAbsence(false));
+        $('btn-absent-live').addEventListener('click', () => openAbsence(true));
 
         // تبويبات الموبايل: الحصة الآن / الحصص السابقة
         $('ls-seg').addEventListener('click', (e) => {
@@ -647,6 +692,7 @@
             btn.innerHTML = icon('clock', { size: 17 }) + ' <span class="ls-finish-text">جاري الحفظ...</span>';
             try {
                 await api.saveLesson(payload);
+                try { localStorage.setItem('tm_ob_lesson_done', '1'); } catch (e) { /* تجاهل */ }
                 const duration = mode === 'live' && lesson.startedAt ? Date.now() - lesson.startedAt : null;
                 LessonDraft.clear(studentIdParam);
                 stopTimer();
@@ -662,7 +708,20 @@
             }
         });
 
-        function showDone(duration) {
+        function showDone(duration, absenceValue) {
+            if (absenceValue) {
+                const info = attendanceInfo({ status: 'cancelled', attendance: absenceValue });
+                $('done-title').textContent = `تم التسجيل: ${info.label}`;
+                $('done-icon').innerHTML = `<span style="font-size:1.9rem">${info.icon}</span>`;
+            } else {
+                $('done-title').textContent = 'تم حفظ الحصة';
+                $('done-icon').innerHTML = icon('checkCircle', { size: 34 });
+            }
+            if (onboardingParam && !absenceValue) {
+                $('done-home').className = 'btn';
+                $('done-home').textContent = 'كمّل خطوات البداية';
+                $('done-student').className = 'btn btn-ghost';
+            }
             const parts = [];
             if (duration) parts.push(`مدة الحصة ${minutesText(duration)}`);
             if (lessonsCount()) parts.push(`إجمالي حصص ${student.name ? student.name.split(' ')[0] : 'الطالب'}: ${lessonsCount()}`);
@@ -903,6 +962,6 @@
             }
         });
         </script>
-    <script src="js/pwa-install.js?v=11" defer></script>
+    <script src="js/pwa-install.js?v=12" defer></script>
 </body>
 </html>

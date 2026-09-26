@@ -3,8 +3,8 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=11';
-import { APIUtils, Storage } from './utils.js?v=11';
+import { CONFIG } from './config.js?v=12';
+import { APIUtils, Storage } from './utils.js?v=12';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -283,6 +283,35 @@ export const api = {
         }
     },
 
+    /**
+     * خطوات البداية: { students, schedules, lessons, first_student, student_without_schedule, student_with_schedule }
+     * لو workflow "onboarding-status" لسه متستوردش بنحسبها من بيانات الرئيسية والمواعيد
+     */
+    async getOnboardingStatus(dashboardData = null) {
+        try {
+            return await apiCall(CONFIG.API_ENDPOINTS.STUDENTS.ONBOARDING, 'GET');
+        } catch (error) {
+            if (!isMissingWebhook(error)) throw error;
+            const [students, schedules] = await Promise.all([
+                this.getStudents(1, 100).then((d) => d.students || []).catch(() => []),
+                dashboardData && dashboardData.schedules ? Promise.resolve(dashboardData.schedules) : this.getSchedules().then((d) => d.schedules || []).catch(() => [])
+            ]);
+            const withSched = new Set(schedules.map((s) => s.student_id));
+            const pick = (s) => (s ? { id: s.id, name: s.name } : null);
+            let lessonFlag = false;
+            try { lessonFlag = localStorage.getItem('tm_ob_lesson_done') === '1'; } catch (e) { /* تجاهل */ }
+            return {
+                legacy: true,
+                students: students.length,
+                schedules: schedules.length,
+                lessons: lessonFlag ? 1 : 0,
+                first_student: pick(students[students.length - 1] || students[0]),
+                student_without_schedule: pick(students.find((s) => !withSched.has(s.id))),
+                student_with_schedule: pick(students.find((s) => withSched.has(s.id)))
+            };
+        }
+    },
+
     // action: settings | disable | add_payment | adjust | delete_payment
     async studentBilling(studentId, action, data = {}) {
         return await apiCall(CONFIG.API_ENDPOINTS.STUDENTS.BILLING, 'POST', { student_id: studentId, action, ...data });
@@ -349,6 +378,8 @@ export const api = {
             return await apiCall(CONFIG.API_ENDPOINTS.LESSONS.SAVE, 'POST', data);
         } catch (error) {
             if (!isMissingWebhook(error) || data.action === 'discard') throw error;
+            // الخادم القديم: الغياب بيتسجل كإلغاء حصة النهارده بس
+            if (data.action === 'absence') return await apiCall(CONFIG.API_ENDPOINTS.LESSONS.CANCEL, 'POST', { student_id: data.student_id });
             const legacy = { ...data, performance_notes: data.performance };
             return await apiCall(CONFIG.API_ENDPOINTS.LESSONS.FINALIZE, 'POST', { id: data.lesson_id || data.student_id, ...legacy });
         }

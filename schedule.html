@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الجدول الأسبوعي - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=11">
+    <link rel="stylesheet" href="css/style.css?v=12">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -174,13 +174,13 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=11"></script>
+    <script type="module" src="js/config.js?v=12"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=11';
-        import { api } from './js/api.js?v=11';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=11';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=11';
-        import { icon } from './js/icons.js?v=11';
+        import { Auth } from './js/auth.js?v=12';
+        import { api } from './js/api.js?v=12';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=12';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=12';
+        import { icon } from './js/icons.js?v=12';
 
         renderSidebar('schedule');
         renderTopHeader({ title: 'الجدول الأسبوعي', subtitle: 'نظّم كل مواعيدك في مكان واحد' });
@@ -498,6 +498,6 @@
             await loadData();
         })();
     </script>
-    <script src="js/pwa-install.js?v=11" defer></script>
+    <script src="js/pwa-install.js?v=12" defer></script>
 </body>
 </html>

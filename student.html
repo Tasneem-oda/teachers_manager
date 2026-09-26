@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>ملف الطالب - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=11">
+    <link rel="stylesheet" href="css/style.css?v=12">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,7 +19,7 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=11">
+    <link rel="stylesheet" href="css/lessons.css?v=12">
     <style>
         .loading { text-align: center; padding: 2rem; color: var(--primary); }
         .empty-state { text-align: center; padding: 2rem; color: var(--text-secondary); }
@@ -83,6 +83,10 @@
                     </section>
 
                     <section class="sp-panel" id="tab-lessons">
+                        <div class="sp-lessons-bar">
+                            <span class="muted" id="att-summary"></span>
+                            <button type="button" class="btn btn-sm btn-ghost" id="btn-add-absence">+ سجّل غياب</button>
+                        </div>
                         <div id="lessons-list"></div>
                         <div class="more-wrap"><button type="button" class="btn btn-ghost btn-sm" id="btn-more-lessons" hidden>عرض حصص أقدم</button></div>
                     </section>
@@ -180,16 +184,17 @@
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=11"></script>
+    <script type="module" src="js/config.js?v=12"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=11';
-        import { api } from './js/api.js?v=11';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=11';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=11';
-        import { icon } from './js/icons.js?v=11';
-        import { openStudentAppointments } from './js/student-appointments.js?v=11';
-        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence } from './js/lesson-utils.js?v=11';
-        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=11';
+        import { Auth } from './js/auth.js?v=12';
+        import { api } from './js/api.js?v=12';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=12';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=12';
+        import { icon } from './js/icons.js?v=12';
+        import { openStudentAppointments } from './js/student-appointments.js?v=12';
+        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=12';
+        import { openAttendanceModal } from './js/attendance.js?v=12';
+        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=12';
 
         renderSidebar('students');
         renderTopHeader({ title: 'ملف الطالب', subtitle: 'كل ما يخص الطالب في مكان واحد' });
@@ -225,6 +230,7 @@
                 $('content').style.display = 'block';
                 const hashTab = (location.hash || '').replace('#', '');
                 if (['overview', 'lessons', 'billing', 'notes', 'info'].includes(hashTab)) switchTab(hashTab);
+                if (new URLSearchParams(window.location.search).get('appts') === '1') openStudentAppointments(studentId, student.name || '');
             } catch (error) {
                 $('loading').innerText = 'خطأ: ' + ErrorHandler.getErrorMessage(error);
             }
@@ -272,11 +278,14 @@
         function renderStats() {
             const st = ov.stats || {};
             const total = Number(st.completed) || 0;
-            const cancelled = Number(st.cancelled) || 0;
+            const att = attendanceStats(st);
             const tiles = [];
-            tiles.push(`<button type="button" class="sp-stat" data-goto="lessons"><div class="sp-stat-label">${icon('clipboardList', { size: 13 })} إجمالي الحصص</div>
+            const attSub = att.absent
+                ? `غاب ${att.absent} · حضور ${att.rate}%`
+                : (st.first_lesson ? `منذ ${esc(formatLessonDate(st.first_lesson))}` : 'حصص حضرها الطالب');
+            tiles.push(`<button type="button" class="sp-stat" data-goto="lessons"><div class="sp-stat-label">${icon('clipboardList', { size: 13 })} الحصص اللي حضرها</div>
                 <div class="sp-stat-value">${total}${ov.legacy && !st.completed_exact && total >= PAGE ? '+' : ''}</div>
-                <div class="sp-stat-sub">${cancelled ? `و ${cancelled} ملغاة` : (st.first_lesson ? `منذ ${esc(formatLessonDate(st.first_lesson))}` : 'حصص مكتملة')}</div></button>`);
+                <div class="sp-stat-sub">${attSub}</div></button>`);
             if (billView.available) {
                 const status = billView.enabled ? `st-${billView.status}` : '';
                 tiles.push(`<button type="button" class="sp-stat ${status}" data-goto="billing"><div class="sp-stat-label">${icon('creditCard', { size: 13 })} الدفع</div>
@@ -301,7 +310,8 @@
         }
 
         function renderLastLesson() {
-            const last = lessons[0];
+            const lastRaw = ov.last_completed || lessons.find((l) => !isAbsenceRow(l));
+            const last = lastRaw ? normalizeLesson(lastRaw) : null;
             $('ov-last').innerHTML = last
                 ? `<div class="x-card-title"><h3>${icon('clipboard', { size: 17 })} آخر حصة · ${esc(relativeDay(last.lesson_date))}</h3>
                         <button type="button" class="x-link" data-goto-tab="lessons">كل الحصص</button></div>
@@ -361,19 +371,37 @@
 
         // ------------------------------------------------------------ الحصص
         function renderLessons() {
-            const total = Number((ov.stats || {}).completed) || 0;
+            const st = ov.stats || {};
+            const total = Number(st.completed) || 0;
+            const historyTotal = Number(st.history_total) || total;
+            const att = attendanceStats(st);
+            $('att-summary').textContent = total || att.absent
+                ? `حضر ${att.present} · غاب بعذر ${att.excused} · بدون عذر ${att.unexcused}${att.cancelled ? ` · ملغاة ${att.cancelled}` : ''}`
+                : '';
             const list = $('lessons-list');
             if (!lessons.length) { list.innerHTML = '<div class="x-card"><div class="x-empty">لا توجد حصص مسجّلة</div></div>'; $('btn-more-lessons').hidden = true; return; }
-            list.innerHTML = lessons.map((l, i) => {
-                const peek = (l.lesson_content || l.homework || '').split('\n')[0];
-                const num = total && !ov.legacy ? total - i : '';
-                return `<details class="lh-item" ${i === 0 ? 'open' : ''}>
+            let doneSeen = 0;
+            let openedFirst = false;
+            list.innerHTML = lessons.map((l) => {
+                const absent = isAbsenceRow(l);
+                const peek = absent ? attendanceInfo(l).label : (l.lesson_content || l.homework || '').split('\n')[0];
+                const num = !absent && total && !ov.legacy ? total - doneSeen : '';
+                if (!absent) doneSeen++;
+                const open = !absent && !openedFirst;
+                if (open) openedFirst = true;
+                return `<details class="lh-item${absent ? ' lh-absent' : ''}" ${open ? 'open' : ''}>
                     <summary>${num ? `<span class="lh-num">#${num}</span>` : ''}<span class="lh-date">${esc(formatLessonDate(l.lesson_date))}</span>
                         <span class="lh-peek">${esc(peek)}</span><span class="lh-caret">${icon('chevronDown', { size: 16 })}</span></summary>
                     <div class="lh-body">${lessonDetailsHtml(l, student.subject, icon)}</div></details>`;
             }).join('');
-            $('btn-more-lessons').hidden = total ? lessons.length >= total : lessons.length % PAGE !== 0 || lessons.length === 0;
+            $('btn-more-lessons').hidden = historyTotal ? lessons.length >= historyTotal : lessons.length % PAGE !== 0 || lessons.length === 0;
         }
+
+        $('btn-add-absence').addEventListener('click', () => openAttendanceModal({
+            studentId,
+            studentName: student.name || '',
+            onSaved: async () => { try { await loadOverview(); } catch (e) { ErrorHandler.showError(ErrorHandler.getErrorMessage(e)); } }
+        }));
 
         $('btn-more-lessons').addEventListener('click', async () => {
             const b = $('btn-more-lessons');
@@ -555,6 +583,6 @@
 
         window.openBillingSetup = () => openBillingSetup({ student, view: billView }, billingCtx.onChange);
     </script>
-    <script src="js/pwa-install.js?v=11" defer></script>
+    <script src="js/pwa-install.js?v=12" defer></script>
 </body>
 </html>

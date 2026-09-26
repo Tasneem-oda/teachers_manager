@@ -10,9 +10,9 @@
  *   postpaid : الدفع بعد عدد حصص (مثلًا كل 4 حصص) → التذكير لما المستحق يوصل للعدد ده
  */
 
-import { api } from './api.js?v=11';
-import { Formatters, ErrorHandler } from './utils.js?v=11';
-import { icon } from './icons.js?v=11';
+import { api } from './api.js?v=12';
+import { Formatters, ErrorHandler } from './utils.js?v=12';
+import { icon } from './icons.js?v=12';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 
@@ -55,7 +55,9 @@ export function computeBilling(billing) {
         owed: Math.max(0, -balance),
         since: b.since || null,
         lastPayment: b.last_payment || null,
-        paidAmount: Number(b.paid_amount) || 0
+        paidAmount: Number(b.paid_amount) || 0,
+        absencesCounted: Number(b.absences_counted) || 0,
+        countUnexcused: b.count_unexcused_absence !== false
     });
     view.owedAmount = price ? price * view.owed : null;
     view.renewAmount = price ? price * size : null;
@@ -202,11 +204,11 @@ export function billingCardHtml(view, opts = {}) {
             <span class="bill-mode">${esc(modeText)}</span>
         </div>
         <div class="bill-bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div>
-        <div class="bill-meta">${esc(last)}${opts.compact ? '' : ` · تمت ${view.taken} · مدفوع ${view.paid + view.adjusted}`}</div>
+        <div class="bill-meta">${esc(last)}${opts.compact ? '' : ` · محسوبة ${view.taken}${view.absencesCounted ? ` (منها ${view.absencesCounted} غياب)` : ''} · مدفوع ${view.paid + view.adjusted}`}</div>
         <div class="bill-actions">
             <button type="button" class="btn btn-sm" data-bill-act="pay">${icon('plus', { size: 14 })} سجّل دفعة</button>
             <button type="button" class="btn btn-sm ${view.needsReminder ? 'bill-remind-hot' : 'btn-ghost'}" data-bill-act="remind">${icon('messageCircle', { size: 14 })} رسالة تذكير</button>
-            ${opts.compact ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-bill-act="adjust">${icon('minus', { size: 14 })} حساب غياب / تعديل</button>`}
+            ${opts.compact ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-bill-act="adjust">${icon('minus', { size: 14 })} تعديل الرصيد</button>`}
         </div>
     </div>`;
 }
@@ -283,6 +285,10 @@ export function openBillingSetup(state, onChange) {
             <div class="bm-field"><label for="bm-price">سعر الحصة <small>(اختياري)</small></label>
                 <input type="number" id="bm-price" min="0" step="any" inputmode="decimal" value="${view.price != null ? esc(view.price) : ''}" placeholder="مثلًا 100"></div>
         </div>
+        <label class="bm-check">
+            <input type="checkbox" id="bm-unexcused" ${view.enabled && view.countUnexcused === false ? '' : 'checked'}>
+            <span>الغياب بدون عذر يتحسب من الحصص <small>(الغياب بعذر مش بيتحسب)</small></span>
+        </label>
         ${firstTime ? `<div class="bm-field bm-opening">
             <label for="bm-opening" id="bm-opening-label"></label>
             <input type="number" id="bm-opening" min="0" max="500" inputmode="numeric" value="0">
@@ -306,7 +312,7 @@ export function openBillingSetup(state, onChange) {
         const md = m.el.querySelector('input[name="bm-mode"]:checked').value;
         const size = parseInt(m.$('#bm-size').value, 10);
         if (!size || size < 1 || size > 200) { const er = m.$('.bm-error'); er.textContent = 'عدد الحصص لازم يكون رقم من 1 إلى 200'; er.style.display = 'block'; return; }
-        const data = { billing_mode: md, package_size: size, lesson_price: m.$('#bm-price').value };
+        const data = { billing_mode: md, package_size: size, lesson_price: m.$('#bm-price').value, count_unexcused_absence: m.$('#bm-unexcused').checked };
         if (firstTime) {
             const o = Math.max(0, parseInt(m.$('#bm-opening').value, 10) || 0);
             data.opening_lessons = md === 'prepaid' ? o : -o;
@@ -359,13 +365,9 @@ export function openPaymentModal(state, onChange) {
 
 export function openAdjustModal(state, onChange) {
     const { student } = state;
-    const m = openModal('حساب غياب / تعديل الرصيد', `
+    const m = openModal('تعديل الرصيد', `
         <div class="bm-error" role="alert"></div>
-        <button type="button" class="bm-quick" id="bm-absent">
-            ${icon('minus', { size: 16 })}
-            <span><strong>حساب حصة غياب</strong><small>الطالب غاب بدون إبلاغ والحصة تتحسب من الرصيد</small></span>
-        </button>
-        <div class="bm-sep">أو تعديل يدوي</div>
+        <p class="bm-hint" style="margin-top:0">الغياب بيتسجل من زرار "الطالب غاب" في الحصة أو ملف الطالب وبيتحسب تلقائيًا. التعديل هنا للحالات الخاصة بس.</p>
         <div class="bm-grid">
             <div class="bm-field"><label for="bm-dir">نوع التعديل</label>
                 <select id="bm-dir"><option value="-1">خصم حصص من الرصيد</option><option value="1">إضافة حصص للرصيد (مجانًا/تعويض)</option></select></div>
@@ -379,9 +381,6 @@ export function openAdjustModal(state, onChange) {
             <button type="button" class="btn btn-ghost" data-close>إلغاء</button>
         </div>
     `);
-    m.$('#bm-absent').addEventListener('click', (e) => {
-        submitBilling(m, e.currentTarget, student.id, 'adjust', { lessons_count: -1, note: 'غياب محسوب' }, onChange, 'تم حساب حصة الغياب');
-    });
     m.$('#bm-save').addEventListener('click', (e) => {
         const n = parseInt(m.$('#bm-n').value, 10);
         if (!n || n < 1) { const er = m.$('.bm-error'); er.textContent = 'اكتب عدد الحصص'; er.style.display = 'block'; return; }
