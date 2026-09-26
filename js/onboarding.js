@@ -6,9 +6,9 @@
  * بعد الثلاثة: رسالة احتفال مرة واحدة + اقتراحات اختيارية.
  */
 
-import { api } from './api.js?v=12';
-import { Formatters } from './utils.js?v=12';
-import { openStudentAppointments } from './student-appointments.js?v=12';
+import { api } from './api.js?v=13';
+import { Formatters } from './utils.js?v=13';
+import { openStudentAppointments } from './student-appointments.js?v=13';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 const LS = {
@@ -119,7 +119,7 @@ function welcomeModal(name, onStart) {
 
 /**
  * @param {{root:HTMLElement, dashboardData?:object, teacherName?:string}} opts
- * @returns {Promise<{active:boolean}>} active = الدليل ظاهر (الخطوات لسه مخلصتش)
+ * @returns {Promise<{active:boolean, status?:object}>} active = الدليل ظاهر (الخطوات لسه مخلصتش)
  */
 export async function renderOnboarding({ root, dashboardData = null, teacherName = '' }) {
     if (!root) return { active: false };
@@ -136,15 +136,15 @@ export async function renderOnboarding({ root, dashboardData = null, teacherName
     if (allDone) {
         // مستخدم قديم عمره ما شاف الدليل: مفيش داعي لرسالة الاحتفال
         if (!LS.get('tm_ob_seen')) LS.set('tm_ob_celebrated', '1');
-        if (LS.get('tm_ob_celebrated')) { root.innerHTML = ''; return { active: false }; }
+        if (LS.get('tm_ob_celebrated')) { root.innerHTML = ''; return { active: false, status }; }
         root.innerHTML = celebrationHtml(status);
         track('all_done');
         root.querySelector('[data-ob-close]').addEventListener('click', () => { LS.set('tm_ob_celebrated', '1'); root.innerHTML = ''; });
-        return { active: false };
+        return { active: false, status };
     }
 
     LS.set('tm_ob_seen', '1');
-    if (LS.get('tm_ob_hidden')) { root.innerHTML = ''; return { active: false }; }
+    if (LS.get('tm_ob_hidden')) { root.innerHTML = ''; return { active: false, status }; }
 
     root.innerHTML = checklistHtml(steps);
     root.querySelector('[data-ob-hide]').addEventListener('click', () => {
@@ -165,5 +165,5 @@ export async function renderOnboarding({ root, dashboardData = null, teacherName
         LS.set('tm_welcome_seen', '1');
         welcomeModal(teacherName, () => { window.location.href = steps[0].href; });
     }
-    return { active: true };
+    return { active: true, status };
 }

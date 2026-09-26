@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>ملف الطالب - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=12">
+    <link rel="stylesheet" href="css/style.css?v=13">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,7 +19,7 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=12">
+    <link rel="stylesheet" href="css/lessons.css?v=13">
     <style>
         .loading { text-align: center; padding: 2rem; color: var(--primary); }
         .empty-state { text-align: center; padding: 2rem; color: var(--text-secondary); }
@@ -74,6 +74,11 @@
                         <div class="sp-grid2">
                             <div>
                                 <div class="x-card" id="ov-last"></div>
+                                <div class="x-card rp-card" id="ov-report">
+                                    <div class="x-card-title"><h3>📨 تقرير الشهر لولي الأمر</h3></div>
+                                    <p class="muted" style="margin:0 0 0.8rem; font-size:0.88rem;">رسالة جاهزة فيها الحضور والمستوى والواجبات والخطة الجاية — تبعتها على واتساب بضغطة.</p>
+                                    <button type="button" class="btn btn-sm" id="btn-report">جهّز التقرير</button>
+                                </div>
                             </div>
                             <div>
                                 <div id="ov-bill" style="margin-bottom: 1rem;"></div>
@@ -184,17 +189,19 @@
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=12"></script>
+    <script type="module" src="js/config.js?v=13"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=12';
-        import { api } from './js/api.js?v=12';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=12';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=12';
-        import { icon } from './js/icons.js?v=12';
-        import { openStudentAppointments } from './js/student-appointments.js?v=12';
-        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=12';
-        import { openAttendanceModal } from './js/attendance.js?v=12';
-        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=12';
+        import { Auth } from './js/auth.js?v=13';
+        import { api } from './js/api.js?v=13';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=13';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=13';
+        import { icon } from './js/icons.js?v=13';
+        import { openStudentAppointments } from './js/student-appointments.js?v=13';
+        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=13';
+        import { openAttendanceModal } from './js/attendance.js?v=13';
+        import { openMonthlyReport } from './js/report.js?v=13';
+        import { showTips } from './js/tips.js?v=13';
+        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=13';
 
         renderSidebar('students');
         renderTopHeader({ title: 'ملف الطالب', subtitle: 'كل ما يخص الطالب في مكان واحد' });
@@ -231,6 +238,10 @@
                 const hashTab = (location.hash || '').replace('#', '');
                 if (['overview', 'lessons', 'billing', 'notes', 'info'].includes(hashTab)) switchTab(hashTab);
                 if (new URLSearchParams(window.location.search).get('appts') === '1') openStudentAppointments(studentId, student.name || '');
+                showTips([
+                    { id: 'student_billing', target: '#sp-stats [data-goto="billing"]', title: 'حصص ودفع الطالب', text: 'من هنا تعرف فاضل كام حصة في الباقة، وتسجّل الدفعات وتبعت رسالة تذكير.' },
+                    { id: 'student_report', target: '#ov-report', title: 'تقرير ولي الأمر', text: 'آخر كل شهر ابعت لولي الأمر تقرير جاهز بالحضور والمستوى — بيفرق جدًا في ثقته فيك.' }
+                ]);
             } catch (error) {
                 $('loading').innerText = 'خطأ: ' + ErrorHandler.getErrorMessage(error);
             }
@@ -581,8 +592,24 @@
             }
         });
 
+        // ------------------------------------------------------------ تقرير الشهر لولي الأمر
+        async function loadLessonsSince(start) {
+            let all = [];
+            for (let page = 0; page < 4; page++) {
+                const res = await api.getStudentOverview(studentId, { offset: page * 50, limit: 50 });
+                const rows = res.lessons || [];
+                all = all.concat(rows);
+                const oldest = rows[rows.length - 1];
+                if (rows.length < 50 || !oldest) break;
+                const d = new Date(String(oldest.lesson_date).slice(0, 10) + 'T12:00:00');
+                if (d < start) break;
+            }
+            return all;
+        }
+        $('btn-report').addEventListener('click', () => openMonthlyReport({ student, loadLessons: loadLessonsSince }));
+
         window.openBillingSetup = () => openBillingSetup({ student, view: billView }, billingCtx.onChange);
     </script>
-    <script src="js/pwa-install.js?v=12" defer></script>
+    <script src="js/pwa-install.js?v=13" defer></script>
 </body>
 </html>

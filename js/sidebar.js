@@ -1,9 +1,9 @@
 /**
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
-import { Auth } from './auth.js?v=12';
-import { icon } from './icons.js?v=12';
-import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=12';
+import { Auth } from './auth.js?v=13';
+import { icon } from './icons.js?v=13';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=13';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
@@ -195,7 +195,7 @@ async function enforceSubscriptionLock() {
  * بدلاً من ظهوره داخل السايدبار (كان يختفي على الموبايل ويسبب مشاكل تصميم).
  * يُستدعى مرة واحدة من dashboard.html فقط.
  */
-export async function renderTrialBanner(containerId = 'trial-banner-root') {
+export async function renderTrialBanner(containerId = 'trial-banner-root', { progress = '' } = {}) {
     const root = document.getElementById(containerId);
     if (!root) return;
     try {
@@ -210,8 +210,8 @@ export async function renderTrialBanner(containerId = 'trial-banner-root') {
                 <div class="trial-banner">
                     <div class="trial-banner-icon">${icon('sparkles', { size: 20 })}</div>
                     <div class="trial-banner-text">
-                        <strong>الفترة التجريبية المجانية</strong>
-                        <span>متبقٍ ${daysLabel(state.daysLeft)} — بعدها يمكنك الاشتراك في الخطة الشهرية لمتابعة الاستخدام.</span>
+                        <strong>${progress ? escapeBannerText(progress) : 'الفترة التجريبية المجانية'}</strong>
+                        <span>${progress ? `الفترة التجريبية: متبقٍ ${daysLabel(state.daysLeft)} — كمّل وخلي كل متابعاتك في مكان واحد.` : `متبقٍ ${daysLabel(state.daysLeft)} — بعدها يمكنك الاشتراك في الخطة الشهرية لمتابعة الاستخدام.`}</span>
                     </div>
                     <a href="subscription.html" class="btn trial-banner-btn">عرض الاشتراك</a>
                 </div>
@@ -234,6 +234,10 @@ export async function renderTrialBanner(containerId = 'trial-banner-root') {
     } catch (e) {
         root.innerHTML = '';
     }
+}
+
+function escapeBannerText(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 /**

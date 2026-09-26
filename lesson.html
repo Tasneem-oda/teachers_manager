@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الحصة - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=12">
+    <link rel="stylesheet" href="css/style.css?v=13">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,7 +19,7 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=12">
+    <link rel="stylesheet" href="css/lessons.css?v=13">
     <style>body { margin: 0; }</style>
 </head>
 <body>
@@ -102,6 +102,7 @@
                                         <div class="ls-rating-row"><span class="ls-rating-name" id="lbl-memorization"></span><div class="chip-group" data-field="memorization"></div></div>
                                         <div class="ls-rating-row"><span class="ls-rating-name" id="lbl-recitation"></span><div class="chip-group" data-field="recitation"></div></div>
                                         <div class="ls-rating-row"><span class="ls-rating-name" id="lbl-revision"></span><div class="chip-group" data-field="revision"></div></div>
+                                        <button type="button" class="lh-same" id="btn-same-rating" hidden>↺ نفس تقييم الحصة اللي فاتت</button>
                                     </div>
 
                                     <div class="ls-block ls-two">
@@ -263,20 +264,21 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=12"></script>
+    <script type="module" src="js/config.js?v=13"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=12';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=12';
-        import { api } from './js/api.js?v=12';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=12';
-        import { icon } from './js/icons.js?v=12';
+        import { Auth } from './js/auth.js?v=13';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=13';
+        import { api } from './js/api.js?v=13';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=13';
+        import { icon } from './js/icons.js?v=13';
         import {
             subjectLabel, ratingFieldLabels, RATINGS, HOMEWORK_STATUS, relativeDay, localDateISO, localTimeISO,
             formatDuration, minutesText, LessonDraft, lessonHasContent, lessonDetailsHtml, nextOccurrence, formatNextOccurrence,
             normalizeLesson, isAbsenceRow, attendanceInfo
-        } from './js/lesson-utils.js?v=12';
-        import { openAttendanceModal } from './js/attendance.js?v=12';
-        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge } from './js/billing.js?v=12';
+        } from './js/lesson-utils.js?v=13';
+        import { openAttendanceModal } from './js/attendance.js?v=13';
+        import { showTips, dismissTip } from './js/tips.js?v=13';
+        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge } from './js/billing.js?v=13';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'ابدأ الحصة وتابعها وسجّلها في مكان واحد', showSearch: false });
@@ -474,6 +476,10 @@
 
             renderBilling($('r-bill'), true);
             showState('ready');
+            showTips([
+                { id: 'lesson_start', target: '#btn-start', title: 'ابدأ الحصة', text: 'الزرار ده بيشغّل العداد ويفتح رابط الحصة، وكل اللي هتكتبه بيتحفظ تلقائيًا.' },
+                { id: 'lesson_absent', target: '#btn-absent-ready', text: 'الطالب ما حضرش؟ سجّل غيابه من هنا (بعذر أو بدون عذر).' }
+            ]);
         }
 
         function renderBilling(container, compact) {
@@ -521,7 +527,17 @@
                 $('blk-prev-hw').hidden = true;
             }
             updateSuggest();
+            // "نفس تقييم الحصة اللي فاتت": ضغطة واحدة بدل 3
+            const hasRating = !!(last && (last.memorization || last.recitation || last.revision));
+            $('btn-same-rating').hidden = !hasRating;
         }
+        $('btn-same-rating').addEventListener('click', () => {
+            const last = lastLesson();
+            if (!last) return;
+            ['memorization', 'recitation', 'revision'].forEach((k) => { if (last[k]) setChip(k, last[k]); });
+            $('btn-same-rating').hidden = true;
+            scheduleDraft();
+        });
         // اقتراح: المخطط من الحصة السابقة (بيختفي لو اتضاف للخانة بالفعل)
         function updateSuggest() {
             const last = lastLesson();
@@ -555,6 +571,12 @@
             prepareForm();
             startTimer();
             showState('live');
+            dismissTip();
+            showTips([
+                { id: 'lesson_history_d', target: '#ls-aside', title: 'الحصص اللي فاتت', text: 'سجل الطالب قدامك طول الحصة: آخر حصة مفتوحة، والأقدم بضغطة.' },
+                { id: 'lesson_history_m', target: '#ls-seg', title: 'الحصص اللي فاتت', text: 'من تبويب "الحصص السابقة" تشوف سجل الطالب من غير ما تسيب الحصة.' },
+                { id: 'lesson_same', target: '#btn-same-rating', text: 'لو مستوى الطالب زي الحصة اللي فاتت، الزرار ده بيملأ التقييم كله بضغطة.' }
+            ]);
         }
 
         function enterManual(date) {
@@ -693,6 +715,7 @@
             try {
                 await api.saveLesson(payload);
                 try { localStorage.setItem('tm_ob_lesson_done', '1'); } catch (e) { /* تجاهل */ }
+                try { (window.dataLayer = window.dataLayer || []).push({ event: 'lesson_saved', lesson_mode: mode }); } catch (e) { /* تجاهل */ }
                 const duration = mode === 'live' && lesson.startedAt ? Date.now() - lesson.startedAt : null;
                 LessonDraft.clear(studentIdParam);
                 stopTimer();
@@ -962,6 +985,6 @@
             }
         });
         </script>
-    <script src="js/pwa-install.js?v=12" defer></script>
+    <script src="js/pwa-install.js?v=13" defer></script>
 </body>
 </html>

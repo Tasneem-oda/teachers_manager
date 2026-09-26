@@ -11,9 +11,9 @@
  * من غير أي تعديل أو إضافة على أي workflow في n8n.
  */
 
-import { api } from './api.js?v=12';
-import { ErrorHandler, Formatters } from './utils.js?v=12';
-import { icon } from './icons.js?v=12';
+import { api } from './api.js?v=13';
+import { ErrorHandler, Formatters } from './utils.js?v=13';
+import { icon } from './icons.js?v=13';
 
 const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const RECURRENCE_LABELS = { weekly: 'أسبوعيًا', daily: 'يوميًا', monthly: 'شهريًا', none: 'مرة واحدة' };
@@ -298,7 +298,7 @@ function notifySchedulesChanged() {
 function renderList() {
     const list = document.getElementById('sapp-list');
     if (studentSchedules.length === 0) {
-        list.innerHTML = '<div class="empty-state">لا توجد مواعيد مجدولة لهذا الطالب بعد</div>';
+        list.innerHTML = '<div class="empty-state">لسه مفيش مواعيد للطالب ده.<br><small>حدّد اليوم والساعة تحت، وحصصه هتظهر لك في "حصص اليوم" وهيوصلك تنبيه بيها.</small></div>';
         return;
     }
     const sorted = [...studentSchedules].sort((a, b) => a.day_of_week - b.day_of_week || a.start_time.localeCompare(b.start_time));

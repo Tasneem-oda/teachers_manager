@@ -6,10 +6,10 @@
  * لو فيه حصة جارية (lessonId) بتتحوّل هي نفسها لغياب بدل ما يتعمل صف جديد.
  */
 
-import { api } from './api.js?v=12';
-import { Formatters, ErrorHandler } from './utils.js?v=12';
-import { icon } from './icons.js?v=12';
-import { localDateISO } from './lesson-utils.js?v=12';
+import { api } from './api.js?v=13';
+import { Formatters, ErrorHandler } from './utils.js?v=13';
+import { icon } from './icons.js?v=13';
+import { localDateISO } from './lesson-utils.js?v=13';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 
@@ -68,6 +68,7 @@ export function openAttendanceModal(opts) {
                 local_date: $('#att-date').value || localDateISO(),
                 notes: $('#att-note').value.trim() || null
             });
+            try { (window.dataLayer = window.dataLayer || []).push({ event: 'absence_saved', attendance: btn.dataset.value }); } catch (e) { /* تجاهل */ }
             close();
             const opt = OPTIONS.find((o) => o.value === btn.dataset.value);
             ErrorHandler.showSuccess(`تم التسجيل: ${opt ? opt.title : 'غياب'}`);

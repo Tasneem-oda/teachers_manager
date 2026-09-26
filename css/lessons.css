@@ -339,3 +339,37 @@ button.sp-stat:hover { border-color: var(--primary); }
 .bulk-progress { font-size: 0.85rem; color: var(--primary); margin-top: 0.6rem; font-weight: 600; }
 .add-student-alt { display: block; text-align: center; margin-top: 0.9rem; font-size: 0.85rem; }
 .add-student-alt button { background: none; border: 0; color: var(--primary); font: inherit; cursor: pointer; text-decoration: underline; }
+
+/* ============================== تلميحات أول مرة ============================== */
+.tip-bubble { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)); z-index: 1200; width: min(420px, calc(100vw - 2rem)); background: #2F2438; color: #fff; border-radius: 14px; padding: 0.85rem 1rem; box-shadow: 0 10px 30px rgba(0,0,0,0.25); animation: tipIn 0.25s ease-out; }
+.tip-text strong { display: block; font-size: 0.92rem; margin-bottom: 0.15rem; }
+.tip-text span { display: block; font-size: 0.88rem; line-height: 1.6; opacity: 0.95; }
+.tip-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-top: 0.6rem; }
+.tip-ok { background: #F4D58A; color: #3C2E10; border: 0; border-radius: 9px; padding: 0.45rem 1.1rem; font: inherit; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+.tip-off { background: none; border: 0; color: rgba(255,255,255,0.75); font: inherit; font-size: 0.78rem; cursor: pointer; text-decoration: underline; }
+.tip-target { outline: 3px solid #F4D58A !important; outline-offset: 3px; border-radius: 10px; }
+@keyframes tipIn { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (max-width: 900px) { .tip-bubble { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); } }
+@media (prefers-reduced-motion: reduce) { .tip-bubble { animation: none; } }
+
+/* ============================== الرئيسية: تذكير الدفع + تقدم الفترة التجريبية ============================== */
+.due-card { background: var(--card-bg); border: 1px solid #E6C77E; border-radius: 14px; padding: 1rem 1.1rem; margin-bottom: 1.25rem; }
+.due-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.6rem; }
+.due-head h3 { margin: 0; font-size: 1rem; display: flex; align-items: center; gap: 0.45rem; }
+.due-count { background: #FCF1D3; color: #7A5A12; border-radius: 999px; padding: 0.1rem 0.6rem; font-size: 0.8rem; font-weight: 700; }
+.due-item { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.6rem 0; border-top: 1px solid var(--border); }
+.due-item:first-of-type { border-top: 0; }
+.due-main { min-width: 0; }
+.due-main a { font-weight: 700; color: var(--text-primary); text-decoration: none; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.due-main small { color: var(--text-secondary); font-size: 0.8rem; }
+.due-main small.st-due { color: var(--danger); }
+.due-main small.st-low { color: #9A7422; }
+.due-item .btn { flex-shrink: 0; }
+.due-more { background: none; border: 0; color: var(--primary); font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; padding: 0.4rem 0 0; }
+.trial-progress { display: block; margin-top: 0.15rem; font-weight: 600; }
+
+/* ============================== ملف الطالب: تقرير ولي الأمر ============================== */
+.rp-modal .modal-content { max-width: 480px; }
+.lh-same { background: none; border: 1px dashed var(--border); color: var(--primary); border-radius: 999px; padding: 0.3rem 0.75rem; font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; margin-top: 0.4rem; }
+.lh-same:hover { border-color: var(--primary); }
+.due-item[hidden] { display: none; }

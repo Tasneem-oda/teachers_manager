@@ -40,7 +40,9 @@ export const CONFIG = {
             UPDATE_INFO: '/update-student-info',
             BILLING: '/student-billing',
             // حالة خطوات البداية (عدد الطلاب/المواعيد/الحصص) لدليل المستخدم الجديد
-            ONBOARDING: '/onboarding-status'
+            ONBOARDING: '/onboarding-status',
+            // الطلاب اللي متابعة دفعهم مفعّلة (الرئيسية بتعرض اللي محتاجين تذكير)
+            BILLING_DUE: '/billing-due'
         },
         SCHEDULES: {
             CREATE: '/create-schedule',

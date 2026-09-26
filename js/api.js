@@ -3,8 +3,8 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=12';
-import { APIUtils, Storage } from './utils.js?v=12';
+import { CONFIG } from './config.js?v=13';
+import { APIUtils, Storage } from './utils.js?v=13';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -309,6 +309,19 @@ export const api = {
                 student_without_schedule: pick(students.find((s) => !withSched.has(s.id))),
                 student_with_schedule: pick(students.find((s) => withSched.has(s.id)))
             };
+        }
+    },
+
+    /**
+     * كل الطلاب اللي متابعة الدفع مفعّلة ليهم مع بيانات الرصيد (الرئيسية بتفلتر اللي محتاجين تذكير).
+     * لو workflow "billing-due" لسه متستوردش بيرجّع null والكارت مش بيظهر.
+     */
+    async getBillingDue() {
+        try {
+            return await apiCall(CONFIG.API_ENDPOINTS.STUDENTS.BILLING_DUE, 'GET');
+        } catch (error) {
+            if (isMissingWebhook(error)) return null;
+            throw error;
         }
     },
 
