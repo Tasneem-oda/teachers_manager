@@ -3,7 +3,7 @@
  * (أسماء المواد، التقييمات بالعربي، التواريخ النسبية، أقرب موعد قادم، مسودة الحصة)
  */
 
-import { Formatters } from './utils.js?v=11';
+import { Formatters } from './utils.js?v=13';
 
 export const SUBJECTS = {
     quran: 'القرآن الكريم',
@@ -38,24 +38,65 @@ export function ratingLabel(value) {
     return r ? r.label : String(value);
 }
 
-// نفس الأعمدة (memorization / recitation) بتسميات مناسبة لمادة الطالب
+// نفس الأعمدة (memorization / recitation / revision) بتسميات مناسبة لمادة الطالب
 export function ratingFieldLabels(subject) {
     return isQuran(subject)
-        ? { memorization: 'الحفظ', recitation: 'التلاوة' }
-        : { memorization: 'الاستيعاب', recitation: 'المشاركة' };
+        ? { memorization: 'الحفظ', recitation: 'التلاوة', revision: 'المراجعة' }
+        : { memorization: 'الاستيعاب', recitation: 'المشاركة', revision: 'المراجعة' };
 }
 
-// متابعة الواجب السابق (بيتخزن في عمود revision الموجود)
+// متابعة الواجب السابق (عمود homework_status)
 export const HOMEWORK_STATUS = [
     { value: 'done', label: 'تم' },
     { value: 'partial', label: 'جزئيًا' },
     { value: 'not_done', label: 'لم يتم' }
 ];
+const HW_VALUES = HOMEWORK_STATUS.map((h) => h.value);
 
 export function homeworkStatusLabel(value) {
     if (!value) return '';
     const h = HOMEWORK_STATUS.find((x) => x.value === value);
-    return h ? `الواجب السابق: ${h.label}` : `مراجعة: ${value}`;
+    return h ? `الواجب السابق: ${h.label}` : '';
+}
+
+// قبل التحديث ده "هل تم الواجب؟" كان بيتخزن في revision: بنقرأ القيم القديمة صح
+export function normalizeLesson(lesson) {
+    const l = { ...(lesson || {}) };
+    if (l.revision && HW_VALUES.includes(l.revision)) {
+        if (!l.homework_status) l.homework_status = l.revision;
+        l.revision = null;
+    }
+    return l;
+}
+
+// ------------------------------------------------------------------ الحضور والغياب
+export const ATTENDANCE = {
+    present: { label: 'حضر', short: 'حضر', icon: '✅' },
+    absent_excused: { label: 'غاب بعذر', short: 'غياب بعذر', icon: '🙋' },
+    absent_unexcused: { label: 'غاب بدون عذر', short: 'غياب بدون عذر', icon: '❌' },
+    teacher_cancelled: { label: 'الحصة اتلغت/اتأجلت', short: 'ألغيت', icon: '⏸️' }
+};
+
+// الحصة غياب/إلغاء؟ (الصفوف القديمة الملغاة من غير سبب بتتعرض "ملغاة")
+export function isAbsenceRow(lesson) {
+    return !!lesson && lesson.status === 'cancelled';
+}
+
+export function attendanceInfo(lesson) {
+    if (!lesson) return null;
+    if (lesson.status === 'cancelled') return ATTENDANCE[lesson.attendance] || { label: 'حصة ملغاة', short: 'ملغاة', icon: '⏸️' };
+    return ATTENDANCE.present;
+}
+
+// إحصائيات الحضور من stats بتاعة student-overview
+export function attendanceStats(stats) {
+    const s = stats || {};
+    const present = Number(s.completed) || 0;
+    const excused = Number(s.absent_excused) || 0;
+    const unexcused = Number(s.absent_unexcused) || 0;
+    const absent = excused + unexcused;
+    const rate = present + absent > 0 ? Math.round((present / (present + absent)) * 100) : null;
+    return { present, excused, unexcused, absent, rate, cancelled: Number(s.cancelled) || 0 };
 }
 
 // ------------------------------------------------------------------ التواريخ
@@ -196,9 +237,15 @@ export function lessonHasContent(fields) {
 /**
  * HTML لعرض حصة واحدة في السجل (ملف الطالب + لوحة الحصص السابقة أثناء الحصة)
  */
-export function lessonDetailsHtml(lesson, subject, icon, opts = {}) {
+export function lessonDetailsHtml(rawLesson, subject, icon, opts = {}) {
     const esc = Formatters.escapeHtml;
+    const lesson = normalizeLesson(rawLesson);
     const labels = ratingFieldLabels(subject);
+    if (isAbsenceRow(lesson)) {
+        const info = attendanceInfo(lesson);
+        return `<div class="lh-absence">${info.icon} ${esc(info.label)}</div>`
+            + (lesson.notes ? `<div class="lh-row"><span class="lh-ic">${icon('messageSquare', { size: 14 })}</span><div><span class="lh-label">ملاحظة</span><span class="lh-val">${esc(lesson.notes)}</span></div></div>` : '');
+    }
     const rows = [];
     const row = (ic, label, value, cls = '') => {
         if (value) rows.push(`<div class="lh-row ${cls}"><span class="lh-ic">${icon(ic, { size: 14 })}</span><div><span class="lh-label">${label}</span><span class="lh-val">${esc(value)}</span></div></div>`);
@@ -207,7 +254,8 @@ export function lessonDetailsHtml(lesson, subject, icon, opts = {}) {
     const chips = [];
     if (lesson.memorization) chips.push(`${labels.memorization}: ${ratingLabel(lesson.memorization)}`);
     if (lesson.recitation) chips.push(`${labels.recitation}: ${ratingLabel(lesson.recitation)}`);
-    if (lesson.revision) chips.push(homeworkStatusLabel(lesson.revision));
+    if (lesson.revision) chips.push(`${labels.revision}: ${ratingLabel(lesson.revision)}`);
+    if (lesson.homework_status) chips.push(homeworkStatusLabel(lesson.homework_status));
     if (chips.length) rows.push(`<div class="lh-chips">${chips.map((c) => `<span class="lh-chip">${esc(c)}</span>`).join('')}</div>`);
     row('clipboardList', 'الواجب', lesson.homework);
     row('arrowNext', 'للحصة القادمة', lesson.next_assignment, opts.highlightNext ? 'lh-next' : '');

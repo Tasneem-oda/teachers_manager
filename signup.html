@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>تسجيل جديد - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=11">
+    <link rel="stylesheet" href="css/style.css?v=13">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -47,7 +47,10 @@
             .signup-container { padding: 1.5rem; }
             .form-row { grid-template-columns: 1fr; }
         }
-    </style>
+            .pw-wrap { position: relative; }
+        .pw-wrap input { padding-left: 4.5rem !important; }
+        .pw-toggle { position: absolute; left: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: 0; color: var(--primary, #4B3A5A); font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; padding: 0.3rem 0.4rem; }
+</style>
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -76,68 +79,27 @@
             </div>
 
             <div class="form-group">
-                <label for="phone">رقم الهاتف</label>
+                <label for="phone">رقم الهاتف <small style="font-weight:400; color:var(--text-secondary);">(اختياري)</small></label>
                 <!-- الحقل بيقبل أي رقم هاتف دولي (مش مقتصر على الأرقام المصرية) -->
                 <input type="tel" id="phone" name="phone" placeholder="مثال: 01234567890 أو +966501234567">
                 <div class="error" id="phoneError"></div>
             </div>
 
-            <div class="form-group">
-                <label for="username">اسم المستخدم (بالإنجليزية) *</label>
-                <!--
-                    ملاحظات على حقل اسم المستخدم:
-                    - pattern: نفس نمط CONFIG.PATTERNS.USERNAME في config.js (أحرف/أرقام/underscore/hyphen، 3-20 حرف)
-                      وده بيفعّل تحقق المتصفح تلقائيًا (HTML5 validation) كطبقة حماية إضافية قبل الإرسال
-                    - autocomplete="username": يساعد المتصفح يقترح/يحفظ اسم المستخدم بشكل صحيح
-                    - dir="ltr": نخلي اتجاه الكتابة داخل الحقل نفسه من اليسار لليمين لأن القيمة دايمًا إنجليزي/أرقام
-                      حتى لو باقي الصفحة RTL، عشان الكتابة تبان بشكل طبيعي
-                -->
-                <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    placeholder="مثال: ahmed_teacher"
-                    pattern="[a-zA-Z0-9_-]{3,20}"
-                    minlength="3"
-                    maxlength="20"
-                    autocomplete="username"
-                    dir="ltr"
-                    required>
-                <small class="field-hint" id="usernameHint">
-                    يُسمح فقط بالأحرف الإنجليزية (a-z, A-Z) والأرقام (0-9) والشرطة السفلية (_) والشرطة (-)،
-                    بدون مسافات أو أحرف عربية أو رموز أخرى — من 3 إلى 20 حرفًا.
-                </small>
-                <div class="error" id="usernameError"></div>
-            </div>
+            
 
             <div class="form-group">
                 <label for="password">كلمة المرور *</label>
-                <input type="password" id="password" name="password" placeholder="8 أحرف على الأقل" required>
+                <div class="pw-wrap">
+                    <input type="password" id="password" name="password" placeholder="8 أحرف على الأقل" autocomplete="new-password" required>
+                    <button type="button" class="pw-toggle" id="pw-toggle" aria-label="إظهار كلمة المرور">إظهار</button>
+                </div>
                 <div class="error" id="passwordError"></div>
             </div>
 
+            
+
             <div class="form-group">
-                <label for="confirmPassword">تأكيد كلمة المرور *</label>
-                <input type="password" id="confirmPassword" name="confirmPassword" placeholder="أعد كتابة كلمة المرور" required>
-                <div class="error" id="confirmPasswordError"></div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="teachingType">نوع التدريس *</label>
-                    <select id="teachingType" name="teachingType" required>
-                        <option value="">اختر...</option>
-                        <option value="private">دروس خصوصية</option>
-                        <option value="group">مجموعات</option>
-                        <option value="online">أونلاين</option>
-                        <option value="offline">حضوري</option>
-                        <option value="hybrid">مختلط</option>
-                    </select>
-                    <div class="error" id="teachingTypeError"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="subject">المادة / المجال *</label>
+                    <label for="subject">بتدرّس إيه؟ *</label>
                     <select id="subject" name="subject" required>
                         <option value="">اختر...</option>
                         <option value="quran">القرآن الكريم</option>
@@ -150,7 +112,6 @@
                     </select>
                     <div class="error" id="subjectError"></div>
                 </div>
-            </div>
 
             <button type="submit" id="submitBtn" class="btn">إنشاء الحساب</button>
             
@@ -166,11 +127,11 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=11"></script>
+    <script type="module" src="js/config.js?v=13"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=11';
-        import { Validators, ErrorHandler } from './js/utils.js?v=11';
-        import { icon } from './js/icons.js?v=11';
+        import { Auth } from './js/auth.js?v=13';
+        import { Validators, ErrorHandler } from './js/utils.js?v=13';
+        import { icon } from './js/icons.js?v=13';
 
         document.getElementById('signup-logo').innerHTML = icon('graduationCap', { size: 28 });
 
@@ -179,42 +140,23 @@
         const loading = document.getElementById('loading');
         const successMessage = document.getElementById('successMessage');
 
-        // ============================================================
-        // حقل اسم المستخدم: منع الكتابة بأي حرف غير مسموح به مباشرة
-        // ============================================================
-        // بدل ما نستنى المستخدم يضغط "إنشاء الحساب" ويكتشف إن فيه خطأ،
-        // بنمنع دخول أي حرف عربي أو مسافة أو رمز خاص (غير _ و -) وهو لسه
-        // بيكتب. ده بيقلل جدًا احتمال ظهور خطأ اسم المستخدم من الأساس.
-        const usernameInput = document.getElementById('username');
-        const usernameHint = document.getElementById('usernameHint');
-        const usernameError = document.getElementById('usernameError');
-
-        usernameInput.addEventListener('input', () => {
-            const cursorPos = usernameInput.selectionStart;
-            const originalLength = usernameInput.value.length;
-
-            // إزالة أي حرف مش إنجليزي/رقم/underscore/hyphen فورًا أثناء الكتابة
-            const cleaned = usernameInput.value.replace(/[^a-zA-Z0-9_-]/g, '');
-
-            if (cleaned !== usernameInput.value) {
-                usernameInput.value = cleaned;
-                // نحاول نحافظ على موضع المؤشر تقريبًا بعد حذف الأحرف الممنوعة
-                const removedCount = originalLength - cleaned.length;
-                const newPos = Math.max(0, cursorPos - removedCount);
-                usernameInput.setSelectionRange(newPos, newPos);
-
-                // نظهر تنبيه لحظي واضح تحت الحقل (بدون قطع الكتابة أو عمل alert مزعج)
-                usernameHint.textContent = 'تم حذف حرف/رمز غير مسموح به — اسم المستخدم يقبل إنجليزي وأرقام و _ و - فقط';
-                usernameHint.classList.add('hint-error');
-            } else {
-                // رجّع النص الإرشادي العادي لو الكتابة سليمة
-                usernameHint.textContent = 'يُسمح فقط بالأحرف الإنجليزية (a-z, A-Z) والأرقام (0-9) والشرطة السفلية (_) والشرطة (-)، بدون مسافات أو أحرف عربية أو رموز أخرى — من 3 إلى 20 حرفًا.';
-                usernameHint.classList.remove('hint-error');
-            }
-
-            // نخفي رسالة الخطأ القديمة (لو موجودة) بمجرد ما المستخدم يعدّل الحقل
-            usernameError.style.display = 'none';
+        // إظهار/إخفاء كلمة المرور (بدل خانة "تأكيد كلمة المرور")
+        const pwInput = document.getElementById('password');
+        document.getElementById('pw-toggle').addEventListener('click', (e) => {
+            const show = pwInput.type === 'password';
+            pwInput.type = show ? 'text' : 'password';
+            e.currentTarget.textContent = show ? 'إخفاء' : 'إظهار';
+            e.currentTarget.setAttribute('aria-label', show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور');
         });
+
+        // اسم المستخدم بيتعمل تلقائيًا من البريد (أحرف إنجليزية وأرقام فقط، 3-20 حرف) مع لاحقة عشوائية
+        // عشان مايتكررش — المستخدم مش محتاج يفكر فيه (الدخول بالبريد)
+        function autoUsername(email) {
+            let base = String(email || '').split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 12);
+            if (base.length < 3) base = 'teacher';
+            const rand = Math.random().toString(36).replace(/[^a-z0-9]/g, '').slice(2, 7).padEnd(5, '0');
+            return `${base}_${rand}`.slice(0, 20);
+        }
 
         // تحقق من المستخدم المسجل
         window.addEventListener('load', async () => {
@@ -233,10 +175,8 @@
             const name = document.getElementById('name').value.trim();
             const email = document.getElementById('email').value.trim();
             const phone = document.getElementById('phone').value.trim();
-            const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            const teachingType = document.getElementById('teachingType').value;
+            const teachingType = 'private';
             const subject = document.getElementById('subject').value;
 
             // التحقق من البيانات
@@ -262,36 +202,9 @@
                 hasErrors = true;
             }
 
-            // فحص تفصيلي لاسم المستخدم عشان نعرض رسالة دقيقة حسب نوع الخطأ
-            // (فارغ / فيه حروف ممنوعة / قصير / طويل) بدل رسالة عامة واحدة
-            const usernameCheck = Validators.usernameDetailed(username);
-            if (!usernameCheck.valid) {
-                const usernameMessages = {
-                    empty: 'من فضلك أدخل اسم المستخدم',
-                    invalidChars: 'اسم المستخدم يجب أن يكون بالأحرف الإنجليزية فقط (بدون مسافات أو أحرف عربية أو رموز خاصة، فقط _ أو - مسموح)',
-                    tooShort: 'اسم المستخدم قصير جدًا — لازم يكون 3 أحرف على الأقل',
-                    tooLong: 'اسم المستخدم طويل جدًا — الحد الأقصى 20 حرف'
-                };
-                document.getElementById('usernameError').textContent = usernameMessages[usernameCheck.reason] || 'اسم المستخدم غير صحيح';
-                document.getElementById('usernameError').style.display = 'block';
-                hasErrors = true;
-            }
-
             if (!password || !Validators.password(password)) {
                 document.getElementById('passwordError').textContent = 'كلمة المرور يجب أن تكون 8 أحرف على الأقل';
                 document.getElementById('passwordError').style.display = 'block';
-                hasErrors = true;
-            }
-
-            if (password !== confirmPassword) {
-                document.getElementById('confirmPasswordError').textContent = 'كلمات المرور غير متطابقة';
-                document.getElementById('confirmPasswordError').style.display = 'block';
-                hasErrors = true;
-            }
-
-            if (!teachingType) {
-                document.getElementById('teachingTypeError').textContent = 'اختر نوع التدريس';
-                document.getElementById('teachingTypeError').style.display = 'block';
                 hasErrors = true;
             }
 
@@ -309,6 +222,7 @@
             loading.style.display = 'block';
 
             // تنفيذ التسجيل
+            const username = autoUsername(email);
             const result = await Auth.signUp(name, email, phone, password, username, teachingType, subject);
 
             if (result.success) {
@@ -326,22 +240,13 @@
                 const errorText = (result.error || '').toString();
                 const isUsernameTaken = /username/i.test(errorText) &&
                     (/duplicate|already|exists|unique|مكرر|مستخدم بالفعل|23505/i.test(errorText));
-
-                if (isUsernameTaken) {
-                    const usernameErrorEl = document.getElementById('usernameError');
-                    usernameErrorEl.textContent = 'اسم المستخدم هذا مُستخدم بالفعل، من فضلك جرّب اسمًا آخر';
-                    usernameErrorEl.style.display = 'block';
-                    usernameInput.focus();
-                } else {
-                    ErrorHandler.showError(result.error);
-                }
-
+                ErrorHandler.showError(isUsernameTaken ? 'حصلت مشكلة بسيطة أثناء إنشاء الحساب، من فضلك حاول مرة أخرى.' : result.error);
                 submitBtn.disabled = false;
                 submitBtn.style.display = 'block';
                 loading.style.display = 'none';
             }
         });
     </script>
-    <script src="js/pwa-install.js?v=11" defer></script>
+    <script src="js/pwa-install.js?v=13" defer></script>
 </body>
 </html>

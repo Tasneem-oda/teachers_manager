@@ -39,6 +39,7 @@ const PATHS = {
     mail: '<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M4 7l8 6 8-6"/>',
     chevronDown: '<path d="M6 9l6 6 6-6"/>',
     userCheck: '<circle cx="9.5" cy="8" r="3.5"/><path d="M3.5 20c.5-3.4 3-5.4 6-5.4s5.5 2 6 5.4"/><path d="M16.5 11l2 2 3.5-3.5"/>',
+    userX: '<circle cx="9.5" cy="8" r="3.5"/><path d="M3.5 20c.5-3.4 3-5.4 6-5.4s5.5 2 6 5.4"/><path d="M17 9l4 4M21 9l-4 4"/>',
     warning: '<path d="M12 4.5 21 19.5H3L12 4.5Z"/><path d="M12 10.5v4"/><path d="M12 17.2h.01"/>',
     info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><path d="M12 7.6h.01"/>',
     eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/>',

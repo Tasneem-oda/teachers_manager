@@ -11,7 +11,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الطلاب - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=11">
+    <link rel="stylesheet" href="css/style.css?v=13">
+    <link rel="stylesheet" href="css/lessons.css?v=13">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -53,7 +54,10 @@
             <div class="page-body">
                 <div class="flex" style="margin-bottom: 1.5rem;">
                     <h1 style="margin:0;">قائمة الطلاب</h1>
+                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                    <button class="btn" id="btn-add-bulk" style="background: var(--bg-muted); color: var(--text-primary);">إضافة أكثر من طالب</button>
                     <button class="btn" id="btn-add-new"><span id="ic-add-btn" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> طالب جديد</button>
+                    </div>
                 </div>
 
                 <div class="filters-row">
@@ -73,26 +77,23 @@
         </main>
     </div>
 
-    <!-- Add/Edit Modal -->
+    <!-- إضافة طالب (الاسم بس إجباري) -->
     <div class="modal" id="add-student-modal">
         <div class="modal-content">
-            <span class="close-modal">&times;</span>
+            <span class="close-modal" data-close="add-student-modal">&times;</span>
             <h2 id="modal-title">إضافة طالب جديد</h2>
-            <form id="add-student-form">
+            <p class="muted" style="margin:-0.4rem 0 1rem; font-size:0.88rem;">الاسم بس يكفي — باقي البيانات تقدر تكمّلها بعدين.</p>
+            <form id="add-student-form" novalidate>
                 <div class="form-group">
-                    <label>اسم الطالب *</label>
-                    <input type="text" id="student-name" required>
+                    <label for="student-name">اسم الطالب *</label>
+                    <input type="text" id="student-name" maxlength="120" autocomplete="off" required>
                 </div>
                 <div class="form-group">
-                    <label>البريد الإلكتروني</label>
-                    <input type="email" id="student-email">
+                    <label for="student-phone">رقم واتساب <small class="muted">(اختياري — لرسائل التذكير)</small></label>
+                    <input type="tel" id="student-phone" dir="ltr" maxlength="40" placeholder="01xxxxxxxxx">
                 </div>
                 <div class="form-group">
-                    <label>رقم الهاتف</label>
-                    <input type="tel" id="student-phone">
-                </div>
-                <div class="form-group">
-                    <label>المادة *</label>
+                    <label for="student-subject">المادة *</label>
                     <select id="student-subject" required>
                         <option value="">اختر...</option>
                         <option value="quran">القرآن الكريم</option>
@@ -102,34 +103,74 @@
                         <option value="science">العلوم</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>رابط الحصة</label>
-                    <input type="url" id="student-link" placeholder="https://zoom.us/...">
-                </div>
-                <div class="form-group">
-                    <label>الموضوع الحالي</label>
-                    <input type="text" id="student-topic">
-                </div>
+                <details class="x-more">
+                    <summary>+ بيانات إضافية (اختياري)</summary>
+                    <div class="form-group">
+                        <label for="student-link">رابط الحصة</label>
+                        <input type="url" id="student-link" dir="ltr" placeholder="https://zoom.us/...">
+                    </div>
+                    <div class="form-group">
+                        <label for="student-topic">الموضوع الحالي</label>
+                        <input type="text" id="student-topic" maxlength="300" placeholder="مثلًا: سورة الملك">
+                    </div>
+                    <div class="form-group">
+                        <label for="student-email">البريد الإلكتروني</label>
+                        <input type="email" id="student-email" dir="ltr">
+                    </div>
+                </details>
                 <div style="display: flex; gap: 1rem;">
-                    <button type="submit" class="btn">حفظ</button>
-                    <button type="button" class="btn close-modal" style="background: var(--bg-muted); color: var(--text-primary);">إلغاء</button>
+                    <button type="submit" class="btn" id="add-save">حفظ</button>
+                    <button type="button" class="btn close-modal" data-close="add-student-modal" style="background: var(--bg-muted); color: var(--text-primary);">إلغاء</button>
+                </div>
+            </form>
+            <div class="add-student-alt">عندك طلاب كتير؟ <button type="button" id="open-bulk">أضفهم كلهم مرة واحدة</button></div>
+        </div>
+    </div>
+
+    <!-- إضافة أكثر من طالب مرة واحدة (نقل من الورق) -->
+    <div class="modal" id="bulk-modal">
+        <div class="modal-content">
+            <span class="close-modal" data-close="bulk-modal">&times;</span>
+            <h2>إضافة أكثر من طالب</h2>
+            <p class="muted" style="margin:-0.4rem 0 1rem; font-size:0.88rem;">اكتب كل طالب في سطر: الاسم، وبعده الرقم لو حابب.</p>
+            <form id="bulk-form" novalidate>
+                <div class="form-group">
+                    <label for="bulk-text">الطلاب</label>
+                    <textarea id="bulk-text" rows="7" placeholder="أحمد محمد 01012345678&#10;سارة علي&#10;يوسف حسن 01122334455" style="width:100%; font:inherit; line-height:1.7;"></textarea>
+                    <div class="bulk-preview" id="bulk-preview"></div>
+                </div>
+                <div class="form-group">
+                    <label for="bulk-subject">المادة *</label>
+                    <select id="bulk-subject" required>
+                        <option value="">اختر...</option>
+                        <option value="quran">القرآن الكريم</option>
+                        <option value="english">اللغة الإنجليزية</option>
+                        <option value="arabic">اللغة العربية</option>
+                        <option value="math">الرياضيات</option>
+                        <option value="science">العلوم</option>
+                    </select>
+                </div>
+                <div class="bulk-progress" id="bulk-progress" aria-live="polite"></div>
+                <div style="display: flex; gap: 1rem;">
+                    <button type="submit" class="btn" id="bulk-save">إضافة الطلاب</button>
+                    <button type="button" class="btn close-modal" data-close="bulk-modal" style="background: var(--bg-muted); color: var(--text-primary);">إلغاء</button>
                 </div>
             </form>
         </div>
     </div>
-
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=11"></script>
+    <script type="module" src="js/config.js?v=13"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=11';
-        import { api } from './js/api.js?v=11';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=11';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=11';
-        import { icon } from './js/icons.js?v=11';
-        import { openStudentAppointments } from './js/student-appointments.js?v=11';
+        import { Auth } from './js/auth.js?v=13';
+        import { api } from './js/api.js?v=13';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=13';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=13';
+        import { icon } from './js/icons.js?v=13';
+        import { openStudentAppointments } from './js/student-appointments.js?v=13';
+        import { subjectLabel } from './js/lesson-utils.js?v=13';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الطلاب', subtitle: 'إدارة كل طلابك من مكان واحد' });
@@ -140,20 +181,44 @@
         const modal = document.getElementById('add-student-modal');
         let allStudents = [];
 
+        const urlParams = new URLSearchParams(window.location.search);
+        const onboardingFlow = urlParams.get('onboarding') === '1';
+        const bulkModal = document.getElementById('bulk-modal');
+
+        function teacherSubject() {
+            try { return localStorage.getItem('tm_teacher_subject') || ''; } catch (e) { return ''; }
+        }
+        function presetSubject(select) {
+            const sub = teacherSubject();
+            if (!sub || select.value) return;
+            if (![...select.options].some((o) => o.value === sub)) select.add(new Option(subjectLabel(sub), sub));
+            select.value = sub;
+        }
+        function openAdd() {
+            document.getElementById('add-student-form').reset();
+            presetSubject(document.getElementById('student-subject'));
+            modal.classList.add('active');
+            setTimeout(() => document.getElementById('student-name').focus(), 60);
+        }
+        function openBulk() {
+            modal.classList.remove('active');
+            document.getElementById('bulk-form').reset();
+            document.getElementById('bulk-preview').textContent = '';
+            document.getElementById('bulk-progress').textContent = '';
+            presetSubject(document.getElementById('bulk-subject'));
+            bulkModal.classList.add('active');
+            setTimeout(() => document.getElementById('bulk-text').focus(), 60);
+        }
+
         (async () => {
             const authInfo = await Auth.requireAuth();
             if (!authInfo) return;
-
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('action') === 'add') {
-                modal.classList.add('active');
-            }
-
+            if (urlParams.get('action') === 'add') openAdd();
+            if (urlParams.get('action') === 'bulk') openBulk();
             await loadStudents();
-
             const searchTerm = urlParams.get('search');
             if (searchTerm) {
-                const filtered = allStudents.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
+                const filtered = allStudents.filter(s => (s.name || '').toLowerCase().includes(searchTerm.toLowerCase()));
                 renderStudents(filtered);
             }
         })();
@@ -171,28 +236,35 @@
 
         function renderStudents(students) {
             if (students.length === 0) {
-                container.innerHTML = '<div class="empty-state">لا توجد طلاب حالياً. <a href="#" onclick="document.getElementById(\'add-student-modal\').classList.add(\'active\')">أضف طالبك الأول</a></div>';
+                container.innerHTML = allStudents.length === 0
+                    ? `<div class="empty-state">
+                           <p style="font-size:1.05rem; font-weight:700; color:var(--text-primary); margin:0 0 0.4rem;">ابدأ بإضافة طلابك 👋</p>
+                           <p style="margin:0 0 1rem;">الاسم بس يكفي، وتقدر تضيفهم كلهم مرة واحدة من الورق.</p>
+                           <button type="button" class="btn" data-empty-add>أضف أول طالب</button>
+                           <button type="button" class="btn" data-empty-bulk style="background: var(--bg-muted); color: var(--text-primary);">إضافة أكثر من طالب</button>
+                       </div>`
+                    : '<div class="empty-state">لا يوجد طلاب بهذه المادة.</div>';
+                const a = container.querySelector('[data-empty-add]');
+                const b = container.querySelector('[data-empty-bulk]');
+                if (a) a.addEventListener('click', openAdd);
+                if (b) b.addEventListener('click', openBulk);
                 return;
             }
             container.innerHTML = students.map(student => `
                 <div class="student-card">
                     <div class="student-name">${Formatters.escapeHtml(student.name || '')}</div>
-                    <div class="student-info">${icon('bookOpen', { size: 14 })} ${Formatters.escapeHtml(student.subject || 'بدون مادة')}</div>
+                    <div class="student-info">${icon('bookOpen', { size: 14 })} ${Formatters.escapeHtml(subjectLabel(student.subject))}</div>
                     <div class="student-info">${icon('target', { size: 14 })} ${Formatters.escapeHtml(student.current_topic || 'بدون موضوع')}</div>
                     <div class="student-info">${icon('phone', { size: 14 })} ${Formatters.escapeHtml(student.phone || 'بدون رقم')}</div>
                     <div class="student-actions">
-                        <a href="student.html?id=${student.id}" class="btn">عرض الملف</a>
-                        <button class="btn btn-open-appts" style="background: var(--secondary);" data-id="${student.id}">${icon('calendar', { size: 14 })} موعد</button>
-                        <button class="btn btn-danger" onclick="deleteStudent('${student.id}')">${icon('trash', { size: 14 })} حذف</button>
+                        <a href="student.html?id=${encodeURIComponent(student.id)}" class="btn">عرض الملف</a>
+                        <button class="btn btn-open-appts" style="background: var(--secondary);" data-id="${Formatters.escapeHtml(String(student.id))}">${icon('calendar', { size: 14 })} موعد</button>
+                        <button class="btn btn-danger" onclick="deleteStudent('${Formatters.escapeHtml(String(student.id))}')">${icon('trash', { size: 14 })} حذف</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        // زرار "موعد" في كارت الطالب: بيفتح نفس بوب أب مواعيد الطالب الموحّد
-        // (js/student-appointments.js) المستخدم في صفحة ملف الطالب أيضًا،
-        // بدل ما يودّي المستخدم لصفحة الجدول الأسبوعي العام. استخدمنا
-        // delegation على الحاوية عشان الأزرار بتتعاد رسمها مع كل renderStudents().
         container.addEventListener('click', (e) => {
             const btn = e.target.closest('.btn-open-appts');
             if (!btn) return;
@@ -206,33 +278,118 @@
             renderStudents(filtered);
         });
 
-        document.getElementById('btn-add-new').addEventListener('click', () => {
-            document.getElementById('modal-title').textContent = 'إضافة طالب جديد';
-            document.getElementById('add-student-form').reset();
-            modal.classList.add('active');
+        document.getElementById('btn-add-new').addEventListener('click', openAdd);
+        document.getElementById('btn-add-bulk').addEventListener('click', openBulk);
+        document.getElementById('open-bulk').addEventListener('click', openBulk);
+        document.querySelectorAll('[data-close]').forEach(btn => {
+            btn.addEventListener('click', () => document.getElementById(btn.dataset.close).classList.remove('active'));
         });
 
-        document.querySelectorAll('.close-modal').forEach(btn => {
-            btn.addEventListener('click', () => modal.classList.remove('active'));
+        const newIdFrom = (res) => (res && (res.id || res.student_id || (res.student && res.student.id))) || null;
+
+        // دليل البداية: بعد أول طالب نفتح مواعيده مباشرة (الخطوة التانية)
+        let waitingOnboardingSchedule = false;
+        window.addEventListener('tm:schedules-changed', () => {
+            if (!waitingOnboardingSchedule) return;
+            waitingOnboardingSchedule = false;
+            ErrorHandler.showSuccess('ممتاز! فاضل خطوة واحدة: سجّل أول متابعة');
+            setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
         });
 
         document.getElementById('add-student-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const name = document.getElementById('student-name').value.trim();
+            const subject = document.getElementById('student-subject').value;
+            const link = document.getElementById('student-link').value.trim();
+            if (!name) { ErrorHandler.showError('اكتب اسم الطالب'); document.getElementById('student-name').focus(); return; }
+            if (!subject) { ErrorHandler.showError('اختر المادة'); return; }
+            if (link && !/^https?:\/\//i.test(link)) { ErrorHandler.showError('رابط الحصة لازم يبدأ بـ https://'); return; }
             const studentData = {
-                name: document.getElementById('student-name').value,
-                email: document.getElementById('student-email').value || null,
-                phone: document.getElementById('student-phone').value || null,
-                subject: document.getElementById('student-subject').value,
-                lesson_link: document.getElementById('student-link').value || null,
-                current_topic: document.getElementById('student-topic').value || null
+                name,
+                email: document.getElementById('student-email').value.trim() || null,
+                phone: document.getElementById('student-phone').value.trim() || null,
+                subject,
+                lesson_link: link || null,
+                current_topic: document.getElementById('student-topic').value.trim() || null
             };
+            const saveBtn = document.getElementById('add-save');
+            saveBtn.disabled = true;
             try {
-                await api.createStudent(studentData);
-                ErrorHandler.showSuccess('تم إضافة الطالب بنجاح');
+                const res = await api.createStudent(studentData);
                 modal.classList.remove('active');
-                loadStudents();
+                await loadStudents();
+                const newId = newIdFrom(res) || ((allStudents.find(s => s.name === name) || {}).id);
+                if (onboardingFlow) {
+                    if (newId) {
+                        ErrorHandler.showSuccess(`تمام! الخطوة الجاية: حدّد موعد حصة ${name}`);
+                        waitingOnboardingSchedule = true;
+                        openStudentAppointments(newId, name);
+                    } else {
+                        ErrorHandler.showSuccess('تم إضافة الطالب');
+                        setTimeout(() => { window.location.href = 'dashboard.html'; }, 900);
+                    }
+                } else {
+                    ErrorHandler.showSuccess('تم إضافة الطالب بنجاح');
+                }
             } catch (error) {
                 ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
+            } finally {
+                saveBtn.disabled = false;
+            }
+        });
+
+        // ---------------- إضافة جماعية: سطر لكل طالب (الاسم ثم الرقم اختياريًا)
+        function parseBulk(text) {
+            const rows = [];
+            String(text || '').split(/\r?\n/).forEach((raw) => {
+                let line = raw.replace(/[\u200e\u200f]/g, '').trim();
+                if (!line) return;
+                let phone = null;
+                const m = line.match(/(\+?[\d\u0660-\u0669][\d\u0660-\u0669\s-]{6,})\s*$/);
+                if (m) {
+                    phone = m[1].replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660)).replace(/[\s-]/g, '');
+                    line = line.slice(0, m.index).trim();
+                }
+                line = line.replace(/^[\d\u0660-\u0669]+[\).\-]\s*/, '').replace(/[,،:\-–]+$/, '').trim();
+                if (line) rows.push({ name: line.slice(0, 120), phone });
+            });
+            return rows;
+        }
+        document.getElementById('bulk-text').addEventListener('input', (e) => {
+            const rows = parseBulk(e.target.value);
+            document.getElementById('bulk-preview').textContent = rows.length
+                ? `هيتضاف ${rows.length} ${rows.length === 1 ? 'طالب' : 'طلاب'}${rows.length > 50 ? ' (الحد الأقصى 50 مرة واحدة)' : ''}`
+                : '';
+        });
+        document.getElementById('bulk-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const rows = parseBulk(document.getElementById('bulk-text').value).slice(0, 50);
+            const subject = document.getElementById('bulk-subject').value;
+            if (!rows.length) { ErrorHandler.showError('اكتب اسم طالب واحد على الأقل'); return; }
+            if (!subject) { ErrorHandler.showError('اختر المادة'); return; }
+            const btn = document.getElementById('bulk-save');
+            const progress = document.getElementById('bulk-progress');
+            btn.disabled = true;
+            const failed = [];
+            for (let i = 0; i < rows.length; i++) {
+                progress.textContent = `جاري الإضافة ${i + 1} من ${rows.length}...`;
+                try {
+                    await api.createStudent({ name: rows[i].name, phone: rows[i].phone, subject, email: null, lesson_link: null, current_topic: null });
+                } catch (err) {
+                    failed.push(rows[i].name);
+                }
+            }
+            btn.disabled = false;
+            await loadStudents();
+            const ok = rows.length - failed.length;
+            if (failed.length) {
+                progress.textContent = `تم إضافة ${ok} من ${rows.length}. لم يتم إضافة: ${failed.join('، ')}`;
+                document.getElementById('bulk-text').value = failed.join('\n');
+            } else {
+                progress.textContent = '';
+                bulkModal.classList.remove('active');
+                ErrorHandler.showSuccess(`تم إضافة ${ok} ${ok === 1 ? 'طالب' : 'طلاب'} 🎉`);
+                if (onboardingFlow) setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
             }
         });
 
@@ -248,6 +405,6 @@
             }
         };
     </script>
-    <script src="js/pwa-install.js?v=11" defer></script>
+    <script src="js/pwa-install.js?v=13" defer></script>
 </body>
 </html>

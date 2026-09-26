@@ -1,4 +1,4 @@
-import { api } from './api.js?v=11';
+import { api } from './api.js?v=13';
 import { Formatters } from './utils.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
