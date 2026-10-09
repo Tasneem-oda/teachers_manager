@@ -11,10 +11,10 @@
  * من غير أي تعديل أو إضافة على أي workflow في n8n.
  */
 
-import { api } from './api.js?v=16';
-import { ErrorHandler, Formatters } from './utils.js?v=16';
-import { icon } from './icons.js?v=16';
-import { mountTimePicker, refreshTimePicker, mountDayChips, weekIndex } from './form-widgets.js?v=16';
+import { api } from './api.js?v=17';
+import { ErrorHandler, Formatters } from './utils.js?v=17';
+import { icon } from './icons.js?v=17';
+import { mountTimePicker, refreshTimePicker, mountDayChips, weekIndex } from './form-widgets.js?v=17';
 
 const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const RECURRENCE_LABELS = { weekly: 'أسبوعيًا', daily: 'يوميًا', monthly: 'شهريًا', none: 'مرة واحدة' };

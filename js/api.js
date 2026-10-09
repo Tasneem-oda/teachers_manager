@@ -3,8 +3,8 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=16';
-import { APIUtils, Storage } from './utils.js?v=16';
+import { CONFIG } from './config.js?v=17';
+import { APIUtils, Storage } from './utils.js?v=17';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -172,7 +172,7 @@ export function createJsonStreamSplitter(onObject) {
     };
 }
 
-async function streamAiChatOnce(studentId, message, onText, signal) {
+async function streamAiChatOnce(studentId, message, onText, signal, extra = {}) {
     if (isBlockedByReadOnly(CONFIG.API_ENDPOINTS.AI.CHAT, 'POST')) {
         try { if (window.tmOpenSubscribePrompt) window.tmOpenSubscribePrompt(window.__tmReadOnlyReason); } catch (e) { /* تجاهل */ }
         throw { error: { code: 'READ_ONLY', message: 'المساعد الذكي محتاج اشتراك. بياناتك كلها محفوظة.' } };
@@ -185,7 +185,9 @@ async function streamAiChatOnce(studentId, message, onText, signal) {
         response = await fetch(APIUtils.buildUrl(CONFIG.API_ENDPOINTS.AI.CHAT), {
             method: 'POST',
             headers: APIUtils.buildHeaders(session.access_token),
-            body: JSON.stringify({ student_id: studentId, message }),
+            // lesson_context: اللي بيحصل في الحصة دلوقتي (عشان المساعد يربط ردوده بالحصة الجارية)
+            // session_since: بداية الجلسة (الذاكرة بتتحمّل من الوقت ده بس)
+            body: JSON.stringify({ student_id: studentId, message, lesson_context: extra.lessonContext || null, session_since: extra.sessionSince || null }),
             signal
         });
     } catch (netError) {
@@ -638,15 +640,15 @@ export const api = {
      * لسه القديم (رد JSON واحد) بيقرأه عادي. لو النظام "مشغول" بيعيد المحاولة تلقائيًا.
      * بيرجّع { reply, remaining_today }
      */
-    async chatWithAIAssistantStream(studentId, message, { onText, onRetry, signal } = {}) {
+    async chatWithAIAssistantStream(studentId, message, { onText, onRetry, signal, lessonContext, sessionSince } = {}) {
         for (let attempt = 0; ; attempt++) {
             try {
-                return await streamAiChatOnce(studentId, message, onText, signal);
+                return await streamAiChatOnce(studentId, message, onText, signal, { lessonContext, sessionSince });
             } catch (error) {
                 const code = error && error.error && error.error.code;
                 if (code === 'BUSY' && attempt < 3 && !(signal && signal.aborted)) {
                     if (onRetry) onRetry(attempt + 1);
-                    await new Promise((r) => setTimeout(r, 1500 + attempt * 1500));
+                    await new Promise((r) => setTimeout(r, 1200 + attempt * 800));
                     continue;
                 }
                 throw error;

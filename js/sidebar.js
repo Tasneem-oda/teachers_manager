@@ -1,11 +1,11 @@
 /**
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
-import { Auth } from './auth.js?v=16';
-import { icon } from './icons.js?v=16';
-import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=16';
-import { CONFIG } from './config.js?v=16';
-import { openSuggestionModal } from './suggestions.js?v=16';
+import { Auth } from './auth.js?v=17';
+import { icon } from './icons.js?v=17';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=17';
+import { CONFIG } from './config.js?v=17';
+import { openSuggestionModal } from './suggestions.js?v=17';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
@@ -42,7 +42,7 @@ export async function getSubscriptionCached() {
     if (subFetchPromise) return subFetchPromise;
 
     subFetchPromise = (async () => {
-        const { api } = await import('./api.js?v=16');
+        const { api } = await import('./api.js?v=17');
         const data = await api.checkSubscription();
         try {
             sessionStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
