@@ -11,10 +11,10 @@
  * من غير أي تعديل أو إضافة على أي workflow في n8n.
  */
 
-import { api } from './api.js?v=15';
-import { ErrorHandler, Formatters } from './utils.js?v=15';
-import { icon } from './icons.js?v=15';
-import { mountTimePicker, refreshTimePicker, mountDayChips } from './form-widgets.js?v=15';
+import { api } from './api.js?v=16';
+import { ErrorHandler, Formatters } from './utils.js?v=16';
+import { icon } from './icons.js?v=16';
+import { mountTimePicker, refreshTimePicker, mountDayChips, weekIndex } from './form-widgets.js?v=16';
 
 const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const RECURRENCE_LABELS = { weekly: 'أسبوعيًا', daily: 'يوميًا', monthly: 'شهريًا', none: 'مرة واحدة' };
@@ -322,7 +322,7 @@ function renderList() {
         list.innerHTML = '<div class="empty-state">لسه مفيش مواعيد للطالب ده.<br><small>اضغط "إضافة موعد جديد" واختار الأيام والساعة، وحصصه هتظهر لك في "حصص النهارده" وهيوصلك تنبيه بيها.</small></div>';
         return;
     }
-    const sorted = [...studentSchedules].sort((a, b) => a.day_of_week - b.day_of_week || String(a.start_time).localeCompare(String(b.start_time)));
+    const sorted = [...studentSchedules].sort((a, b) => weekIndex(a.day_of_week) - weekIndex(b.day_of_week) || String(a.start_time).localeCompare(String(b.start_time)));
     list.innerHTML = sorted.map(sch => `
         <div class="sapp-item" data-id="${sch.id}">
             <div class="sapp-item-info">

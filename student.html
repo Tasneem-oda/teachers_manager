@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>ملف الطالب - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=15">
+    <link rel="stylesheet" href="css/style.css?v=16">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,7 +19,7 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=15">
+    <link rel="stylesheet" href="css/lessons.css?v=16">
     <style>
         .loading { text-align: center; padding: 2rem; color: var(--primary); }
         .empty-state { text-align: center; padding: 2rem; color: var(--text-secondary); }
@@ -189,19 +189,19 @@
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=15"></script>
+    <script type="module" src="js/config.js?v=16"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=15';
-        import { api } from './js/api.js?v=15';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=15';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=15';
-        import { icon } from './js/icons.js?v=15';
-        import { openStudentAppointments } from './js/student-appointments.js?v=15';
-        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=15';
-        import { openAttendanceModal } from './js/attendance.js?v=15';
-        import { openMonthlyReport } from './js/report.js?v=15';
-        import { showTips } from './js/tips.js?v=15';
-        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=15';
+        import { Auth } from './js/auth.js?v=16';
+        import { api } from './js/api.js?v=16';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=16';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=16';
+        import { icon } from './js/icons.js?v=16';
+        import { openStudentAppointments } from './js/student-appointments.js?v=16';
+        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=16';
+        import { openAttendanceModal } from './js/attendance.js?v=16';
+        import { openMonthlyReport } from './js/report.js?v=16';
+        import { showTips } from './js/tips.js?v=16';
+        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=16';
 
         renderSidebar('students');
         renderTopHeader({ title: 'ملف الطالب', subtitle: 'كل ما يخص الطالب في مكان واحد' });
@@ -617,6 +617,6 @@
 
         window.openBillingSetup = () => openBillingSetup({ student, view: billView }, billingCtx.onChange);
     </script>
-    <script src="js/pwa-install.js?v=15" defer></script>
+    <script src="js/pwa-install.js?v=16" defer></script>
 </body>
 </html>

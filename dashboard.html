@@ -11,8 +11,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الرئيسية - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=15">
-    <link rel="stylesheet" href="css/lessons.css?v=15">
+    <link rel="stylesheet" href="css/style.css?v=16">
+    <link rel="stylesheet" href="css/lessons.css?v=16">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -117,6 +117,7 @@
                                 <a href="schedule.html" style="font-size:0.82rem; color:var(--primary); text-decoration:none; font-weight:600;">عرض الجدول كامل</a>
                             </div>
                             <div id="today-lessons-list"></div>
+                            <div id="today-events" class="today-events" hidden></div>
                         </div>
 
                         <!-- المساعد الذكي + الملاحظات -->
@@ -153,7 +154,8 @@
                         <h3 style="margin-bottom:1rem;">روابط سريعة</h3>
                         <div class="quick-links-grid">
                             <a href="students.html?action=add" class="quick-link-btn"><span class="icon" id="ic-ql-add"></span> إضافة طالب</a>
-                            <a href="schedule.html" class="quick-link-btn"><span class="icon" id="ic-ql-schedule"></span> جدول المواعيد</a>
+                            <a href="schedule.html" class="quick-link-btn"><span class="icon" id="ic-ql-schedule"></span> جدولي</a>
+                            <a href="schedule.html?add=event" class="quick-link-btn"><span class="icon" id="ic-ql-event"></span> موعد شخصي</a>
                             <a href="books.html" class="quick-link-btn"><span class="icon" id="ic-ql-books"></span> مكتبتي</a>
                             <a href="#" class="quick-link-btn" id="ql-income"><span class="icon" id="ic-ql-income"></span> فلوس الشهر</a>
                             <a href="students.html" class="quick-link-btn"><span class="icon" id="ic-ql-notes"></span> ملاحظات الطلاب</a>
@@ -170,19 +172,20 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=15"></script>
+    <script type="module" src="js/config.js?v=16"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=15';
-        import { api } from './js/api.js?v=15';
-        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=15';
-        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=15';
-        import { icon } from './js/icons.js?v=15';
-        import { renderOnboarding } from './js/onboarding.js?v=15';
-        import { openAttendanceModal } from './js/attendance.js?v=15';
-        import { ATTENDANCE } from './js/lesson-utils.js?v=15';
-        import { computeBilling, openReminder, lessonsText } from './js/billing.js?v=15';
-        import { showTips } from './js/tips.js?v=15';
-        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=15';
+        import { Auth } from './js/auth.js?v=16';
+        import { api } from './js/api.js?v=16';
+        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=16';
+        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=16';
+        import { icon } from './js/icons.js?v=16';
+        import { renderOnboarding } from './js/onboarding.js?v=16';
+        import { openAttendanceModal } from './js/attendance.js?v=16';
+        import { ATTENDANCE } from './js/lesson-utils.js?v=16';
+        import { computeBilling, openReminder, lessonsText } from './js/billing.js?v=16';
+        import { showTips } from './js/tips.js?v=16';
+        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=16';
+        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=16';
 
         renderSidebar('dashboard');
 
@@ -202,6 +205,7 @@
         document.getElementById('ic-ql-sub').innerHTML = icon('creditCard', { size: 19 });
         document.getElementById('ic-ql-settings').innerHTML = icon('gear', { size: 19 });
         document.getElementById('ic-ql-income').innerHTML = icon('creditCard', { size: 19 });
+        document.getElementById('ic-ql-event').innerHTML = icon('clock', { size: 19 });
         document.getElementById('ql-income').addEventListener('click', (e) => { e.preventDefault(); openIncomeModal(new Date().getDate() <= 5 ? -1 : 0); });
 
         function greeting() {
@@ -423,7 +427,7 @@
 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('content').style.display = 'block';
-                await Promise.all([loadBillingDue(), refreshOnboarding(), loadIncomeCard()]);
+                await Promise.all([loadBillingDue(), refreshOnboarding(), loadIncomeCard(), loadTodayEvents()]);
                 // جاي من إشعار "فاضل حصص متسجلتش": نوديه على حصص النهارده على طول
                 if (new URLSearchParams(location.search).get('pending') === '1') {
                     const list = document.getElementById('today-lessons-list');
@@ -475,6 +479,26 @@
             if (n === 2) return 'طالبين';
             if (n <= 10) return `${n} طلاب`;
             return `${n} طالب`;
+        }
+
+        // مواعيدك الشخصية النهارده (دكتور، مشوار...) تحت حصص اليوم
+        async function loadTodayEvents() {
+            const box = document.getElementById('today-events');
+            try {
+                const evs = await api.getPersonalEvents();
+                const list = itemsOn((evs || []).map(eventItem), new Date());
+                if (!list.length) { box.hidden = true; box.innerHTML = ''; return; }
+                const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+                box.innerHTML = `<h4>📌 مواعيدك التانية النهارده</h4>` + list.map((it) => {
+                    const c = EVENT_COLORS[it.color] || EVENT_COLORS.gold;
+                    const past = it.start + it.duration <= nowMin;
+                    return `<a href="schedule.html" class="te-item${past ? ' is-past' : ''}" style="border-inline-start-color:${c.border}">
+                        <b>${Formatters.escapeHtml(it.title)}</b><span>${Formatters.escapeHtml(formatRange(it.start, it.duration))}</span></a>`;
+                }).join('');
+                box.hidden = false;
+            } catch (e) {
+                box.hidden = true;
+            }
         }
 
         // كارت "فلوس الشهر": كام طالب دفع وجمعت كام (بيظهر بس لو فيه طلاب متابعة دفعهم مفعّلة)
@@ -532,6 +556,6 @@
             await loadDashboard();
         })();
     </script>
-    <script src="js/pwa-install.js?v=15" defer></script>
+    <script src="js/pwa-install.js?v=16" defer></script>
 </body>
 </html>

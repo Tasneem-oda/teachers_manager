@@ -162,6 +162,13 @@ input:focus, textarea:focus, select:focus {
 .sidebar-nav a .icon { width: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
 .sidebar-footer { border-top: 1px solid var(--sidebar-bg-hover); padding-top: 0.75rem; margin-top: 0.5rem; }
+.sidebar-footer a {
+    display: flex; align-items: center; gap: 0.75rem;
+    color: var(--sidebar-text-muted); text-decoration: none;
+    padding: 0.6rem 0.9rem; border-radius: 10px; font-weight: 600; font-size: 0.88rem; transition: 0.15s;
+}
+.sidebar-footer a:hover { background: var(--sidebar-bg-hover); color: #fff; }
+.sidebar-footer a .icon { width: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
 .main-content { flex: 1; min-width: 0; }
 
@@ -542,3 +549,13 @@ button { font-family: inherit; }
 .sub-lock-plans .sub-lock-whatsapp small { font-weight: 400; opacity: 0.9; }
 .sub-lock-plans .sub-lock-whatsapp { flex-direction: column; gap: 0.15rem; padding: 0.7rem 1rem; font-size: 0.95rem; }
 .sub-lock-plans .sub-lock-whatsapp span { display: inline-flex; align-items: center; gap: 0.4rem; }
+
+/* مواعيد شخصية النهارده (الرئيسية) */
+.today-events { margin-top: 0.9rem; border-top: 1px dashed var(--border); padding-top: 0.8rem; }
+.today-events h4 { margin: 0 0 0.55rem; font-size: 0.9rem; color: var(--text-primary); }
+.te-item { display: flex; justify-content: space-between; gap: 0.6rem; align-items: center; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-inline-start: 4px solid #C59A4A; border-radius: 10px; margin-bottom: 0.4rem; text-decoration: none; color: var(--text-primary); font-size: 0.88rem; }
+.te-item span { color: var(--text-secondary); font-size: 0.8rem; white-space: nowrap; }
+.te-item.is-past { opacity: 0.55; }
+
+/* خاصية hidden لازم تخفي العنصر دايمًا حتى لو ليه display في CSS (كانت بتتلغي في بعض العناصر) */
+[hidden] { display: none !important; }

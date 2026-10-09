@@ -1,16 +1,16 @@
 /**
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
-import { Auth } from './auth.js?v=15';
-import { icon } from './icons.js?v=15';
-import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=15';
-import { CONFIG } from './config.js?v=15';
-import { openSuggestionModal } from './suggestions.js?v=15';
+import { Auth } from './auth.js?v=16';
+import { icon } from './icons.js?v=16';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=16';
+import { CONFIG } from './config.js?v=16';
+import { openSuggestionModal } from './suggestions.js?v=16';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
     { key: 'students', href: 'students.html', icon: 'users', label: 'الطلاب' },
-    { key: 'schedule', href: 'schedule.html', icon: 'calendar', label: 'المواعيد' },
+    { key: 'schedule', href: 'schedule.html', icon: 'calendar', label: 'جدولي' },
     { key: 'books', href: 'books.html', icon: 'bookOpen', label: 'مكتبتي' },
     { key: 'settings', href: 'settings.html', icon: 'gear', label: 'الإعدادات' }
 ];
@@ -42,7 +42,7 @@ export async function getSubscriptionCached() {
     if (subFetchPromise) return subFetchPromise;
 
     subFetchPromise = (async () => {
-        const { api } = await import('./api.js?v=15');
+        const { api } = await import('./api.js?v=16');
         const data = await api.checkSubscription();
         try {
             sessionStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));

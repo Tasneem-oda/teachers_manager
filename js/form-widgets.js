@@ -10,6 +10,10 @@
  */
 
 const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+/** ترتيب أيام الأسبوع في كل البرنامج: السبت ← الجمعة */
+const WEEK_ORDER = [6, 0, 1, 2, 3, 4, 5];
+/** ترتيب اليوم في الأسبوع (السبت = 0 ... الجمعة = 6) */
+const weekIndex = (dow) => WEEK_ORDER.indexOf(Number(dow));
 const pad = (n) => String(n).padStart(2, '0');
 
 let stylesInjected = false;
@@ -100,7 +104,8 @@ export function mountDayChips(container, { multi = true, onChange } = {}) {
     let isMulti = multi;
     container.classList.add('day-chips');
     container.setAttribute('role', 'group');
-    container.innerHTML = DAY_NAMES.map((n, i) => `<button type="button" data-day="${i}" aria-pressed="false">${n}</button>`).join('');
+    // الأسبوع بيبدأ بالسبت وبيخلص بالجمعة (القيمة المحفوظة زي ما هي: 0 = الأحد ... 6 = السبت)
+    container.innerHTML = WEEK_ORDER.map((i) => `<button type="button" data-day="${i}" aria-pressed="false">${DAY_NAMES[i]}</button>`).join('');
     const buttons = [...container.querySelectorAll('button')];
     container.addEventListener('click', (e) => {
         const b = e.target.closest('button[data-day]');
@@ -121,4 +126,4 @@ export function mountDayChips(container, { multi = true, onChange } = {}) {
     return api;
 }
 
-export { DAY_NAMES };
+export { DAY_NAMES, WEEK_ORDER, weekIndex };

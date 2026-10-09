@@ -3,8 +3,8 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=15';
-import { APIUtils, Storage } from './utils.js?v=15';
+import { CONFIG } from './config.js?v=16';
+import { APIUtils, Storage } from './utils.js?v=16';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -372,6 +372,24 @@ export const api = {
             if (isMissingWebhook(error)) return null;
             throw error;
         }
+    },
+
+    /**
+     * المواعيد الشخصية (دكتور، مشوار، اجتماع...). بيرجّع null لو الـ workflow لسه متستوردش.
+     */
+    async getPersonalEvents() {
+        try {
+            const data = await apiCall(CONFIG.API_ENDPOINTS.EVENTS.GET_ALL, 'GET');
+            return (data && data.events) || [];
+        } catch (error) {
+            if (isMissingWebhook(error)) return null;
+            throw error;
+        }
+    },
+
+    /** إضافة/تعديل/حذف موعد شخصي. payload.action = create | update | delete */
+    async savePersonalEvent(payload) {
+        return await apiCall(CONFIG.API_ENDPOINTS.EVENTS.SAVE, 'POST', payload);
     },
 
     /** اقتراح جديد من المدرس (n8n/submit-suggestion.json) */

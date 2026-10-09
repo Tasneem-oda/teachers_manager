@@ -99,6 +99,11 @@ export const CONFIG = {
         SUGGESTIONS: {
             SUBMIT: '/submit-suggestion'
         },
+        // المواعيد الشخصية في الجدول (مش حصص) - n8n/get-personal-events.json + n8n/save-personal-event.json
+        EVENTS: {
+            GET_ALL: '/get-personal-events',
+            SAVE: '/save-personal-event'
+        },
         // مركز الإشعارات (نافذة زر الجرس 🔔) - مقروءة / غير مقروءة
         NOTIFICATIONS: {
             GET_ALL: '/get-notifications',
