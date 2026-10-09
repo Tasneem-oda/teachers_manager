@@ -5,10 +5,11 @@
  * الحضور والغياب، مستوى الحفظ/التلاوة/المراجعة، الواجبات، اللي خلصناه، والخطة الجاية.
  */
 
-import { ErrorHandler } from './utils.js?v=13';
-import { icon } from './icons.js?v=13';
-import { lessonDay, ratingFieldLabels, ratingLabel, normalizeLesson } from './lesson-utils.js?v=13';
-import { whatsappUrl } from './billing.js?v=13';
+import { ErrorHandler } from './utils.js?v=15';
+import { icon } from './icons.js?v=15';
+import { lessonDay, ratingFieldLabels, ratingLabel, normalizeLesson } from './lesson-utils.js?v=15';
+import { whatsappUrl } from './billing.js?v=15';
+import { CONFIG } from './config.js?v=15';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -41,7 +42,7 @@ function firstLine(s, max = 70) {
  * يحسب بيانات الشهر ويبني الرسالة
  * @returns {{text:string, stats:object}}
  */
-export function buildMonthlyReport(allLessons, student, start, { note = '', signature = true } = {}) {
+export function buildMonthlyReport(allLessons, student, start, { note = '', signature = true, refCode = '' } = {}) {
     const lessons = (allLessons || []).map(normalizeLesson).filter((l) => inMonth(l, start));
     const done = lessons.filter((l) => l.status === 'completed' || (!l.status && !l.attendance));
     const excused = lessons.filter((l) => l.status === 'cancelled' && l.attendance === 'absent_excused').length;
@@ -79,7 +80,9 @@ export function buildMonthlyReport(allLessons, student, start, { note = '', sign
     }
     if (note && note.trim()) lines.push(`💬 ملاحظة: ${note.trim()}`);
     lines.push('مع تحياتي 🌷');
-    if (signature) lines.push('— من خلال Teachers Manager');
+    // سطر التوقيع فيه رابط بكود المدرس: ولي الأمر (أو أي مدرس يشوف التقرير) يقدر يوصل للبرنامج،
+    // والتسجيلات اللي جاية من الرابط ده بتتحسب ترشيح للمدرس (الكود بيتحفظ في صفحة التسجيل)
+    if (signature) lines.push(`— من خلال Teachers Manager\n${CONFIG.SITE_URL.replace(/^https?:\/\//, '')}${refCode ? `/?ref=${refCode}` : ''}`);
 
     return {
         text: lines.join('\n'),
@@ -91,6 +94,19 @@ export function buildMonthlyReport(allLessons, student, start, { note = '', sign
  * @param {{student:object, loadLessons:(start:Date)=>Promise<Array>}} opts
  */
 export function openMonthlyReport({ student, loadLessons }) {
+    // كود ترشيح قصير من معرّف المدرس (أول 8 حروف)
+    let refCode = '';
+    try {
+        const raw = localStorage.getItem('auth_session');
+        const uid = raw ? (JSON.parse(raw) || {}).user_id : '';
+        refCode = String(uid || '').replace(/-/g, '').slice(0, 8);
+    } catch (e) { refCode = ''; }
+    if (!refCode && window.supabaseClient) {
+        window.supabaseClient.auth.getSession().then(({ data }) => {
+            refCode = String((data && data.session && data.session.user && data.session.user.id) || '').replace(/-/g, '').slice(0, 8);
+            try { if (lessons.length) rebuild(); } catch (e) { /* لسه مااتحملش */ }
+        }).catch(() => {});
+    }
     const modal = document.createElement('div');
     modal.className = 'modal active bill-modal rp-modal';
     modal.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-label="تقرير الشهر لولي الأمر">
@@ -126,7 +142,7 @@ export function openMonthlyReport({ student, loadLessons }) {
     const refreshLink = () => { wa.href = whatsappUrl(student && student.phone, msg.value); };
 
     const rebuild = () => {
-        const r = buildMonthlyReport(lessons, student, monthStart(offset), { note: $('#rp-note').value, signature: $('#rp-sign').checked });
+        const r = buildMonthlyReport(lessons, student, monthStart(offset), { note: $('#rp-note').value, signature: $('#rp-sign').checked, refCode });
         msg.value = r.text;
         edited = false;
         $('#rp-hint').textContent = r.stats.scheduled

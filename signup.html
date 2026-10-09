@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>تسجيل جديد - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=13">
+    <link rel="stylesheet" href="css/style.css?v=15">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -36,6 +36,7 @@
         .btn { width: 100%; padding: 0.75rem; background-color: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: 600; }
         .btn:hover { background-color: #3F304D; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .free-note { text-align: center; color: var(--success, #6F8F72); font-weight: 600; font-size: 0.9rem; margin: 0 0 1.5rem; }
         .login-link { text-align: center; margin-top: 1.5rem; font-size: 0.9rem; }
         .login-link a { color: var(--primary); text-decoration: none; font-weight: 600; }
         .success-message { display: none; background: #E8F5E9; color: #2E7D32; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; text-align: center; }
@@ -59,7 +60,8 @@
     <!-- End Google Tag Manager (noscript) -->
     <div class="signup-container">
         <div class="signup-logo" id="signup-logo"></div>
-        <h2>تسجيل جديد</h2>
+        <h2 style="margin-bottom:0.5rem;">تسجيل جديد</h2>
+        <p class="free-note" id="free-note">مجاني بالكامل لحد 31 ديسمبر 2026 — من غير أي بيانات دفع</p>
         
         <div class="success-message" id="successMessage">
             تم التسجيل بنجاح! جاري التوجيه...
@@ -79,7 +81,7 @@
             </div>
 
             <div class="form-group">
-                <label for="phone">رقم الهاتف <small style="font-weight:400; color:var(--text-secondary);">(اختياري)</small></label>
+                <label for="phone">رقم واتساب <small style="font-weight:400; color:var(--text-secondary);">(اختياري — عشان نساعدك لو احتجت حاجة)</small></label>
                 <!-- الحقل بيقبل أي رقم هاتف دولي (مش مقتصر على الأرقام المصرية) -->
                 <input type="tel" id="phone" name="phone" placeholder="مثال: 01234567890 أو +966501234567">
                 <div class="error" id="phoneError"></div>
@@ -127,11 +129,20 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=13"></script>
+    <script type="module" src="js/config.js?v=15"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=13';
-        import { Validators, ErrorHandler } from './js/utils.js?v=13';
-        import { icon } from './js/icons.js?v=13';
+        import { Auth } from './js/auth.js?v=15';
+        import { Validators, ErrorHandler, Formatters } from './js/utils.js?v=15';
+        import { icon } from './js/icons.js?v=15';
+        import { CONFIG } from './js/config.js?v=15';
+        // مصدر التسجيل (utm أو كود ترشيح ref) لو المدرس جه على صفحة التسجيل مباشرة
+        try {
+            const p = new URLSearchParams(location.search);
+            const src = {};
+            ['utm_source', 'utm_medium', 'utm_campaign', 'ref'].forEach((k) => { if (p.get(k)) src[k] = p.get(k); });
+            if (Object.keys(src).length) localStorage.setItem('tm_signup_source', JSON.stringify(src));
+        } catch (e) { /* تجاهل */ }
+        document.getElementById('free-note').textContent = `مجاني بالكامل لحد ${CONFIG.PRICING.FREE_UNTIL_LABEL} — من غير أي بيانات دفع`;
 
         document.getElementById('signup-logo').innerHTML = icon('graduationCap', { size: 28 });
 
@@ -225,11 +236,18 @@
             const username = autoUsername(email);
             const result = await Auth.signUp(name, email, phone, password, username, teachingType, subject);
 
+            if (result.success && result.needsConfirmation) {
+                // تأكيد الإيميل مفعّل في Supabase: نوضح للمدرس يعمل إيه بدل ما يتحوّل لصفحة الدخول من غير ما يفهم
+                form.style.display = 'none';
+                successMessage.style.display = 'block';
+                successMessage.innerHTML = `<strong>فاضل خطوة واحدة ✉️</strong><br>بعتنالك رسالة على <b dir="ltr">${Formatters.escapeHtml(email)}</b>.<br>افتحها واضغط على رابط التأكيد، وبعدها ادخل على طول. (لو مش لاقيها بص في الـ Spam)`;
+                return;
+            }
             if (result.success) {
                 successMessage.style.display = 'block';
                 setTimeout(() => {
                     window.location.href = 'dashboard.html';
-                }, 2000);
+                }, 1200);
             } else {
                 // ============================================================
                 // معالجة خاصة لأخطاء اسم المستخدم القادمة من السيرفر
@@ -240,13 +258,20 @@
                 const errorText = (result.error || '').toString();
                 const isUsernameTaken = /username/i.test(errorText) &&
                     (/duplicate|already|exists|unique|مكرر|مستخدم بالفعل|23505/i.test(errorText));
-                ErrorHandler.showError(isUsernameTaken ? 'حصلت مشكلة بسيطة أثناء إنشاء الحساب، من فضلك حاول مرة أخرى.' : result.error);
+                const msgText = isUsernameTaken ? 'حصلت مشكلة بسيطة أثناء إنشاء الحساب، من فضلك حاول مرة أخرى.' : result.error;
+                if (/مسجّل قبل كده|مش صحيح/.test(msgText)) {
+                    const emailErr = document.getElementById('emailError');
+                    emailErr.innerHTML = Formatters.escapeHtml(msgText) + (/مسجّل/.test(msgText) ? ' <a href="login.html">ادخل من هنا</a>' : '');
+                    emailErr.style.display = 'block';
+                } else {
+                    ErrorHandler.showError(msgText);
+                }
                 submitBtn.disabled = false;
                 submitBtn.style.display = 'block';
                 loading.style.display = 'none';
             }
         });
     </script>
-    <script src="js/pwa-install.js?v=13" defer></script>
+    <script src="js/pwa-install.js?v=15" defer></script>
 </body>
 </html>

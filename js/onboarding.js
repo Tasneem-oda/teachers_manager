@@ -6,9 +6,9 @@
  * بعد الثلاثة: رسالة احتفال مرة واحدة + اقتراحات اختيارية.
  */
 
-import { api } from './api.js?v=13';
-import { Formatters } from './utils.js?v=13';
-import { openStudentAppointments } from './student-appointments.js?v=13';
+import { api } from './api.js?v=15';
+import { Formatters } from './utils.js?v=15';
+import { openStudentAppointments } from './student-appointments.js?v=15';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 const LS = {
@@ -156,7 +156,7 @@ export async function renderOnboarding({ root, dashboardData = null, teacherName
         if (!step) return;
         if (step.href) { window.location.href = step.href; return; }
         if (!step.target) return;
-        if (step.action === 'schedule') openStudentAppointments(step.target.id, step.target.name || '');
+        if (step.action === 'schedule') openStudentAppointments(step.target.id, step.target.name || '', { onboarding: true });
         else if (step.action === 'lesson') window.location.href = `lesson.html?student_id=${encodeURIComponent(step.target.id)}&manual=1&onboarding=1`;
     }));
 

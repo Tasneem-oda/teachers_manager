@@ -3,8 +3,8 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=13';
-import { APIUtils, Storage } from './utils.js?v=13';
+import { CONFIG } from './config.js?v=15';
+import { APIUtils, Storage } from './utils.js?v=15';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -21,8 +21,18 @@ async function apiCall(endpoint, method = 'GET', body = null, options = {}) {
         if (options.signal.aborted) controller.abort();
         else options.signal.addEventListener('abort', onExternalAbort, { once: true });
     }
-    if (options.timeoutMs) {
-        timer = setTimeout(() => { timedOut = true; controller.abort(); }, options.timeoutMs);
+    // مهلة افتراضية لكل الطلبات: لو n8n تقيل، المدرس يشوف رسالة واضحة بدل ما يفضل مستني
+    const timeoutMs = options.timeoutMs === 0 ? 0 : (options.timeoutMs || 30000);
+    if (timeoutMs) {
+        timer = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
+    }
+
+    // وضع "قراءة فقط" بعد نهاية الفترة المجانية/الاشتراك (js/sidebar.js بيحدده):
+    // القراءة شغالة عادي، والحفظ الجديد بيفتح نافذة الاشتراك بدل ما يتنفذ.
+    if (isBlockedByReadOnly(endpoint, method)) {
+        if (timer) clearTimeout(timer);
+        try { if (window.tmOpenSubscribePrompt) window.tmOpenSubscribePrompt(window.__tmReadOnlyReason); } catch (e) { /* تجاهل */ }
+        throw { error: { code: 'READ_ONLY', message: 'التسجيل الجديد محتاج اشتراك. بياناتك كلها محفوظة.' } };
     }
 
     try {
@@ -83,6 +93,17 @@ async function apiCall(endpoint, method = 'GET', body = null, options = {}) {
         if (timer) clearTimeout(timer);
         if (options.signal) options.signal.removeEventListener('abort', onExternalAbort);
     }
+}
+
+let billingDueCache = null;
+
+// الطلبات اللي مسموحة حتى في وضع القراءة فقط (الاشتراك، الاقتراحات، الإشعارات)
+const READ_ONLY_ALLOWED = ['/check-subscription', '/submit-suggestion', '/mark-notifications-read', '/bootstrap-session', '/initialize-teacher', '/monthly-income'];
+function isBlockedByReadOnly(endpoint, method) {
+    if (typeof window === 'undefined' || !window.__tmReadOnly) return false;
+    if (String(method || 'GET').toUpperCase() === 'GET') return false;
+    const path = String(endpoint || '').split('?')[0];
+    return !READ_ONLY_ALLOWED.some((p) => path === p || path.endsWith(p));
 }
 
 // الـ webhook مش متسجل في n8n (workflow جديد لسه متستوردش) ← n8n بيرجّع 404
@@ -152,6 +173,10 @@ export function createJsonStreamSplitter(onObject) {
 }
 
 async function streamAiChatOnce(studentId, message, onText, signal) {
+    if (isBlockedByReadOnly(CONFIG.API_ENDPOINTS.AI.CHAT, 'POST')) {
+        try { if (window.tmOpenSubscribePrompt) window.tmOpenSubscribePrompt(window.__tmReadOnlyReason); } catch (e) { /* تجاهل */ }
+        throw { error: { code: 'READ_ONLY', message: 'المساعد الذكي محتاج اشتراك. بياناتك كلها محفوظة.' } };
+    }
     const { data: { session }, error } = await window.supabaseClient.auth.getSession();
     if (error || !session) { window.location.href = 'login.html'; throw new Error('AUTH_EXPIRED'); }
 
@@ -246,6 +271,25 @@ export const api = {
         );
     },
 
+    /**
+     * كل الطلاب (مش أول 100 بس): بيجيب الصفحات ورا بعض لحد ما تخلص.
+     * المحفّظ ممكن يكون عنده أكتر من 100 طالب، وقبل كده الباقي كان بيختفي من غير رسالة.
+     */
+    async getAllStudents(pageSize = 100, maxPages = 20) {
+        const all = [];
+        for (let page = 1; page <= maxPages; page++) {
+            const data = await this.getStudents(page, pageSize);
+            const batch = (data && data.students) || [];
+            all.push(...batch);
+            const total = data && (data.total || (data.pagination && data.pagination.total));
+            if (batch.length < pageSize || (total && all.length >= total)) break;
+        }
+        // حماية من التكرار لو الخادم بيتجاهل رقم الصفحة
+        const seen = new Set();
+        const students = all.filter((s) => { const k = String(s.id); if (seen.has(k)) return false; seen.add(k); return true; });
+        return { students, total: students.length };
+    },
+
     async getStudent(studentId) {
         return await apiCall(
             `${CONFIG.API_ENDPOINTS.STUDENTS.GET_ONE}?id=${studentId}`,
@@ -316,14 +360,41 @@ export const api = {
      * كل الطلاب اللي متابعة الدفع مفعّلة ليهم مع بيانات الرصيد (الرئيسية بتفلتر اللي محتاجين تذكير).
      * لو workflow "billing-due" لسه متستوردش بيرجّع null والكارت مش بيظهر.
      */
-    async getBillingDue() {
+    /**
+     * فلوس الشهر من الخادم (n8n/monthly-income.json). month = 'YYYY-MM'.
+     * لو الـ workflow لسه متستوردش بيرجّع null، والواجهة بتحسبها بنفسها (js/income.js).
+     */
+    async getMonthlyIncome(month) {
         try {
-            return await apiCall(CONFIG.API_ENDPOINTS.STUDENTS.BILLING_DUE, 'GET');
+            const data = await apiCall(`${CONFIG.API_ENDPOINTS.INCOME.MONTHLY}?month=${encodeURIComponent(month)}`, 'GET', null, { timeoutMs: 20000 });
+            return data && data.available !== false ? data : null;
         } catch (error) {
             if (isMissingWebhook(error)) return null;
             throw error;
         }
     },
+
+    /** اقتراح جديد من المدرس (n8n/submit-suggestion.json) */
+    async submitSuggestion(suggestion, allowName, page) {
+        return await apiCall(CONFIG.API_ENDPOINTS.SUGGESTIONS.SUBMIT, 'POST', { suggestion, allow_name: !!allowName, page: page || '' });
+    },
+
+    async getBillingDue() {
+        // نفس الطلب بيتنادى من أكتر من مكان في نفس الصفحة (الرئيسية وفلوس الشهر): نستخدم نفس الرد 20 ثانية
+        if (billingDueCache && (Date.now() - billingDueCache.ts) < 20000) return billingDueCache.promise;
+        const promise = (async () => {
+            try {
+                return await apiCall(CONFIG.API_ENDPOINTS.STUDENTS.BILLING_DUE, 'GET');
+            } catch (error) {
+                if (isMissingWebhook(error)) return null;
+                throw error;
+            }
+        })();
+        billingDueCache = { ts: Date.now(), promise };
+        promise.catch(() => { billingDueCache = null; });
+        return promise;
+    },
+    clearBillingDueCache() { billingDueCache = null; },
 
     // action: settings | disable | add_payment | adjust | delete_payment
     async studentBilling(studentId, action, data = {}) {

@@ -5,15 +5,15 @@
  *   - إعادة معالجة الكتب المتعثّرة، إدارة الوصول، و"اسأل مصادرك" العام
  */
 
-import { CONFIG } from './config.js?v=13';
-import { Auth } from './auth.js?v=13';
-import { renderSidebar, renderTopHeader } from './sidebar.js?v=13';
-import { icon } from './icons.js?v=13';
-import { api } from './api.js?v=13';
-import { ErrorHandler, Formatters } from './utils.js?v=13';
-import { detectFileType, processBook } from './book-processor.js?v=13';
-import { openBookViewer } from './book-viewer.js?v=13';
-import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=13';
+import { CONFIG } from './config.js?v=15';
+import { Auth } from './auth.js?v=15';
+import { renderSidebar, renderTopHeader } from './sidebar.js?v=15';
+import { icon } from './icons.js?v=15';
+import { api } from './api.js?v=15';
+import { ErrorHandler, Formatters } from './utils.js?v=15';
+import { detectFileType, processBook } from './book-processor.js?v=15';
+import { openBookViewer } from './book-viewer.js?v=15';
+import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=15';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => Formatters.escapeHtml(String(s == null ? '' : s));
@@ -282,7 +282,8 @@ export function initBooksPage() {
             try {
                 createRes = await api.createBookSource(title, file.name, fileType);
             } catch (err) {
-                throw new Error('تعذّر إنشاء المصدر: ' + ErrorHandler.getErrorMessage(err) + ' — تأكد إنك حدّثت n8n/create-book-source.json ونفّذت n8n/BOOKS_LIBRARY_V2_MIGRATION.sql.');
+                console.warn('[dev] create-book-source فشل — راجع n8n/create-book-source.json و BOOKS_LIBRARY_V2_MIGRATION.sql', err);
+                throw new Error('تعذّر إضافة الكتاب: ' + ErrorHandler.getErrorMessage(err));
             }
             bookId = createRes.book_id;
 
@@ -290,7 +291,8 @@ export function initBooksPage() {
             try {
                 await api.uploadBookFile(createRes.storage_path, file);
             } catch (err) {
-                throw new Error('تعذّر رفع الملف إلى التخزين: ' + ErrorHandler.getErrorMessage(err) + ' — تأكد إنك نفّذت ملفات SQL في Supabase (بينشئ bucket اسمه teacher-books).');
+                console.warn('[dev] رفع الملف فشل — راجع bucket teacher-books في Supabase', err);
+                throw new Error('تعذّر رفع الملف: ' + ErrorHandler.getErrorMessage(err) + ' — اتأكد من النت وجرّب تاني.');
             }
 
             $('upload-modal').classList.remove('active');

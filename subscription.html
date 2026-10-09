@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الاشتراك - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=13">
+    <link rel="stylesheet" href="css/style.css?v=15">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -37,6 +37,9 @@
         .whatsapp-btn:hover { background: #1ebe57; }
         .status-banner { background: #E8F5E9; color: var(--success); padding: 1rem; border-radius: 8px; margin-bottom: 2rem; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 600; }
         .subscribe-note { text-align: center; color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.75rem; }
+        .early-card { max-width: 640px; margin: 0 auto 1rem; background: rgba(197,154,74,0.12); border: 1px solid rgba(197,154,74,0.4); border-radius: 12px; padding: 1rem 1.2rem; display: flex; flex-direction: column; gap: 0.35rem; }
+        .early-card span { color: var(--text-secondary); font-size: 0.92rem; line-height: 1.7; }
+        .plan-badge { display: inline-block; background: var(--primary); color: #fff; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 999px; margin-bottom: 0.5rem; }
         @media (max-width: 480px) {
             .pricing-grid { grid-template-columns: 1fr; }
             .pricing-card { padding: 1.5rem; }
@@ -55,56 +58,36 @@
     <div class="page-body">
     <div class="container" style="max-width: 1100px; margin: 0; padding: 0;">
         <h1 style="color: var(--primary); text-align: center;">اشتراكك في Teachers Manager</h1>
-        <p style="text-align: center; color: #716A74; margin-bottom: 2rem;">خطة واحدة بسيطة وواضحة، بدون تعقيد</p>
+        <p style="text-align: center; color: #716A74; margin-bottom: 1.5rem;" id="free-lead">البرنامج مجاني بالكامل لكل المدرسين لحد 31 ديسمبر 2026</p>
 
         <div class="status-banner" id="status-banner" style="display: none;"></div>
 
-        <div class="pricing-grid">
-            <!-- Trial Plan -->
-            <div class="pricing-card">
-                <h3>النسخة التجريبية</h3>
-                <div class="price">مجاني</div>
-                <p class="price-period">7 أيام</p>
-                <ul class="features-list">
-                    <li>حتى 10 طلاب</li>
-                    <li>تسجيل الحصص</li>
-                    <li>الملاحظات</li>
-                </ul>
-                <button class="btn" disabled style="opacity: 0.5;">النسخة الحالية</button>
-            </div>
-
-            <!-- Monthly Plan -->
-            <div class="pricing-card active">
-                <h3>الخطة الشهرية</h3>
-                <div class="price">150 <small>جنيه / شهريًا</small></div>
-                <ul class="features-list">
-                    <li>عدد غير محدود من الطلاب</li>
-                    <li>جميع الميزات</li>
-                    <li>المساعد الذكي</li>
-                    <li>تقارير متقدمة</li>
-                    <li>دعم أولوي</li>
-                </ul>
-                <a class="btn whatsapp-btn" id="whatsapp-subscribe-btn" href="#" target="_blank" rel="noopener">
-                    <span id="ic-whatsapp"></span> الاشتراك عبر واتساب
-                </a>
-                <p class="subscribe-note">هيتم تحويلك للواتساب لإتمام الاشتراك مباشرة</p>
-            </div>
+        <div class="early-card" id="early-card">
+            <strong>🎁 عرض المسجّلين بدري</strong>
+            <span>لو سجّلت قبل نهاية الفترة المجانية واستخدمت البرنامج، هتاخد الباقة الاحترافية بسعر البداية (99 جنيه) طول سنة 2027.</span>
         </div>
+
+        <h2 style="color: var(--primary); text-align: center; font-size: 1.2rem; margin: 2rem 0 1rem;" id="plans-title">الباقات بعد الفترة المجانية</h2>
+        <div class="pricing-grid" id="plans-grid"></div>
 
         <div style="background: var(--card-bg); padding: 2rem; border-radius: 12px; margin-top: 3rem; border: 1px solid var(--border); max-width: 640px; margin-inline: auto;">
             <h2 style="color: var(--primary); text-align: center;">الأسئلة الشائعة</h2>
             <div style="max-width: 600px; margin: 0 auto;">
                 <div style="margin-bottom: 1.5rem;">
-                    <h4 style="color: var(--primary);">كيف يتم الاشتراك؟</h4>
-                    <p style="color: #716A74;">بالضغط على زر "الاشتراك عبر واتساب" سيتم فتح محادثة واتساب مباشرة لإتمام عملية الاشتراك.</p>
+                    <h4 style="color: var(--primary);">هل البرنامج مجاني فعلًا دلوقتي؟</h4>
+                    <p style="color: #716A74;" id="faq-free">أيوه، كل المزايا مفتوحة مجانًا لحد 31 ديسمبر 2026، من غير ما تدخل أي بيانات دفع.</p>
                 </div>
                 <div style="margin-bottom: 1.5rem;">
-                    <h4 style="color: var(--primary);">هل هناك فترة تجريبية حقيقية؟</h4>
-                    <p style="color: #716A74;">نعم، 7 أيام مجانًا بدون الحاجة لإدخال بيانات دفع.</p>
+                    <h4 style="color: var(--primary);">إيه الفرق بين الباقتين؟</h4>
+                    <p style="color: #716A74;">باقة البداية مناسبة لو عندك لحد 10 طلاب. الاحترافية طلابها بلا حد، والمساعد الذكي فيها بحد يومي أكبر.</p>
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--primary);">إزاي أشترك؟</h4>
+                    <p style="color: #716A74;">اضغط على زرار الباقة اللي تناسبك، وهيتفتح واتساب برسالة جاهزة. تقدر تدفع بإنستاباي أو فودافون كاش، وحسابك بيتفعّل على طول.</p>
                 </div>
                 <div>
-                    <h4 style="color: var(--primary);">ماذا يحدث بعد انتهاء الفترة التجريبية؟</h4>
-                    <p style="color: #716A74;">ستحتاج للاشتراك في الخطة الشهرية لمتابعة الاستخدام بدون انقطاع.</p>
+                    <h4 style="color: var(--primary);">لو مااشتركتش بعد الفترة المجانية، بياناتي هتروح؟</h4>
+                    <p style="color: #716A74;">لا. كل طلابك وحصصك بتفضل محفوظة، وتقدر تشوفها. بس تسجيل حصص جديدة بيحتاج اشتراك.</p>
                 </div>
             </div>
         </div>
@@ -114,21 +97,49 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=13"></script>
+    <script type="module" src="js/config.js?v=15"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=13';
-        import { renderSidebar, renderTopHeader, computeSubscriptionState, daysLabel, getSubscriptionCached } from './js/sidebar.js?v=13';
-        import { icon } from './js/icons.js?v=13';
+        import { Auth } from './js/auth.js?v=15';
+        import { renderSidebar, renderTopHeader, computeSubscriptionState, daysLabel, getSubscriptionCached, trialEndLabel } from './js/sidebar.js?v=15';
+        import { icon } from './js/icons.js?v=15';
+        import { CONFIG } from './js/config.js?v=15';
 
         renderSidebar('settings');
         renderTopHeader({ title: 'الاشتراك', subtitle: 'الخطة الشهرية لتطبيق Teachers Manager', showSearch: false });
-        document.getElementById('ic-whatsapp').innerHTML = icon('messageCircle', { size: 18 });
 
-        // زر الاشتراك عبر واتساب - يرسل رسالة جاهزة لرقم صاحب الحساب
-        const WHATSAPP_NUMBER = '201037728764';
-        const whatsappMessage = 'مرحباً، أرغب في الاشتراك في الخطة الشهرية (150 جنيه) في تطبيق Teachers Manager.';
-        document.getElementById('whatsapp-subscribe-btn').href =
-            `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`;
+        const FREE_LABEL = CONFIG.PRICING.FREE_UNTIL_LABEL;
+        document.getElementById('free-lead').textContent = `البرنامج مجاني بالكامل لكل المدرسين لحد ${FREE_LABEL}`;
+        document.getElementById('faq-free').textContent = `أيوه، كل المزايا مفتوحة مجانًا لحد ${FREE_LABEL}، من غير ما تدخل أي بيانات دفع.`;
+        const freeOver = Date.now() > new Date(CONFIG.PRICING.FREE_UNTIL + 'T23:59:59').getTime();
+        if (freeOver) {
+            document.getElementById('plans-title').textContent = 'اختار باقتك';
+            document.getElementById('early-card').hidden = true;
+        }
+
+        const FEATURES = {
+            starter: ['لحد 10 طلاب', 'تسجيل الحصص والحضور والغياب', 'متابعة الدفع ورسائل التذكير', 'تقرير الشهر لولي الأمر', 'المساعد الذكي (حد يومي أقل)'],
+            pro: ['طلاب بلا حد', 'كل مزايا البداية', 'المساعد الذكي و"حضّرلي الحصة"', 'مكتبتي (كتبك ومذكراتك)', 'ملخص فلوس الشهر', 'دعم أولوي على واتساب']
+        };
+        document.getElementById('plans-grid').innerHTML = CONFIG.PRICING.PLANS.map((p) => `
+            <div class="pricing-card ${p.id === 'pro' ? 'active' : ''}">
+                ${p.id === 'pro' ? '<span class="plan-badge">الأكثر اختيارًا</span>' : ''}
+                <h3>${p.name}</h3>
+                <div class="price">${p.price} <small>جنيه / شهريًا</small></div>
+                <p class="price-period">${p.desc}</p>
+                <ul class="features-list">${(FEATURES[p.id] || []).map((f) => `<li>✓ ${f}</li>`).join('')}</ul>
+                <a class="btn whatsapp-btn" data-plan="${p.id}" href="#" target="_blank" rel="noopener">
+                    <span class="wa-ic"></span> ${freeOver ? 'اشترك عبر واتساب' : 'احجز الباقة دي عبر واتساب'}
+                </a>
+            </div>`).join('');
+        document.querySelectorAll('[data-plan]').forEach((a) => {
+            const plan = CONFIG.PRICING.PLANS.find((p) => p.id === a.dataset.plan);
+            const msg = `مرحباً، أرغب في الاشتراك في باقة "${plan.name}" (${plan.price} جنيه شهريًا) في تطبيق Teachers Manager.`;
+            a.href = `https://wa.me/${CONFIG.SUPPORT_WHATSAPP}?text=${encodeURIComponent(msg)}`;
+            a.querySelector('.wa-ic').innerHTML = icon('messageCircle', { size: 18 });
+            a.addEventListener('click', () => {
+                try { (window.dataLayer = window.dataLayer || []).push({ event: 'plan_click', plan: plan.id }); } catch (e) { /* تجاهل */ }
+            });
+        });
 
         // Check auth
         window.addEventListener('load', async () => {
@@ -146,12 +157,14 @@
                         ? icon('checkCircle', { size: 16 }) + ` أنت مشترك في الخطة الشهرية — متبقٍ ${daysLabel(state.daysLeft)} على نهايتها`
                         : icon('checkCircle', { size: 16 }) + ' أنت مشترك في الخطة الشهرية';
                 } else if (state.kind === 'trial' && !state.locked) {
-                    statusBanner.innerHTML = icon('clock', { size: 16 }) + ` لديك ${daysLabel(state.daysLeft)} متبقية من الفترة التجريبية`;
+                    statusBanner.innerHTML = icon('clock', { size: 16 }) + (state.daysLeft != null && state.daysLeft > 14
+                        ? ` حسابك مجاني لحد ${trialEndLabel(sub)}`
+                        : ` فاضل ${daysLabel(state.daysLeft)} على نهاية الفترة المجانية`);
                 } else if (state.locked) {
                     statusBanner.style.background = '#FFEBEE';
                     statusBanner.style.color = '#B85C5C';
                     statusBanner.innerHTML = icon('warning', { size: 16 }) +
-                        (state.reason === 'trial_expired' ? ' انتهت الفترة التجريبية — اشترك الآن للمتابعة' : ' انتهت صلاحية اشتراكك — جدد الآن للمتابعة');
+                        (state.reason === 'trial_expired' ? ' انتهت الفترة المجانية — بياناتك محفوظة، اشترك عشان تكمّل تسجيل الحصص' : ' انتهت صلاحية اشتراكك — جدد الآن للمتابعة');
                 } else {
                     statusBanner.style.display = 'none';
                     return;
@@ -162,6 +175,6 @@
             }
         });
     </script>
-    <script src="js/pwa-install.js?v=13" defer></script>
+    <script src="js/pwa-install.js?v=15" defer></script>
 </body>
 </html>

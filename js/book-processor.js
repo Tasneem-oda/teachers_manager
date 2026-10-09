@@ -12,9 +12,9 @@
  * والسيرفر بيعمل بس الحاجات اللي محتاجة مفتاح Gemini (OCR + embeddings) وقاعدة البيانات.
  */
 
-import { CONFIG } from './config.js?v=13';
-import { normalizeText, assessTextQuality, chunkUnits, paginateBlocks } from './book-chunker.js?v=13';
-import { loadPdfJs, pdfDocumentParams, loadJsZip, repairPdfBytes } from './book-libs.js?v=13';
+import { CONFIG } from './config.js?v=15';
+import { normalizeText, assessTextQuality, chunkUnits, paginateBlocks } from './book-chunker.js?v=15';
+import { loadPdfJs, pdfDocumentParams, loadJsZip, repairPdfBytes } from './book-libs.js?v=15';
 
 const S = () => CONFIG.BOOKS_SETTINGS;
 const OCR_MAX_SIDE = 1800;          // أقصى بُعد لصورة الصفحة المرسلة للـ OCR (بكسل)
@@ -943,7 +943,8 @@ export async function processBook({ api, book, file, onProgress, signal }) {
             await api.startBookProcessing(bookId, { file_type: fileType });
             started = true;
         } catch (err) {
-            throw new BookProcessError(errMessage(err) + (errCode(err) ? '' : ' — تأكد إنك استوردت n8n/process-book.json الجديد.'), errCode(err) || 'START_FAILED');
+            if (!errCode(err)) console.warn('[dev] process-book فشل — راجع n8n/process-book.json', err);
+            throw new BookProcessError(errMessage(err), errCode(err) || 'START_FAILED');
         }
         throwIfAborted(signal);
 

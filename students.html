@@ -11,8 +11,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الطلاب - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=13">
-    <link rel="stylesheet" href="css/lessons.css?v=13">
+    <link rel="stylesheet" href="css/style.css?v=15">
+    <link rel="stylesheet" href="css/lessons.css?v=15">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -162,15 +162,15 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=13"></script>
+    <script type="module" src="js/config.js?v=15"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=13';
-        import { api } from './js/api.js?v=13';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=13';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=13';
-        import { icon } from './js/icons.js?v=13';
-        import { openStudentAppointments } from './js/student-appointments.js?v=13';
-        import { subjectLabel } from './js/lesson-utils.js?v=13';
+        import { Auth } from './js/auth.js?v=15';
+        import { api } from './js/api.js?v=15';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=15';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=15';
+        import { icon } from './js/icons.js?v=15';
+        import { openStudentAppointments } from './js/student-appointments.js?v=15';
+        import { subjectLabel } from './js/lesson-utils.js?v=15';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الطلاب', subtitle: 'إدارة كل طلابك من مكان واحد' });
@@ -186,7 +186,11 @@
         const bulkModal = document.getElementById('bulk-modal');
 
         function teacherSubject() {
-            try { return localStorage.getItem('tm_teacher_subject') || ''; } catch (e) { return ''; }
+            try {
+                // من الرئيسية، أو من بيانات الحساب (لو المدرس جه على صفحة الطلاب مباشرة بعد التسجيل)
+                const prof = JSON.parse(localStorage.getItem('user_profile') || 'null') || {};
+                return localStorage.getItem('tm_teacher_subject') || prof.subject || (prof.teacher && prof.teacher.subject) || '';
+            } catch (e) { return ''; }
         }
         function presetSubject(select) {
             const sub = teacherSubject();
@@ -225,12 +229,13 @@
 
         async function loadStudents() {
             try {
-                const data = await api.getStudents(1, 100);
+                const data = await api.getAllStudents();
                 allStudents = data.students || [];
                 renderStudents(allStudents);
                 loader.style.display = 'none';
             } catch (error) {
-                loader.innerText = 'خطأ: ' + ErrorHandler.getErrorMessage(error);
+                loader.innerHTML = `${Formatters.escapeHtml(ErrorHandler.getErrorMessage(error))} <button type="button" class="btn btn-sm" id="students-retry">حاول تاني</button>`;
+                document.getElementById('students-retry').addEventListener('click', () => { loader.textContent = 'جاري تحميل الطلاب...'; loadStudents(); });
             }
         }
 
@@ -288,14 +293,6 @@
         const newIdFrom = (res) => (res && (res.id || res.student_id || (res.student && res.student.id))) || null;
 
         // دليل البداية: بعد أول طالب نفتح مواعيده مباشرة (الخطوة التانية)
-        let waitingOnboardingSchedule = false;
-        window.addEventListener('tm:schedules-changed', () => {
-            if (!waitingOnboardingSchedule) return;
-            waitingOnboardingSchedule = false;
-            ErrorHandler.showSuccess('ممتاز! فاضل خطوة واحدة: سجّل أول متابعة');
-            setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
-        });
-
         document.getElementById('add-student-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('student-name').value.trim();
@@ -316,14 +313,14 @@
             saveBtn.disabled = true;
             try {
                 const res = await api.createStudent(studentData);
+                try { (window.dataLayer = window.dataLayer || []).push({ event: 'student_added', students_count: 1, method: 'single' }); } catch (e) { /* تجاهل */ }
                 modal.classList.remove('active');
                 await loadStudents();
                 const newId = newIdFrom(res) || ((allStudents.find(s => s.name === name) || {}).id);
                 if (onboardingFlow) {
                     if (newId) {
-                        ErrorHandler.showSuccess(`تمام! الخطوة الجاية: حدّد موعد حصة ${name}`);
-                        waitingOnboardingSchedule = true;
-                        openStudentAppointments(newId, name);
+                        ErrorHandler.showSuccess(`تمام! الخطوة الجاية: حدّد أيام ومواعيد حصة ${name}`);
+                        openStudentAppointments(newId, name, { onboarding: true });
                     } else {
                         ErrorHandler.showSuccess('تم إضافة الطالب');
                         setTimeout(() => { window.location.href = 'dashboard.html'; }, 900);
@@ -382,6 +379,7 @@
             btn.disabled = false;
             await loadStudents();
             const ok = rows.length - failed.length;
+            if (ok > 0) { try { (window.dataLayer = window.dataLayer || []).push({ event: 'student_added', students_count: ok, method: 'bulk' }); } catch (e) { /* تجاهل */ } }
             if (failed.length) {
                 progress.textContent = `تم إضافة ${ok} من ${rows.length}. لم يتم إضافة: ${failed.join('، ')}`;
                 document.getElementById('bulk-text').value = failed.join('\n');
@@ -405,6 +403,6 @@
             }
         };
     </script>
-    <script src="js/pwa-install.js?v=13" defer></script>
+    <script src="js/pwa-install.js?v=15" defer></script>
 </body>
 </html>

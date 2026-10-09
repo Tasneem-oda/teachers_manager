@@ -7,8 +7,8 @@
  * في كل مكان (وليس window.supabase، لأن هذا الأخير هو مكتبة supabase-js
  * الخام القادمة من الـ CDN وليس عميلاً مهيّأً، وليس لديه خاصية .auth).
  */
-import { CONFIG } from './config.js?v=13';
-import { APIUtils, Storage, ErrorHandler, Validators } from './utils.js?v=13';
+import { CONFIG } from './config.js?v=15';
+import { APIUtils, Storage, ErrorHandler, Validators } from './utils.js?v=15';
 
 // ملحوظة: لا نصدّر "supabase" كقيمة ثابتة هنا لأن window.supabaseClient
 // قد لا يكون جاهزًا بعد وقت تحميل هذه الوحدة. أي كود يحتاج العميل مباشرة
@@ -28,6 +28,15 @@ function authErrorMessage(error, fallback) {
     const msg = String(error.message || error.msg || error.error_description || '');
     const wait = retryAfterSeconds(error);
 
+    if (code === 'user_already_exists' || code === 'email_exists' || /already registered|already exists|already been registered/i.test(msg)) {
+        return 'الإيميل ده مسجّل قبل كده. ادخل من صفحة الدخول، ولو نسيت كلمة المرور استخدم "نسيت كلمة المرور".';
+    }
+    if (code === 'email_address_invalid' || code === 'validation_failed' && /email/i.test(msg) || /invalid.*email|email.*invalid|unable to validate email/i.test(msg)) {
+        return 'الإيميل ده مش صحيح. اتأكد منه وجرّب تاني.';
+    }
+    if (code === 'signup_disabled' || /signups not allowed/i.test(msg)) {
+        return 'التسجيل مقفول مؤقتًا. كلّمنا على واتساب وهنفعّلك حسابك.';
+    }
     if (code === 'over_email_send_rate_limit' || /email rate limit/i.test(msg)) {
         return 'تم تجاوز الحد المسموح لإرسال الإيميلات حاليًا. حاول مرة أخرى بعد قليل.';
     }
@@ -36,7 +45,7 @@ function authErrorMessage(error, fallback) {
         return 'محاولات كثيرة في وقت قصير. انتظر قليلًا ثم حاول مرة أخرى.';
     }
     if (code === 'email_address_not_authorized') {
-        return 'خادم البريد في Supabase غير مُعد لإرسال رسائل لهذا البريد. تواصل مع الدعم.';
+        return 'مش قادرين نبعت إيميل للعنوان ده دلوقتي. كلّمنا على واتساب وهنساعدك.';
     }
     if (/error sending|smtp|sending recovery email/i.test(msg) || code === 'unexpected_failure') {
         return 'تعذّر إرسال البريد الآن بسبب مشكلة في خادم البريد. حاول لاحقًا أو تواصل مع الدعم.';
@@ -66,6 +75,9 @@ function retryAfterSeconds(error) {
     const m = msg.match(/after (\d+) seconds?/i);
     return m ? parseInt(m[1], 10) : 0;
 }
+
+const PROFILE_CACHE_KEY = 'tm_profile_cache_v1';
+const PROFILE_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export const Auth = {
     /**
@@ -101,61 +113,94 @@ export const Auth = {
                 throw authError;
             }
 
-            // 3. إرسال البيانات إلى n8n لتهيئة المعلم
-            const webhookUrl = APIUtils.buildUrl(CONFIG.API_ENDPOINTS.AUTH.INITIALIZE_TEACHER);
-            
-            const response = await fetch(webhookUrl, {
-                method: 'POST',
-                headers: APIUtils.buildHeaders(),
-                body: JSON.stringify({
-                    id: authData.user.id,
-                    email: email,
-                    name: name,
-                    phone: phone,
-                    username: username,
-                    teaching_type: teachingType,
-                    subject: subject
-                })
-            });
-
-            if (!response.ok) {
-                // خطة طوارئ: حذف الحساب إذا فشل الـ webhook
-                await window.supabaseClient.auth.signOut();
-                throw new Error('فشل إعداد ملفك الشخصي');
+            // لو "تأكيد الإيميل" مفعّل في Supabase والإيميل مسجّل قبل كده، Supabase بيرجّع
+            // نجاح شكلي بمستخدم من غير identities (عشان مايكشفش الإيميلات المسجلة).
+            // مانبعتش الـ id ده لـ n8n لأنه مش حساب حقيقي.
+            if (authData && authData.user && Array.isArray(authData.user.identities) && authData.user.identities.length === 0) {
+                throw { code: 'user_already_exists', message: 'already registered' };
             }
 
-            // نقرأ الرد كنص أولاً، لأن بعض الحالات (مشاكل بروكسي/شبكة) بترجع
-            // status ناجح لكن body فاضي، وده يكسر response.json() مباشرة
-            const responseText = await response.text();
-            let responseData = null;
-            if (responseText) {
-                try {
-                    responseData = JSON.parse(responseText);
-                } catch (parseError) {
-                    responseData = null;
-                }
-            }
+            // 3. إرسال البيانات إلى n8n لتهيئة المعلم (مع إعادة المحاولة لو الشبكة اتقطعت)
+            const profilePayload = {
+                id: authData.user.id,
+                email: email,
+                name: name,
+                phone: phone,
+                username: username,
+                teaching_type: teachingType,
+                subject: subject,
+                // مصدر التسجيل (utm / كود الترشيح). initialize-teacher بيتجاهله لو مش متحدث - راجع README_N8N_UPDATES.md
+                signup_source: Storage.get('tm_signup_source') || null
+            };
+            // بنحفظ بيانات الإعداد على الجهاز: لو الإعداد فشل، بيتعمل تلقائيًا أول ما المدرس يدخل
+            // (بدل ما يفضل حساب "معلّق" مايقدرش يسجّل بيه تاني ولا يستخدمه)
+            Storage.set('tm_pending_init', profilePayload);
+            const initResult = await this.initializeProfile(profilePayload);
+            if (initResult.ok) Storage.remove('tm_pending_init');
 
-            if (!responseData) {
-                // الحساب في Supabase اتعمل بالفعل في هذه المرحلة، فمش هنمسحه
-                // احتياطًا (ممكن يكون البروفايل اتحفظ فعلاً والمشكلة في وصول الرد بس)
-                throw new Error('تم إنشاء حسابك، لكن حدث خطأ أثناء تأكيد إعداد ملفك الشخصي. جرّب تسجيل الدخول مباشرة — لو ظهرت نفس المشكلة، تواصل معنا.');
-            }
+            try {
+                const src = Storage.get('tm_signup_source') || {};
+                (window.dataLayer = window.dataLayer || []).push({ event: 'sign_up', subject, ...src });
+            } catch (e) { /* تجاهل */ }
 
-            if (!responseData.success) {
-                await window.supabaseClient.auth.signOut();
-                throw new Error(responseData.error?.message || 'فشل في إنشاء الحساب');
+            // تأكيد الإيميل مفعّل: مفيش جلسة لسه، المدرس لازم يفتح الإيميل الأول
+            if (!authData.session) {
+                return { success: true, user: authData.user, needsConfirmation: true };
             }
-
+            if (!initResult.ok && initResult.fatal) {
+                throw new Error(initResult.message);
+            }
             return { success: true, user: authData.user };
 
         } catch (error) {
             console.error('Signup Error:', error);
-            return { 
-                success: false, 
-                error: error.message || 'فشل التسجيل'
+            return {
+                success: false,
+                error: authErrorMessage(error, (error && /[\u0600-\u06FF]/.test(error.message || '')) ? error.message : 'حصلت مشكلة أثناء إنشاء الحساب. جرّب تاني.')
             };
         }
+    },
+
+    /**
+     * تهيئة ملف المعلم في n8n (initialize-teacher)
+     * 3 محاولات. fatal = الخادم رفض البيانات نفسها (مش مشكلة شبكة)
+     */
+    async initializeProfile(payload) {
+        const webhookUrl = APIUtils.buildUrl(CONFIG.API_ENDPOINTS.AUTH.INITIALIZE_TEACHER);
+        let lastMessage = 'تعذّر تجهيز حسابك دلوقتي، هيتجهز تلقائيًا أول ما تدخل.';
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: APIUtils.buildHeaders(),
+                    body: JSON.stringify(payload)
+                });
+                const text = await response.text();
+                let data = null;
+                try { data = text ? JSON.parse(text) : null; } catch (e) { data = null; }
+                if (response.ok && data && data.success) return { ok: true };
+                // الملف موجود بالفعل (مثلًا محاولة تانية بعد ما الأولى نجحت والرد ضاع) = نجاح
+                const errText = JSON.stringify((data && data.error) || '');
+                if (/duplicate|already|exists|23505/i.test(errText)) return { ok: true };
+                if (response.ok && data && data.success === false) {
+                    const m = data.error && data.error.message;
+                    return { ok: false, fatal: true, message: (m && /[\u0600-\u06FF]/.test(m)) ? m : 'حصلت مشكلة أثناء تجهيز حسابك. كلّمنا على واتساب وهنحلها فورًا.' };
+                }
+            } catch (e) {
+                lastMessage = 'تعذّر الاتصال بالخادم. اتأكد من النت.';
+            }
+            await new Promise((r) => setTimeout(r, 800 * attempt));
+        }
+        return { ok: false, fatal: false, message: lastMessage };
+    },
+
+    /** لو فيه إعداد حساب معلّق على الجهاز ده، نكمّله */
+    async completePendingInit(userId) {
+        const pending = Storage.get('tm_pending_init');
+        if (!pending || (userId && pending.id !== userId)) return false;
+        const res = await this.initializeProfile(pending);
+        if (res.ok) Storage.remove('tm_pending_init');
+        return res.ok;
     },
 
     /**
@@ -188,10 +233,17 @@ export const Auth = {
             return { success: true, session: data.session };
         } catch (error) {
             console.error('Login Error:', error);
-            return { 
-                success: false, 
-                error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' 
-            };
+            const code = String((error && (error.code || error.error_code)) || '');
+            const msg = String((error && error.message) || '');
+            let text = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+            if (code === 'email_not_confirmed' || /email not confirmed/i.test(msg)) {
+                text = 'لازم تأكّد الإيميل الأول: افتح رسالة التأكيد اللي وصلتك (بص كمان في الـ Spam).';
+            } else if (/failed to fetch|network|load failed/i.test(msg)) {
+                text = 'تعذّر الاتصال بالخادم. اتأكد من النت وجرّب تاني.';
+            } else if (/[\u0600-\u06FF]/.test(msg)) {
+                text = msg;
+            }
+            return { success: false, error: text };
         }
     },
 
@@ -202,34 +254,50 @@ export const Auth = {
     async bootstrapSession() {
         try {
             const { data: { session }, error } = await window.supabaseClient.auth.getSession();
-            
+
             if (error || !session) {
                 return null;
             }
 
-            const headers = APIUtils.buildHeaders(session.access_token);
-            const response = await fetch(
-                APIUtils.buildUrl(CONFIG.API_ENDPOINTS.AUTH.BOOTSTRAP_SESSION),
-                { method: 'GET', headers }
-            );
+            const fetchProfile = async () => {
+                const headers = APIUtils.buildHeaders(session.access_token);
+                const response = await fetch(
+                    APIUtils.buildUrl(CONFIG.API_ENDPOINTS.AUTH.BOOTSTRAP_SESSION),
+                    { method: 'GET', headers }
+                );
+                if (!response.ok) return null;
+                const text = await response.text();
+                let data = null;
+                try { data = text ? JSON.parse(text) : null; } catch (e) { data = null; }
+                return data && data.success ? data.data : null;
+            };
 
-            if (!response.ok) {
-                throw new Error('فشل تحميل بيانات الجلسة');
+            let profile = await fetchProfile();
+            // الحساب اتعمل بس الإعداد في n8n ماخلصش وقت التسجيل: نكمّله دلوقتي ونحاول تاني
+            if (!profile && Storage.get('tm_pending_init')) {
+                const done = await this.completePendingInit(session.user && session.user.id);
+                if (done) profile = await fetchProfile();
             }
-
-            const data = await response.json();
-            
-            if (data.success) {
-                // حفظ بيانات الجلسة
-                Storage.set('user_profile', data.data);
-                return data.data;
+            if (profile) {
+                Storage.set('user_profile', profile);
+                try { sessionStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({ ts: Date.now(), uid: session.user && session.user.id, data: profile })); } catch (e) { /* تجاهل */ }
             }
-
-            return null;
+            return profile;
         } catch (error) {
             console.error('Bootstrap Session Error:', error);
             return null;
         }
+    },
+
+    /** بيانات الجلسة من الذاكرة المؤقتة (5 دقايق) بدل طلب n8n في كل صفحة */
+    cachedProfile(userId) {
+        try {
+            const raw = sessionStorage.getItem(PROFILE_CACHE_KEY);
+            if (!raw) return null;
+            const c = JSON.parse(raw);
+            if (!c || c.uid !== userId || (Date.now() - c.ts) > PROFILE_CACHE_TTL_MS) return null;
+            return c.data;
+        } catch (e) { return null; }
     },
 
     /**
@@ -288,6 +356,12 @@ export const Auth = {
         }
 
         // تحميل بيانات الملف الشخصي
+        // السرعة: لو بيانات الجلسة متخزنة من أقل من 5 دقايق نستخدمها فورًا ونحدّثها في الخلفية
+        const cached = this.cachedProfile(session.user && session.user.id);
+        if (cached) {
+            this.bootstrapSession();
+            return { session, profile: cached };
+        }
         const profile = await this.bootstrapSession();
         return { session, profile };
     },

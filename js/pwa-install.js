@@ -27,7 +27,9 @@
     // البانر أو ضغط "لاحقًا"، منعرضهوش تاني في نفس الجلسة وهو بيتنقل
     // بين صفحات الموقع - بس هيرجع يظهر تاني في زيارة/جلسة جديدة لو لسه
     // مش مثبّت البرنامج.
-    const DISMISS_KEY = 'tm_install_prompt_dismissed';
+    const DISMISS_KEY = 'tm_install_prompt_dismissed_at';
+    const DISMISS_DAYS = 7;
+    const VALUE_KEY = 'tm_value_moment';
 
     // متغير هيحمل حدث beforeinstallprompt لحد ما المستخدم يضغط "تثبيت"
     let deferredPrompt = null;
@@ -169,7 +171,7 @@
                 <p class="tm-title">ثبّت تطبيق Teachers Manager</p>
                 <p class="tm-desc">${isIos
                     ? 'اضغط على زر المشاركة ⬆️ ثم "إضافة إلى الشاشة الرئيسية" لتثبيت التطبيق.'
-                    : 'ثبّت التطبيق على جهازك للوصول السريع بدون فتح المتصفح.'}</p>
+                    : 'ثبّته على الموبايل عشان تفتحه بضغطة ويوصلك تنبيه بحصص كل يوم.'}</p>
             </div>
             <div class="tm-actions">
                 ${isIos ? '' : '<button type="button" class="tm-btn-install" id="tm-install-btn">تثبيت</button>'}
@@ -213,51 +215,63 @@
     function dismissBanner() {
         const banner = document.getElementById('tm-install-banner');
         if (banner) banner.remove();
-        try {
-            sessionStorage.setItem(DISMISS_KEY, '1');
-        } catch (e) {
-            // لو sessionStorage مش متاح (مثلاً وضع التصفح الخفي في بعض المتصفحات)
-            // منوقفش الكود، بس ممكن البانر يظهر تاني في نفس الجلسة وده مش خطير
-        }
+        // الإغلاق بيتفتكر 7 أيام (قبل كده كان بيرجع في كل جلسة وده كان بيزهّق)
+        try { localStorage.setItem(DISMISS_KEY, String(Date.now())); } catch (e) { /* تجاهل */ }
     }
 
-    function wasDismissedThisSession() {
+    function wasDismissedRecently() {
         try {
-            return sessionStorage.getItem(DISMISS_KEY) === '1';
+            const t = Number(localStorage.getItem(DISMISS_KEY) || 0);
+            return t > 0 && (Date.now() - t) < DISMISS_DAYS * 86400000;
         } catch (e) {
             return false;
         }
     }
 
+    // البانر مايظهرش في صفحات التسجيل والدخول (بيشتت قبل ما المدرس يبدأ)،
+    // ويظهر لأول مرة بعد أول حصة متسجلة (وقت ما المدرس حس بقيمة البرنامج)
+    function isEntryPage() {
+        return /\/(index|signup|login|reset-password)(\.html)?$|\/$/.test(window.location.pathname);
+    }
+    function reachedValueMoment() {
+        try { return localStorage.getItem('tm_ob_lesson_done') === '1' || localStorage.getItem(VALUE_KEY) === '1'; } catch (e) { return false; }
+    }
+
+    let readyToShow = null;   // { isIos }
+    function tryShow(force) {
+        if (!readyToShow || isRunningStandalone() || wasDismissedRecently() || isEntryPage()) return;
+        if (!force && !reachedValueMoment()) return;
+        showBanner(readyToShow);
+    }
+
     function init() {
         registerServiceWorker();
 
-        // لو التطبيق مثبّت بالفعل وشغال standalone، أو المستخدم قفل
-        // البانر قبل كده في نفس الجلسة، منعملش حاجة تانية
-        if (isRunningStandalone() || wasDismissedThisSession()) {
-            return;
-        }
+        if (isRunningStandalone()) return;
 
-        // حالة iOS: مفيش beforeinstallprompt خالص، فبنعرض تعليمات يدوية
-        // مباشرة (بعد تأخير بسيط عشان الصفحة تخلص تحميل الأول)
-        if (isIosDevice()) {
-            setTimeout(() => showBanner({ isIos: true }), 1500);
-            return;
-        }
-
-        // باقي المتصفحات (Chrome/Edge/Samsung Internet على أندرويد ودسكتوب):
-        // بننتظر المتصفح يطلق الحدث ده لما يتأكد إن الموقع قابل للتثبيت
-        window.addEventListener('beforeinstallprompt', (event) => {
-            // نمنع البانر التلقائي المصغّر اللي المتصفح بيعرضه تحت
-            event.preventDefault();
-            deferredPrompt = event;
-            showBanner({ isIos: false });
+        window.addEventListener('tm:value-moment', () => {
+            try { localStorage.setItem(VALUE_KEY, '1'); } catch (e) { /* تجاهل */ }
+            setTimeout(() => tryShow(true), 1200);
         });
 
-        // لو المستخدم ثبّت التطبيق (سواء من بانرنا أو من قائمة المتصفح
-        // مباشرة)، نخفي البانر ونعتبره متعامل معاه
+        // حالة iOS: مفيش beforeinstallprompt خالص، فبنعرض تعليمات يدوية
+        if (isIosDevice()) {
+            readyToShow = { isIos: true };
+            setTimeout(() => tryShow(false), 1500);
+            return;
+        }
+
+        // باقي المتصفحات (Chrome/Edge/Samsung Internet): بننتظر المتصفح يقول إن الموقع قابل للتثبيت
+        window.addEventListener('beforeinstallprompt', (event) => {
+            event.preventDefault();
+            deferredPrompt = event;
+            readyToShow = { isIos: false };
+            tryShow(false);
+        });
+
         window.addEventListener('appinstalled', () => {
             dismissBanner();
+            try { (window.dataLayer = window.dataLayer || []).push({ event: 'pwa_installed' }); } catch (e) { /* تجاهل */ }
             console.info('تم تثبيت تطبيق Teachers Manager بنجاح.');
         });
     }

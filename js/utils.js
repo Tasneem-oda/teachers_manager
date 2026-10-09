@@ -2,7 +2,7 @@
  * utils.js - دوال مساعدة موحدة للتطبيق
  */
 
-import { CONFIG } from './config.js?v=13';
+import { CONFIG } from './config.js?v=15';
 
 /**
  * التحقق من البيانات (Validation)
@@ -103,7 +103,8 @@ export const Formatters = {
     formatDateTime: (dateTime, locale = 'ar-EG') => {
         if (!dateTime) return '';
         const d = new Date(dateTime);
-        return d.toLocaleString(locale);
+        // نظام 12 ساعة دايمًا (ص / م)
+        return d.toLocaleString(locale, { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
     },
     
     formatPhone: (phone) => {
@@ -174,10 +175,20 @@ export const Storage = {
  */
 export const ErrorHandler = {
     getErrorMessage: (error) => {
-        if (typeof error === 'string') return error;
-        if (error.error?.message) return error.error.message;
-        if (error.message) return error.message;
-        return 'حدث خطأ غير متوقع';
+        const GENERIC = 'حصلت مشكلة. جرّب تاني، ولو فضلت كلّمنا على واتساب.';
+        if (!error) return GENERIC;
+        let msg = '';
+        if (typeof error === 'string') msg = error;
+        else if (error.error?.message) msg = error.error.message;
+        else if (error.message) msg = error.message;
+        if (!msg) return GENERIC;
+        // رسائل تقنية بالإنجليزي جاية من n8n أو المتصفح (مثلًا "Error in workflow") مانعرضهاش للمدرس
+        if (!/[\u0600-\u06FF]/.test(msg)) {
+            if (/failed to fetch|network|load failed/i.test(msg)) return 'تعذّر الاتصال بالخادم. اتأكد من النت وجرّب تاني.';
+            console.warn('[error]', msg);
+            return GENERIC;
+        }
+        return msg;
     },
     
     getErrorCode: (error) => {

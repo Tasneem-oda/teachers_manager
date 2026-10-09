@@ -373,3 +373,24 @@ button.sp-stat:hover { border-color: var(--primary); }
 .lh-same { background: none; border: 1px dashed var(--border); color: var(--primary); border-radius: 999px; padding: 0.3rem 0.75rem; font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; margin-top: 0.4rem; }
 .lh-same:hover { border-color: var(--primary); }
 .due-item[hidden] { display: none; }
+
+/* الخطوة الجاية بعد حفظ الحصة */
+.ls-done-next { text-align: start; margin: 1.2rem auto 0; max-width: 520px; background: rgba(197,154,74,0.12); border: 1px solid rgba(197,154,74,0.35); border-radius: 12px; padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.35rem; }
+.ls-done-next strong { color: var(--text-primary); font-size: 0.95rem; }
+.ls-done-next span { color: var(--text-secondary); font-size: 0.85rem; }
+.ls-done-next .btn { align-self: flex-start; margin-top: 0.3rem; text-decoration: none; }
+
+/* ===== فلوس الشهر (js/income.js) ===== */
+.inc-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 1rem 1.2rem; margin-bottom: 1.25rem; }
+.inc-card.inc-hot { border-color: rgba(197,154,74,0.55); background: linear-gradient(180deg, rgba(197,154,74,0.08), var(--card-bg)); }
+.inc-head h3 { margin: 0 0 0.6rem; font-size: 1rem; color: var(--primary); }
+.inc-sub { color: var(--text-secondary); font-size: 0.88rem; margin: 0 0 0.7rem; }
+.inc-stats { display: flex; gap: 1.5rem; margin-bottom: 0.7rem; flex-wrap: wrap; }
+.inc-stats b { display: block; font-size: 1.45rem; color: var(--text-primary); line-height: 1.2; }
+.inc-stats small { color: var(--text-secondary); font-size: 0.8rem; }
+.inc-stats-lg { justify-content: space-between; background: var(--bg-secondary); border-radius: 12px; padding: 0.9rem 1rem; margin: 0.8rem 0; }
+.inc-months { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.inc-list { max-height: 45vh; overflow-y: auto; }
+.inc-row { display: flex; justify-content: space-between; gap: 0.75rem; padding: 0.55rem 0.2rem; border-bottom: 1px solid var(--border); font-size: 0.92rem; }
+.inc-row a { color: var(--primary); text-decoration: none; font-weight: 600; }
+.inc-note { font-size: 0.78rem; color: var(--text-secondary); margin: 0.6rem 0 0; }

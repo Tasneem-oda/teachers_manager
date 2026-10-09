@@ -10,9 +10,9 @@
  *   postpaid : الدفع بعد عدد حصص (مثلًا كل 4 حصص) → التذكير لما المستحق يوصل للعدد ده
  */
 
-import { api } from './api.js?v=13';
-import { Formatters, ErrorHandler } from './utils.js?v=13';
-import { icon } from './icons.js?v=13';
+import { api } from './api.js?v=15';
+import { Formatters, ErrorHandler } from './utils.js?v=15';
+import { icon } from './icons.js?v=15';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 
@@ -182,7 +182,7 @@ export function whatsappUrl(phone, text) {
 export function billingCardHtml(view, opts = {}) {
     if (!view || !view.available) {
         return `<div class="bill-card bill-off"><div class="bill-off-text">${icon('creditCard', { size: 18 })}
-            <div><strong>متابعة الدفع غير مفعّلة على الخادم بعد</strong><span>تحتاج تشغيل ملف SQL واستيراد workflows الدفع في n8n.</span></div></div></div>`;
+            <div><strong>متابعة الدفع مش متاحة دلوقتي</strong><span>جرّب تاني بعد شوية، ولو المشكلة فضلت كلّمنا على واتساب.</span></div></div></div>`;
     }
     if (!view.enabled) {
         return `<div class="bill-card bill-off">
@@ -253,8 +253,57 @@ async function submitBilling(m, btn, studentId, action, data, onChange, successM
     btn.textContent = 'جاري الحفظ...';
     try {
         await api.studentBilling(studentId, action, data);
+        try { sessionStorage.removeItem('tm_income_cache_v1'); } catch (e) { /* فلوس الشهر تتحسب من جديد */ }
+        api.clearBillingDueCache();
         m.close();
         ErrorHandler.showSuccess(successMsg);
+        if (onChange) onChange();
+    } catch (e) {
+        err.textContent = ErrorHandler.getErrorMessage(e);
+        err.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = label;
+    }
+}
+
+/** الطلاب اللي متابعة الدفع مش مفعّلة عندهم (ماعدا الطالب الحالي) */
+async function loadStudentsWithoutBilling(excludeId) {
+    const [all, due] = await Promise.all([
+        api.getAllStudents(),
+        api.getBillingDue().catch(() => null)
+    ]);
+    if (!due) return [];   // مانقدرش نعرف مين مفعّل، فمانعرضش الاختيار أحسن من إننا نغيّر إعدادات حد بالغلط
+    const enabled = new Set(((due && due.students) || []).filter((s) => s.billing && s.billing.mode).map((s) => String(s.id)));
+    return ((all && all.students) || []).filter((s) => String(s.id) !== String(excludeId) && !enabled.has(String(s.id)));
+}
+
+/** حفظ نفس النظام للطالب الحالي + باقي الطلاب (رصيد البداية صفر للباقيين) */
+async function applyToAll(m, btn, studentId, data, others, onChange) {
+    const err = m.$('.bm-error');
+    err.style.display = 'none';
+    btn.disabled = true;
+    const label = btn.textContent;
+    try {
+        btn.textContent = 'جاري الحفظ...';
+        await api.studentBilling(studentId, 'settings', data);
+        api.clearBillingDueCache();
+        const rest = { ...data, opening_lessons: 0 };
+        const failed = [];
+        let done = 0;
+        const queue = [...others];
+        const worker = async () => {
+            while (queue.length) {
+                const st = queue.shift();
+                try { await api.studentBilling(st.id, 'settings', rest); }
+                catch (e) { failed.push(st.name || ''); }
+                done++;
+                btn.textContent = `جاري الحفظ ${done} من ${others.length}...`;
+            }
+        };
+        await Promise.all([worker(), worker(), worker()]);
+        m.close();
+        if (failed.length) ErrorHandler.showError(`اتفعّلت المتابعة لـ ${others.length - failed.length + 1} طالب. ماتفعّلتش لـ: ${failed.join('، ')}`);
+        else ErrorHandler.showSuccess(`تم تفعيل متابعة الدفع لـ ${others.length + 1} طالب`);
         if (onChange) onChange();
     } catch (e) {
         err.textContent = ErrorHandler.getErrorMessage(e);
@@ -289,6 +338,10 @@ export function openBillingSetup(state, onChange) {
             <input type="checkbox" id="bm-unexcused" ${view.enabled && view.countUnexcused === false ? '' : 'checked'}>
             <span>الغياب بدون عذر يتحسب من الحصص <small>(الغياب بعذر مش بيتحسب)</small></span>
         </label>
+        ${firstTime ? `<label class="bm-check" id="bm-all-wrap" hidden>
+            <input type="checkbox" id="bm-all">
+            <span id="bm-all-text">طبّق نفس النظام على باقي الطلاب</span>
+        </label>` : ''}
         ${firstTime ? `<div class="bm-field bm-opening">
             <label for="bm-opening" id="bm-opening-label"></label>
             <input type="number" id="bm-opening" min="0" max="500" inputmode="numeric" value="0">
@@ -308,6 +361,17 @@ export function openBillingSetup(state, onChange) {
     };
     m.el.querySelectorAll('input[name="bm-mode"]').forEach((r) => r.addEventListener('change', sync));
     sync();
+
+    // أول تفعيل: نعرض اختيار "نفس النظام لباقي الطلاب" (المحفّظ عنده 30 طالب = 30 مرة إعداد قبل كده)
+    let others = [];
+    if (firstTime) {
+        loadStudentsWithoutBilling(student.id).then((list) => {
+            others = list;
+            if (!others.length || !m.el.isConnected) return;
+            m.$('#bm-all-text').textContent = `طبّق نفس النظام على باقي الطلاب اللي لسه مالهمش متابعة دفع (${others.length === 1 ? 'طالب واحد' : others.length === 2 ? 'طالبين' : others.length <= 10 ? others.length + ' طلاب' : others.length + ' طالب'})`;
+            m.$('#bm-all-wrap').hidden = false;
+        }).catch(() => { /* الاختيار ده إضافي، لو فشل نكمّل عادي */ });
+    }
     m.$('#bm-save').addEventListener('click', (e) => {
         const md = m.el.querySelector('input[name="bm-mode"]:checked').value;
         const size = parseInt(m.$('#bm-size').value, 10);
@@ -317,7 +381,13 @@ export function openBillingSetup(state, onChange) {
             const o = Math.max(0, parseInt(m.$('#bm-opening').value, 10) || 0);
             data.opening_lessons = md === 'prepaid' ? o : -o;
         }
-        submitBilling(m, e.currentTarget, student.id, 'settings', data, onChange, 'تم حفظ إعدادات الدفع');
+        const applyAll = firstTime && others.length && m.$('#bm-all') && m.$('#bm-all').checked;
+        if (firstTime) try { (window.dataLayer = window.dataLayer || []).push({ event: 'billing_enabled', billing_mode: md, students_count: applyAll ? others.length + 1 : 1 }); } catch (e) { /* تجاهل */ }
+        if (!applyAll) {
+            submitBilling(m, e.currentTarget, student.id, 'settings', data, onChange, 'تم حفظ إعدادات الدفع');
+            return;
+        }
+        applyToAll(m, e.currentTarget, student.id, data, others, onChange);
     });
     const dis = m.$('#bm-disable');
     if (dis) dis.addEventListener('click', (e) => {
@@ -403,6 +473,7 @@ export function openReminder(state) {
     const msg = m.$('#bm-msg');
     const wa = m.$('#bm-wa');
     const refreshLink = () => { wa.href = whatsappUrl(student.phone, msg.value); };
+    wa.addEventListener('click', () => { try { (window.dataLayer = window.dataLayer || []).push({ event: 'payment_reminder_sent' }); } catch (e) { /* تجاهل */ } });
     const setTone = (tone) => {
         m.el.querySelectorAll('.bm-tone').forEach((b) => b.classList.toggle('active', b.dataset.tone === tone));
         msg.value = buildReminder(view, student, tone);

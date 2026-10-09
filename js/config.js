@@ -9,7 +9,7 @@ export const CONFIG = {
     SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkcG51cGdxdmp4bHJtd3dnbWlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjczMjUsImV4cCI6MjA4NTU0MzMyNX0.gaWPEgrhIQJzZLVoo7x1hnS-63ZJPZN96Xb3WpqApik',
     
     // n8n Webhook Base URL
-    N8N_WEBHOOK_BASE: 'https://n8n-2lse.srv1963528.hstgr.cloud/webhook',
+    N8N_WEBHOOK_BASE: 'https://vmi3639126.contaboserver.net/webhook',
 
     // إعدادات إشعارات Push (OneSignal) - لإرسال تذكير يومي للمعلم بحصص اليوم
     // 1) أنشئ حساب مجاني على https://onesignal.com
@@ -20,6 +20,22 @@ export const CONFIG = {
         ONESIGNAL_APP_ID: '8cba05cf-844b-4e83-a7e7-8dbce1264ae3'
     },
     
+    // ------------------------------------------------------------------
+    // الأسعار والفترة المجانية (مكان واحد تتغيّر منه في كل البرنامج)
+    // FREE_UNTIL: آخر يوم في الفترة المجانية لكل المسجلين (لازم يطابق
+    // تاريخ trial_ends_at في قاعدة البيانات - راجع n8n/FREE_PERIOD_MIGRATION.sql)
+    // ------------------------------------------------------------------
+    PRICING: {
+        FREE_UNTIL: '2026-12-31',
+        FREE_UNTIL_LABEL: '31 ديسمبر 2026',
+        PLANS: [
+            { id: 'starter', name: 'البداية', price: 99, students: 10, desc: 'لحد 10 طلاب' },
+            { id: 'pro', name: 'الاحترافية', price: 150, students: null, desc: 'طلاب بلا حد وكل المزايا' }
+        ]
+    },
+    SUPPORT_WHATSAPP: '201037728764',
+    SITE_URL: 'https://teachers-manager.online',
+
     // API Endpoints تجميع لسهولة الصيانة
     API_ENDPOINTS: {
         AUTH: {
@@ -74,6 +90,14 @@ export const CONFIG = {
         },
         ADMIN: {
             GET_USERS: '/admin/get-users'
+        },
+        // ملخص فلوس الشهر (كام طالب دفع وإجمالي المحصّل) - n8n/monthly-income.json
+        INCOME: {
+            MONTHLY: '/monthly-income'
+        },
+        // اقتراحات المدرسين (زرار "عندك اقتراح؟") - n8n/submit-suggestion.json
+        SUGGESTIONS: {
+            SUBMIT: '/submit-suggestion'
         },
         // مركز الإشعارات (نافذة زر الجرس 🔔) - مقروءة / غير مقروءة
         NOTIFICATIONS: {

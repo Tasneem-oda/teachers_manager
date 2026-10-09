@@ -11,16 +11,20 @@
  * من غير أي تعديل أو إضافة على أي workflow في n8n.
  */
 
-import { api } from './api.js?v=13';
-import { ErrorHandler, Formatters } from './utils.js?v=13';
-import { icon } from './icons.js?v=13';
+import { api } from './api.js?v=15';
+import { ErrorHandler, Formatters } from './utils.js?v=15';
+import { icon } from './icons.js?v=15';
+import { mountTimePicker, refreshTimePicker, mountDayChips } from './form-widgets.js?v=15';
 
 const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const RECURRENCE_LABELS = { weekly: 'أسبوعيًا', daily: 'يوميًا', monthly: 'شهريًا', none: 'مرة واحدة' };
 
 let injected = false;
 let currentStudentId = null;
+let currentStudentName = '';
+let currentOptions = {};
 let studentSchedules = [];
+let dayChips = null;
 
 function genGroupId() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
@@ -30,7 +34,6 @@ function genGroupId() {
 function injectMarkup() {
     if (injected) return;
     injected = true;
-
     const wrap = document.createElement('div');
     wrap.id = 'sapp-root';
     wrap.innerHTML = `
@@ -38,6 +41,7 @@ function injectMarkup() {
             <div class="modal-content">
                 <span class="close-modal">&times;</span>
                 <h2 id="sapp-list-title">مواعيد الطالب</h2>
+                <div id="sapp-next" class="sapp-next" hidden></div>
                 <div style="margin-bottom: 1rem;">
                     <button type="button" class="btn btn-primary" id="sapp-add-btn">
                         <span id="sapp-add-icon" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> إضافة موعد جديد
@@ -53,48 +57,52 @@ function injectMarkup() {
             <div class="modal-content">
                 <span class="close-modal">&times;</span>
                 <h2 id="sapp-form-title">إضافة موعد</h2>
-                <form id="sapp-form">
+                <form id="sapp-form" novalidate>
                     <input type="hidden" id="sapp-id">
                     <input type="hidden" id="sapp-recurrence-group">
-                    <div class="form-group">
-                        <label for="sapp-recurrence">تكرار الموعد *</label>
-                        <select id="sapp-recurrence" required>
-                            <option value="weekly" selected>أسبوعيًا (كل أسبوع في نفس اليوم)</option>
-                            <option value="daily">يوميًا (كل يوم في نفس الوقت)</option>
-                            <option value="monthly">شهريًا (نفس التاريخ كل شهر)</option>
-                            <option value="none">بدون تكرار (مرة واحدة)</option>
-                        </select>
-                    </div>
+
                     <div class="form-group" id="sapp-day-group">
-                        <label for="sapp-day">اليوم *</label>
-                        <select id="sapp-day" required>
-                            <option value="0">الأحد</option>
-                            <option value="1">الإثنين</option>
-                            <option value="2">الثلاثاء</option>
-                            <option value="3">الأربعاء</option>
-                            <option value="4">الخميس</option>
-                            <option value="5">الجمعة</option>
-                            <option value="6">السبت</option>
-                        </select>
+                        <label id="sapp-day-label">أيام الحصة *</label>
+                        <div id="sapp-days"></div>
+                        <small class="day-chips-hint" id="sapp-day-hint">اختار كل الأيام اللي الطالب بيحضر فيها في نفس الميعاد</small>
                     </div>
+
                     <div class="form-group" id="sapp-date-group" style="display:none;">
                         <label for="sapp-date">التاريخ *</label>
                         <input type="date" id="sapp-date">
                     </div>
+
                     <div class="form-group">
-                        <label for="sapp-time">وقت البداية *</label>
-                        <input type="time" id="sapp-time" required>
+                        <label>وقت البداية *</label>
+                        <input type="time" id="sapp-time" value="16:00">
                     </div>
+
                     <div class="form-group">
-                        <label for="sapp-duration">مدة الحصة (دقيقة) *</label>
+                        <label for="sapp-duration">مدة الحصة *</label>
                         <select id="sapp-duration" required>
                             <option value="30">30 دقيقة</option>
                             <option value="45" selected>45 دقيقة</option>
-                            <option value="60">60 دقيقة</option>
-                            <option value="90">90 دقيقة</option>
+                            <option value="60">ساعة</option>
+                            <option value="90">ساعة ونص</option>
+                            <option value="120">ساعتين</option>
                         </select>
                     </div>
+
+                    <details class="x-more" id="sapp-rec-more">
+                        <summary>+ تكرار مختلف (يومي، شهري، مرة واحدة)</summary>
+                        <div class="form-group">
+                            <label for="sapp-recurrence">تكرار الموعد</label>
+                            <select id="sapp-recurrence">
+                                <option value="weekly" selected>أسبوعيًا في الأيام المختارة</option>
+                                <option value="daily">يوميًا (كل أيام الأسبوع)</option>
+                                <option value="monthly">شهريًا (نفس التاريخ كل شهر)</option>
+                                <option value="none">مرة واحدة بس</option>
+                            </select>
+                        </div>
+                    </details>
+
                     <p id="sapp-recurrence-note" style="display:none; font-size:0.8rem; color:var(--text-secondary); background:var(--bg-secondary); padding:0.6rem 0.8rem; border-radius:8px;"></p>
+
                     <div style="display:flex; gap:0.5rem; margin-top:1rem; flex-wrap:wrap;">
                         <button type="submit" class="btn" id="sapp-save-btn">حفظ الموعد</button>
                         <button type="button" class="btn close-modal" style="background: var(--bg-muted); color: var(--text-primary);">إلغاء</button>
@@ -104,11 +112,10 @@ function injectMarkup() {
         </div>
     `;
     document.body.appendChild(wrap);
-
     document.getElementById('sapp-add-icon').innerHTML = icon('plus', { size: 14 });
+    mountTimePicker(document.getElementById('sapp-time'));
+    dayChips = mountDayChips(document.getElementById('sapp-days'), { multi: true });
 
-    // إغلاق أي مودال من المودالين ده بس (ما بيأثرش على أي مودال تاني
-    // موجود في الصفحة زي مودال "إضافة طالب" في students.html مثلاً)
     wrap.querySelectorAll('.close-modal').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const modal = e.target.closest('.modal');
@@ -138,42 +145,38 @@ function injectMarkup() {
     });
 
     document.getElementById('sapp-add-btn').addEventListener('click', () => openAddForm());
-
     document.getElementById('sapp-recurrence').addEventListener('change', updateRecurrenceFields);
-
     document.getElementById('sapp-form').addEventListener('submit', handleFormSubmit);
 }
 
 function updateRecurrenceFields() {
     const type = document.getElementById('sapp-recurrence').value;
+    const editing = !!document.getElementById('sapp-id').value;
     const dayGroup = document.getElementById('sapp-day-group');
     const dateGroup = document.getElementById('sapp-date-group');
     const note = document.getElementById('sapp-recurrence-note');
-    const daySelect = document.getElementById('sapp-day');
     const dateInput = document.getElementById('sapp-date');
 
     if (type === 'weekly') {
         dayGroup.style.display = 'block';
         dateGroup.style.display = 'none';
-        daySelect.required = true;
         dateInput.required = false;
         note.style.display = 'none';
     } else if (type === 'daily') {
-        dayGroup.style.display = 'none';
+        // عند التعديل: اليوم بيفضل ظاهر (كل يوم في التكرار اليومي صف منفصل)
+        dayGroup.style.display = editing ? 'block' : 'none';
         dateGroup.style.display = 'none';
-        daySelect.required = false;
         dateInput.required = false;
         note.style.display = 'block';
-        note.textContent = 'سيتم إضافة هذا الموعد في نفس الوقت في كل أيام الأسبوع السبعة.';
+        note.textContent = editing ? 'ده يوم من أيام التكرار اليومي.' : 'هيتضاف الموعد في نفس الوقت في كل أيام الأسبوع السبعة.';
     } else {
         dayGroup.style.display = 'none';
         dateGroup.style.display = 'block';
-        daySelect.required = false;
         dateInput.required = true;
         note.style.display = 'block';
         note.textContent = type === 'monthly'
-            ? 'يظهر الموعد في الجدول الأسبوعي على يوم الأسبوع المطابق للتاريخ المحدد، كتذكير بالتكرار الشهري.'
-            : 'هذا موعد لمرة واحدة فقط في التاريخ المحدد.';
+            ? 'الموعد بيتكرر كل شهر في نفس التاريخ.'
+            : 'موعد لمرة واحدة بس في التاريخ ده.';
     }
 }
 
@@ -182,10 +185,19 @@ function openAddForm() {
     document.getElementById('sapp-id').value = '';
     document.getElementById('sapp-recurrence-group').value = '';
     document.getElementById('sapp-recurrence').value = 'weekly';
-    document.getElementById('sapp-day').value = '0';
+    document.getElementById('sapp-rec-more').open = false;
+    document.getElementById('sapp-day-label').textContent = 'أيام الحصة *';
+    document.getElementById('sapp-day-hint').hidden = false;
+    dayChips.setMulti(true);
+    // مفيش يوم متختار تلقائيًا: المدرس يختار بنفسه (عشان مايتضافش يوم مش عايزه بالغلط)
+    dayChips.set([]);
     document.getElementById('sapp-date').value = '';
-    document.getElementById('sapp-time').value = '16:00';
-    document.getElementById('sapp-duration').value = '45';
+    // نفس ميعاد آخر موعد للطالب لو موجود، وإلا 4 العصر
+    const last = studentSchedules[studentSchedules.length - 1];
+    document.getElementById('sapp-time').value = last ? String(last.start_time).substring(0, 5) : '16:00';
+    refreshTimePicker(document.getElementById('sapp-time'));
+    document.getElementById('sapp-duration').value = last ? String(last.duration_minutes || 45) : '45';
+    if (!document.getElementById('sapp-duration').value) document.getElementById('sapp-duration').value = '45';
     updateRecurrenceFields();
     document.getElementById('sapp-form-modal').classList.add('active');
 }
@@ -195,12 +207,31 @@ function openEditForm(sch) {
     document.getElementById('sapp-id').value = sch.id;
     document.getElementById('sapp-recurrence-group').value = sch.recurrence_group_id || '';
     document.getElementById('sapp-recurrence').value = sch.recurrence_type || 'weekly';
-    document.getElementById('sapp-day').value = sch.day_of_week;
+    document.getElementById('sapp-rec-more').open = !!(sch.recurrence_type && sch.recurrence_type !== 'weekly');
+    document.getElementById('sapp-day-label').textContent = 'اليوم *';
+    document.getElementById('sapp-day-hint').hidden = true;
+    dayChips.setMulti(false);
+    dayChips.set([sch.day_of_week]);
     document.getElementById('sapp-date').value = sch.start_date ? String(sch.start_date).substring(0, 10) : '';
-    document.getElementById('sapp-time').value = sch.start_time.substring(0, 5);
-    document.getElementById('sapp-duration').value = String(sch.duration_minutes);
+    document.getElementById('sapp-time').value = String(sch.start_time).substring(0, 5);
+    refreshTimePicker(document.getElementById('sapp-time'));
+    const dur = document.getElementById('sapp-duration');
+    if (![...dur.options].some((o) => o.value === String(sch.duration_minutes))) dur.add(new Option(`${sch.duration_minutes} دقيقة`, String(sch.duration_minutes)));
+    dur.value = String(sch.duration_minutes);
     updateRecurrenceFields();
     document.getElementById('sapp-form-modal').classList.add('active');
+}
+
+/** ينشئ مجموعة مواعيد بالتوازي ويرجّع ملخص النجاح/الفشل */
+async function createMany(days, base) {
+    const results = await Promise.allSettled(days.map((day) => api.createSchedule({ ...base, day_of_week: day })));
+    const failed = [];
+    let ok = 0;
+    results.forEach((r, i) => {
+        if (r.status === 'fulfilled') ok++;
+        else failed.push(`${DAY_NAMES[days[i]]} (${ErrorHandler.getErrorMessage(r.reason)})`);
+    });
+    return { ok, failed };
 }
 
 async function handleFormSubmit(e) {
@@ -208,49 +239,42 @@ async function handleFormSubmit(e) {
     const id = document.getElementById('sapp-id').value;
     const recurrenceType = document.getElementById('sapp-recurrence').value;
     const startTime = document.getElementById('sapp-time').value;
-    const duration = parseInt(document.getElementById('sapp-duration').value);
+    const duration = parseInt(document.getElementById('sapp-duration').value, 10);
     const dateValue = document.getElementById('sapp-date').value;
     const existingGroupId = document.getElementById('sapp-recurrence-group').value || null;
     const saveBtn = document.getElementById('sapp-save-btn');
+    const days = dayChips.get();
+
+    if (!startTime) { ErrorHandler.showError('اختار وقت الحصة'); return; }
+    if ((recurrenceType === 'weekly' || (recurrenceType === 'daily' && id)) && days.length === 0) {
+        ErrorHandler.showError('اختار يوم واحد على الأقل');
+        return;
+    }
+    if ((recurrenceType === 'monthly' || recurrenceType === 'none') && !dateValue) {
+        ErrorHandler.showError('اختار التاريخ');
+        return;
+    }
 
     try {
         saveBtn.disabled = true;
         saveBtn.textContent = 'جاري الحفظ...';
 
-        if (!id && recurrenceType === 'daily') {
-            // نفس منطق "يوميًا" الموجود في صفحة الجدول العام: إنشاء 7 مواعيد
-            // (كل أيام الأسبوع) بنفس معرّف مجموعة التكرار، بالتوازي.
-            const groupId = genGroupId();
-
-            const results = await Promise.allSettled(
-                Array.from({ length: 7 }, (_, day) => api.createSchedule({
-                    student_id: currentStudentId,
-                    day_of_week: day,
-                    start_time: startTime,
-                    duration_minutes: duration,
-                    recurrence_type: 'daily',
-                    recurrence_group_id: groupId
-                }))
-            );
-
-            const failedDays = [];
-            let successCount = 0;
-            results.forEach((r, day) => {
-                if (r.status === 'fulfilled') {
-                    successCount++;
-                } else {
-                    failedDays.push(`${DAY_NAMES[day]} (${ErrorHandler.getErrorMessage(r.reason)})`);
-                }
+        // إضافة جديدة لأكتر من يوم (أسبوعي) أو يومي (7 أيام بنفس معرّف مجموعة)
+        if (!id && (recurrenceType === 'weekly' || recurrenceType === 'daily')) {
+            const isDaily = recurrenceType === 'daily';
+            const targetDays = isDaily ? [0, 1, 2, 3, 4, 5, 6] : days;
+            const { ok, failed } = await createMany(targetDays, {
+                student_id: currentStudentId,
+                start_time: startTime,
+                duration_minutes: duration,
+                recurrence_type: recurrenceType,
+                recurrence_group_id: isDaily ? genGroupId() : null,
+                start_date: null
             });
-
-            if (successCount === 0) {
-                throw new Error('لم يتم إنشاء أي موعد: ' + failedDays.join('، '));
-            }
-            if (failedDays.length > 0) {
-                ErrorHandler.showError(`تم إنشاء ${successCount} من 7 أيام فقط. الأيام التي بها تعارض ولم تُضف: ${failedDays.join('، ')}`);
-            } else {
-                ErrorHandler.showSuccess('تم حفظ الموعد بنجاح في كل أيام الأسبوع');
-            }
+            if (ok === 0) throw new Error('ماتحفظش أي موعد: ' + failed.join('، '));
+            try { (window.dataLayer = window.dataLayer || []).push({ event: 'schedule_saved', days_count: ok, recurrence: recurrenceType }); } catch (e) { /* تجاهل */ }
+            if (failed.length) ErrorHandler.showError(`اتحفظ ${ok} من ${targetDays.length}. الأيام اللي فيها تعارض: ${failed.join('، ')}`);
+            else ErrorHandler.showSuccess(ok === 1 ? 'تم حفظ الموعد' : `تم حفظ ${ok} مواعيد`);
             document.getElementById('sapp-form-modal').classList.remove('active');
             await loadList();
             notifySchedulesChanged();
@@ -265,18 +289,14 @@ async function handleFormSubmit(e) {
             recurrence_group_id: recurrenceType === 'daily' ? existingGroupId : null
         };
         if (recurrenceType === 'weekly' || recurrenceType === 'daily') {
-            payload.day_of_week = parseInt(document.getElementById('sapp-day').value || '0');
+            payload.day_of_week = days[0];
             payload.start_date = null;
         } else {
-            if (!dateValue) throw new Error('يرجى اختيار التاريخ');
             payload.start_date = dateValue;
             payload.day_of_week = new Date(dateValue + 'T00:00:00').getDay();
         }
-        if (id) {
-            await api.updateSchedule(id, payload);
-        } else {
-            await api.createSchedule(payload);
-        }
+        if (id) await api.updateSchedule(id, payload);
+        else await api.createSchedule(payload);
 
         ErrorHandler.showSuccess('تم حفظ الموعد بنجاح');
         document.getElementById('sapp-form-modal').classList.remove('active');
@@ -297,11 +317,12 @@ function notifySchedulesChanged() {
 
 function renderList() {
     const list = document.getElementById('sapp-list');
+    renderNext();
     if (studentSchedules.length === 0) {
-        list.innerHTML = '<div class="empty-state">لسه مفيش مواعيد للطالب ده.<br><small>حدّد اليوم والساعة تحت، وحصصه هتظهر لك في "حصص اليوم" وهيوصلك تنبيه بيها.</small></div>';
+        list.innerHTML = '<div class="empty-state">لسه مفيش مواعيد للطالب ده.<br><small>اضغط "إضافة موعد جديد" واختار الأيام والساعة، وحصصه هتظهر لك في "حصص النهارده" وهيوصلك تنبيه بيها.</small></div>';
         return;
     }
-    const sorted = [...studentSchedules].sort((a, b) => a.day_of_week - b.day_of_week || a.start_time.localeCompare(b.start_time));
+    const sorted = [...studentSchedules].sort((a, b) => a.day_of_week - b.day_of_week || String(a.start_time).localeCompare(String(b.start_time)));
     list.innerHTML = sorted.map(sch => `
         <div class="sapp-item" data-id="${sch.id}">
             <div class="sapp-item-info">
@@ -309,11 +330,25 @@ function renderList() {
                 <span class="sapp-item-meta">${sch.duration_minutes} دقيقة${sch.recurrence_type ? ' · ' + (RECURRENCE_LABELS[sch.recurrence_type] || '') : ''}</span>
             </div>
             <div class="sapp-item-actions">
-                <button type="button" class="sapp-icon-btn" title="تعديل الموعد" data-action="edit" data-id="${sch.id}">${icon('edit', { size: 14 })}</button>
-                <button type="button" class="sapp-icon-btn danger" title="حذف الموعد" data-action="delete" data-id="${sch.id}">${icon('trash', { size: 14 })}</button>
+                <button type="button" class="sapp-icon-btn" title="تعديل الموعد" aria-label="تعديل الموعد" data-action="edit" data-id="${sch.id}">${icon('edit', { size: 14 })}</button>
+                <button type="button" class="sapp-icon-btn danger" title="حذف الموعد" aria-label="حذف الموعد" data-action="delete" data-id="${sch.id}">${icon('trash', { size: 14 })}</button>
             </div>
         </div>
     `).join('');
+}
+
+// في دليل البداية: بعد ما المدرس يحدد المواعيد، زرار واضح للخطوة الجاية
+// (بدل التحويل التلقائي اللي كان بيمنعه يضيف اليوم التاني)
+function renderNext() {
+    const box = document.getElementById('sapp-next');
+    if (!box) return;
+    if (!currentOptions.onboarding || studentSchedules.length === 0) { box.hidden = true; box.innerHTML = ''; return; }
+    box.hidden = false;
+    box.innerHTML = `<p>✓ تمام! لو الطالب بيحضر أيام تانية بميعاد مختلف ضيفها، ولو خلصت كمّل:</p>
+        <button type="button" class="btn" id="sapp-next-btn">خلصت المواعيد — سجّل أول حصة</button>`;
+    document.getElementById('sapp-next-btn').addEventListener('click', () => {
+        window.location.href = `lesson.html?student_id=${encodeURIComponent(currentStudentId)}&manual=1&onboarding=1`;
+    });
 }
 
 async function loadList() {
@@ -322,27 +357,32 @@ async function loadList() {
     try {
         const data = await api.getSchedules();
         const all = data.schedules || [];
-        studentSchedules = all.filter(s => s.student_id === currentStudentId);
+        studentSchedules = all.filter(s => String(s.student_id) === String(currentStudentId));
         renderList();
     } catch (error) {
-        list.innerHTML = `<div class="empty-state">تعذّر تحميل المواعيد: ${Formatters.escapeHtml(ErrorHandler.getErrorMessage(error))}</div>`;
+        list.innerHTML = `<div class="empty-state">تعذّر تحميل المواعيد. <button type="button" class="btn btn-sm" id="sapp-retry">حاول تاني</button></div>`;
+        const r = document.getElementById('sapp-retry');
+        if (r) r.addEventListener('click', loadList);
     }
 }
 
 /**
  * الدالة الرئيسية اللي أي صفحة تناديها: بتفتح بوب أب مواعيد الطالب
- * (بتحقن الـ HTML أول مرة بس لو لسه متحقنش) وتحمّل مواعيد الطالب ده.
  * @param {string} studentId - معرف الطالب
- * @param {string} [studentName] - اسم الطالب (اختياري، بيظهر في عنوان البوب أب)
+ * @param {string} [studentName] - اسم الطالب (بيظهر في العنوان)
+ * @param {{onboarding?:boolean}} [options] - onboarding: يظهر زرار "الخطوة الجاية" بعد الحفظ
  */
-export async function openStudentAppointments(studentId, studentName = '') {
+export async function openStudentAppointments(studentId, studentName = '', options = {}) {
     injectMarkup();
     currentStudentId = studentId;
+    currentStudentName = studentName;
+    currentOptions = options || {};
     document.getElementById('sapp-list-title').textContent = studentName ? `مواعيد ${studentName}` : 'مواعيد الطالب';
     document.getElementById('sapp-list-modal').classList.add('active');
     await loadList();
+    // لو مفيش مواعيد خالص: نفتح نموذج الإضافة على طول (خطوة أقل)
+    if (studentSchedules.length === 0) openAddForm();
 }
 
 // إتاحتها عالميًا كمان عشان أي صفحة تقدر تستخدمها بـ onclick مباشر
-// من غير ما تعمل import لو حابب (اختياري، الاستخدام الموصى به هو الـ import)
 window.openStudentAppointments = openStudentAppointments;

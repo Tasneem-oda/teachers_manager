@@ -11,8 +11,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الرئيسية - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=13">
-    <link rel="stylesheet" href="css/lessons.css?v=13">
+    <link rel="stylesheet" href="css/style.css?v=15">
+    <link rel="stylesheet" href="css/lessons.css?v=15">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -84,6 +84,7 @@
                     <div id="trial-banner-root"></div>
                     <div id="onboarding-root"></div>
                     <div id="due-root"></div>
+                    <div id="income-root"></div>
 
                     <div class="stats-row" id="stats-row"></div>
 
@@ -154,6 +155,7 @@
                             <a href="students.html?action=add" class="quick-link-btn"><span class="icon" id="ic-ql-add"></span> إضافة طالب</a>
                             <a href="schedule.html" class="quick-link-btn"><span class="icon" id="ic-ql-schedule"></span> جدول المواعيد</a>
                             <a href="books.html" class="quick-link-btn"><span class="icon" id="ic-ql-books"></span> مكتبتي</a>
+                            <a href="#" class="quick-link-btn" id="ql-income"><span class="icon" id="ic-ql-income"></span> فلوس الشهر</a>
                             <a href="students.html" class="quick-link-btn"><span class="icon" id="ic-ql-notes"></span> ملاحظات الطلاب</a>
                             <a href="subscription.html" class="quick-link-btn"><span class="icon" id="ic-ql-sub"></span> الاشتراك</a>
                             <a href="settings.html" class="quick-link-btn"><span class="icon" id="ic-ql-settings"></span> الإعدادات</a>
@@ -168,18 +170,19 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=13"></script>
+    <script type="module" src="js/config.js?v=15"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=13';
-        import { api } from './js/api.js?v=13';
-        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=13';
-        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=13';
-        import { icon } from './js/icons.js?v=13';
-        import { renderOnboarding } from './js/onboarding.js?v=13';
-        import { openAttendanceModal } from './js/attendance.js?v=13';
-        import { ATTENDANCE } from './js/lesson-utils.js?v=13';
-        import { computeBilling, openReminder, lessonsText } from './js/billing.js?v=13';
-        import { showTips } from './js/tips.js?v=13';
+        import { Auth } from './js/auth.js?v=15';
+        import { api } from './js/api.js?v=15';
+        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=15';
+        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=15';
+        import { icon } from './js/icons.js?v=15';
+        import { renderOnboarding } from './js/onboarding.js?v=15';
+        import { openAttendanceModal } from './js/attendance.js?v=15';
+        import { ATTENDANCE } from './js/lesson-utils.js?v=15';
+        import { computeBilling, openReminder, lessonsText } from './js/billing.js?v=15';
+        import { showTips } from './js/tips.js?v=15';
+        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=15';
 
         renderSidebar('dashboard');
 
@@ -198,6 +201,8 @@
         document.getElementById('ic-ql-notes').innerHTML = icon('edit', { size: 19 });
         document.getElementById('ic-ql-sub').innerHTML = icon('creditCard', { size: 19 });
         document.getElementById('ic-ql-settings').innerHTML = icon('gear', { size: 19 });
+        document.getElementById('ic-ql-income').innerHTML = icon('creditCard', { size: 19 });
+        document.getElementById('ql-income').addEventListener('click', (e) => { e.preventDefault(); openIncomeModal(new Date().getDate() <= 5 ? -1 : 0); });
 
         function greeting() {
             const h = new Date().getHours();
@@ -232,8 +237,13 @@
         // import في n8n مثلاً) بنكمل عادي من غير تمييز حالات - مفيش كسر للصفحة.
         let todayStatusMap = {};
 
+        // مفتاح كل موعد: الطالب + الساعة (عشان لو الطالب عنده حصتين النهارده كل واحدة تاخد حالتها)
+        const slotKey = (studentId, startTime) => `${studentId}|${String(startTime || '').substring(0, 5)}`;
+        function statusInfo(lesson) {
+            return todayStatusMap[slotKey(lesson.student_id, lesson.start_time)] || todayStatusMap[lesson.student_id] || {};
+        }
         function getLessonState(lesson) {
-            const info = todayStatusMap[lesson.student_id] || {};
+            const info = statusInfo(lesson);
             const status = info.status || null;
             if (status === 'completed') return { state: 'completed', lessonId: info.lessonId };
             if (status === 'cancelled') return { state: 'cancelled', lessonId: info.lessonId };
@@ -274,7 +284,7 @@
                     badge = `<span class="lesson-status-badge status-completed">${icon('checkCircle', { size: 11 })} تمت بنجاح</span>`;
                 } else if (state === 'cancelled') {
                     // اتلغت يدويًا: شكل مميز (باهت + خط فوق الاسم)، من غير أي أزرار
-                    const att = (todayStatusMap[l.student_id] || {}).attendance;
+                    const att = statusInfo(l).attendance;
                     const attLabel = ATTENDANCE[att] ? ATTENDANCE[att].label : 'تم إلغاء الحصة';
                     badge = `<span class="lesson-status-badge status-cancelled">${icon('x', { size: 11 })} ${Formatters.escapeHtml(attLabel)}</span>`;
                 } else if (state === 'in_progress') {
@@ -375,6 +385,8 @@
 
         async function loadDashboard() {
             try {
+                // السرعة: الطلبين بيتبعتوا مع بعض بدل ما واحد يستنى التاني
+                const todayPromise = api.getTodayLessons().catch(() => null);
                 const data = await api.getDashboard();
                 dashboardData = data;
 
@@ -383,13 +395,16 @@
                 // بنكمل عادي من غير تمييز حالات بدل ما نكسر الداشبورد كله.
                 todayStatusMap = {};
                 try {
-                    const todayStatus = await api.getTodayLessons();
+                    const todayStatus = (await todayPromise) || {};
                     (todayStatus.lessons || []).forEach(item => {
-                        todayStatusMap[item.student_id] = {
+                        const info = {
                             status: item.lesson_status || null,
                             lessonId: item.lesson_id || null,
                             attendance: item.attendance || null
                         };
+                        todayStatusMap[slotKey(item.student_id, item.start_time)] = info;
+                        // احتياطي للنسخة القديمة من الخادم: آخر حالة للطالب
+                        if (!todayStatusMap[item.student_id] || info.status) todayStatusMap[item.student_id] = info;
                     });
                 } catch (statusError) {
                     todayStatusMap = {};
@@ -408,8 +423,7 @@
 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('content').style.display = 'block';
-                await loadBillingDue();
-                refreshOnboarding();
+                await Promise.all([loadBillingDue(), refreshOnboarding(), loadIncomeCard()]);
                 // جاي من إشعار "فاضل حصص متسجلتش": نوديه على حصص النهارده على طول
                 if (new URLSearchParams(location.search).get('pending') === '1') {
                     const list = document.getElementById('today-lessons-list');
@@ -421,7 +435,9 @@
                 }
             } catch (err) {
                 ErrorHandler.showError(ErrorHandler.getErrorMessage(err));
-                document.getElementById('loading').textContent = 'تعذر تحميل بيانات لوحة التحكم.';
+                const ld = document.getElementById('loading');
+                ld.innerHTML = 'تعذّر تحميل الصفحة. اتأكد من النت. <button type="button" class="btn btn-sm" id="dash-retry">حاول تاني</button>';
+                document.getElementById('dash-retry').addEventListener('click', () => { ld.textContent = 'جاري التحميل...'; loadDashboard(); });
             }
         }
 
@@ -459,6 +475,20 @@
             if (n === 2) return 'طالبين';
             if (n <= 10) return `${n} طلاب`;
             return `${n} طالب`;
+        }
+
+        // كارت "فلوس الشهر": كام طالب دفع وجمعت كام (بيظهر بس لو فيه طلاب متابعة دفعهم مفعّلة)
+        async function loadIncomeCard() {
+            const root = document.getElementById('income-root');
+            if (!root) return;
+            try {
+                const due = await api.getBillingDue();
+                const hasBilling = ((due && due.students) || []).some((s) => s.billing && s.billing.mode);
+                if (!hasBilling) { root.innerHTML = ''; return; }
+                await renderIncomeCard(root);
+            } catch (e) {
+                root.innerHTML = '';
+            }
         }
 
         // الطلاب اللي محتاجين تذكير دفع (باقتهم خلصت/قربت، أو وصلوا لموعد الدفع)
@@ -502,6 +532,6 @@
             await loadDashboard();
         })();
     </script>
-    <script src="js/pwa-install.js?v=13" defer></script>
+    <script src="js/pwa-install.js?v=15" defer></script>
 </body>
 </html>

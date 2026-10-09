@@ -3,7 +3,7 @@
  * (أسماء المواد، التقييمات بالعربي، التواريخ النسبية، أقرب موعد قادم، مسودة الحصة)
  */
 
-import { Formatters } from './utils.js?v=13';
+import { Formatters } from './utils.js?v=15';
 
 export const SUBJECTS = {
     quran: 'القرآن الكريم',

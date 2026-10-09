@@ -6,10 +6,10 @@
  * لو فيه حصة جارية (lessonId) بتتحوّل هي نفسها لغياب بدل ما يتعمل صف جديد.
  */
 
-import { api } from './api.js?v=13';
-import { Formatters, ErrorHandler } from './utils.js?v=13';
-import { icon } from './icons.js?v=13';
-import { localDateISO } from './lesson-utils.js?v=13';
+import { api } from './api.js?v=15';
+import { Formatters, ErrorHandler } from './utils.js?v=15';
+import { icon } from './icons.js?v=15';
+import { localDateISO } from './lesson-utils.js?v=15';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 
@@ -74,8 +74,9 @@ export function openAttendanceModal(opts) {
             ErrorHandler.showSuccess(`تم التسجيل: ${opt ? opt.title : 'غياب'}`);
             if (onSaved) onSaved(btn.dataset.value);
         } catch (e) {
+            if (e && e.status === 404) console.warn('[dev] تسجيل الغياب محتاج workflow "save-lesson" في n8n');
             err.textContent = e && e.status === 404
-                ? 'تسجيل الغياب يحتاج تحديث workflow "save-lesson" في n8n.'
+                ? 'الميزة دي مش متاحة دلوقتي. جرّب تاني بعد شوية، ولو المشكلة فضلت كلّمنا على واتساب.'
                 : ErrorHandler.getErrorMessage(e);
             err.style.display = 'block';
             modal.querySelectorAll('.att-option').forEach((b) => { b.disabled = false; });

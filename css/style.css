@@ -525,3 +525,20 @@ button { font-family: inherit; }
 }
 .sapp-icon-btn:hover { background: var(--bg-muted); color: var(--text-primary); }
 .sapp-icon-btn.danger:hover { background: #FBEAEA; color: var(--danger); border-color: #F0CFCF; }
+
+/* دليل البداية جوه بوب أب المواعيد: الخطوة الجاية */
+.sapp-next { background: rgba(111,143,114,0.12); border: 1px solid rgba(111,143,114,0.35); border-radius: 12px; padding: 0.8rem 1rem; margin-bottom: 1rem; }
+.sapp-next p { margin: 0 0 0.6rem; font-size: 0.9rem; color: var(--text-primary); }
+.sapp-next .btn { width: 100%; }
+
+/* زرار ثانوي (كان معرّف في lessons.css بس، فمكانش بيظهر صح في باقي الصفحات) */
+.btn-ghost { background: transparent !important; color: var(--primary) !important; border: 1px solid var(--border) !important; box-shadow: none !important; }
+.btn-ghost:hover { background: rgba(75, 58, 90, 0.06) !important; }
+
+/* وضع "قراءة فقط" بعد نهاية الفترة المجانية */
+#tm-readonly-bar { position: sticky; top: 0; z-index: 2500; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; justify-content: center; background: #FFF4E5; color: #7A4B12; border-bottom: 1px solid #F1D3A6; padding: 0.55rem 1rem; font-size: 0.85rem; text-align: center; }
+#tm-readonly-bar a { color: var(--primary); font-weight: 700; }
+.sub-lock-plans { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem; }
+.sub-lock-plans .sub-lock-whatsapp small { font-weight: 400; opacity: 0.9; }
+.sub-lock-plans .sub-lock-whatsapp { flex-direction: column; gap: 0.15rem; padding: 0.7rem 1rem; font-size: 0.95rem; }
+.sub-lock-plans .sub-lock-whatsapp span { display: inline-flex; align-items: center; gap: 0.4rem; }

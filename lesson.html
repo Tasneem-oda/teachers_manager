@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الحصة - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=13">
+    <link rel="stylesheet" href="css/style.css?v=15">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,7 +19,7 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=13">
+    <link rel="stylesheet" href="css/lessons.css?v=15">
     <style>body { margin: 0; }</style>
 </head>
 <body>
@@ -153,7 +153,8 @@
                                 <div class="ls-done-icon" id="done-icon"></div>
                                 <h2 id="done-title">تم حفظ الحصة</h2>
                                 <p id="done-sub"></p>
-                                <div class="ls-done-bill" id="done-bill"></div>
+                                <div class="ls-done-next" id="done-next" hidden></div>
+<div class="ls-done-bill" id="done-bill"></div>
                                 <div class="ls-done-actions">
                                     <a class="btn" id="done-student" href="#">ملف الطالب</a>
                                     <a class="btn btn-ghost" id="done-home" href="dashboard.html">الرئيسية</a>
@@ -264,21 +265,21 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=13"></script>
+    <script type="module" src="js/config.js?v=15"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=13';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=13';
-        import { api } from './js/api.js?v=13';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=13';
-        import { icon } from './js/icons.js?v=13';
+        import { Auth } from './js/auth.js?v=15';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=15';
+        import { api } from './js/api.js?v=15';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=15';
+        import { icon } from './js/icons.js?v=15';
         import {
             subjectLabel, ratingFieldLabels, RATINGS, HOMEWORK_STATUS, relativeDay, localDateISO, localTimeISO,
             formatDuration, minutesText, LessonDraft, lessonHasContent, lessonDetailsHtml, nextOccurrence, formatNextOccurrence,
             normalizeLesson, isAbsenceRow, attendanceInfo
-        } from './js/lesson-utils.js?v=13';
-        import { openAttendanceModal } from './js/attendance.js?v=13';
-        import { showTips, dismissTip } from './js/tips.js?v=13';
-        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge } from './js/billing.js?v=13';
+        } from './js/lesson-utils.js?v=15';
+        import { openAttendanceModal } from './js/attendance.js?v=15';
+        import { showTips, dismissTip } from './js/tips.js?v=15';
+        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText } from './js/billing.js?v=15';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'ابدأ الحصة وتابعها وسجّلها في مكان واحد', showSearch: false });
@@ -368,7 +369,7 @@
                 mode, lessonId: lesson.id, startedAt: lesson.startedAt,
                 date: $('f-date').value || null, fields: getFields(), setTopic: $('f-set-topic').checked
             });
-            if (ok) $('saved-ind').textContent = `✓ محفوظ على الجهاز تلقائيًا (${new Date().toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit' })})`;
+            if (ok) $('saved-ind').textContent = `✓ محفوظ على الجهاز تلقائيًا (${new Date().toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit', hour12: true })})`;
         }
         $('lesson-form').addEventListener('input', scheduleDraft);
         $('lesson-form').addEventListener('change', scheduleDraft);
@@ -384,7 +385,7 @@
                 $('lesson-app').style.display = 'block';
                 if (openAiParam === '1') openAiChat();
             } catch (error) {
-                $('loader').textContent = 'حدث خطأ: ' + ErrorHandler.getErrorMessage(error);
+                $('loader').innerHTML = `${esc(ErrorHandler.getErrorMessage(error))} <button type="button" class="btn btn-sm" onclick="location.reload()">حاول تاني</button>`;
                 $('loader').style.color = 'var(--danger)';
             }
         });
@@ -688,7 +689,7 @@
                 ErrorHandler.showSuccess('تم حذف الحصة الجارية');
             } catch (error) {
                 ErrorHandler.showError(error && error.status === 404
-                    ? 'حذف الحصة الجارية يحتاج استيراد workflow "save-lesson" في n8n.'
+                    ? 'الميزة دي مش متاحة دلوقتي. جرّب تاني بعد شوية، ولو المشكلة فضلت كلّمنا على واتساب.'
                     : ErrorHandler.getErrorMessage(error));
             }
         });
@@ -750,8 +751,40 @@
             if (lessonsCount()) parts.push(`إجمالي حصص ${student.name ? student.name.split(' ')[0] : 'الطالب'}: ${lessonsCount()}`);
             $('done-sub').textContent = parts.join(' · ');
             renderBilling($('done-bill'), false);
+            renderDoneNext(absenceValue);
             clearForm();
             showState('done');
+            // أول حصة متسجلة = أنسب وقت نقترح فيه تثبيت التطبيق (js/pwa-install.js بيسمع للحدث ده)
+            if (!absenceValue) {
+                try { window.dispatchEvent(new CustomEvent('tm:value-moment', { detail: { kind: 'lesson_saved' } })); } catch (e) { /* تجاهل */ }
+            }
+        }
+
+        // الخطوة الجاية بعد الحفظ: نوجّه المدرس لأقوى ميزة لسه ماجربهاش
+        function renderDoneNext(absenceValue) {
+            const box = $('done-next');
+            box.hidden = true;
+            box.innerHTML = '';
+            if (absenceValue) return;
+            const first = student.name ? student.name.split(' ')[0] : 'الطالب';
+            const count = lessonsCount();
+            let reportKey = '';
+            try { reportKey = `tm_report_nudge_${studentIdParam}_${new Date().getFullYear()}_${new Date().getMonth()}`; } catch (e) { /* تجاهل */ }
+            let nudged = false;
+            try { nudged = !!localStorage.getItem(reportKey); } catch (e) { /* تجاهل */ }
+            if (billView && billView.available && !billView.enabled) {
+                box.innerHTML = `<strong>💳 عايز البرنامج يحسبلك حصص ${esc(first)} وفلوسه؟</strong>
+                    <span>هتعرف كام حصة فاضلة ومين عليه فلوس، وتبعت رسالة تذكير جاهزة من غير إحراج.</span>`;
+                box.hidden = false;
+                return;   // كارت التفعيل نفسه ظاهر تحت مباشرة
+            }
+            if (count >= 4 && !nudged) {
+                box.innerHTML = `<strong>📘 ${esc(first)} عمل ${esc(lessonsText(count))} لحد دلوقتي</strong>
+                    <span>ابعت لولي الأمر تقرير الشهر على واتساب: الحضور والمستوى والواجبات.</span>
+                    <a class="btn btn-sm" href="student.html?id=${encodeURIComponent(studentIdParam)}&report=1">ابعت التقرير</a>`;
+                box.hidden = false;
+                try { localStorage.setItem(reportKey, '1'); } catch (e) { /* تجاهل */ }
+            }
         }
 
         // ------------------------------------------------------------ المساعد الذكي: اقتراحات سريعة
@@ -930,6 +963,7 @@
             aiChatBusy = true;
             aiChatSendBtn.disabled = true;
             aiChatInput.disabled = true;
+            try { (window.dataLayer = window.dataLayer || []).push({ event: 'ai_request' }); } catch (err) { /* تجاهل */ }
 
             renderAiChatMessage('user', message);
             aiChatInput.value = '';
@@ -985,6 +1019,6 @@
             }
         });
         </script>
-    <script src="js/pwa-install.js?v=13" defer></script>
+    <script src="js/pwa-install.js?v=15" defer></script>
 </body>
 </html>

@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الإعدادات - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=13">
+    <link rel="stylesheet" href="css/style.css?v=15">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -135,22 +135,11 @@
         <div class="settings-section">
             <h2><span id="ic-notif" class="icon"></span> الإشعارات</h2>
             <div class="form-group">
-                <label>
-                    <input type="checkbox" id="email-notifications" checked>
-                    إشعارات البريد الإلكتروني
-                </label>
-                <div class="info-text">تلقي إشعارات حول الحصص القادمة والتحديثات</div>
+                <p style="margin:0 0 0.4rem; font-weight:600;">تنبيهات الحصص على الموبايل</p>
+                <div class="info-text">كل يوم الصبح يوصلك تنبيه بحصص النهارده. على الآيفون لازم تكون مثبّت البرنامج على الشاشة الرئيسية الأول.</div>
+                <p id="push-status" style="margin:0.6rem 0; font-size:0.9rem;"></p>
             </div>
-
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" id="sms-notifications">
-                    إشعارات الرسائل النصية
-                </label>
-                <div class="info-text">تلقي تذكيرات بالرسائل النصية</div>
-            </div>
-
-            <button type="button" class="btn" onclick="alert('سيتم تفعيل هذا الخيار قريباً')">حفظ تفضيلات الإشعارات</button>
+            <button type="button" class="btn" id="btn-enable-push">تفعيل التنبيهات</button>
         </div>
 
         <!-- Danger Zone -->
@@ -164,9 +153,9 @@
             </div>
 
             <div>
-                <h4 style="color: var(--text-primary);">حذف الحساب نهائياً</h4>
-                <p style="color: #716A74; font-size: 0.9rem; margin-bottom: 1rem;">هذا الإجراء لا يمكن التراجع عنه. سيتم حذف جميع بياناتك</p>
-                <button type="button" class="btn btn-danger" onclick="deleteAccount()">حذف الحساب</button>
+                <h4 style="color: var(--text-primary);">طلب حذف الحساب</h4>
+                <p style="color: #716A74; font-size: 0.9rem; margin-bottom: 1rem;">هنحذف حسابك وكل بيانات طلابك نهائيًا خلال 48 ساعة من طلبك. الإجراء ده مالوش رجوع.</p>
+                <button type="button" class="btn btn-danger" onclick="deleteAccount()">طلب حذف الحساب</button>
             </div>
         </div>
     </div>
@@ -175,12 +164,35 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=13"></script>
+    <script type="module" src="js/config.js?v=15"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=13';
-        import { Storage, ErrorHandler } from './js/utils.js?v=13';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=13';
-        import { icon } from './js/icons.js?v=13';
+        import { Auth } from './js/auth.js?v=15';
+        import { Storage, ErrorHandler } from './js/utils.js?v=15';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=15';
+        import { icon } from './js/icons.js?v=15';
+        import { CONFIG } from './js/config.js?v=15';
+        import { requestPermission } from './js/notifications.js?v=15';
+
+        function renderPushStatus() {
+            const el = document.getElementById('push-status');
+            const btn = document.getElementById('btn-enable-push');
+            if (!el || !btn) return;
+            if (!('Notification' in window)) {
+                el.textContent = 'المتصفح ده مش بيدعم التنبيهات. على الآيفون: ثبّت البرنامج على الشاشة الرئيسية وافتحه من هناك.';
+                btn.hidden = true;
+                return;
+            }
+            const p = Notification.permission;
+            el.textContent = p === 'granted' ? '✓ التنبيهات مفعّلة على الجهاز ده'
+                : p === 'denied' ? 'التنبيهات مقفولة من إعدادات المتصفح. افتح إعدادات الموقع (علامة القفل جنب الرابط) ← الإشعارات ← سماح.'
+                : 'التنبيهات لسه مش مفعّلة على الجهاز ده.';
+            btn.hidden = p === 'granted';
+        }
+        document.getElementById('btn-enable-push').addEventListener('click', async () => {
+            await requestPermission();
+            renderPushStatus();
+        });
+        renderPushStatus();
 
         renderSidebar('settings');
         document.getElementById('ic-profile').innerHTML = icon('userCheck', { size: 18 });
@@ -263,20 +275,25 @@
 
         // Logout all devices
         window.logoutAllDevices = async () => {
-            if (confirm('هل أنت متأكد؟ سيتم تسجيل خروجك من جميع الأجهزة.')) {
-                await Auth.signOut();
-            }
+            if (!confirm('هل أنت متأكد؟ سيتم تسجيل خروجك من جميع الأجهزة.')) return;
+            // scope: 'global' = يقفل الجلسة على كل الأجهزة مش الجهاز ده بس
+            try { await window.supabaseClient.auth.signOut({ scope: 'global' }); } catch (e) { /* نكمّل بالخروج المحلي */ }
+            await Auth.signOut();
         };
 
         // Delete account
         window.deleteAccount = async () => {
             if (confirm('تحذير! هذا الإجراء لا يمكن التراجع عنه. هل أنت متأكد تماماً؟')) {
                 if (confirm('الرجاء تأكيد الحذف. سيتم حذف جميع بياناتك نهائياً.')) {
-                    alert('سيتم تفعيل حذف الحساب قريباً');
+                    // الحذف بيتعمل يدويًا من فريق البرنامج (عشان نتأكد إنه طلب صاحب الحساب فعلًا)
+                    let who = '';
+                    try { const u = await Auth.getCurrentUser(); who = (u && u.email) || ''; } catch (e) { /* تجاهل */ }
+                    const text = `أرغب في حذف حسابي نهائيًا من Teachers Manager. الحساب: ${who}`;
+                    window.open(`https://wa.me/${CONFIG.SUPPORT_WHATSAPP}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
                 }
             }
         };
     </script>
-    <script src="js/pwa-install.js?v=13" defer></script>
+    <script src="js/pwa-install.js?v=15" defer></script>
 </body>
 </html>

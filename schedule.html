@@ -11,7 +11,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الجدول الأسبوعي - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=13">
+    <link rel="stylesheet" href="css/style.css?v=15">
+    <link rel="stylesheet" href="css/lessons.css?v=15">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -114,51 +115,48 @@
         <div class="modal-content">
             <span class="close-modal">&times;</span>
             <h2 id="schedule-modal-title">إضافة موعد</h2>
-            <form id="schedule-form">
+            <form id="schedule-form" novalidate>
                 <input type="hidden" id="sch-id">
                 <input type="hidden" id="sch-recurrence-group">
                 <div class="form-group">
                     <label for="sch-student">الطالب *</label>
                     <select id="sch-student" required></select>
                 </div>
-                <div class="form-group">
-                    <label for="sch-recurrence">تكرار الموعد *</label>
-                    <select id="sch-recurrence" required>
-                        <option value="weekly" selected>أسبوعيًا (كل أسبوع في نفس اليوم)</option>
-                        <option value="daily">يوميًا (كل يوم في نفس الوقت)</option>
-                        <option value="monthly">شهريًا (نفس التاريخ كل شهر)</option>
-                        <option value="none">بدون تكرار (مرة واحدة)</option>
-                    </select>
-                </div>
                 <div class="form-group" id="sch-day-group">
-                    <label for="sch-day">اليوم *</label>
-                    <select id="sch-day" required>
-                        <option value="0">الأحد</option>
-                        <option value="1">الإثنين</option>
-                        <option value="2">الثلاثاء</option>
-                        <option value="3">الأربعاء</option>
-                        <option value="4">الخميس</option>
-                        <option value="5">الجمعة</option>
-                        <option value="6">السبت</option>
-                    </select>
+                    <label id="sch-day-label">أيام الحصة *</label>
+                    <div id="sch-days"></div>
+                    <small class="day-chips-hint" id="sch-day-hint">اختار كل الأيام اللي الطالب بيحضر فيها في نفس الميعاد</small>
                 </div>
                 <div class="form-group" id="sch-date-group" style="display:none;">
                     <label for="sch-date">التاريخ *</label>
                     <input type="date" id="sch-date">
                 </div>
                 <div class="form-group">
-                    <label for="sch-time">وقت البداية *</label>
-                    <input type="time" id="sch-time" required>
+                    <label>وقت البداية *</label>
+                    <input type="time" id="sch-time" value="16:00">
                 </div>
                 <div class="form-group">
-                    <label for="sch-duration">مدة الحصة (دقيقة) *</label>
+                    <label for="sch-duration">مدة الحصة *</label>
                     <select id="sch-duration" required>
                         <option value="30">30 دقيقة</option>
                         <option value="45" selected>45 دقيقة</option>
-                        <option value="60">60 دقيقة</option>
-                        <option value="90">90 دقيقة</option>
+                        <option value="60">ساعة</option>
+                        <option value="90">ساعة ونص</option>
+                        <option value="120">ساعتين</option>
                     </select>
                 </div>
+                <details class="x-more" id="sch-rec-more">
+                    <summary>+ تكرار مختلف (يومي، شهري، مرة واحدة)</summary>
+                    <div class="form-group">
+                        <label for="sch-recurrence">تكرار الموعد</label>
+                        <select id="sch-recurrence">
+                            <option value="weekly" selected>أسبوعيًا في الأيام المختارة</option>
+                            <option value="daily">يوميًا (كل أيام الأسبوع)</option>
+                            <option value="monthly">شهريًا (نفس التاريخ كل شهر)</option>
+                            <option value="none">مرة واحدة بس</option>
+                        </select>
+                    </div>
+                </details>
                 <p id="sch-recurrence-note" style="display:none; font-size:0.8rem; color:var(--text-secondary); background:var(--bg-secondary); padding:0.6rem 0.8rem; border-radius:8px;"></p>
                 <div style="display:flex; gap:0.5rem; margin-top:1rem; flex-wrap:wrap;">
                     <button type="submit" class="btn" id="sch-save-btn">حفظ الموعد</button>
@@ -174,15 +172,18 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=13"></script>
+    <script type="module" src="js/config.js?v=15"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=13';
-        import { api } from './js/api.js?v=13';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=13';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=13';
-        import { icon } from './js/icons.js?v=13';
+        import { Auth } from './js/auth.js?v=15';
+        import { api } from './js/api.js?v=15';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=15';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=15';
+        import { icon } from './js/icons.js?v=15';
+        import { mountTimePicker, refreshTimePicker, mountDayChips } from './js/form-widgets.js?v=15';
 
         renderSidebar('schedule');
+        mountTimePicker(document.getElementById('sch-time'));
+        const dayChips = mountDayChips(document.getElementById('sch-days'), { multi: true });
         renderTopHeader({ title: 'الجدول الأسبوعي', subtitle: 'نظّم كل مواعيدك في مكان واحد' });
         document.getElementById('ic-page-title').innerHTML = icon('calendar', { size: 22 });
 
@@ -269,34 +270,31 @@
 
         function updateRecurrenceFields() {
             const type = document.getElementById('sch-recurrence').value;
+            const editing = !!document.getElementById('sch-id').value;
             const dayGroup = document.getElementById('sch-day-group');
             const dateGroup = document.getElementById('sch-date-group');
             const note = document.getElementById('sch-recurrence-note');
-            const daySelect = document.getElementById('sch-day');
             const dateInput = document.getElementById('sch-date');
 
             if (type === 'weekly') {
                 dayGroup.style.display = 'block';
                 dateGroup.style.display = 'none';
-                daySelect.required = true;
                 dateInput.required = false;
                 note.style.display = 'none';
             } else if (type === 'daily') {
-                dayGroup.style.display = 'none';
+                dayGroup.style.display = editing ? 'block' : 'none';
                 dateGroup.style.display = 'none';
-                daySelect.required = false;
                 dateInput.required = false;
                 note.style.display = 'block';
-                note.textContent = 'سيتم إضافة هذا الموعد في نفس الوقت في كل أيام الأسبوع السبعة.';
+                note.textContent = editing ? 'ده يوم من أيام التكرار اليومي.' : 'هيتضاف الموعد في نفس الوقت في كل أيام الأسبوع السبعة.';
             } else {
                 dayGroup.style.display = 'none';
                 dateGroup.style.display = 'block';
-                daySelect.required = false;
                 dateInput.required = true;
                 note.style.display = 'block';
                 note.textContent = type === 'monthly'
-                    ? 'يظهر الموعد في الجدول الأسبوعي على يوم الأسبوع المطابق للتاريخ المحدد، كتذكير بالتكرار الشهري.'
-                    : 'هذا موعد لمرة واحدة فقط في التاريخ المحدد.';
+                    ? 'الموعد بيتكرر كل شهر في نفس التاريخ.'
+                    : 'موعد لمرة واحدة بس في التاريخ ده.';
             }
         }
         document.getElementById('sch-recurrence').addEventListener('change', updateRecurrenceFields);
@@ -311,9 +309,14 @@
             document.getElementById('sch-id').value = '';
             document.getElementById('sch-recurrence-group').value = '';
             document.getElementById('sch-recurrence').value = 'weekly';
-            document.getElementById('sch-day').value = day;
+            document.getElementById('sch-rec-more').open = false;
+            document.getElementById('sch-day-label').textContent = 'أيام الحصة *';
+            document.getElementById('sch-day-hint').hidden = false;
+            dayChips.setMulti(true);
+            dayChips.set([day]);
             document.getElementById('sch-date').value = '';
             document.getElementById('sch-time').value = time;
+            refreshTimePicker(document.getElementById('sch-time'));
             document.getElementById('sch-duration').value = '45';
             if (presetStudentId) document.getElementById('sch-student').value = presetStudentId;
             document.getElementById('sch-delete-btn').style.display = 'none';
@@ -328,10 +331,17 @@
             document.getElementById('sch-recurrence-group').value = sch.recurrence_group_id || '';
             document.getElementById('sch-student').value = sch.student_id;
             document.getElementById('sch-recurrence').value = sch.recurrence_type || 'weekly';
-            document.getElementById('sch-day').value = sch.day_of_week;
+            document.getElementById('sch-rec-more').open = !!(sch.recurrence_type && sch.recurrence_type !== 'weekly');
+            document.getElementById('sch-day-label').textContent = 'اليوم *';
+            document.getElementById('sch-day-hint').hidden = true;
+            dayChips.setMulti(false);
+            dayChips.set([sch.day_of_week]);
             document.getElementById('sch-date').value = sch.start_date ? String(sch.start_date).substring(0, 10) : '';
-            document.getElementById('sch-time').value = sch.start_time.substring(0, 5);
-            document.getElementById('sch-duration').value = String(sch.duration_minutes);
+            document.getElementById('sch-time').value = String(sch.start_time).substring(0, 5);
+            refreshTimePicker(document.getElementById('sch-time'));
+            const dur = document.getElementById('sch-duration');
+            if (![...dur.options].some((o) => o.value === String(sch.duration_minutes))) dur.add(new Option(`${sch.duration_minutes} دقيقة`, String(sch.duration_minutes)));
+            dur.value = String(sch.duration_minutes);
             document.getElementById('sch-delete-btn').style.display = 'inline-block';
 
             const groupSiblings = sch.recurrence_group_id
@@ -346,7 +356,7 @@
         async function loadData() {
             try {
                 const [studentsData, schedulesData] = await Promise.all([
-                    api.getStudents(1, 100),
+                    api.getAllStudents(),
                     api.getSchedules()
                 ]);
                 students = studentsData.students || [];
@@ -361,7 +371,7 @@
                 const params = new URLSearchParams(location.search);
                 const addStudent = params.get('add_student');
                 if (addStudent) {
-                    openAddModal(0, '16:00', addStudent);
+                    openAddModal(new Date().getDay(), '16:00', addStudent);
                 }
             } catch (err) {
                 ErrorHandler.showError(ErrorHandler.getErrorMessage(err));
@@ -387,45 +397,36 @@
                 saveBtn.disabled = true;
                 saveBtn.textContent = 'جاري الحفظ...';
 
-                if (!id && recurrenceType === 'daily') {
-                    // إنشاء 7 مواعيد (كل أيام الأسبوع) بنفس معرّف مجموعة التكرار.
-                    // الطلبات السبعة تُرسل بالتوازي (Promise.allSettled) بدل التتابع الواحد تلو الآخر،
-                    // لأن كل يوم مستقل تمامًا عن الأيام الأخرى (فحص التعارض مبني على day_of_week منفصل
-                    // لكل طلب) — هذا يقلّل زمن الانتظار من 7 أضعاف زمن الطلب الواحد إلى طلب واحد تقريبًا.
-                    // كما لا نوقف المحاولة عند أول فشل (مثل تعارض حقيقي في يوم معيّن) حتى لا تظهر
-                    // الجدولة اليومية بيوم واحد فقط بدل 7 أيام.
-                    const groupId = genGroupId();
-                    const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+                const days = dayChips.get();
+                if ((recurrenceType === 'weekly' || (recurrenceType === 'daily' && id)) && days.length === 0) {
+                    throw new Error('اختار يوم واحد على الأقل');
+                }
+                if (!studentId) throw new Error('اختار الطالب');
 
-                    const results = await Promise.allSettled(
-                        Array.from({ length: 7 }, (_, day) => api.createSchedule({
-                            student_id: studentId,
-                            day_of_week: day,
-                            start_time: startTime,
-                            duration_minutes: duration,
-                            recurrence_type: 'daily',
-                            recurrence_group_id: groupId
-                        }))
-                    );
-
+                // إضافة جديدة: أسبوعي لكل الأيام المختارة، أو يومي (7 أيام بنفس معرّف المجموعة) - بالتوازي
+                if (!id && (recurrenceType === 'weekly' || recurrenceType === 'daily')) {
+                    const isDaily = recurrenceType === 'daily';
+                    const targetDays = isDaily ? [0, 1, 2, 3, 4, 5, 6] : days;
+                    const groupId = isDaily ? genGroupId() : null;
+                    const results = await Promise.allSettled(targetDays.map((day) => api.createSchedule({
+                        student_id: studentId,
+                        day_of_week: day,
+                        start_time: startTime,
+                        duration_minutes: duration,
+                        recurrence_type: recurrenceType,
+                        recurrence_group_id: groupId,
+                        start_date: null
+                    })));
                     const failedDays = [];
                     let successCount = 0;
-                    results.forEach((r, day) => {
-                        if (r.status === 'fulfilled') {
-                            successCount++;
-                        } else {
-                            failedDays.push(`${dayNames[day]} (${ErrorHandler.getErrorMessage(r.reason)})`);
-                        }
+                    results.forEach((r, i) => {
+                        if (r.status === 'fulfilled') successCount++;
+                        else failedDays.push(`${DAY_NAMES[targetDays[i]]} (${ErrorHandler.getErrorMessage(r.reason)})`);
                     });
-
-                    if (successCount === 0) {
-                        throw new Error('لم يتم إنشاء أي موعد: ' + failedDays.join('، '));
-                    }
-                    if (failedDays.length > 0) {
-                        ErrorHandler.showError(`تم إنشاء ${successCount} من 7 أيام فقط. الأيام التي بها تعارض ولم تُضف: ${failedDays.join('، ')}`);
-                    } else {
-                        ErrorHandler.showSuccess('تم حفظ الموعد بنجاح في كل أيام الأسبوع');
-                    }
+                    if (successCount === 0) throw new Error('ماتحفظش أي موعد: ' + failedDays.join('، '));
+                    try { (window.dataLayer = window.dataLayer || []).push({ event: 'schedule_saved', days_count: successCount, recurrence: recurrenceType }); } catch (e) { /* تجاهل */ }
+                    if (failedDays.length) ErrorHandler.showError(`اتحفظ ${successCount} من ${targetDays.length}. الأيام اللي فيها تعارض: ${failedDays.join('، ')}`);
+                    else ErrorHandler.showSuccess(successCount === 1 ? 'تم حفظ الموعد' : `تم حفظ ${successCount} مواعيد`);
                     document.getElementById('schedule-modal').classList.remove('active');
                     await loadData();
                     return;
@@ -439,7 +440,7 @@
                     recurrence_group_id: recurrenceType === 'daily' ? existingGroupId : null
                 };
                 if (recurrenceType === 'weekly' || recurrenceType === 'daily') {
-                    payload.day_of_week = parseInt(document.getElementById('sch-day').value || '0');
+                    payload.day_of_week = days[0];
                     payload.start_date = null;
                 } else {
                     if (!dateValue) throw new Error('يرجى اختيار التاريخ');
@@ -498,6 +499,6 @@
             await loadData();
         })();
     </script>
-    <script src="js/pwa-install.js?v=13" defer></script>
+    <script src="js/pwa-install.js?v=15" defer></script>
 </body>
 </html>

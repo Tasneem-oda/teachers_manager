@@ -1,9 +1,11 @@
 /**
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
-import { Auth } from './auth.js?v=13';
-import { icon } from './icons.js?v=13';
-import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=13';
+import { Auth } from './auth.js?v=15';
+import { icon } from './icons.js?v=15';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=15';
+import { CONFIG } from './config.js?v=15';
+import { openSuggestionModal } from './suggestions.js?v=15';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
@@ -40,7 +42,7 @@ export async function getSubscriptionCached() {
     if (subFetchPromise) return subFetchPromise;
 
     subFetchPromise = (async () => {
-        const { api } = await import('./api.js');
+        const { api } = await import('./api.js?v=15');
         const data = await api.checkSubscription();
         try {
             sessionStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
@@ -77,6 +79,10 @@ export function renderSidebar(activeKey) {
             </div>
             <nav class="sidebar-nav">${navHtml}</nav>
             <div class="sidebar-footer">
+                <a href="#" id="sidebar-suggest">
+                    <span class="icon">${icon('lightbulb', { size: 19 })}</span>
+                    <span class="label">عندك اقتراح؟</span>
+                </a>
                 <a href="#" id="sidebar-logout">
                     <span class="icon">${icon('logout', { size: 19 })}</span>
                     <span class="label">تسجيل الخروج</span>
@@ -84,6 +90,11 @@ export function renderSidebar(activeKey) {
             </div>
         </aside>
     `;
+
+    document.getElementById('sidebar-suggest').addEventListener('click', (e) => {
+        e.preventDefault();
+        openSuggestionModal();
+    });
 
     document.getElementById('sidebar-logout').addEventListener('click', async (e) => {
         e.preventDefault();
@@ -137,58 +148,78 @@ export function computeSubscriptionState(sub) {
     return { kind: sub.status, locked: true, daysLeft: 0, reason: 'inactive' };
 }
 
-const WHATSAPP_NUMBER = '201037728764';
+const WHATSAPP_NUMBER = CONFIG.SUPPORT_WHATSAPP;
+
+/** تاريخ نهاية الفترة المجانية للعرض (مثلًا: 31 ديسمبر 2026) */
+export function trialEndLabel(sub) {
+    try {
+        if (sub && sub.trial_ends_at) {
+            return new Date(sub.trial_ends_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+    } catch (e) { /* تجاهل */ }
+    return CONFIG.PRICING.FREE_UNTIL_LABEL;
+}
 
 async function enforceSubscriptionLock() {
     // لا نقفل صفحة الاشتراك نفسها حتى يستطيع المستخدم الاشتراك دائمًا
     if (window.location.pathname.endsWith('subscription.html')) return;
 
     try {
-        const { api } = await import('./api.js');
         const sub = await getSubscriptionCached();
         const state = computeSubscriptionState(sub);
-        if (!state.locked) return;
+        if (!state.locked) { window.__tmReadOnly = false; return; }
 
-        let studentsNote = 'جميع بيانات طلابك وحصصك محفوظة بالكامل ولن يتم حذف أي شيء منها.';
-        try {
-            const data = await api.getDashboard();
-            const count = data && typeof data.studentsCount === 'number' ? data.studentsCount : null;
-            if (count !== null) {
-                studentsNote = `بياناتك محفوظة بالكامل — لديك ${count} طالب${count === 1 ? '' : ' مسجّلين'} وكل حصصهم وملاحظاتهم موجودة كما هي، ولن يُحذف منها أي شيء.`;
-            }
-        } catch (e) {
-            // تجاهل بصمت — تُستخدم الرسالة العامة أعلاه
-        }
-
-        const heading = state.reason === 'trial_expired' ? 'انتهت الفترة التجريبية المجانية' : 'انتهت فترة الاشتراك الحالية';
-        const whatsappMessage = 'مرحباً، أرغب في تجديد/تفعيل الاشتراك في الخطة الشهرية (150 جنيه) في تطبيق Teachers Manager.';
-        const waHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`;
-
-        const overlay = document.createElement('div');
-        overlay.id = 'sub-lock-overlay';
-        overlay.innerHTML = `
-            <div class="sub-lock-card">
-                <div class="sub-lock-icon">${icon('lock', { size: 26 })}</div>
-                <h2>${heading}</h2>
-                <p class="sub-lock-reassure">${icon('checkCircle', { size: 15 })} ${studentsNote}</p>
-                <p class="sub-lock-desc">فعّل الاشتراك الشهري (150 جنيه) لاستعادة الوصول الكامل فورًا — بياناتك في انتظارك.</p>
-                <a href="${waHref}" target="_blank" rel="noopener" class="btn sub-lock-whatsapp">${icon('messageCircle', { size: 17 })} تجديد الاشتراك عبر واتساب</a>
-                <a href="subscription.html" class="sub-lock-link">عرض تفاصيل الاشتراك</a>
-                <button type="button" id="sub-lock-logout" class="sub-lock-link sub-lock-logout-btn">تسجيل الخروج</button>
-            </div>
-        `;
-        document.body.appendChild(overlay);
-        document.body.style.overflow = 'hidden';
-
-        document.getElementById('sub-lock-logout').addEventListener('click', async () => {
-            unlinkOnSignOut();
-            await Auth.signOut();
-            window.location.href = 'login.html';
-        });
+        // وضع "قراءة فقط": المدرس يشوف كل طلابه وحصصه، والحفظ الجديد بيحتاج اشتراك
+        // (js/api.js بيمنع طلبات الحفظ ويفتح نافذة الاشتراك). بقى أقل تهديدًا من قفل الشاشة كلها.
+        window.__tmReadOnly = true;
+        window.__tmReadOnlyReason = state.reason;
+        showReadOnlyBar(state);
+        // نافذة الاشتراك مرة واحدة في الجلسة
+        let shown = false;
+        try { shown = sessionStorage.getItem('tm_ro_prompt') === '1'; sessionStorage.setItem('tm_ro_prompt', '1'); } catch (e) { /* تجاهل */ }
+        if (!shown) openSubscribePrompt(state.reason);
     } catch (e) {
         // فشل التحقق ليس سببًا لقفل التطبيق على المستخدم — تجاهل بصمت
     }
 }
+
+function showReadOnlyBar(state) {
+    if (document.getElementById('tm-readonly-bar')) return;
+    const bar = document.createElement('div');
+    bar.id = 'tm-readonly-bar';
+    bar.setAttribute('role', 'status');
+    bar.innerHTML = `${icon('lock', { size: 15 })}
+        <span>${state.reason === 'trial_expired' ? 'الفترة المجانية خلصت' : 'اشتراكك خلص'} — بياناتك كلها محفوظة وتقدر تشوفها، والتسجيل الجديد محتاج اشتراك.</span>
+        <a href="subscription.html">الباقات</a>`;
+    document.body.prepend(bar);
+}
+
+/** نافذة الاشتراك (بتتفتح كمان من js/api.js لما المدرس يحاول يحفظ وهو في وضع القراءة فقط) */
+export function openSubscribePrompt(reason) {
+    if (document.getElementById('sub-lock-overlay')) return;
+    const heading = reason === 'trial_expired' ? 'الفترة المجانية خلصت' : 'اشتراكك خلص';
+    const plans = CONFIG.PRICING.PLANS.map((p) => {
+        const msg = `مرحباً، أرغب في الاشتراك في باقة "${p.name}" (${p.price} جنيه شهريًا) في تطبيق Teachers Manager.`;
+        return `<a href="https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener" class="btn sub-lock-whatsapp">
+            <span>${icon('messageCircle', { size: 16 })} ${p.name} · ${p.price} جنيه في الشهر</span><small>${p.desc}</small></a>`;
+    }).join('');
+    const overlay = document.createElement('div');
+    overlay.id = 'sub-lock-overlay';
+    overlay.innerHTML = `
+        <div class="sub-lock-card" role="dialog" aria-modal="true" aria-label="${heading}">
+            <div class="sub-lock-icon">${icon('lock', { size: 26 })}</div>
+            <h2>${heading}</h2>
+            <p class="sub-lock-reassure">${icon('checkCircle', { size: 15 })} كل طلابك وحصصك محفوظة، ومفيش حاجة اتمسحت.</p>
+            <p class="sub-lock-desc">اختار باقتك عشان تكمّل تسجيل الحصص ومتابعة الفلوس. بتدفع بإنستاباي أو فودافون كاش وحسابك بيتفعّل على طول.</p>
+            <div class="sub-lock-plans">${plans}</div>
+            <button type="button" class="sub-lock-link" id="sub-lock-view">أتفرج على بياناتي الأول</button>
+        </div>`;
+    document.body.appendChild(overlay);
+    const close = () => { overlay.remove(); document.body.style.overflow = ''; };
+    document.getElementById('sub-lock-view').addEventListener('click', close);
+    overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) close(); });
+}
+window.tmOpenSubscribePrompt = openSubscribePrompt;
 
 /**
  * بانر حالة الاشتراك/التجربة المجانية — مكان ثابت في بداية البرنامج (أعلى لوحة التحكم)
@@ -202,7 +233,7 @@ export async function renderTrialBanner(containerId = 'trial-banner-root', { pro
         const sub = await getSubscriptionCached();
         const state = computeSubscriptionState(sub);
 
-        // القفل العام (enforceSubscriptionLock) هيتكفّل بعرض شاشة القفل الكاملة عند انتهاء الاشتراك فعليًا
+        // وضع "قراءة فقط" (enforceSubscriptionLock) بيعرض شريطه الخاص فوق الصفحة
         if (state.locked) { root.innerHTML = ''; return; }
 
         if (state.kind === 'trial' && state.daysLeft !== null) {
@@ -210,10 +241,12 @@ export async function renderTrialBanner(containerId = 'trial-banner-root', { pro
                 <div class="trial-banner">
                     <div class="trial-banner-icon">${icon('sparkles', { size: 20 })}</div>
                     <div class="trial-banner-text">
-                        <strong>${progress ? escapeBannerText(progress) : 'الفترة التجريبية المجانية'}</strong>
-                        <span>${progress ? `الفترة التجريبية: متبقٍ ${daysLabel(state.daysLeft)} — كمّل وخلي كل متابعاتك في مكان واحد.` : `متبقٍ ${daysLabel(state.daysLeft)} — بعدها يمكنك الاشتراك في الخطة الشهرية لمتابعة الاستخدام.`}</span>
+                        <strong>${progress ? escapeBannerText(progress) : 'البرنامج مجاني ليك دلوقتي'}</strong>
+                        <span>${state.daysLeft > 14
+                            ? `مجاني بالكامل لحد ${escapeBannerText(trialEndLabel(sub))} — كمّل وخلي كل متابعاتك في مكان واحد.`
+                            : `فاضل ${daysLabel(state.daysLeft)} على نهاية الفترة المجانية. احجز سعرك دلوقتي.`}</span>
                     </div>
-                    <a href="subscription.html" class="btn trial-banner-btn">عرض الاشتراك</a>
+                    <a href="subscription.html" class="btn trial-banner-btn">${state.daysLeft > 14 ? 'الباقات' : 'احجز سعرك'}</a>
                 </div>
             `;
         } else if (state.kind === 'active' && state.daysLeft !== null && state.daysLeft <= 5) {
@@ -223,7 +256,7 @@ export async function renderTrialBanner(containerId = 'trial-banner-root', { pro
                     <div class="trial-banner-icon">${icon('clock', { size: 20 })}</div>
                     <div class="trial-banner-text">
                         <strong>اشتراكك على وشك الانتهاء</strong>
-                        <span>متبقٍ ${daysLabel(state.daysLeft)} على نهاية الخطة الشهرية الحالية.</span>
+                        <span>متبقٍ ${daysLabel(state.daysLeft)} على نهاية اشتراكك الحالي.</span>
                     </div>
                     <a href="subscription.html" class="btn trial-banner-btn">تجديد الاشتراك</a>
                 </div>
@@ -259,6 +292,9 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
                     <span class="icon">${icon('search', { size: 16 })}</span>
                     <input type="text" id="global-search" placeholder="ابحث عن طالب...">
                 </div>` : ''}
+                <button type="button" class="bell-btn" id="header-suggest" title="عندك اقتراح؟" aria-label="عندك اقتراح؟">
+                    ${icon('lightbulb', { size: 18 })}
+                </button>
                 <button type="button" class="bell-btn" id="header-bell" title="الإشعارات">
                     ${icon('bell', { size: 18 })}
                 </button>
@@ -275,6 +311,8 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
             </div>
         </header>
     `;
+
+    document.getElementById('header-suggest').addEventListener('click', () => openSuggestionModal());
 
     document.getElementById('header-logout-mobile').addEventListener('click', async () => {
         unlinkOnSignOut();
@@ -302,7 +340,8 @@ async function loadHeaderProfile() {
     try {
         const session = await Auth.getSession();
         if (!session) return;
-        const profile = await Auth.bootstrapSession();
+        // من الذاكرة المؤقتة لو موجودة (بدل طلب n8n تاني في كل صفحة)
+        const profile = Auth.cachedProfile(session.user && session.user.id) || await Auth.bootstrapSession();
         const nameEl = document.getElementById('header-user-name');
         const avatarEl = document.getElementById('header-avatar-fallback');
         if (profile && nameEl) {
