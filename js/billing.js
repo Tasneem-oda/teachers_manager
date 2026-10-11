@@ -10,9 +10,9 @@
  *   postpaid : الدفع بعد عدد حصص (مثلًا كل 4 حصص) → التذكير لما المستحق يوصل للعدد ده
  */
 
-import { api } from './api.js?v=18';
-import { Formatters, ErrorHandler } from './utils.js?v=18';
-import { icon } from './icons.js?v=18';
+import { api } from './api.js?v=19';
+import { Formatters, ErrorHandler } from './utils.js?v=19';
+import { icon } from './icons.js?v=19';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 
@@ -115,6 +115,38 @@ export function billingBadge(view) {
     if (!view || !view.enabled) return null;
     if (view.mode === 'prepaid' && view.balance > 1 && view.used != null) return { text: `باقي ${view.balance} من ${view.size}`, status: view.status };
     return { text: view.headline, status: view.status };
+}
+
+/**
+ * وضع الحصة الجارية في الحساب (الحصة دي لسه ماتحسبتش، فبنحسب "بعد الحصة دي")
+ * { status: ok|low|due, title, sub, actions: bool }
+ */
+export function liveBillingInfo(view) {
+    if (!view || !view.enabled) return null;
+    const amt = (n) => (view.price ? ` (${money(view.price * n)})` : '');
+    const b = view.balance;
+    if (view.mode === 'prepaid') {
+        if (b >= 2) {
+            const inPkg = b <= view.size;
+            return {
+                status: 'ok',
+                title: inPkg ? `الحصة ${view.size - b + 1} من ${view.size} في الباقة` : `مدفوع مقدمًا: ${lessonsText(b)}`,
+                sub: `بعد الحصة دي باقي ${lessonsText(b - 1)}`,
+                actions: false
+            };
+        }
+        if (b === 1) {
+            return { status: 'low', title: `آخر حصة في الباقة (${view.size} من ${view.size})`, sub: `فكّره بالتجديد${amt(view.size)} قبل الحصة الجاية`, actions: true };
+        }
+        return { status: 'due', title: 'الباقة خلصت — الحصة دي مش مدفوعة', sub: `بعدها يكون عليه ${lessonsText(view.owed + 1)}${amt(view.owed + 1)}`, actions: true };
+    }
+    // الدفع بعد عدد حصص
+    if (b > 0) return { status: 'ok', title: `مدفوع مقدمًا: ${lessonsText(b)}`, sub: `بعد الحصة دي باقي ${lessonsText(b - 1)}`, actions: false };
+    const n = view.owed + 1;
+    if (n > view.size) return { status: 'due', title: `متأخر في الدفع: عليه ${lessonsText(n)} بالحصة دي`, sub: `المستحق${amt(n)} — كان المفروض يدفع كل ${lessonsText(view.size)}`, actions: true };
+    if (n === view.size) return { status: 'due', title: `الحصة ${n} من ${n} — وقت الدفع`, sub: `بعد الحصة دي المستحق ${lessonsText(n)}${amt(n)}`, actions: true };
+    if (n === view.size - 1) return { status: 'low', title: `الحصة ${n} من ${view.size} قبل الدفع`, sub: 'موعد الدفع بعد الحصة الجاية', actions: false };
+    return { status: 'ok', title: `الحصة ${n} من ${view.size} قبل الدفع`, sub: `الدفع بعد ${lessonsText(view.size - n)}`, actions: false };
 }
 
 // ------------------------------------------------------------------ رسالة التذكير

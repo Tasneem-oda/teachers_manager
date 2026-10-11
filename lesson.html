@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الحصة - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=18">
+    <link rel="stylesheet" href="css/style.css?v=19">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,7 +19,7 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=18">
+    <link rel="stylesheet" href="css/lessons.css?v=19">
     <style>body { margin: 0; }</style>
 </head>
 <body>
@@ -65,13 +65,22 @@
                                     <span class="ls-dot" aria-hidden="true"></span>
                                     <div class="ls-bar-text">
                                         <div class="ls-bar-name" id="bar-name"></div>
-                                        <div class="ls-timer" id="bar-timer" aria-live="off">00:00</div>
+                                        <div class="ls-bar-time">
+                                            <span class="ls-timer" id="bar-timer" aria-live="off">00:00</span>
+                                            <span class="ls-left" id="bar-left" hidden></span>
+                                        </div>
                                     </div>
                                 </div>
                                 <a class="sp-icon-btn" id="bar-link" target="_blank" rel="noopener" title="فتح رابط الحصة" aria-label="فتح رابط الحصة" hidden></a>
+                                <button type="button" class="sp-icon-btn ls-pip-btn" id="btn-pip" title="نافذة صغيرة فوق Zoom / Meet" aria-label="نافذة صغيرة فوق الشاشة" hidden></button>
                                 <button type="button" class="sp-icon-btn" id="btn-open-ai-chat" title="المساعد الذكي" aria-label="المساعد الذكي"><span id="ic-ai-chat-btn" class="icon" style="display:inline-flex;"></span></button>
                                 <button type="button" class="btn btn-finish" id="btn-finish"></button>
+                                <div class="ls-progress" id="bar-progress" hidden><span></span></div>
                             </div>
+
+                            <!-- معلومات المدرس محتاجها وهو في الحصة: رقم الحصة، الشهر، الوقت، الدفع، التواصل -->
+                            <div class="ls-info" id="ls-info" aria-label="معلومات الحصة"></div>
+                            <div id="ls-bill-alert"></div>
 
                             <div class="ls-seg" id="ls-seg" role="tablist">
                                 <button type="button" data-view="now" class="active">الحصة الآن</button>
@@ -85,10 +94,17 @@
                                         <input type="date" id="f-date">
                                     </div>
 
-                                    <div class="ls-block" id="blk-prev-hw" hidden>
-                                        <span class="ls-label">هل تم الواجب السابق؟</span>
-                                        <div class="ls-prev-hw" id="prev-hw-text"></div>
-                                        <div class="chip-group" data-field="homework_status"></div>
+                                    <div class="ls-block ls-prev" id="blk-prev" hidden>
+                                        <span class="ls-label">من الحصة اللي فاتت <small class="ls-prev-when" id="prev-when"></small></span>
+                                        <div class="ls-plan" id="prev-plan" hidden>
+                                            <span class="ls-plan-label">📌 المخطط للحصة دي</span>
+                                            <p id="prev-plan-text"></p>
+                                        </div>
+                                        <div class="ls-prev-hw-wrap" id="blk-prev-hw" hidden>
+                                            <span class="ls-plan-label">📚 الواجب: <span class="ls-prev-hw" id="prev-hw-text"></span></span>
+                                            <span class="ls-sublabel">عمله؟</span>
+                                            <div class="chip-group" data-field="homework_status"></div>
+                                        </div>
                                     </div>
 
                                     <div class="ls-block">
@@ -270,21 +286,23 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=18"></script>
+    <script type="module" src="js/config.js?v=19"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=18';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=18';
-        import { api } from './js/api.js?v=18';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=18';
-        import { icon } from './js/icons.js?v=18';
+        import { Auth } from './js/auth.js?v=19';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=19';
+        import { api } from './js/api.js?v=19';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=19';
+        import { icon } from './js/icons.js?v=19';
         import {
             subjectLabel, ratingFieldLabels, RATINGS, HOMEWORK_STATUS, relativeDay, localDateISO, localTimeISO,
             formatDuration, minutesText, LessonDraft, lessonHasContent, lessonDetailsHtml, nextOccurrence, formatNextOccurrence,
-            normalizeLesson, isAbsenceRow, attendanceInfo
-        } from './js/lesson-utils.js?v=18';
-        import { openAttendanceModal } from './js/attendance.js?v=18';
-        import { showTips, dismissTip } from './js/tips.js?v=18';
-        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText } from './js/billing.js?v=18';
+            normalizeLesson, isAbsenceRow, attendanceInfo, lessonDay
+        } from './js/lesson-utils.js?v=19';
+        import { openAttendanceModal } from './js/attendance.js?v=19';
+        import { showTips, dismissTip } from './js/tips.js?v=19';
+        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=19';
+        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=19';
+        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=19';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'ابدأ الحصة وتابعها وسجّلها في مكان واحد', showSearch: false });
@@ -305,6 +323,7 @@
         $('ic-ai-send').innerHTML = icon('send', { size: 18 });
         $('ic-more').innerHTML = icon('plus', { size: 15 });
         $('bar-link').innerHTML = icon('link', { size: 18 });
+        $('btn-pip').innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><rect x="12" y="11.5" width="7" height="5.5" rx="1.2" fill="currentColor" stroke="none"/></svg>';
         $('done-icon').innerHTML = icon('checkCircle', { size: 34 });
         $('btn-start').innerHTML = icon('play', { size: 18 }) + ' ابدأ الحصة';
 
@@ -399,10 +418,12 @@
         });
 
         async function loadOverview() {
-            ov = await api.getStudentOverview(studentIdParam, { limit: 10 });
+            // 40 حصة بتغطي الشهر الحالي كله (عشان "الحصة رقم كام في الشهر")
+            ov = await api.getStudentOverview(studentIdParam, { limit: 40 });
             student = ov.student || {};
             billView = computeBilling(ov.billing);
             renderCommon();
+            if (mode) renderLiveInfo();
         }
 
         function decideInitialState() {
@@ -433,6 +454,8 @@
                 return;
             }
             if (draft) LessonDraft.clear(studentIdParam);   // الحصة اتقفلت من جهاز تاني أو خلصت
+            LiveLesson.clear(studentIdParam);
+            notifyLiveLessonChanged();
             if (manualParam) { clearForm(); enterManual(); return; }
             showReady();
         }
@@ -466,6 +489,7 @@
         function showReady() {
             mode = null;
             stopTimer();
+            unpublishLive();
             $('r-name').textContent = student.name || 'بدون اسم';
             const sub = [`<span>${icon('bookOpen', { size: 14 })} ${esc(subjectLabel(student.subject))}</span>`];
             if (!ov.legacy || (ov.stats && ov.stats.completed_exact)) sub.push(`<span>${icon('clipboardList', { size: 14 })} الحصة رقم ${lessonsCount() + 1}</span>`);
@@ -511,7 +535,7 @@
             if (!lessons.length) { $('aside-list').innerHTML = '<div class="x-empty">لا توجد حصص سابقة</div>'; return; }
             let doneSeen = 0;
             let openedFirst = false;
-            $('aside-list').innerHTML = lessons.map((l) => {
+            $('aside-list').innerHTML = lessons.slice(0, 15).map((l) => {
                 const absent = isAbsenceRow(l);
                 const peek = absent ? attendanceInfo(l).label : (l.lesson_content || l.homework || '').split('\n')[0];
                 const num = !absent && total ? total - doneSeen : '';
@@ -528,13 +552,18 @@
 
         function prepareForm() {
             const last = lastLesson();
-            // متابعة الواجب السابق
+            // من الحصة اللي فاتت: المخطط للحصة دي + متابعة الواجب (أول حاجة المدرس محتاجها أول ما الحصة تبدأ)
+            const plan = last && last.next_assignment ? String(last.next_assignment).trim() : '';
+            $('prev-plan-text').textContent = plan;
+            $('prev-plan').hidden = !plan;
             if (last && last.homework) {
                 $('prev-hw-text').textContent = last.homework;
                 $('blk-prev-hw').hidden = false;
             } else {
                 $('blk-prev-hw').hidden = true;
             }
+            $('prev-when').textContent = last ? `(${relativeDay(last.lesson_date)})` : '';
+            $('blk-prev').hidden = !plan && !(last && last.homework);
             updateSuggest();
             // "نفس تقييم الحصة اللي فاتت": ضغطة واحدة بدل 3
             const hasRating = !!(last && (last.memorization || last.recitation || last.revision));
@@ -569,19 +598,123 @@
             scheduleDraft();
         });
 
+        // ------------------------------------------------------------ معلومات الحصة الجارية
+        /** مدة الحصة من الجدول: موعد النهارده الأقرب لوقت البدء، وإلا المدة لو كل مواعيده نفس المدة */
+        function plannedMinutes() {
+            const list = (ov && ov.schedules) || [];
+            if (!list.length) return null;
+            const startD = new Date(lesson.startedAt || Date.now());
+            const startMin = startD.getHours() * 60 + startD.getMinutes();
+            const today = list.filter((sc) => sc && sc.start_time && occursOn(sc, startD));
+            if (today.length) {
+                today.sort((a, b) => Math.abs(timeToMinutes(a.start_time) - startMin) - Math.abs(timeToMinutes(b.start_time) - startMin));
+                return Number(today[0].duration_minutes) || 45;
+            }
+            const durations = [...new Set(list.map((sc) => Number(sc.duration_minutes) || 45))];
+            return durations.length === 1 ? durations[0] : null;
+        }
+
+        /** حصص الشهر الحالي من السجل (الحصة الجارية لسه مش فيه) */
+        function monthStats() {
+            const now = new Date();
+            let present = 0;
+            let absent = 0;
+            ((ov && ov.lessons) || []).forEach((l) => {
+                const d = lessonDay(l.lesson_date);
+                if (!d || d.getFullYear() !== now.getFullYear() || d.getMonth() !== now.getMonth()) return;
+                if (isAbsenceRow(l)) { if (l.attendance !== 'teacher_cancelled') absent++; }
+                else if (!l.status || l.status === 'completed') present++;
+            });
+            let month = '';
+            try { month = now.toLocaleDateString('ar-EG', { month: 'long' }); } catch (e) { /* تجاهل */ }
+            return { present, absent, month };
+        }
+
+        /** الحساب "بعد الحصة دي" — عشان رسالة التذكير والدفعة يتحسبوا صح وهو لسه في الحصة */
+        function projectedBilling() {
+            if (!ov || !ov.billing || !billView || !billView.enabled) return billView;
+            return computeBilling({ ...ov.billing, taken: (Number(ov.billing.taken) || 0) + 1 });
+        }
+
+        function renderLiveInfo() {
+            if (!mode || !ov) return;
+            const chips = [];
+            const exact = !ov.legacy || (ov.stats && ov.stats.completed_exact);
+            if (exact) chips.push(`<span class="ls-chip">${icon('clipboardList', { size: 14 })} الحصة رقم ${lessonsCount() + 1}</span>`);
+            if (mode === 'live') {
+                const ms = monthStats();
+                chips.push(`<span class="ls-chip" title="عدد حصص الشهر ده لحد الحصة دي">${icon('calendar', { size: 14 })} ${esc(ms.month || 'الشهر ده')}: دي الحصة ${ms.present + 1}${ms.absent ? ` · غاب ${ms.absent === 1 ? 'مرة' : ms.absent === 2 ? 'مرتين' : ms.absent + ' مرات'}` : ''}</span>`);
+                const pm = lesson.plannedMin;
+                if (pm && lesson.startedAt) {
+                    const s0 = new Date(lesson.startedAt);
+                    const endMin = s0.getHours() * 60 + s0.getMinutes() + pm;
+                    chips.push(`<span class="ls-chip">${icon('clock', { size: 14 })} ${pm} د · تخلص ${esc(formatClock12(endMin))}</span>`);
+                }
+            }
+            const topic = student.current_surah || student.current_topic;
+            if (topic) chips.push(`<span class="ls-chip ls-chip-topic" title="${esc(topic)}">${icon('target', { size: 14 })} ${esc(String(topic).slice(0, 40))}</span>`);
+
+            const info = liveBillingInfo(billView);
+            if (info && info.status === 'ok') chips.push(`<span class="ls-chip ls-chip-bill">${icon('creditCard', { size: 14 })} ${esc(info.title)} · ${esc(info.sub)}</span>`);
+            else if (billView && billView.available && !billView.enabled) chips.push(`<button type="button" class="ls-chip ls-chip-btn" data-bill-act="setup">${icon('creditCard', { size: 14 })} تابع حصصه وفلوسه</button>`);
+            if (student.phone) chips.push(`<a class="ls-chip ls-chip-btn ls-chip-wa" href="${esc(whatsappUrl(student.phone, ''))}" target="_blank" rel="noopener">${icon('messageCircle', { size: 14 })} واتساب</a>`);
+            $('ls-info').innerHTML = chips.join('');
+            bindBillingActions($('ls-info'), {
+                getState: () => ({ student, view: billView }),
+                onChange: async () => { try { await loadOverview(); } catch (e) { /* تجاهل */ } }
+            });
+
+            // تنبيه الدفع (آخر حصة في الباقة / مستحق): بيظهر واضح ومعاه رسالة تذكير جاهزة محسوبة بعد الحصة دي
+            const box = $('ls-bill-alert');
+            if (info && info.status !== 'ok') {
+                box.innerHTML = `<div class="ls-bill-alert st-${info.status}">
+                    <div class="ls-bill-alert-text">${icon('creditCard', { size: 18 })}<div><strong>${esc(info.title)}</strong><span>${esc(info.sub)}</span></div></div>
+                    <div class="ls-bill-alert-actions">
+                        <button type="button" class="btn btn-sm" data-bill-act="remind">${icon('messageCircle', { size: 14 })} رسالة تذكير</button>
+                        <button type="button" class="btn btn-sm btn-ghost" data-bill-act="pay">${icon('plus', { size: 14 })} سجّل دفعة</button>
+                    </div>
+                </div>`;
+                bindBillingActions(box, {
+                    getState: () => ({ student, view: projectedBilling() }),
+                    onChange: async () => { try { await loadOverview(); } catch (e) { /* تجاهل */ } }
+                });
+            } else {
+                box.innerHTML = '';
+            }
+        }
+
+        function publishLive() {
+            if (mode !== 'live' || !lesson.startedAt) return;
+            LiveLesson.publish({
+                studentId: studentIdParam, name: student.name || '', lessonId: lesson.id,
+                startedAt: lesson.startedAt, plannedMin: lesson.plannedMin || null
+            });
+            notifyLiveLessonChanged();
+        }
+        function unpublishLive() {
+            LiveLesson.clear(studentIdParam);
+            notifyLiveLessonChanged();
+            closePip();
+        }
+
         // ------------------------------------------------------------ الحالات
         function enterLive() {
             mode = 'live';
             $('ls-bar').classList.remove('ls-bar-manual');
             $('blk-date').hidden = true;
-            $('btn-finish').innerHTML = icon('checkCircle', { size: 17 }) + ' <span class="ls-finish-text">إنهاء الحصة</span>';
+            $('btn-finish').innerHTML = icon('checkCircle', { size: 17 }) + ' <span class="ls-finish-text">إنهاء<span class="ls-finish-long"> الحصة</span></span>';
             $('btn-discard').textContent = 'بدأت بالغلط؟ احذف الحصة الجارية';
             $('btn-absent-live').hidden = false;
+            lesson.plannedMin = plannedMinutes();
+            $('btn-pip').hidden = !('documentPictureInPicture' in window);
             prepareForm();
             startTimer();
+            renderLiveInfo();
+            publishLive();
             showState('live');
             dismissTip();
             showTips([
+                { id: 'lesson_float', target: '#ls-bar', title: 'اتنقّل براحتك', text: 'تقدر تفتح أي صفحة تانية والحصة شغالة: هتلاقيها في نافذة عائمة صغيرة ترجع منها بضغطة، وكل المكتوب محفوظ.' },
                 { id: 'lesson_history_d', target: '#ls-aside', title: 'الحصص اللي فاتت', text: 'سجل الطالب قدامك طول الحصة: آخر حصة مفتوحة، والأقدم بضغطة.' },
                 { id: 'lesson_history_m', target: '#ls-seg', title: 'الحصص اللي فاتت', text: 'من تبويب "الحصص السابقة" تشوف سجل الطالب من غير ما تسيب الحصة.' },
                 { id: 'lesson_same', target: '#btn-same-rating', text: 'لو مستوى الطالب زي الحصة اللي فاتت، الزرار ده بيملأ التقييم كله بضغطة.' }
@@ -597,10 +730,15 @@
             $('blk-date').hidden = false;
             $('f-date').value = date || localDateISO();
             $('f-date').max = localDateISO();
-            $('btn-finish').innerHTML = icon('checkCircle', { size: 17 }) + ' <span class="ls-finish-text">حفظ الحصة</span>';
+            $('btn-finish').innerHTML = icon('checkCircle', { size: 17 }) + ' <span class="ls-finish-text">حفظ<span class="ls-finish-long"> الحصة</span></span>';
             $('btn-discard').textContent = 'إلغاء';
             $('btn-absent-live').hidden = true;
+            lesson.plannedMin = null;
+            $('btn-pip').hidden = true;
+            $('bar-left').hidden = true;
+            $('bar-progress').hidden = true;
             prepareForm();
+            renderLiveInfo();
             showState('live');
         }
 
@@ -610,6 +748,18 @@
                 const t = formatDuration(Date.now() - (lesson.startedAt || Date.now()));
                 $('bar-timer').textContent = t;
                 document.title = `● ${t} - الحصة`;
+                const st = timeState(lesson.startedAt || Date.now(), lesson.plannedMin);
+                const left = $('bar-left');
+                left.hidden = !st.text;
+                left.textContent = st.text ? `${st.text} من ${lesson.plannedMin}` : '';
+                left.className = `ls-left ph-${st.phase}`;
+                const prog = $('bar-progress');
+                prog.hidden = st.progress == null;
+                prog.className = `ls-progress ph-${st.phase}`;
+                if (st.progress != null) prog.firstElementChild.style.width = `${Math.round(st.progress * 100)}%`;
+                $('ls-bar').classList.toggle('is-over', st.phase === 'over');
+                timeAlerts(st);
+                updatePip(t, st);
             };
             tick();
             timerInt = setInterval(tick, 1000);
@@ -619,11 +769,34 @@
             timerInt = null;
             document.title = 'الحصة - Teachers Manager';
         }
+        function vibrate(pattern) {
+            try { if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) navigator.vibrate(pattern); } catch (e) { /* تجاهل */ }
+        }
+        // تنبيه مرة واحدة لكل حصة: قبل النهاية بـ 5 دقايق (وقت الواجب والتقييم) ولما الوقت يخلص
+        function timeAlerts(st) {
+            if (mode !== 'live' || !st.planned) return;
+            const key = `tm_lesson_alert_${lesson.id || lesson.startedAt}`;
+            let done = '';
+            try { done = sessionStorage.getItem(key) || ''; } catch (e) { /* تجاهل */ }
+            const mark = (v) => { try { sessionStorage.setItem(key, v); } catch (e) { /* تجاهل */ } };
+            if (st.phase === 'over' && !done.includes('over')) {
+                mark(done + 'over');
+                if (st.left > -60000) { ErrorHandler.showSuccess(`⏰ وقت الحصة خلص (${lesson.plannedMin} د)`, 6000); vibrate([200, 100, 200]); }
+            } else if (st.phase === 'soon' && !done.includes('soon')) {
+                mark(done + 'soon');
+                if (st.left > 4 * 60000) { ErrorHandler.showSuccess('⏳ فاضل 5 دقايق: وقت الواجب والتقييم', 6000); vibrate(150); }
+            }
+        }
 
         // ------------------------------------------------------------ بدء الحصة
         $('btn-start').addEventListener('click', async () => {
             const btn = $('btn-start');
             if (btn.disabled) return;
+            const other = LiveLesson.list().find((l) => String(l.studentId) !== String(studentIdParam));
+            if (other) {
+                const mins = Math.max(1, Math.round((Date.now() - other.startedAt) / 60000));
+                if (!confirm(`في حصة شغالة مع ${other.name || 'طالب تاني'} من ${mins} دقيقة ولسه ماتقفلتش.\nتبدأ حصة ${student.name || 'الطالب ده'}؟ (الحصة التانية هتفضل مفتوحة في النافذة العائمة)`)) return;
+            }
             // الرابط بيتفتح مباشرة مع الضغطة (بعد أي انتظار المتصفح بيمنع النوافذ الجديدة)
             if (student.lesson_link) { try { window.open(student.lesson_link, '_blank', 'noopener'); } catch (e) { /* تجاهل */ } }
             btn.disabled = true;
@@ -659,6 +832,7 @@
                 lessonId: fromLive ? lesson.id : null,
                 onSaved: async (value) => {
                     LessonDraft.clear(studentIdParam);
+                    unpublishLive();
                     stopTimer();
                     mode = null;
                     clearForm();
@@ -727,6 +901,7 @@
                 try { (window.dataLayer = window.dataLayer || []).push({ event: 'lesson_saved', lesson_mode: mode }); } catch (e) { /* تجاهل */ }
                 const duration = mode === 'live' && lesson.startedAt ? Date.now() - lesson.startedAt : null;
                 LessonDraft.clear(studentIdParam);
+                unpublishLive();
                 stopTimer();
                 mode = null;
                 try { await loadOverview(); } catch (e) { /* الحصة اتحفظت، الملخص بس اللي ماتحمّلش */ }
@@ -794,6 +969,88 @@
                 try { localStorage.setItem(reportKey, '1'); } catch (e) { /* تجاهل */ }
             }
         }
+
+        // المدرس فتح صفحة تانية من القايمة: نحفظ المكتوب فورًا (الحصة نفسها شغالة على السيرفر)
+        window.addEventListener('pagehide', () => {
+            if (!mode) return;
+            clearTimeout(draftTimer);
+            saveDraftNow();
+            if (mode === 'live') publishLive();
+        });
+
+        // ------------------------------------------------------------ نافذة صغيرة فوق Zoom / Meet (كروم على الكمبيوتر)
+        let pipWin = null;
+        const PIP_CSS = `
+            *{box-sizing:border-box} html,body{margin:0;height:100%}
+            body{font-family:'IBM Plex Sans Arabic',Tahoma,Arial,sans-serif;background:#2E2140;color:#fff;display:flex;flex-direction:column;gap:.45rem;padding:.7rem .8rem}
+            .top{display:flex;align-items:center;gap:.5rem}
+            .dot{width:10px;height:10px;border-radius:50%;background:#3DDC84;flex-shrink:0}
+            .name{font-weight:700;font-size:.85rem;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+            .time{font-size:1.7rem;font-weight:800;font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate;line-height:1}
+            .left{font-size:.8rem;font-weight:700;color:#CFC3DD}
+            .row{display:flex;align-items:baseline;gap:.6rem}
+            .bar{height:4px;border-radius:4px;background:rgba(255,255,255,.14);overflow:hidden}.bar span{display:block;height:100%;width:0;background:#3DDC84}
+            body.ph-soon .left{color:#F4D58A} body.ph-soon .bar span{background:#F4D58A}
+            body.ph-over .left{color:#FFB4B4} body.ph-over .bar span,body.ph-over .dot{background:#FF8A8A}
+            form{display:flex;gap:.35rem;margin-top:auto}
+            input{flex:1;min-width:0;border:0;border-radius:9px;padding:.5rem .6rem;font:inherit;font-size:.85rem}
+            button{border:0;border-radius:9px;padding:.45rem .65rem;font:inherit;font-size:.8rem;font-weight:800;cursor:pointer;background:#C59A4A;color:#2E2140}
+            .back{background:rgba(255,255,255,.14);color:#fff}
+            .ok{font-size:.72rem;color:#3DDC84;min-height:1em}`;
+        async function openPip() {
+            if (!('documentPictureInPicture' in window)) return;
+            if (pipWin) { closePip(); return; }
+            try {
+                pipWin = await window.documentPictureInPicture.requestWindow({ width: 320, height: 190 });
+            } catch (e) { pipWin = null; ErrorHandler.showError('المتصفح ماسمحش بفتح النافذة الصغيرة'); return; }
+            const d = pipWin.document;
+            d.documentElement.lang = 'ar';
+            d.documentElement.dir = 'rtl';
+            d.title = 'الحصة';
+            const st = d.createElement('style');
+            st.textContent = PIP_CSS;
+            d.head.appendChild(st);
+            d.body.innerHTML = `<div class="top"><span class="dot"></span><span class="name"></span><button type="button" class="back" id="pip-back">ارجع للحصة</button></div>
+                <div class="row"><span class="time" id="pip-time">00:00</span><span class="left" id="pip-left"></span></div>
+                <div class="bar" id="pip-bar" hidden><span></span></div>
+                <form id="pip-form"><input id="pip-note" placeholder="ملاحظة سريعة عن اللي اتعمل…" maxlength="300" autocomplete="off"><button type="submit">أضف</button></form>
+                <div class="ok" id="pip-ok"></div>`;
+            d.querySelector('.name').textContent = student.name || '';
+            d.getElementById('pip-back').addEventListener('click', () => { window.focus(); closePip(); });
+            d.getElementById('pip-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const inp = d.getElementById('pip-note');
+                const v = inp.value.trim();
+                if (!v) return;
+                const ta = $('f-content');
+                ta.value = ta.value.trim() ? `${ta.value.trim()}\n${v}` : v;
+                ta.dispatchEvent(new Event('input', { bubbles: true }));   // بيتحفظ في المسودة تلقائيًا
+                inp.value = '';
+                d.getElementById('pip-ok').textContent = '✓ اتضافت لـ "ماذا تم في الحصة"';
+                setTimeout(() => { if (pipWin) d.getElementById('pip-ok').textContent = ''; }, 2500);
+            });
+            pipWin.addEventListener('pagehide', () => { pipWin = null; $('btn-pip').classList.remove('active'); });
+            $('btn-pip').classList.add('active');
+            try { (window.dataLayer = window.dataLayer || []).push({ event: 'lesson_pip_opened' }); } catch (e) { /* تجاهل */ }
+            updatePip(formatDuration(Date.now() - (lesson.startedAt || Date.now())), timeState(lesson.startedAt || Date.now(), lesson.plannedMin));
+        }
+        function updatePip(t, st) {
+            if (!pipWin) return;
+            const d = pipWin.document;
+            const time = d.getElementById('pip-time');
+            if (!time) return;
+            time.textContent = t;
+            d.getElementById('pip-left').textContent = st.text ? `${st.text} من ${lesson.plannedMin}` : '';
+            d.getElementById('pip-bar').hidden = st.progress == null;
+            if (st.progress != null) d.querySelector('#pip-bar span').style.width = `${Math.round(st.progress * 100)}%`;
+            d.body.className = `ph-${st.phase}`;
+        }
+        function closePip() {
+            if (pipWin) { try { pipWin.close(); } catch (e) { /* تجاهل */ } }
+            pipWin = null;
+            $('btn-pip').classList.remove('active');
+        }
+        $('btn-pip').addEventListener('click', openPip);
 
         // ============================================================
         // مساعد الحصة (Lesson Copilot)
@@ -1206,6 +1463,6 @@
             }
         });
         </script>
-    <script src="js/pwa-install.js?v=18" defer></script>
+    <script src="js/pwa-install.js?v=19" defer></script>
 </body>
 </html>

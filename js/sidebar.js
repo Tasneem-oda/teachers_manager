@@ -1,11 +1,12 @@
 /**
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
-import { Auth } from './auth.js?v=18';
-import { icon } from './icons.js?v=18';
-import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=18';
-import { CONFIG } from './config.js?v=18';
-import { openSuggestionModal } from './suggestions.js?v=18';
+import { Auth } from './auth.js?v=19';
+import { icon } from './icons.js?v=19';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=19';
+import { CONFIG } from './config.js?v=19';
+import { openSuggestionModal } from './suggestions.js?v=19';
+import { mountFloatingLesson } from './live-lesson.js?v=19';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
@@ -42,7 +43,7 @@ export async function getSubscriptionCached() {
     if (subFetchPromise) return subFetchPromise;
 
     subFetchPromise = (async () => {
-        const { api } = await import('./api.js?v=18');
+        const { api } = await import('./api.js?v=19');
         const data = await api.checkSubscription();
         try {
             sessionStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
@@ -105,6 +106,12 @@ export function renderSidebar(activeKey) {
 
     // بوابة الاشتراك: قفل الصفحة إذا انتهت التجربة/الاشتراك فعليًا (لا تُطبَّق على صفحة الاشتراك نفسها)
     enforceSubscriptionLock();
+
+    // الحصة الجارية في نافذة عائمة: المدرس يتنقّل في البرنامج والحصة شغالة ويرجع لها بضغطة
+    try {
+        const onLessonPage = /\/lesson(\.html)?\/?$/.test(location.pathname);
+        mountFloatingLesson({ exceptStudentId: onLessonPage ? new URLSearchParams(location.search).get('student_id') : null });
+    } catch (e) { /* النافذة إضافية: لو فشلت الصفحة تكمّل عادي */ }
 }
 
 /**
