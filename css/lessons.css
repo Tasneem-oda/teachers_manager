@@ -447,3 +447,55 @@ button.sp-stat:hover { border-color: var(--primary); }
     .ls-bill-alert-actions { width: 100%; }
     .ls-bill-alert-actions .btn { flex: 1; justify-content: center; }
 }
+
+/* ============================== كتب الحصة ============================== */
+.lb-host:empty { display: none; }
+.lb-host { margin-bottom: 0.9rem; }
+#r-books { max-width: 760px; margin-inline: auto; }
+.lb-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 0.75rem 0.85rem 0.85rem; }
+.lb-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.6rem; }
+.lb-head-title { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 700; font-size: 0.92rem; color: var(--text-primary); }
+.lb-head-title svg { color: var(--secondary); }
+.lb-all { background: none; border: 0; color: var(--primary); font: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer; padding: 0.2rem 0.3rem; }
+.lb-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem; }
+.lb-tile { display: flex; align-items: center; gap: 0.55rem; text-align: start; background: var(--bg-secondary); border: 1px solid transparent; border-radius: 12px; padding: 0.55rem 0.6rem; font: inherit; color: var(--text-primary); cursor: pointer; min-width: 0; transition: border-color 0.15s, background 0.15s; }
+.lb-tile:hover { border-color: var(--primary); background: #fff; }
+.lb-tile:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.lb-tile.is-last { background: #FCF7E0; border-color: #F0DFA6; }
+.lb-ic { width: 34px; height: 34px; border-radius: 9px; background: #fff; color: var(--primary); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--border); }
+.lb-txt { display: flex; flex-direction: column; min-width: 0; gap: 0.1rem; }
+.lb-title { font-weight: 700; font-size: 0.84rem; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.lb-meta { font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-resume { color: #8A6A26; font-weight: 700; }
+.lb-mine { color: var(--primary); font-weight: 600; }
+
+.lb-hint { display: flex; align-items: center; gap: 0.6rem; background: transparent; border: 1px dashed var(--border); border-radius: 12px; padding: 0.55rem 0.7rem; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6; }
+.lb-hint a { color: var(--primary); font-weight: 700; }
+.lb-hint .lb-ic { width: 30px; height: 30px; }
+.lb-hint-x { margin-inline-start: auto; background: none; border: 0; color: var(--text-light); cursor: pointer; padding: 0.3rem; display: inline-flex; flex-shrink: 0; }
+
+.lb-picker .modal-content { max-width: 520px; max-height: 82vh; display: flex; flex-direction: column; gap: 0.7rem; }
+.lb-picker-head { display: flex; align-items: center; justify-content: space-between; }
+.lb-picker-head h2 { margin: 0; font-size: 1.1rem; }
+.lb-picker-x { background: none; border: 0; cursor: pointer; color: var(--text-secondary); padding: 0.3rem; display: inline-flex; }
+.lb-search { width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 0.6rem 0.8rem; font: inherit; font-size: 1rem; margin: 0; }
+.lb-list { display: flex; flex-direction: column; gap: 0.45rem; overflow-y: auto; min-height: 0; }
+.lb-list .lb-tile { width: 100%; }
+.lb-lib-link { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--primary); font-size: 0.85rem; font-weight: 700; text-decoration: none; align-self: flex-start; }
+
+/* زرار "سجّل الصفحة في الحصة" جوه عارض الكتاب */
+.bv-btn.lb-log-btn { width: auto; gap: 0.3rem; padding: 0 0.7rem; background: #C59A4A; color: #2E2140; border-color: #C59A4A; font-weight: 700; font-size: 0.8rem; white-space: nowrap; }
+.bv-btn.lb-log-btn:hover { background: #B88B3D; }
+
+@media (max-width: 900px) {
+    .lb-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+    /* الموبايل: الكتب في سطر بيتسحب بالعرض */
+    .lb-card { padding: 0.65rem 0.7rem 0.75rem; }
+    .lb-row { display: flex; overflow-x: auto; scrollbar-width: none; margin-inline: -0.7rem; padding-inline: 0.7rem; -webkit-overflow-scrolling: touch; }
+    .lb-row::-webkit-scrollbar { display: none; }
+    .lb-row .lb-tile { flex: 0 0 72%; max-width: 250px; }
+    .bv-btn.lb-log-btn span { display: none; }
+    .bv-btn.lb-log-btn { padding: 0; width: 36px; }
+}

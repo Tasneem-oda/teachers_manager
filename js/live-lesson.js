@@ -175,6 +175,9 @@ export function mountFloatingLesson({ exceptStudentId = null } = {}) {
 
     function go() {
         if (!current) return;
+        // صفحة الحصة نفسها (مثلًا والكتاب مفتوح فوقها) بتقدر ترجّع المدرس من غير تحميل الصفحة من جديد
+        const ev = new CustomEvent('tm:live-lesson-go', { cancelable: true, detail: current.studentId });
+        if (!window.dispatchEvent(ev)) return;
         window.location.href = `lesson.html?student_id=${encodeURIComponent(current.studentId)}`;
     }
 

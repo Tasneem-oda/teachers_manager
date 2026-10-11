@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الحصة - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=19">
+    <link rel="stylesheet" href="css/style.css?v=20">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,7 +19,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=19">
+    <link rel="stylesheet" href="css/lessons.css?v=20">
+    <link rel="stylesheet" href="css/books.css?v=20">
     <style>body { margin: 0; }</style>
 </head>
 <body>
@@ -52,6 +53,7 @@
                                     <button type="button" id="btn-ai-ready">المساعد الذكي</button>
                                 </div>
                             </div>
+                            <div class="lb-host" id="r-books"></div>
                             <div class="sp-grid2">
                                 <div class="x-card" id="r-last"></div>
                                 <div id="r-bill"></div>
@@ -81,6 +83,8 @@
                             <!-- معلومات المدرس محتاجها وهو في الحصة: رقم الحصة، الشهر، الوقت، الدفع، التواصل -->
                             <div class="ls-info" id="ls-info" aria-label="معلومات الحصة"></div>
                             <div id="ls-bill-alert"></div>
+                            <!-- كتب الحصة: الكتب الخاصة بالطالب + آخر صفحة وصلها، تتفتح فوق الحصة من غير ما تسيبها -->
+                            <div class="lb-host" id="ls-books"></div>
 
                             <div class="ls-seg" id="ls-seg" role="tablist">
                                 <button type="button" data-view="now" class="active">الحصة الآن</button>
@@ -286,23 +290,24 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=19"></script>
+    <script type="module" src="js/config.js?v=20"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=19';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=19';
-        import { api } from './js/api.js?v=19';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=19';
-        import { icon } from './js/icons.js?v=19';
+        import { Auth } from './js/auth.js?v=20';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=20';
+        import { api } from './js/api.js?v=20';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=20';
+        import { icon } from './js/icons.js?v=20';
         import {
             subjectLabel, ratingFieldLabels, RATINGS, HOMEWORK_STATUS, relativeDay, localDateISO, localTimeISO,
             formatDuration, minutesText, LessonDraft, lessonHasContent, lessonDetailsHtml, nextOccurrence, formatNextOccurrence,
             normalizeLesson, isAbsenceRow, attendanceInfo, lessonDay
-        } from './js/lesson-utils.js?v=19';
-        import { openAttendanceModal } from './js/attendance.js?v=19';
-        import { showTips, dismissTip } from './js/tips.js?v=19';
-        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=19';
-        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=19';
-        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=19';
+        } from './js/lesson-utils.js?v=20';
+        import { openAttendanceModal } from './js/attendance.js?v=20';
+        import { showTips, dismissTip } from './js/tips.js?v=20';
+        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=20';
+        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=20';
+        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=20';
+        import { openBookViewer } from './js/book-viewer.js?v=20';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'ابدأ الحصة وتابعها وسجّلها في مكان واحد', showSearch: false });
@@ -408,6 +413,7 @@
             try {
                 await loadOverview();
                 decideInitialState();
+                loadLessonBooks();   // مش بنستناها: الحصة تفتح فورًا والكتب تظهر لما توصل
                 $('loader').style.display = 'none';
                 $('lesson-app').style.display = 'block';
                 if (openAiParam === '1') openAiChat();
@@ -508,6 +514,7 @@
                 : `<div class="x-card-title"><h3>${icon('clipboard', { size: 17 })} آخر حصة</h3></div><div class="x-empty">دي أول حصة مسجّلة مع الطالب 🎉</div>`;
 
             renderBilling($('r-bill'), true);
+            renderLessonBooks();
             showState('ready');
             showTips([
                 { id: 'lesson_start', target: '#btn-start', title: 'ابدأ الحصة', text: 'الزرار ده بيشغّل العداد ويفتح رابط الحصة، وكل اللي هتكتبه بيتحفظ تلقائيًا.' },
@@ -710,6 +717,7 @@
             prepareForm();
             startTimer();
             renderLiveInfo();
+            renderLessonBooks();
             publishLive();
             showState('live');
             dismissTip();
@@ -739,6 +747,7 @@
             $('bar-progress').hidden = true;
             prepareForm();
             renderLiveInfo();
+            renderLessonBooks();
             showState('live');
         }
 
@@ -969,6 +978,197 @@
                 try { localStorage.setItem(reportKey, '1'); } catch (e) { /* تجاهل */ }
             }
         }
+
+        // ============================================================
+        // كتب الحصة
+        // - الكتب المتاحة للطالب ده (الخاصة بيه الأول، وبعدين العامة)، والأخير اللي اتفتح معاه في الأول
+        // - كل كتاب بيفتح على آخر صفحة وصلها الطالب ده (محفوظة على الجهاز لكل طالب)
+        // - الكتاب بيفتح فوق الحصة: العداد شغال والمكتوب زي ما هو، وفيه زرار يسجّل الصفحة في الحصة
+        // ============================================================
+        const BOOK_POS_KEY = `tm_book_pos_${studentIdParam}`;
+        const BOOK_HINT_KEY = 'tm_lesson_books_hint_off';
+        let lessonBooks = null;      // null = لسه بيتحمّل / [] = مفيش
+        let allBooksCount = 0;
+        let bookViewer = null;
+        const BOOK_TYPE = { pdf: 'PDF', docx: 'Word', pptx: 'PowerPoint', txt: 'نص', image: 'صورة' };
+
+        const bookPos = {
+            all() { try { return JSON.parse(localStorage.getItem(BOOK_POS_KEY) || '{}') || {}; } catch (e) { return {}; } },
+            get(id) { return this.all()[id] || null; },
+            set(id, page) {
+                try {
+                    const all = this.all();
+                    all[id] = { page: Math.max(1, Number(page) || 1), at: Date.now() };
+                    localStorage.setItem(BOOK_POS_KEY, JSON.stringify(all));
+                } catch (e) { /* تجاهل */ }
+            }
+        };
+
+        async function loadLessonBooks() {
+            try {
+                const res = await api.listBooks();
+                const books = (res && res.books) || (Array.isArray(res) ? res : []);
+                const usable = books.filter((b) => b && b.status === 'ready' && b.storage_path);
+                allBooksCount = usable.length;
+                const sid = String(studentIdParam);
+                const pos = bookPos.all();
+                lessonBooks = usable
+                    .map((b) => {
+                        const ids = (b.student_ids || []).map(String);
+                        return { ...b, mine: ids.includes(sid), general: ids.length === 0, last: pos[b.id] || null };
+                    })
+                    .filter((b) => b.mine || b.general)
+                    .sort((a, b) => ((b.last ? b.last.at : 0) - (a.last ? a.last.at : 0))
+                        || (b.mine - a.mine)
+                        || (Date.parse(b.created_at || 0) - Date.parse(a.created_at || 0)));
+            } catch (e) {
+                lessonBooks = [];   // المكتبة مش متاحة دلوقتي: الحصة تكمّل عادي
+                allBooksCount = -1;
+            }
+            renderLessonBooks();
+        }
+
+        function bookTileHtml(b, i) {
+            const unit = b.file_type === 'pptx' ? 'شريحة' : 'صفحة';
+            let meta;
+            if (b.last && b.last.page > 1) meta = `<span class="lb-resume">كمّل من ${unit} ${b.last.page}</span>`;
+            else if (b.mine) meta = `<span class="lb-mine">خاص ب${esc((student.name || 'الطالب').split(' ')[0])}</span>`;
+            else meta = `<span>${esc(BOOK_TYPE[b.file_type] || b.file_type || '')}${b.page_count ? ` · ${b.page_count} ${unit}` : ''}</span>`;
+            return `<button type="button" class="lb-tile${i === 0 && b.last ? ' is-last' : ''}" data-book="${esc(b.id)}" title="فتح ${esc(b.title)}">
+                <span class="lb-ic">${icon(b.file_type === 'image' ? 'image' : 'bookOpen', { size: 18 })}</span>
+                <span class="lb-txt"><span class="lb-title">${esc(b.title)}</span><span class="lb-meta">${meta}</span></span>
+            </button>`;
+        }
+
+        function renderLessonBooks() {
+            const host = mode ? $('ls-books') : $('r-books');
+            ['ls-books', 'r-books'].forEach((id) => { if ($(id) !== host) $(id).innerHTML = ''; });
+            if (!host || lessonBooks === null) return;
+            if (!lessonBooks.length) {
+                let off = false;
+                try { off = localStorage.getItem(BOOK_HINT_KEY) === '1'; } catch (e) { /* تجاهل */ }
+                if (off || allBooksCount < 0) { host.innerHTML = ''; return; }
+                // تلميحة صغيرة: مفيش كتب للطالب ده لسه
+                host.innerHTML = `<div class="lb-hint">
+                    <span class="lb-ic">${icon('bookOpen', { size: 17 })}</span>
+                    <span>${allBooksCount > 0 ? `مفيش كتاب متاح ل${esc((student.name || 'الطالب').split(' ')[0])}. ` : ''}ارفع كتاب أو مذكرة الطالب من <a href="books.html">مكتبتي</a>، وهيظهر هنا تفتحه بضغطة وقت الحصة على آخر صفحة وصلها.</span>
+                    <button type="button" class="lb-hint-x" aria-label="إخفاء" title="إخفاء">${icon('x', { size: 14 })}</button>
+                </div>`;
+                host.querySelector('.lb-hint-x').addEventListener('click', () => {
+                    try { localStorage.setItem(BOOK_HINT_KEY, '1'); } catch (e) { /* تجاهل */ }
+                    host.innerHTML = '';
+                });
+                return;
+            }
+            const shown = lessonBooks.slice(0, 4);
+            host.innerHTML = `<div class="lb-card">
+                <div class="lb-head">
+                    <span class="lb-head-title">${icon('bookOpen', { size: 16 })} كتب الحصة</span>
+                    ${lessonBooks.length > shown.length ? `<button type="button" class="lb-all" data-books-all>كل الكتب (${lessonBooks.length})</button>` : ''}
+                </div>
+                <div class="lb-row">${shown.map(bookTileHtml).join('')}</div>
+            </div>`;
+        }
+
+        // ضغطة على كتاب (في الحصة أو قبلها أو من قايمة "كل الكتب")
+        document.addEventListener('click', (e) => {
+            const tile = e.target.closest('[data-book]');
+            if (tile && lessonBooks) {
+                const b = lessonBooks.find((x) => String(x.id) === tile.dataset.book);
+                if (b) { const m = tile.closest('.lb-picker'); if (m) m.remove(); openLessonBook(b, tile); }
+                return;
+            }
+            if (e.target.closest('[data-books-all]')) openBooksPicker();
+        });
+
+        function openBooksPicker() {
+            if (!lessonBooks || document.querySelector('.lb-picker')) return;
+            const modal = document.createElement('div');
+            modal.className = 'modal active lb-picker';
+            modal.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-label="كتب الحصة">
+                <div class="lb-picker-head"><h2>كتب ${esc((student.name || 'الطالب').split(' ')[0])}</h2>
+                    <button type="button" class="lb-picker-x" aria-label="إغلاق">${icon('x', { size: 18 })}</button></div>
+                <input type="search" class="lb-search" placeholder="ابحث باسم الكتاب…" aria-label="ابحث باسم الكتاب">
+                <div class="lb-list"></div>
+                <a class="lb-lib-link" href="books.html">${icon('plus', { size: 14 })} إضافة كتاب من مكتبتي</a>
+            </div>`;
+            document.body.appendChild(modal);
+            const list = modal.querySelector('.lb-list');
+            const draw = (q) => {
+                const t = String(q || '').trim().toLowerCase();
+                const items = lessonBooks.filter((b) => !t || String(b.title).toLowerCase().includes(t));
+                list.innerHTML = items.length ? items.map(bookTileHtml).join('') : '<div class="x-empty">مفيش كتاب بالاسم ده</div>';
+            };
+            draw('');
+            const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+            const onKey = (e) => { if (e.key === 'Escape') close(); };
+            document.addEventListener('keydown', onKey);
+            modal.querySelector('.lb-picker-x').addEventListener('click', close);
+            modal.addEventListener('mousedown', (e) => { if (e.target === modal) close(); });
+            const search = modal.querySelector('.lb-search');
+            search.addEventListener('input', () => draw(search.value));
+            if (window.matchMedia('(min-width: 900px)').matches) search.focus();
+        }
+
+        function openLessonBook(book, opener) {
+            if (bookViewer) return;
+            const last = bookPos.get(book.id);
+            bookViewer = openBookViewer({
+                api, book, opener,
+                startPage: last ? last.page : 1,
+                onPageChange: (p) => bookPos.set(book.id, p),
+                onClose: () => {
+                    bookViewer = null;
+                    // النافذة العائمة ترجع تختفي (إحنا في صفحة الحصة نفسها)
+                    try { window.dispatchEvent(new CustomEvent('tm:live-lesson-except', { detail: studentIdParam })); } catch (e) { /* تجاهل */ }
+                    // الكتاب اللي اتفتح يطلع الأول بآخر صفحة
+                    if (lessonBooks) {
+                        const pos = bookPos.all();
+                        lessonBooks.forEach((b) => { b.last = pos[b.id] || null; });
+                        lessonBooks.sort((a, b) => ((b.last ? b.last.at : 0) - (a.last ? a.last.at : 0)) || (b.mine - a.mine));
+                    }
+                    renderLessonBooks();
+                }
+            });
+            if (!last) bookPos.set(book.id, 1);
+            try { (window.dataLayer = window.dataLayer || []).push({ event: 'lesson_book_opened', lesson_mode: mode || 'ready' }); } catch (e) { /* تجاهل */ }
+            // الحصة شغالة: العداد يفضل ظاهر فوق الكتاب في النافذة العائمة، والضغط عليها بيقفل الكتاب ويرجع للحصة
+            if (mode === 'live') {
+                try { window.dispatchEvent(new CustomEvent('tm:live-lesson-except', { detail: null })); } catch (e) { /* تجاهل */ }
+            }
+            // زرار "سجّل الصفحة في الحصة": بيكتب اسم الكتاب ورقم الصفحة في "ماذا تم في الحصة"
+            if (mode) {
+                const tools = bookViewer.root.querySelector('.bv-tools');
+                if (tools) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'bv-btn lb-log-btn';
+                    btn.title = 'اكتب اسم الكتاب ورقم الصفحة في "ماذا تم في الحصة"';
+                    btn.innerHTML = `${icon('plus', { size: 15 })}<span>سجّل الصفحة في الحصة</span>`;
+                    btn.addEventListener('click', () => {
+                        const v = bookViewer ? bookViewer : null;
+                        const page = v && v.pageCount && v.pageCount > 1 ? v.page : null;
+                        const unit = book.file_type === 'pptx' ? 'شريحة' : 'ص';
+                        const line = `📖 ${book.title}${page ? ` — ${unit} ${page}` : ''}`;
+                        const ta = $('f-content');
+                        if (!ta.value.includes(line)) {
+                            ta.value = ta.value.trim() ? `${ta.value.trim()}\n${line}` : line;
+                            ta.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                        ErrorHandler.showSuccess(page ? `اتسجّلت ${unit === 'ص' ? 'صفحة' : 'شريحة'} ${page} في الحصة` : 'اتسجّل الكتاب في الحصة');
+                    });
+                    tools.insertBefore(btn, tools.firstChild);
+                }
+            }
+        }
+
+        // ضغطة على النافذة العائمة والكتاب مفتوح: نقفل الكتاب ونرجع للحصة من غير تحميل الصفحة
+        window.addEventListener('tm:live-lesson-go', (e) => {
+            if (bookViewer && String(e.detail) === String(studentIdParam)) {
+                e.preventDefault();
+                bookViewer.close();
+            }
+        });
 
         // المدرس فتح صفحة تانية من القايمة: نحفظ المكتوب فورًا (الحصة نفسها شغالة على السيرفر)
         window.addEventListener('pagehide', () => {
@@ -1463,6 +1663,6 @@
             }
         });
         </script>
-    <script src="js/pwa-install.js?v=19" defer></script>
+    <script src="js/pwa-install.js?v=20" defer></script>
 </body>
 </html>

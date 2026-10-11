@@ -6,9 +6,9 @@
  * بعد الثلاثة: رسالة احتفال مرة واحدة + اقتراحات اختيارية.
  */
 
-import { api } from './api.js?v=19';
-import { Formatters } from './utils.js?v=19';
-import { openStudentAppointments } from './student-appointments.js?v=19';
+import { api } from './api.js?v=20';
+import { Formatters } from './utils.js?v=20';
+import { openStudentAppointments } from './student-appointments.js?v=20';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 const LS = {

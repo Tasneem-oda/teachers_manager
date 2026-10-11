@@ -3,8 +3,8 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=19';
-import { APIUtils, Storage } from './utils.js?v=19';
+import { CONFIG } from './config.js?v=20';
+import { APIUtils, Storage } from './utils.js?v=20';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -829,6 +829,7 @@ export const api = {
     // فقط (مع الاستشهاد بالمصدر).
     //   options.bookId    : تقييد السؤال بكتاب واحد (شات جوه الكتاب نفسه)
     //   options.studentId : تقييد بمصادر طالب معيّن
+    //   options.page      : الصفحة الحالية في الكتاب ("اشرحلي الصفحة دي")
     //   options.history   : آخر رسائل المحادثة [{ role: 'user'|'assistant', text }] عشان أسئلة المتابعة
     //   options.signal    : لإيقاف الطلب
     async askSources(question, options = {}) {
@@ -841,6 +842,8 @@ export const api = {
                 question,
                 student_id: opts.studentId || null,
                 book_id: opts.bookId || null,
+                // الصفحة اللي المدرس بيتصفّحها: الخادم بيقدّم مقاطعها الأول (n8n/ask-sources.json)
+                page: Number(opts.page) > 0 ? Number(opts.page) : null,
                 history: Array.isArray(opts.history) ? opts.history : []
             },
             { signal: opts.signal, timeoutMs: CONFIG.LIMITS.AI_TIMEOUT }
