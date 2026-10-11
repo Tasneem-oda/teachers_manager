@@ -3,8 +3,8 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=17';
-import { APIUtils, Storage } from './utils.js?v=17';
+import { CONFIG } from './config.js?v=18';
+import { APIUtils, Storage } from './utils.js?v=18';
 
 /**
  * دالة أساسية لكل الطلبات
