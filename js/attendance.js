@@ -6,10 +6,10 @@
  * لو فيه حصة جارية (lessonId) بتتحوّل هي نفسها لغياب بدل ما يتعمل صف جديد.
  */
 
-import { api } from './api.js?v=20';
-import { Formatters, ErrorHandler } from './utils.js?v=20';
-import { icon } from './icons.js?v=20';
-import { localDateISO } from './lesson-utils.js?v=20';
+import { api } from './api.js?v=21';
+import { Formatters, ErrorHandler } from './utils.js?v=21';
+import { icon } from './icons.js?v=21';
+import { localDateISO } from './lesson-utils.js?v=21';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 
@@ -31,13 +31,7 @@ export function openAttendanceModal(opts) {
         <button type="button" class="bm-close" aria-label="إغلاق">${icon('x', { size: 18 })}</button>
         <h2 class="bm-title">${studentName ? `حصة ${esc(studentName)}` : 'تسجيل غياب'}</h2>
         <div class="bm-error" role="alert"></div>
-        <div class="att-options">
-            ${OPTIONS.map((o) => `<button type="button" class="att-option" data-value="${o.value}">
-                <span class="att-emoji" aria-hidden="true">${o.emoji}</span>
-                <span><strong>${o.title}</strong><small>${o.sub}</small></span>
-            </button>`).join('')}
-        </div>
-        <div class="bm-field" style="margin-top:0.9rem;">
+        <div class="bm-field" >
             <label for="att-date">التاريخ</label>
             <input type="date" id="att-date" value="${esc(opts.date || localDateISO())}" max="${esc(localDateISO())}">
         </div>
@@ -45,9 +39,18 @@ export function openAttendanceModal(opts) {
             <label for="att-note">ملاحظة <small>(اختياري)</small></label>
             <input type="text" id="att-note" maxlength="300" placeholder="مثلًا: مسافر / مريض">
         </div>
+        <p class="bm-hint" style="margin:0.2rem 0 0.5rem">اختار نوع الغياب وهيتسجّل على طول:</p>
+        <div class="att-options">
+            ${OPTIONS.map((o) => `<button type="button" class="att-option" data-value="${o.value}">
+                <span class="att-emoji" aria-hidden="true">${o.emoji}</span>
+                <span><strong>${o.title}</strong><small>${o.sub}</small></span>
+            </button>`).join('')}
+        </div>
     </div>`;
     const $ = (sel) => modal.querySelector(sel);
-    const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+    let busy = false;
+    // وقت الحفظ مانقفلش النافذة (وإلا لو الحفظ فشل الرسالة تضيع والمدرس يفتكر إنه اتسجّل)
+    const close = (force) => { if (busy && force !== true) return; modal.remove(); document.removeEventListener('keydown', onKey); };
     const onKey = (e) => { if (e.key === 'Escape') close(); };
     modal.addEventListener('mousedown', (e) => { if (e.target === modal) close(); });
     $('.bm-close').addEventListener('click', close);
@@ -57,6 +60,9 @@ export function openAttendanceModal(opts) {
     modal.querySelectorAll('.att-option').forEach((btn) => btn.addEventListener('click', async () => {
         const err = $('.bm-error');
         err.style.display = 'none';
+        // غياب بدون عذر بيتخصم من الباقة: تأكيد سريع عشان الضغطة الغلط
+        if (btn.dataset.value === 'absent_unexcused' && !confirm('تسجيل "غاب بدون عذر"؟ الحصة دي ممكن تتحسب من باقة الطالب.')) return;
+        busy = true;
         modal.querySelectorAll('.att-option').forEach((b) => { b.disabled = true; });
         btn.classList.add('is-busy');
         try {
@@ -69,7 +75,8 @@ export function openAttendanceModal(opts) {
                 notes: $('#att-note').value.trim() || null
             });
             try { (window.dataLayer = window.dataLayer || []).push({ event: 'absence_saved', attendance: btn.dataset.value }); } catch (e) { /* تجاهل */ }
-            close();
+            busy = false;
+            close(true);
             const opt = OPTIONS.find((o) => o.value === btn.dataset.value);
             ErrorHandler.showSuccess(`تم التسجيل: ${opt ? opt.title : 'غياب'}`);
             if (onSaved) onSaved(btn.dataset.value);
@@ -79,6 +86,7 @@ export function openAttendanceModal(opts) {
                 ? 'الميزة دي مش متاحة دلوقتي. جرّب تاني بعد شوية، ولو المشكلة فضلت كلّمنا على واتساب.'
                 : ErrorHandler.getErrorMessage(e);
             err.style.display = 'block';
+            busy = false;
             modal.querySelectorAll('.att-option').forEach((b) => { b.disabled = false; });
             btn.classList.remove('is-busy');
         }

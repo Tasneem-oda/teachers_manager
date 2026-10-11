@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الحصة - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=20">
+    <link rel="stylesheet" href="css/style.css?v=21">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,8 +19,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=20">
-    <link rel="stylesheet" href="css/books.css?v=20">
+    <link rel="stylesheet" href="css/lessons.css?v=21">
+    <link rel="stylesheet" href="css/books.css?v=21">
     <style>body { margin: 0; }</style>
 </head>
 <body>
@@ -283,31 +283,33 @@
             .ai-chat-header { padding-top: 0.85rem; }
             .ai-chat-input-row { padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)); }
         }
+        #ai-chat-overlay.kb-open .ai-chat-card { height: 100%; border-radius: 0; }
+        #ai-chat-overlay.kb-open .ai-context-bar, #ai-chat-overlay.kb-open .ai-chips, #ai-chat-overlay.kb-open .ai-chat-quota { display: none; }
         @media (max-width: 480px) {
             .ai-chat-card { height: 88%; }
             .ai-chat-bubble { max-width: 94%; }
         }
     </style>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=20"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+    <script type="module" src="js/config.js?v=21"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=20';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=20';
-        import { api } from './js/api.js?v=20';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=20';
-        import { icon } from './js/icons.js?v=20';
+        import { Auth } from './js/auth.js?v=21';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=21';
+        import { api } from './js/api.js?v=21';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=21';
+        import { icon } from './js/icons.js?v=21';
         import {
             subjectLabel, ratingFieldLabels, RATINGS, HOMEWORK_STATUS, relativeDay, localDateISO, localTimeISO,
             formatDuration, minutesText, LessonDraft, lessonHasContent, lessonDetailsHtml, nextOccurrence, formatNextOccurrence,
             normalizeLesson, isAbsenceRow, attendanceInfo, lessonDay
-        } from './js/lesson-utils.js?v=20';
-        import { openAttendanceModal } from './js/attendance.js?v=20';
-        import { showTips, dismissTip } from './js/tips.js?v=20';
-        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=20';
-        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=20';
-        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=20';
-        import { openBookViewer } from './js/book-viewer.js?v=20';
+        } from './js/lesson-utils.js?v=21';
+        import { openAttendanceModal } from './js/attendance.js?v=21';
+        import { showTips, dismissTip } from './js/tips.js?v=21';
+        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=21';
+        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=21';
+        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=21';
+        import { openBookViewer } from './js/book-viewer.js?v=21';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'ابدأ الحصة وتابعها وسجّلها في مكان واحد', showSearch: false });
@@ -397,19 +399,25 @@
         }
         function saveDraftNow() {
             if (!mode) return;
+            const prev = LessonDraft.load(studentIdParam);
+            const keepId = prev && prev.requestId && prev.lessonId === lesson.id && prev.mode === mode ? prev.requestId : undefined;
             const ok = LessonDraft.save(studentIdParam, {
-                mode, lessonId: lesson.id, startedAt: lesson.startedAt,
+                mode, lessonId: lesson.id, startedAt: lesson.startedAt, requestId: keepId,
                 date: $('f-date').value || null, fields: getFields(), setTopic: $('f-set-topic').checked
             });
-            if (ok) $('saved-ind').textContent = `✓ محفوظ على الجهاز تلقائيًا (${new Date().toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit', hour12: true })})`;
+            $('saved-ind').textContent = ok
+                ? `✓ محفوظ على الجهاز تلقائيًا (${new Date().toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit', hour12: true })})`
+                : '⚠️ مساحة المتصفح مليانة: المكتوب مش بيتحفظ على الجهاز، احفظ الحصة أول ما تخلص.';
         }
         $('lesson-form').addEventListener('input', scheduleDraft);
         $('lesson-form').addEventListener('change', scheduleDraft);
 
         // ------------------------------------------------------------ التحميل
-        window.addEventListener('load', async () => {
+        // بنبدأ فورًا (مش مستنيين حدث load اللي بيستنى Google Tag Manager وكل الإضافات على النت الضعيف)
+        (async () => {
             const authInfo = await Auth.requireAuth();
-            if (!authInfo || !studentIdParam) { window.location.href = 'dashboard.html'; return; }
+            if (!authInfo) return;
+            if (!studentIdParam) { window.location.href = 'dashboard.html'; return; }
             try {
                 await loadOverview();
                 decideInitialState();
@@ -418,10 +426,41 @@
                 $('lesson-app').style.display = 'block';
                 if (openAiParam === '1') openAiChat();
             } catch (error) {
+                // الحصة شغالة والنت وقع: نفتح الحصة من المحفوظ على الجهاز بدل شاشة خطأ
+                const draft = LessonDraft.load(studentIdParam);
+                if (draft && draft.mode && (draft.mode === 'manual' || draft.lessonId)) {
+                    enterOfflineFromDraft(draft);
+                    return;
+                }
                 $('loader').innerHTML = `${esc(ErrorHandler.getErrorMessage(error))} <button type="button" class="btn btn-sm" onclick="location.reload()">حاول تاني</button>`;
                 $('loader').style.color = 'var(--danger)';
             }
-        });
+        })();
+
+        /** فتح الحصة من المسودة لما بيانات الطالب ماتحمّلتش (النت ضعيف). بنحاول نحمّل الباقي في الخلفية */
+        function enterOfflineFromDraft(draft) {
+            try { window.tmTrack && window.tmTrack('lesson_offline_open', { mode: draft.mode }); } catch (e) { /* تجاهل */ }
+            ov = { student: { id: studentIdParam, name: (LiveLesson.get(studentIdParam) || {}).name || '' }, stats: {}, lessons: [], schedules: [], billing: { available: false }, payments: [], legacy: true };
+            student = ov.student;
+            billView = computeBilling(ov.billing);
+            renderCommon();
+            if (draft.mode === 'live') {
+                lesson = { id: draft.lessonId, startedAt: draft.startedAt || Date.now() };
+                enterLive();
+            } else {
+                enterManual(draft.date);
+            }
+            setFields(draft.fields);
+            $('f-set-topic').checked = !!draft.setTopic;
+            $('loader').style.display = 'none';
+            $('lesson-app').style.display = 'block';
+            ErrorHandler.showError('النت ضعيف: فتحنا الحصة من المحفوظ على الجهاز. اكتب عادي، وهنكمّل تحميل بيانات الطالب لما النت يرجع.', 7000);
+            const retry = async () => {
+                try { await loadOverview(); prepareForm(); renderLessonBooks(); }
+                catch (e) { setTimeout(retry, 15000); }
+            };
+            setTimeout(retry, 8000);
+        }
 
         async function loadOverview() {
             // 40 حصة بتغطي الشهر الحالي كله (عشان "الحصة رقم كام في الشهر")
@@ -440,7 +479,12 @@
                 const started = Date.parse(ip.started_at);
                 lesson = { id: ip.id, startedAt: Number.isFinite(started) ? Date.now() - (serverNow - started) : Date.now() };
                 enterLive();
-                if (draft && draft.lessonId === ip.id) { setFields(draft.fields); $('f-set-topic').checked = !!draft.setTopic; }
+                if (draft && lessonHasContent(draft.fields)) {
+                    // نفس الحصة، أو مكتوب قديم ماتحفظش: مانمسحش أي حاجة المدرس كتبها
+                    setFields(draft.fields);
+                    $('f-set-topic').checked = !!draft.setTopic;
+                    if (draft.lessonId !== ip.id) saveDraftNow();
+                }
                 ErrorHandler.showSuccess('تم استكمال الحصة الجارية');
                 return;
             }
@@ -459,11 +503,29 @@
                 ErrorHandler.showSuccess('تم استرجاع المسودة غير المحفوظة');
                 return;
             }
-            if (draft) LessonDraft.clear(studentIdParam);   // الحصة اتقفلت من جهاز تاني أو خلصت
+            if (draft && draft.mode === 'live' && lessonHasContent(draft.fields)) {
+                // الحصة اتقفلت (من جهاز تاني أو اتلغت) والمكتوب لسه ماتحفظش: مانمسحهوش من غير ما المدرس يقرر
+                recoverClosedLiveDraft(draft);
+                return;
+            }
+            if (draft) LessonDraft.clear(studentIdParam);   // الحصة اتقفلت من جهاز تاني أو خلصت ومفيش مكتوب
             LiveLesson.clear(studentIdParam);
             notifyLiveLessonChanged();
             if (manualParam) { clearForm(); enterManual(); return; }
             showReady();
+        }
+
+        /** المكتوب من حصة اتقفلت بره الجهاز ده ← تسجيل يدوي بنفس التاريخ، والمدرس يختار يحفظ أو يلغي */
+        function recoverClosedLiveDraft(draft) {
+            try { window.tmTrack && window.tmTrack('lesson_draft_recovered', {}); } catch (e) { /* تجاهل */ }
+            const d = draft.startedAt ? localDateISO(new Date(draft.startedAt)) : null;
+            LiveLesson.clear(studentIdParam);
+            notifyLiveLessonChanged();
+            enterManual(d);
+            setFields(draft.fields);
+            $('f-set-topic').checked = !!draft.setTopic;
+            saveDraftNow();
+            ErrorHandler.showError('الحصة دي اتقفلت من جهاز تاني أو اتلغت، بس اللي كتبته لسه هنا. اضغط "حفظ الحصة" لو عايز تسجّله، أو "إلغاء" لو اتسجّل خلاص.', 10000);
         }
 
         // ------------------------------------------------------------ العرض
@@ -822,6 +884,7 @@
                 enterLive();
                 saveDraftNow();
                 ErrorHandler.showSuccess(res && res.resumed ? 'تم استكمال الحصة الجارية' : 'بدأت الحصة، بالتوفيق!');
+                try { window.tmTrack && window.tmTrack('lesson_started', { resumed: !!(res && res.resumed), has_link: !!student.lesson_link, planned_min: lesson.plannedMin || 0 }); } catch (e) { /* تجاهل */ }
             } catch (error) {
                 ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
             } finally {
@@ -870,19 +933,26 @@
                 showReady();
                 return;
             }
+            if (discarding) return;
             if (!confirm('حذف الحصة الجارية؟ مش هتتسجل ولا هتتحسب في عدد الحصص.')) return;
+            discarding = true;
             try {
                 if (lesson.id) await api.saveLesson({ action: 'discard', student_id: studentIdParam, lesson_id: lesson.id });
-                LessonDraft.clear(studentIdParam);
-                clearForm();
-                await loadOverview();
-                showReady();
-                ErrorHandler.showSuccess('تم حذف الحصة الجارية');
             } catch (error) {
+                discarding = false;
                 ErrorHandler.showError(error && error.status === 404
                     ? 'الميزة دي مش متاحة دلوقتي. جرّب تاني بعد شوية، ولو المشكلة فضلت كلّمنا على واتساب.'
                     : ErrorHandler.getErrorMessage(error));
+                return;
             }
+            // الحذف نجح: نرجع لشاشة البداية حتى لو تحديث البيانات بعده فشل
+            LessonDraft.clear(studentIdParam);
+            clearForm();
+            try { await loadOverview(); } catch (e) { /* تجاهل */ }
+            showReady();
+            discarding = false;
+            ErrorHandler.showSuccess('تم حذف الحصة الجارية');
+            try { window.tmTrack && window.tmTrack('lesson_discarded', {}); } catch (e) { /* تجاهل */ }
         });
 
         // ------------------------------------------------------------ إنهاء الحصة
@@ -895,7 +965,10 @@
                 student_id: studentIdParam,
                 lesson_id: lesson.id,
                 ...fields,
-                local_date: mode === 'manual' ? ($('f-date').value || localDateISO()) : localDateISO(),
+                // الحصة اللي بدأت 11:40 بالليل وخلصت بعد 12 تتسجل بيوم بدايتها
+                local_date: mode === 'manual' ? ($('f-date').value || localDateISO()) : localDateISO(lesson.startedAt ? new Date(lesson.startedAt) : new Date()),
+                // رقم ثابت لكل مسودة: لو الطلب اتأخر واتبعت تاني، الخادم يقدر يعرف إنه نفس الحفظ
+                client_request_id: draftRequestId(),
                 local_time: mode === 'manual' ? null : localTimeISO(),
                 current_topic: $('f-set-topic').checked && fields.next_assignment ? fields.next_assignment.slice(0, 300) : null
             };
@@ -905,16 +978,35 @@
             const label = btn.innerHTML;
             btn.innerHTML = icon('clock', { size: 17 }) + ' <span class="ls-finish-text">جاري الحفظ...</span>';
             try {
-                await api.saveLesson(payload);
+                try {
+                    await api.saveLesson(payload);
+                } catch (saveErr) {
+                    // الطلب اتأخر: ممكن يكون اتحفظ فعلًا على الخادم. نتأكد قبل ما نقول للمدرس يحفظ تاني (عشان مايتسجلش مرتين)
+                    const code = saveErr && saveErr.error && saveErr.error.code;
+                    if (code !== 'TIMEOUT' || !(await lessonLooksSaved(payload))) throw saveErr;
+                }
                 try { localStorage.setItem('tm_ob_lesson_done', '1'); } catch (e) { /* تجاهل */ }
-                try { (window.dataLayer = window.dataLayer || []).push({ event: 'lesson_saved', lesson_mode: mode }); } catch (e) { /* تجاهل */ }
+                try {
+                    // غِنى التسجيل (من غير المحتوى نفسه): بيورّينا المدرسين بيملوا إيه فعلًا وإيه اللي بيتجاهلوه
+                    const filled = Object.entries(fields).filter(([, v]) => v && String(v).trim()).map(([k]) => k);
+                    (window.dataLayer = window.dataLayer || []).push({
+                        event: 'lesson_saved', lesson_mode: mode,
+                        minutes: mode === 'live' && lesson.startedAt ? Math.round((Date.now() - lesson.startedAt) / 60000) : 0,
+                        fields_filled: filled.length,
+                        has_rating: filled.some((k) => ['memorization', 'recitation', 'revision'].includes(k)),
+                        has_homework: filled.includes('homework'),
+                        has_next: filled.includes('next_assignment'),
+                        billing_on: !!(billView && billView.enabled)
+                    });
+                } catch (e) { /* تجاهل */ }
                 const duration = mode === 'live' && lesson.startedAt ? Date.now() - lesson.startedAt : null;
                 LessonDraft.clear(studentIdParam);
                 unpublishLive();
                 stopTimer();
                 mode = null;
-                try { await loadOverview(); } catch (e) { /* الحصة اتحفظت، الملخص بس اللي ماتحمّلش */ }
-                showDone(duration);
+                // شاشة "تم الحفظ" تظهر فورًا، والملخص (العدد والدفع) يتحدّث لما البيانات توصل
+                showDone(duration, null, true);
+                loadOverview().then(() => refreshDoneInfo(duration)).catch(() => { /* الحصة اتحفظت، الملخص بس اللي ماتحمّلش */ });
             } catch (error) {
                 ErrorHandler.showError(ErrorHandler.getErrorMessage(error) + ' — المكتوب محفوظ على الجهاز، حاول مرة أخرى.');
                 btn.innerHTML = label;
@@ -924,7 +1016,38 @@
             }
         });
 
-        function showDone(duration, absenceValue) {
+        let discarding = false;
+
+        function draftRequestId() {
+            const d = LessonDraft.load(studentIdParam) || {};
+            if (d.requestId) return d.requestId;
+            const id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            LessonDraft.save(studentIdParam, { ...d, requestId: id });
+            return id;
+        }
+
+        /** بعد مهلة الحفظ: هل الحصة دي ظهرت في سجل الطالب؟ */
+        async function lessonLooksSaved(payload) {
+            try {
+                const fresh = await api.getStudentOverview(studentIdParam, { limit: 5 });
+                return ((fresh && fresh.lessons) || []).some((l) => !isAbsenceRow(l)
+                    && String(l.lesson_date || '').slice(0, 10) === payload.local_date
+                    && String(l.lesson_content || '').trim() === String(payload.lesson_content || '').trim()
+                    && (!payload.lesson_id || l.id === payload.lesson_id || !l.id));
+            } catch (e) { return false; }
+        }
+
+        function refreshDoneInfo(duration) {
+            if (!$('state-done').classList.contains('active')) return;
+            const parts = [];
+            if (duration) parts.push(`مدة الحصة ${minutesText(duration)}`);
+            if (lessonsCount()) parts.push(`إجمالي حصص ${student.name ? student.name.split(' ')[0] : 'الطالب'}: ${lessonsCount()}`);
+            $('done-sub').textContent = parts.join(' · ');
+            renderBilling($('done-bill'), false);
+            renderDoneNext(null);
+        }
+
+        function showDone(duration, absenceValue, pendingRefresh = false) {
             if (absenceValue) {
                 const info = attendanceInfo({ status: 'cancelled', attendance: absenceValue });
                 $('done-title').textContent = `تم التسجيل: ${info.label}`;
@@ -940,10 +1063,10 @@
             }
             const parts = [];
             if (duration) parts.push(`مدة الحصة ${minutesText(duration)}`);
-            if (lessonsCount()) parts.push(`إجمالي حصص ${student.name ? student.name.split(' ')[0] : 'الطالب'}: ${lessonsCount()}`);
+            if (!pendingRefresh && lessonsCount()) parts.push(`إجمالي حصص ${student.name ? student.name.split(' ')[0] : 'الطالب'}: ${lessonsCount()}`);
             $('done-sub').textContent = parts.join(' · ');
-            renderBilling($('done-bill'), false);
-            renderDoneNext(absenceValue);
+            if (pendingRefresh) { $('done-bill').innerHTML = ''; $('done-next').hidden = true; }   // بيتحدّثوا بعد ما البيانات الجديدة توصل
+            else { renderBilling($('done-bill'), false); renderDoneNext(absenceValue); }
             clearForm();
             showState('done');
             // أول حصة متسجلة = أنسب وقت نقترح فيه تثبيت التطبيق (js/pwa-install.js بيسمع للحدث ده)
@@ -1034,7 +1157,7 @@
             if (b.last && b.last.page > 1) meta = `<span class="lb-resume">كمّل من ${unit} ${b.last.page}</span>`;
             else if (b.mine) meta = `<span class="lb-mine">خاص ب${esc((student.name || 'الطالب').split(' ')[0])}</span>`;
             else meta = `<span>${esc(BOOK_TYPE[b.file_type] || b.file_type || '')}${b.page_count ? ` · ${b.page_count} ${unit}` : ''}</span>`;
-            return `<button type="button" class="lb-tile${i === 0 && b.last ? ' is-last' : ''}" data-book="${esc(b.id)}" title="فتح ${esc(b.title)}">
+            return `<button type="button" class="lb-tile${i === 0 && b.last ? ' is-last' : ''}" data-track="lesson_book_tile" data-book="${esc(b.id)}" title="فتح ${esc(b.title)}">
                 <span class="lb-ic">${icon(b.file_type === 'image' ? 'image' : 'bookOpen', { size: 18 })}</span>
                 <span class="lb-txt"><span class="lb-title">${esc(b.title)}</span><span class="lb-meta">${meta}</span></span>
             </button>`;
@@ -1170,6 +1293,31 @@
             }
         });
 
+        // الموبايل: لما المدرس يروح لـ Zoom/واتساب الصفحة بتستخبى من غير pagehide — نحفظ فورًا.
+        // ولما يرجع: نتأكد إن الحصة لسه شغالة (ممكن تكون اتقفلت من جهاز تاني)
+        let lastLiveCheck = Date.now();
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'hidden') {
+                if (mode) { clearTimeout(draftTimer); saveDraftNow(); }
+                return;
+            }
+            if (mode !== 'live' || !lesson.id || saving || Date.now() - lastLiveCheck < 60000) return;
+            lastLiveCheck = Date.now();
+            let fresh;
+            try { fresh = await api.getStudentOverview(studentIdParam, { limit: 40 }); } catch (e) { return; }
+            if (mode !== 'live' || !fresh || fresh.legacy) return;
+            const ip = fresh.in_progress;
+            if (!ip || !ip.id || ip.id !== lesson.id) {
+                ov = fresh;
+                student = ov.student || student;
+                billView = computeBilling(ov.billing);
+                stopTimer();
+                const draft = { mode: 'live', lessonId: lesson.id, startedAt: lesson.startedAt, fields: getFields(), setTopic: $('f-set-topic').checked };
+                if (lessonHasContent(draft.fields)) recoverClosedLiveDraft(draft);
+                else { LessonDraft.clear(studentIdParam); showReady(); ErrorHandler.showError('الحصة دي اتقفلت من جهاز تاني.', 6000); }
+            }
+        });
+
         // المدرس فتح صفحة تانية من القايمة: نحفظ المكتوب فورًا (الحصة نفسها شغالة على السيرفر)
         window.addEventListener('pagehide', () => {
             if (!mode) return;
@@ -1229,7 +1377,20 @@
                 d.getElementById('pip-ok').textContent = '✓ اتضافت لـ "ماذا تم في الحصة"';
                 setTimeout(() => { if (pipWin) d.getElementById('pip-ok').textContent = ''; }, 2500);
             });
-            pipWin.addEventListener('pagehide', () => { pipWin = null; $('btn-pip').classList.remove('active'); });
+            pipWin.addEventListener('pagehide', () => {
+                // ملاحظة اتكتبت ومااتضافتش: نضيفها بدل ما تضيع
+                try {
+                    const left = d.getElementById('pip-note');
+                    const v = left ? left.value.trim() : '';
+                    if (v) {
+                        const ta = $('f-content');
+                        ta.value = ta.value.trim() ? `${ta.value.trim()}\n${v}` : v;
+                        ta.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                } catch (e) { /* تجاهل */ }
+                pipWin = null;
+                $('btn-pip').classList.remove('active');
+            });
             $('btn-pip').classList.add('active');
             try { (window.dataLayer = window.dataLayer || []).push({ event: 'lesson_pip_opened' }); } catch (e) { /* تجاهل */ }
             updatePip(formatDuration(Date.now() - (lesson.startedAt || Date.now())), timeState(lesson.startedAt || Date.now(), lesson.plannedMin));
@@ -1483,6 +1644,8 @@
             aiChatOverlay.style.top = Math.max(0, Math.round(vv.offsetTop)) + 'px';
             aiChatOverlay.style.height = Math.round(vv.height) + 'px';
             aiChatOverlay.style.bottom = 'auto';
+            // الكيبورد مفتوح: الشات ياخد الشاشة كلها ونخبّي الشريط والاختصارات عشان الرد يبان
+            aiChatOverlay.classList.toggle('kb-open', vv.height < window.innerHeight * 0.75);
         }
         function autoGrowAiChatInput() {
             aiChatInput.style.height = 'auto';
@@ -1582,8 +1745,11 @@
 
         // ---------------- الإرسال
         function aiSend(text) {
+            if (aiChatBusy) return;   // مانمسحش اللي المدرس بيكتبه وفيه طلب لسه شغال
+            const typed = aiChatInput.value;
             aiChatInput.value = text;
-            aiChatForm.requestSubmit();
+            aiChatForm.requestSubmit();   // الإرسال بيقرا الرسالة فورًا
+            if (typed.trim() && typed !== text) { aiChatInput.value = typed; autoGrowAiChatInput(); }
         }
 
         aiChatForm.addEventListener('submit', async (e) => {
@@ -1610,8 +1776,10 @@
                 setTimeout(() => { const t = aiChatMessages.querySelector('.ai-typing span'); if (t) t.textContent = 'لسه بيجهّز… قرّب يخلص'; }, 18000)
             ];
             // حد أقصى للانتظار: لو مفيش رد خلال 75 ثانية بنوقف ونقول للمدرس
+            // مهلة "سكوت": لو مفيش ولا حرف وصل خلال 60 ثانية نوقف. طول ما الرد بيوصل مانقطعهوش
             const aborter = new AbortController();
-            const hardStop = setTimeout(() => aborter.abort(), 75000);
+            let hardStop = setTimeout(() => aborter.abort(), 60000);
+            const bumpIdle = () => { clearTimeout(hardStop); hardStop = setTimeout(() => aborter.abort(), 45000); };
 
             let liveBubble = null;
             let pendingText = '';
@@ -1630,7 +1798,7 @@
                     lessonContext: aiLessonContext(),
                     sessionSince: aiSessionSince(),
                     signal: aborter.signal,
-                    onText: (text) => { pendingText = text; if (!frame) frame = requestAnimationFrame(paint); },
+                    onText: (text) => { bumpIdle(); pendingText = text; if (!frame) frame = requestAnimationFrame(paint); },
                     onRetry: () => showAiTyping('ثانية واحدة')
                 });
                 if (frame) cancelAnimationFrame(frame);
@@ -1649,11 +1817,21 @@
                 if (liveBubble) liveBubble.classList.remove('is-streaming');
                 aiRemoveTransient();
                 const timedOut = aborter.signal.aborted;
-                renderAiChatMessage('error', timedOut ? 'المساعد اتأخر أكتر من اللازم. جرّب تاني، ولو اتكرر جرّب سؤال أقصر.' : (ErrorHandler.getErrorMessage(error) || 'حصلت مشكلة مع المساعد، جرّب تاني.'));
-                // نرجّع الرسالة لمربع الكتابة عشان يبعتها تاني بضغطة
-                if (!aiChatInput.value) { aiChatInput.value = message; autoGrowAiChatInput(); }
-                aiHistory.pop();
-                aiStore.save();
+                const errText = timedOut ? 'المساعد اتأخر أكتر من اللازم. جرّب تاني، ولو اتكرر جرّب سؤال أقصر.' : (ErrorHandler.getErrorMessage(error) || 'حصلت مشكلة مع المساعد، جرّب تاني.');
+                if (pendingText && pendingText.trim()) {
+                    // جزء من الرد وصل قبل ما يقف: نحتفظ بيه بدل ما يضيع
+                    if (!liveBubble) paint();
+                    aiHistory.push({ role: 'assistant', text: pendingText });
+                    aiStore.save();
+                    renderAiTools(pendingText);
+                    renderAiChatMessage('error', `${errText} (ده اللي وصل من الرد)`, { keepTools: true });
+                } else {
+                    renderAiChatMessage('error', errText, { keepTools: true });
+                    // نرجّع الرسالة لمربع الكتابة عشان يبعتها تاني بضغطة
+                    if (!aiChatInput.value) { aiChatInput.value = message; autoGrowAiChatInput(); }
+                    aiHistory.pop();
+                    aiStore.save();
+                }
             } finally {
                 typingTimers.forEach(clearTimeout);
                 clearTimeout(hardStop);
@@ -1663,6 +1841,6 @@
             }
         });
         </script>
-    <script src="js/pwa-install.js?v=20" defer></script>
+    <script src="js/pwa-install.js?v=21" defer></script>
 </body>
 </html>

@@ -5,15 +5,15 @@
  *   - إعادة معالجة الكتب المتعثّرة، إدارة الوصول، و"اسأل مصادرك" العام
  */
 
-import { CONFIG } from './config.js?v=20';
-import { Auth } from './auth.js?v=20';
-import { renderSidebar, renderTopHeader } from './sidebar.js?v=20';
-import { icon } from './icons.js?v=20';
-import { api } from './api.js?v=20';
-import { ErrorHandler, Formatters } from './utils.js?v=20';
-import { detectFileType, processBook } from './book-processor.js?v=20';
-import { openBookViewer } from './book-viewer.js?v=20';
-import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=20';
+import { CONFIG } from './config.js?v=21';
+import { Auth } from './auth.js?v=21';
+import { renderSidebar, renderTopHeader } from './sidebar.js?v=21';
+import { icon } from './icons.js?v=21';
+import { api } from './api.js?v=21';
+import { ErrorHandler, Formatters } from './utils.js?v=21';
+import { detectFileType, processBook } from './book-processor.js?v=21';
+import { openBookViewer } from './book-viewer.js?v=21';
+import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=21';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => Formatters.escapeHtml(String(s == null ? '' : s));
@@ -76,7 +76,9 @@ export function initBooksPage() {
         const live = active.get(b.id);
         const scopeLabel = (b.student_ids && b.student_ids.length > 0) ? `متاح لـ ${b.student_ids.length} طالب محدد` : 'متاح لكل الطلاب';
         const unit = b.file_type === 'pptx' ? 'شريحة' : 'صفحة';
-        const canOpen = !!b.storage_path && st !== 'uploading';
+        // الرفع ماكملش (الملف مش موجود في التخزين): مفيش فتح ولا إعادة معالجة، الحل الوحيد رفع تاني
+        const uploadBroken = st === 'stalled' && b.status === 'uploading';
+        const canOpen = !!b.storage_path && st !== 'uploading' && !uploadBroken && !active.has(b.id);
         let body = '';
         if (st === 'ready') {
             body = `<p class="book-meta">${b.chapter_count ? `${b.chapter_count} فصلًا · ` : ''}${b.page_count || '؟'} ${unit}${b.is_scanned ? ' · كتاب مصوّر' : ''}</p>`;
@@ -84,10 +86,12 @@ export function initBooksPage() {
             body = progressHtml(b, live);
         } else if (st === 'failed') {
             body = `<p class="book-error-text">${esc(b.error_message || 'حدث خطأ أثناء التحليل')}</p>`;
+        } else if (uploadBroken) {
+            body = `<p class="book-error-text">الرفع ماكملش (غالبًا النت فصل). احذف الكتاب ده وارفعه تاني من زرار "إضافة".</p>`;
         } else if (st === 'stalled') {
-            body = `<p class="book-error-text">${b.status === 'uploading' ? 'الرفع لم يكتمل.' : 'المعالجة توقفت (ربما اتقفلت الصفحة).'} اضغط "إعادة المعالجة" لإكمالها.</p>`;
+            body = `<p class="book-error-text">المعالجة توقفت (ربما اتقفلت الصفحة). اضغط "إعادة المعالجة" لإكمالها.</p>`;
         }
-        const reprocess = (st === 'failed' || st === 'stalled')
+        const reprocess = (st === 'failed' || (st === 'stalled' && !uploadBroken))
             ? `<button type="button" class="btn" data-action="reprocess">${icon('refresh', { size: 13 })} إعادة المعالجة</button>` : '';
         const openBtn = canOpen ? `<button type="button" class="btn btn-primary" data-action="open">${icon('bookOpen', { size: 14 })} فتح الكتاب</button>` : '';
         const askBtn = st === 'ready' ? `<button type="button" class="btn btn-muted" data-action="ask">${icon('messageSquare', { size: 14 })} اسأل</button>` : '';
@@ -216,6 +220,8 @@ export function initBooksPage() {
         const live = { ctl, percent: 1, message: 'جاري البدء...', stage: 'start' };
         active.set(book.id, live);
         renderBooks();
+        await keepScreenOn(true);
+        ErrorHandler.showSuccess('خلي الصفحة دي مفتوحة والشاشة منوّرة لحد ما التحليل يخلص ✓', 6000);
         try {
             const res = await processBook({
                 api, book, file, signal: ctl.signal,
@@ -234,9 +240,27 @@ export function initBooksPage() {
             else ErrorHandler.showError((err && err.message) || 'تعذّرت معالجة الكتاب', 9000);
         } finally {
             active.delete(book.id);
+            if (!active.size) keepScreenOn(false);
             await loadBooks();
         }
     }
+
+    // الموبايل بيوقف الصفحة لما الشاشة تقفل أو المدرس يروح لواتساب، والتحليل يقف معاها.
+    // Wake Lock بيخلي الشاشة منورة طول التحليل (لو المتصفح بيدعمه)
+    let wakeLock = null;
+    async function keepScreenOn(on) {
+        try {
+            if (on) {
+                if (!wakeLock && navigator.wakeLock) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    wakeLock.addEventListener('release', () => { wakeLock = null; });
+                }
+            } else if (wakeLock) { await wakeLock.release(); wakeLock = null; }
+        } catch (e) { /* تجاهل */ }
+    }
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && active.size) keepScreenOn(true);   // القفل بيتفك لما الصفحة تستخبى
+    });
 
     // ------------------------------------------------------------------ رفع مصدر جديد
     const MAX_BYTES = CONFIG.BOOKS_SETTINGS.MAX_FILE_MB * 1024 * 1024;

@@ -3,8 +3,8 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=20';
-import { APIUtils, Storage } from './utils.js?v=20';
+import { CONFIG } from './config.js?v=21';
+import { APIUtils, Storage } from './utils.js?v=21';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -35,14 +35,11 @@ async function apiCall(endpoint, method = 'GET', body = null, options = {}) {
         throw { error: { code: 'READ_ONLY', message: 'التسجيل الجديد محتاج اشتراك. بياناتك كلها محفوظة.' } };
     }
 
+    const t0 = Date.now();
+    let failure = null;
     try {
-        // 1. الحصول على الجلسة والـ token
-        const { data: { session }, error } = await window.supabaseClient.auth.getSession();
-
-        if (error || !session) {
-            window.location.href = 'login.html';
-            throw new Error('AUTH_EXPIRED');
-        }
+        // 1. الحصول على الجلسة والـ token (النت الضعيف مايتعاملش كأن المدرس اتسجّل خروجه)
+        const session = await getSessionOrRedirect();
 
         // 2. بناء الـ headers
         const headers = APIUtils.buildHeaders(session.access_token);
@@ -79,26 +76,51 @@ async function apiCall(endpoint, method = 'GET', body = null, options = {}) {
         return data;
 
     } catch (error) {
-        if (error === 'AUTH_EXPIRED') {
+        if (error && error.error && error.error.code === 'AUTH_EXPIRED') {
             throw error;
         }
 
-        if (error && (error.status === 401 || error.status === 403)) {
-            await window.supabaseClient.auth.signOut();
+        // 401 = الجلسة خلصت فعلًا. (403 ممكن تكون قاعدة عمل، فمانخرجش المدرس بسببها)
+        if (error && error.status === 401) {
+            try { await window.supabaseClient.auth.signOut({ scope: 'local' }); } catch (e) { /* تجاهل */ }
             window.location.href = 'login.html';
         }
 
+        failure = error;
         throw error;
     } finally {
         if (timer) clearTimeout(timer);
         if (options.signal) options.signal.removeEventListener('abort', onExternalAbort);
+        // تتبع: الطلبات البطيئة/الفاشلة (js/track.js)
+        try { if (window.__tmTrackApi) window.__tmTrackApi(endpoint, Date.now() - t0, failure); } catch (e) { /* تجاهل */ }
     }
 }
 
 let billingDueCache = null;
 
+/**
+ * الجلسة الحالية. لو التجديد فشل بسبب النت (مش لأن الجلسة انتهت) بنرمي خطأ "نت" بدل ما نودّي المدرس لصفحة الدخول.
+ */
+async function getSessionOrRedirect() {
+    let res;
+    try {
+        res = await window.supabaseClient.auth.getSession();
+    } catch (e) {
+        throw { error: { code: 'NETWORK', message: 'تعذّر الاتصال بالخادم. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.' } };
+    }
+    const session = res && res.data ? res.data.session : null;
+    const err = res ? res.error : null;
+    if (session) return session;
+    if (err && /fetch|network|retryable|timeout/i.test(`${err.name || ''} ${err.message || ''}`)) {
+        throw { error: { code: 'NETWORK', message: 'تعذّر الاتصال بالخادم. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.' } };
+    }
+    window.location.href = 'login.html';
+    throw { error: { code: 'AUTH_EXPIRED', message: 'انتهت الجلسة، سجّل الدخول تاني.' } };
+}
+
 // الطلبات اللي مسموحة حتى في وضع القراءة فقط (الاشتراك، الاقتراحات، الإشعارات)
-const READ_ONLY_ALLOWED = ['/check-subscription', '/submit-suggestion', '/mark-notifications-read', '/bootstrap-session', '/initialize-teacher', '/monthly-income'];
+// (get-book-content و ask مش "حفظ": قراءة الكتب مسموحة زي ما وعدنا المدرس في شريط القراءة فقط) + أحداث التتبع
+const READ_ONLY_ALLOWED = ['/check-subscription', '/submit-suggestion', '/mark-notifications-read', '/bootstrap-session', '/initialize-teacher', '/monthly-income', '/get-book-content', '/track-events', '/update-profile'];
 function isBlockedByReadOnly(endpoint, method) {
     if (typeof window === 'undefined' || !window.__tmReadOnly) return false;
     if (String(method || 'GET').toUpperCase() === 'GET') return false;
@@ -177,8 +199,7 @@ async function streamAiChatOnce(studentId, message, onText, signal, extra = {}) 
         try { if (window.tmOpenSubscribePrompt) window.tmOpenSubscribePrompt(window.__tmReadOnlyReason); } catch (e) { /* تجاهل */ }
         throw { error: { code: 'READ_ONLY', message: 'المساعد الذكي محتاج اشتراك. بياناتك كلها محفوظة.' } };
     }
-    const { data: { session }, error } = await window.supabaseClient.auth.getSession();
-    if (error || !session) { window.location.href = 'login.html'; throw new Error('AUTH_EXPIRED'); }
+    const session = await getSessionOrRedirect();
 
     let response;
     try {
@@ -232,12 +253,19 @@ async function streamAiChatOnce(studentId, message, onText, signal, extra = {}) 
     if (response.body && response.body.getReader) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        for (;;) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            splitter.push(decoder.decode(value, { stream: true }));
+        try {
+            for (;;) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                splitter.push(decoder.decode(value, { stream: true }));
+            }
+            splitter.push(decoder.decode());
+        } catch (readErr) {
+            // النت قطع في نص الرد: نرجّع اللي وصل بدل ما يضيع
+            if (reply) return { reply, remaining_today: undefined, partialError: { error: { code: 'NETWORK', message: 'النت قطع قبل ما الرد يكمل. ده اللي وصل.' } } };
+            if (readErr && readErr.name === 'AbortError') throw { error: { code: 'ABORTED', message: 'تم إلغاء الطلب' }, aborted: true };
+            throw { error: { code: 'NETWORK', message: 'تعذّر الاتصال بالخادم. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.' } };
         }
-        splitter.push(decoder.decode());
     } else {
         splitter.push(await response.text());
     }
@@ -394,6 +422,11 @@ export const api = {
         return await apiCall(CONFIG.API_ENDPOINTS.EVENTS.SAVE, 'POST', payload);
     },
 
+    /** تعديل بيانات المدرس (الاسم/الموبايل/نوع التدريس/المادة) — n8n/update-profile.json */
+    async updateProfile(data) {
+        return await apiCall(CONFIG.API_ENDPOINTS.PROFILE.UPDATE, 'POST', data);
+    },
+
     /** اقتراح جديد من المدرس (n8n/submit-suggestion.json) */
     async submitSuggestion(suggestion, allowName, page) {
         return await apiCall(CONFIG.API_ENDPOINTS.SUGGESTIONS.SUBMIT, 'POST', { suggestion, allow_name: !!allowName, page: page || '' });
@@ -485,7 +518,8 @@ export const api = {
             // الخادم القديم: الغياب بيتسجل كإلغاء حصة النهارده بس
             if (data.action === 'absence') return await apiCall(CONFIG.API_ENDPOINTS.LESSONS.CANCEL, 'POST', { student_id: data.student_id });
             const legacy = { ...data, performance_notes: data.performance };
-            return await apiCall(CONFIG.API_ENDPOINTS.LESSONS.FINALIZE, 'POST', { id: data.lesson_id || data.student_id, ...legacy });
+            const legacyBody = data.lesson_id ? { id: data.lesson_id, ...legacy } : legacy;
+            return await apiCall(CONFIG.API_ENDPOINTS.LESSONS.FINALIZE, 'POST', legacyBody);
         }
     },
 

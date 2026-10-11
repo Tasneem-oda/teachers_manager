@@ -3,7 +3,7 @@
   "short_name": "Teachers Manager",
   "description": "منصة لإدارة الطلاب، الحصص، الجداول، والاشتراكات للمعلمين",
   "id": "/",
-  "start_url": "./index.html",
+  "start_url": "./dashboard.html?source=pwa",
   "scope": "./",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],

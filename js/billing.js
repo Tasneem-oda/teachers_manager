@@ -10,9 +10,9 @@
  *   postpaid : الدفع بعد عدد حصص (مثلًا كل 4 حصص) → التذكير لما المستحق يوصل للعدد ده
  */
 
-import { api } from './api.js?v=20';
-import { Formatters, ErrorHandler } from './utils.js?v=20';
-import { icon } from './icons.js?v=20';
+import { api } from './api.js?v=21';
+import { Formatters, ErrorHandler, toLatinDigits } from './utils.js?v=21';
+import { icon } from './icons.js?v=21';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 
@@ -64,7 +64,8 @@ export function computeBilling(billing) {
 
     if (view.mode === 'prepaid') {
         view.used = balance >= 0 && balance <= size ? size - balance : null;
-        view.progress = view.used != null ? view.used / size : 1;
+        // رصيد أكبر من باقة (دفع مقدمًا لأكتر من باقة): الشريط فاضي مش مليان
+        view.progress = view.used != null ? view.used / size : (balance > size ? 0 : 1);
         if (balance > 1) {
             view.status = 'ok';
             view.headline = `باقي ${lessonsText(balance)}`;
@@ -166,7 +167,9 @@ export function buildReminder(view, student, tone = 'friendly') {
     if (tone === 'statement') {
         const lines = [hi, 'ملخص الحصص من بداية المتابعة:'];
         lines.push(`• الحصص اللي تمت: ${view.taken}`);
-        lines.push(`• الحصص المدفوعة: ${view.paid + view.adjusted}`);
+        lines.push(`• الحصص المدفوعة: ${view.paid}`);
+        if (view.adjusted > 0) lines.push(`• حصص إضافية/تعويض: ${view.adjusted}`);
+        else if (view.adjusted < 0) lines.push(`• حصص اتخصمت: ${-view.adjusted}`);
         if (view.balance > 0) lines.push(`• المتبقي من المدفوع: ${lessonsText(view.balance)}`);
         else if (view.owed > 0) lines.push(`• المستحق: ${lessonsText(view.owed)}${owedAmt}`);
         else lines.push('• لا يوجد مستحق حاليًا');
@@ -194,11 +197,12 @@ export function buildReminder(view, student, tone = 'friendly') {
 
 // رقم مصري محلي (01xxxxxxxxx) بيتحوّل لـ 201xxxxxxxxx، وأي رقم دولي بيتقبل زي ما هو
 export function normalizePhone(phone) {
-    let d = String(phone || '').replace(/[^\d+]/g, '');
+    let d = toLatinDigits(phone || '').replace(/[^\d+]/g, '');
     if (!d) return null;
     if (d.startsWith('+')) d = d.slice(1);
     else if (d.startsWith('00')) d = d.slice(2);
     else if (/^01\d{9}$/.test(d)) d = '20' + d.slice(1);
+    else if (/^1[0125]\d{8}$/.test(d)) d = '20' + d;   // رقم مصري اتكتب من غير الصفر (1012345678)
     else if (d.startsWith('0')) return null;   // رقم محلي لبلد غير معروف
     d = d.replace(/\D/g, '');
     return d.length >= 8 ? d : null;
@@ -249,6 +253,7 @@ export function bindBillingActions(container, ctx) {
     container.querySelectorAll('[data-bill-act]').forEach((btn) => {
         btn.addEventListener('click', () => {
             const act = btn.dataset.billAct;
+            try { if (window.tmTrack) window.tmTrack('billing_action', { action: act, page_mode: document.body.dataset.mode || '' }, { gtm: false }); } catch (e) { /* تجاهل */ }
             const s = ctx.getState();
             if (act === 'setup' || act === 'settings') openBillingSetup(s, ctx.onChange);
             else if (act === 'pay') openPaymentModal(s, ctx.onChange);
@@ -334,6 +339,7 @@ async function applyToAll(m, btn, studentId, data, others, onChange) {
         };
         await Promise.all([worker(), worker(), worker()]);
         m.close();
+        try { sessionStorage.removeItem('tm_income_cache_v1'); } catch (e) { /* تجاهل */ }
         if (failed.length) ErrorHandler.showError(`اتفعّلت المتابعة لـ ${others.length - failed.length + 1} طالب. ماتفعّلتش لـ: ${failed.join('، ')}`);
         else ErrorHandler.showSuccess(`تم تفعيل متابعة الدفع لـ ${others.length + 1} طالب`);
         if (onChange) onChange();

@@ -64,7 +64,9 @@
      * هل الجهاز/المتصفح الحالي iOS (Safari) اللي محتاج تعليمات يدوية؟
      */
     function isIosDevice() {
-        return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+        // الآيباد الجديد بيقول عن نفسه Macintosh، فبنعرفه من شاشة اللمس
+        return /iphone|ipad|ipod/i.test(window.navigator.userAgent)
+            || (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
     }
 
     /**
@@ -159,12 +161,15 @@
             }
             @media (max-width: 480px) {
                 #tm-install-banner .tm-desc { display: none; }
+                /* الآيفون مالوش زرار تثبيت: الشرح هو الطريقة الوحيدة، فلازم يفضل ظاهر */
+                #tm-install-banner.ios .tm-desc { display: block; font-size: 0.78rem; }
             }
         `;
         document.head.appendChild(style);
 
         const banner = document.createElement('div');
         banner.id = 'tm-install-banner';
+        if (isIos) banner.className = 'ios';
         banner.innerHTML = `
             <img class="tm-icon" src="assets/icons/icon-192.png" alt="شعار Teachers Manager">
             <div class="tm-text">

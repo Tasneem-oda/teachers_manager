@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>ملف الطالب - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=20">
+    <link rel="stylesheet" href="css/style.css?v=21">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,7 +19,7 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=20">
+    <link rel="stylesheet" href="css/lessons.css?v=21">
     <style>
         .loading { text-align: center; padding: 2rem; color: var(--primary); }
         .empty-state { text-align: center; padding: 2rem; color: var(--text-secondary); }
@@ -188,20 +188,20 @@
     </div>
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=20"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+    <script type="module" src="js/config.js?v=21"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=20';
-        import { api } from './js/api.js?v=20';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=20';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=20';
-        import { icon } from './js/icons.js?v=20';
-        import { openStudentAppointments } from './js/student-appointments.js?v=20';
-        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=20';
-        import { openAttendanceModal } from './js/attendance.js?v=20';
-        import { openMonthlyReport } from './js/report.js?v=20';
-        import { showTips } from './js/tips.js?v=20';
-        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=20';
+        import { Auth } from './js/auth.js?v=21';
+        import { api } from './js/api.js?v=21';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=21';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=21';
+        import { icon } from './js/icons.js?v=21';
+        import { openStudentAppointments } from './js/student-appointments.js?v=21';
+        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=21';
+        import { openAttendanceModal } from './js/attendance.js?v=21';
+        import { openMonthlyReport } from './js/report.js?v=21';
+        import { showTips } from './js/tips.js?v=21';
+        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=21';
 
         renderSidebar('students');
         renderTopHeader({ title: 'ملف الطالب', subtitle: 'كل ما يخص الطالب في مكان واحد' });
@@ -243,7 +243,7 @@
                     { id: 'student_report', target: '#ov-report', title: 'تقرير ولي الأمر', text: 'آخر كل شهر ابعت لولي الأمر تقرير جاهز بالحضور والمستوى — بيفرق جدًا في ثقته فيك.' }
                 ]);
             } catch (error) {
-                $('loading').innerText = 'خطأ: ' + ErrorHandler.getErrorMessage(error);
+                $('loading').innerHTML = `${esc(ErrorHandler.getErrorMessage(error))} <button type="button" class="btn btn-sm" onclick="location.reload()">حاول تاني</button>`;
             }
         })();
 
@@ -375,7 +375,14 @@
             hist.querySelectorAll('[data-del-payment]').forEach((b) => b.addEventListener('click', async () => {
                 if (!confirm('حذف هذا القيد من سجل الدفع؟')) return;
                 b.disabled = true;
-                try { await api.studentBilling(studentId, 'delete_payment', { payment_id: b.dataset.delPayment }); ErrorHandler.showSuccess('تم الحذف'); await loadOverview(); }
+                try {
+                    await api.studentBilling(studentId, 'delete_payment', { payment_id: b.dataset.delPayment });
+                    // فلوس الشهر في الرئيسية تتحسب من جديد (وإلا الدفعة المحذوفة تفضل ظاهرة)
+                    try { sessionStorage.removeItem('tm_income_cache_v1'); } catch (er) { /* تجاهل */ }
+                    api.clearBillingDueCache();
+                    ErrorHandler.showSuccess('تم الحذف');
+                    await loadOverview();
+                }
                 catch (e) { b.disabled = false; ErrorHandler.showError(ErrorHandler.getErrorMessage(e)); }
             }));
         }
@@ -405,7 +412,8 @@
                         <span class="lh-peek">${esc(peek)}</span><span class="lh-caret">${icon('chevronDown', { size: 16 })}</span></summary>
                     <div class="lh-body">${lessonDetailsHtml(l, student.subject, icon)}</div></details>`;
             }).join('');
-            $('btn-more-lessons').hidden = historyTotal ? lessons.length >= historyTotal : lessons.length % PAGE !== 0 || lessons.length === 0;
+            // history_total = كل الصفوف (حصص + غياب). لو الخادم مابيبعتهوش: نعرض الزرار طول ما آخر صفحة كانت كاملة
+            $('btn-more-lessons').hidden = st.history_total ? lessons.length >= Number(st.history_total) : (lessons.length % PAGE !== 0 || lessons.length === 0);
         }
 
         $('btn-add-absence').addEventListener('click', () => openAttendanceModal({
@@ -457,6 +465,9 @@
                 student_preferences: $('student-preferences').value.trim(),
                 ai_context: $('ai-context').value.trim()
             };
+            const sbtn = e.submitter || $('teaching-form').querySelector('[type="submit"]');
+            if (sbtn && sbtn.disabled) return;
+            if (sbtn) sbtn.disabled = true;
             try {
                 await api.createOrUpdateTeachingProfile(studentId, data);
                 profile = { ...(profile || {}), ...data };
@@ -464,6 +475,7 @@
                 $('profile-modal').classList.remove('active');
                 ErrorHandler.showSuccess('تم الحفظ');
             } catch (error) { ErrorHandler.showError(ErrorHandler.getErrorMessage(error)); }
+            finally { if (sbtn) sbtn.disabled = false; }
         });
 
         // ------------------------------------------------------------ الملاحظات
@@ -481,12 +493,16 @@
             e.preventDefault();
             const text = $('note-text').value.trim();
             if (!text) return;
+            const btn = e.submitter || $('note-form').querySelector('[type="submit"]');
+            if (btn && btn.disabled) return;
+            if (btn) btn.disabled = true;
             try {
                 await api.createNote(studentId, text);
                 $('note-text').value = '';
                 ErrorHandler.showSuccess('تمت إضافة الملاحظة');
                 loadNotes();
             } catch (error) { ErrorHandler.showError(ErrorHandler.getErrorMessage(error)); }
+            finally { if (btn) btn.disabled = false; }
         });
 
         // ------------------------------------------------------------ البيانات والتعديل
@@ -617,6 +633,6 @@
 
         window.openBillingSetup = () => openBillingSetup({ student, view: billView }, billingCtx.onChange);
     </script>
-    <script src="js/pwa-install.js?v=20" defer></script>
+    <script src="js/pwa-install.js?v=21" defer></script>
 </body>
 </html>

@@ -11,10 +11,10 @@
  * من غير أي تعديل أو إضافة على أي workflow في n8n.
  */
 
-import { api } from './api.js?v=20';
-import { ErrorHandler, Formatters } from './utils.js?v=20';
-import { icon } from './icons.js?v=20';
-import { mountTimePicker, refreshTimePicker, mountDayChips, weekIndex } from './form-widgets.js?v=20';
+import { api } from './api.js?v=21';
+import { ErrorHandler, Formatters } from './utils.js?v=21';
+import { icon } from './icons.js?v=21';
+import { mountTimePicker, refreshTimePicker, mountDayChips, weekIndex } from './form-widgets.js?v=21';
 
 const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const RECURRENCE_LABELS = { weekly: 'أسبوعيًا', daily: 'يوميًا', monthly: 'شهريًا', none: 'مرة واحدة' };
@@ -132,9 +132,15 @@ function injectMarkup() {
         if (btn.dataset.action === 'edit') {
             openEditForm(sch);
         } else if (btn.dataset.action === 'delete') {
-            if (!confirm('هل تريد حذف هذا الموعد؟')) return;
+            // موعد "كل يوم" = 7 صفوف بنفس المجموعة: نسأل نحذف كل الأيام ولا اليوم ده بس
+            const group = sch.recurrence_group_id ? studentSchedules.filter((x) => x.recurrence_group_id === sch.recurrence_group_id) : [sch];
+            let targets = [sch];
+            if (group.length > 1) {
+                if (confirm(`الموعد ده متكرر في ${group.length} أيام. تحذفه من كل الأيام؟\n(اضغط "إلغاء" لو عايز تحذف اليوم ده بس)`)) targets = group;
+                else if (!confirm('تحذف الموعد ده من اليوم ده بس؟')) return;
+            } else if (!confirm('هل تريد حذف هذا الموعد؟')) return;
             try {
-                await api.deleteSchedule(sch.id);
+                for (const t of targets) await api.deleteSchedule(t.id);
                 ErrorHandler.showSuccess('تم حذف الموعد');
                 await loadList();
                 notifySchedulesChanged();
@@ -273,7 +279,7 @@ async function handleFormSubmit(e) {
             });
             if (ok === 0) throw new Error('ماتحفظش أي موعد: ' + failed.join('، '));
             try { (window.dataLayer = window.dataLayer || []).push({ event: 'schedule_saved', days_count: ok, recurrence: recurrenceType }); } catch (e) { /* تجاهل */ }
-            if (failed.length) ErrorHandler.showError(`اتحفظ ${ok} من ${targetDays.length}. الأيام اللي فيها تعارض: ${failed.join('، ')}`);
+            if (failed.length) ErrorHandler.showError(`اتحفظ ${ok} من ${targetDays.length}. الأيام اللي ماتحفظتش: ${failed.join('، ')}`);
             else ErrorHandler.showSuccess(ok === 1 ? 'تم حفظ الموعد' : `تم حفظ ${ok} مواعيد`);
             document.getElementById('sapp-form-modal').classList.remove('active');
             await loadList();
@@ -295,7 +301,19 @@ async function handleFormSubmit(e) {
             payload.start_date = dateValue;
             payload.day_of_week = new Date(dateValue + 'T00:00:00').getDay();
         }
-        if (id) await api.updateSchedule(id, payload);
+        if (id) {
+            // تعديل وقت موعد "كل يوم": نطبّقه على كل أيام المجموعة (وإلا يوم واحد بس يتغيّر و6 يفضلوا على القديم)
+            const group = existingGroupId && recurrenceType === 'daily'
+                ? studentSchedules.filter((x) => x.recurrence_group_id === existingGroupId) : [];
+            if (group.length > 1) {
+                const res = await Promise.allSettled(group.map((g) => api.updateSchedule(g.id, { ...payload, day_of_week: g.day_of_week })));
+                const bad = res.filter((r) => r.status === 'rejected');
+                if (bad.length === group.length) throw bad[0].reason;
+                if (bad.length) ErrorHandler.showError(`اتعدّل ${group.length - bad.length} من ${group.length} أيام (الباقي فيه تعارض).`);
+            } else {
+                await api.updateSchedule(id, payload);
+            }
+        }
         else await api.createSchedule(payload);
 
         ErrorHandler.showSuccess('تم حفظ الموعد بنجاح');

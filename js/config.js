@@ -96,6 +96,12 @@ export const CONFIG = {
             MONTHLY: '/monthly-income'
         },
         // اقتراحات المدرسين (زرار "عندك اقتراح؟") - n8n/submit-suggestion.json
+        PROFILE: {
+            UPDATE: '/update-profile'            // n8n/update-profile.json
+        },
+        TRACKING: {
+            EVENTS: '/track-events'              // n8n/track-events.json (تتبع الاستخدام)
+        },
         SUGGESTIONS: {
             SUBMIT: '/submit-suggestion'
         },
@@ -192,8 +198,20 @@ export const CONFIG = {
     }
 };
 
-// استخراج دالة التهيئة من مكتبة المتصفح لتفادي التضارب
-const { createClient } = window.supabase;
+// لو مكتبة Supabase ماتحمّلتش (نت ضعيف / حاجب إعلانات): رسالة واضحة بدل صفحة واقفة من غير سبب
+if (typeof window !== 'undefined' && !window.supabase) {
+    const showLoadError = () => {
+        if (document.getElementById('tm-load-error')) return;
+        const bar = document.createElement('div');
+        bar.id = 'tm-load-error';
+        bar.setAttribute('role', 'alert');
+        bar.style.cssText = 'position:fixed;inset:0 0 auto 0;z-index:99999;background:#7A2323;color:#fff;padding:14px 16px;font:600 15px/1.6 Tahoma,Arial,sans-serif;text-align:center;direction:rtl';
+        bar.innerHTML = 'الصفحة ماتحمّلتش كاملة بسبب ضعف النت. <button type="button" style="margin-inline-start:8px;background:#fff;color:#7A2323;border:0;border-radius:8px;padding:6px 14px;font:inherit;cursor:pointer">حمّل تاني</button>';
+        bar.querySelector('button').addEventListener('click', () => location.reload());
+        document.body.appendChild(bar);
+    };
+    if (document.body) showLoadError(); else document.addEventListener('DOMContentLoaded', showLoadError);
+}
 
 // تهيئة وتصدير الكائن بالاسم الذي تعتمد عليه باقي الملفات
 // إضافة هذا الكود في نهاية ملف config.js أسفل كائن CONFIG

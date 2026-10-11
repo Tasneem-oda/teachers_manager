@@ -7,8 +7,30 @@
  * في كل مكان (وليس window.supabase، لأن هذا الأخير هو مكتبة supabase-js
  * الخام القادمة من الـ CDN وليس عميلاً مهيّأً، وليس لديه خاصية .auth).
  */
-import { CONFIG } from './config.js?v=20';
-import { APIUtils, Storage, ErrorHandler, Validators } from './utils.js?v=20';
+import { CONFIG } from './config.js?v=21';
+import { APIUtils, Storage, ErrorHandler, Validators, toLatinDigits } from './utils.js?v=21';
+
+/** fetch بمهلة: على النت الضعيف الدخول/التسجيل مايفضلش يلف للأبد */
+async function fetchWithTimeout(url, options = {}, ms = 12000) {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), ms);
+    try { return await fetch(url, { ...options, signal: ctl.signal }); }
+    finally { clearTimeout(t); }
+}
+
+const isNetworkError = (err) => !!err && /fetch|network|retryable|timeout|load failed/i.test(`${err.name || ''} ${err.message || ''}`);
+
+/** كل حاجة محفوظة على الجهاز تخص المدرس اللي خرج (عشان الموبايل المشترك مايعرضش بيانات مدرس تاني) */
+const USER_LOCAL_KEYS = ['auth_session', 'user_profile', 'tm_pending_init', 'tm_live_lessons', 'tm_teacher_subject'];
+const USER_SESSION_KEYS = ['tm_sub_cache_v1', 'tm_profile_cache_v1', 'tm_income_cache_v1'];
+function clearUserData() {
+    USER_LOCAL_KEYS.forEach((k) => { try { localStorage.removeItem(k); } catch (e) { /* تجاهل */ } });
+    USER_SESSION_KEYS.forEach((k) => { try { sessionStorage.removeItem(k); } catch (e) { /* تجاهل */ } });
+    try {
+        Object.keys(localStorage).filter((k) => k.startsWith('tm_lesson_draft:') || k.startsWith('tm_book_pos_') || k.startsWith('tm_ai_')).forEach((k) => localStorage.removeItem(k));
+        Object.keys(sessionStorage).filter((k) => k.startsWith('tm_ai_')).forEach((k) => sessionStorage.removeItem(k));
+    } catch (e) { /* تجاهل */ }
+}
 
 // ملحوظة: لا نصدّر "supabase" كقيمة ثابتة هنا لأن window.supabaseClient
 // قد لا يكون جاهزًا بعد وقت تحميل هذه الوحدة. أي كود يحتاج العميل مباشرة
@@ -135,7 +157,7 @@ export const Auth = {
             // بنحفظ بيانات الإعداد على الجهاز: لو الإعداد فشل، بيتعمل تلقائيًا أول ما المدرس يدخل
             // (بدل ما يفضل حساب "معلّق" مايقدرش يسجّل بيه تاني ولا يستخدمه)
             Storage.set('tm_pending_init', profilePayload);
-            const initResult = await this.initializeProfile(profilePayload);
+            const initResult = await this.initializeProfile(profilePayload, authData.session ? authData.session.access_token : null);
             if (initResult.ok) Storage.remove('tm_pending_init');
 
             try {
@@ -165,23 +187,24 @@ export const Auth = {
      * تهيئة ملف المعلم في n8n (initialize-teacher)
      * 3 محاولات. fatal = الخادم رفض البيانات نفسها (مش مشكلة شبكة)
      */
-    async initializeProfile(payload) {
+    async initializeProfile(payload, accessToken = null) {
         const webhookUrl = APIUtils.buildUrl(CONFIG.API_ENDPOINTS.AUTH.INITIALIZE_TEACHER);
         let lastMessage = 'تعذّر تجهيز حسابك دلوقتي، هيتجهز تلقائيًا أول ما تدخل.';
         for (let attempt = 1; attempt <= 3; attempt++) {
             try {
-                const response = await fetch(webhookUrl, {
+                const response = await fetchWithTimeout(webhookUrl, {
                     method: 'POST',
-                    headers: APIUtils.buildHeaders(),
+                    headers: APIUtils.buildHeaders(accessToken || undefined),
                     body: JSON.stringify(payload)
-                });
+                }, 15000);
                 const text = await response.text();
                 let data = null;
                 try { data = text ? JSON.parse(text) : null; } catch (e) { data = null; }
                 if (response.ok && data && data.success) return { ok: true };
                 // الملف موجود بالفعل (مثلًا محاولة تانية بعد ما الأولى نجحت والرد ضاع) = نجاح
                 const errText = JSON.stringify((data && data.error) || '');
-                if (/duplicate|already|exists|23505/i.test(errText)) return { ok: true };
+                // (تكرار في اسم المستخدم/الموبايل مش نجاح: ده خطأ حقيقي لازم المدرس يعرفه)
+                if (/duplicate|already|exists|23505/i.test(errText) && !/username|phone|user_name/i.test(errText)) return { ok: true };
                 if (response.ok && data && data.success === false) {
                     const m = data.error && data.error.message;
                     return { ok: false, fatal: true, message: (m && /[\u0600-\u06FF]/.test(m)) ? m : 'حصلت مشكلة أثناء تجهيز حسابك. كلّمنا على واتساب وهنحلها فورًا.' };
@@ -198,7 +221,9 @@ export const Auth = {
     async completePendingInit(userId) {
         const pending = Storage.get('tm_pending_init');
         if (!pending || (userId && pending.id !== userId)) return false;
-        const res = await this.initializeProfile(pending);
+        let token = null;
+        try { const { data } = await window.supabaseClient.auth.getSession(); token = data && data.session ? data.session.access_token : null; } catch (e) { /* تجاهل */ }
+        const res = await this.initializeProfile(pending, token);
         if (res.ok) Storage.remove('tm_pending_init');
         return res.ok;
     },
@@ -208,6 +233,7 @@ export const Auth = {
      */
     async signIn(email, password) {
         try {
+            email = String(email || '').trim().toLowerCase();
             if (!Validators.email(email)) {
                 throw new Error('البريد الإلكتروني غير صحيح');
             }
@@ -219,16 +245,11 @@ export const Auth = {
 
             if (error) throw error;
 
-            // حفظ الجلسة
-            Storage.set('auth_session', {
-                user_id: data.user.id,
-                access_token: data.session.access_token,
-                refresh_token: data.session.refresh_token,
-                expires_at: data.session.expires_at
-            });
+            // بنحفظ رقم المدرس بس (التوكن نفسه Supabase بيحفظه ويجدده)
+            Storage.set('auth_session', { user_id: data.user.id });
 
-            // جلب بيانات الجلسة من الخادم
-            await this.bootstrapSession();
+            // جلب بيانات الجلسة من الخادم (بمهلة: لو اتأخرت نكمّل والرئيسية هتجيبها)
+            await Promise.race([this.bootstrapSession(), new Promise((r) => setTimeout(r, 8000))]);
 
             return { success: true, session: data.session };
         } catch (error) {
@@ -261,9 +282,10 @@ export const Auth = {
 
             const fetchProfile = async () => {
                 const headers = APIUtils.buildHeaders(session.access_token);
-                const response = await fetch(
+                const response = await fetchWithTimeout(
                     APIUtils.buildUrl(CONFIG.API_ENDPOINTS.AUTH.BOOTSTRAP_SESSION),
-                    { method: 'GET', headers }
+                    { method: 'GET', headers },
+                    12000
                 );
                 if (!response.ok) return null;
                 const text = await response.text();
@@ -304,20 +326,15 @@ export const Auth = {
      * دالة تسجيل الخروج (Logout)
      */
     async signOut() {
+        // من غير نت: الخروج من الخادم بيفشل، فبنخرج من الجهاز ده على الأقل (وإلا صفحة الدخول ترجّعه للرئيسية)
         try {
             const { error } = await window.supabaseClient.auth.signOut();
             if (error) throw error;
-            
-            // حذف البيانات المحلية
-            Storage.remove('auth_session');
-            Storage.remove('user_profile');
-            
-            // إعادة التوجيه إلى صفحة تسجيل الدخول
-            window.location.href = 'login.html';
         } catch (error) {
-            console.error('Logout Error:', error);
-            ErrorHandler.showError('فشل تسجيل الخروج');
+            try { await window.supabaseClient.auth.signOut({ scope: 'local' }); } catch (e) { /* تجاهل */ }
         }
+        clearUserData();
+        window.location.href = 'login.html';
     },
 
     /**
@@ -349,8 +366,19 @@ export const Auth = {
      * يتم استدعاؤها في بداية الصفحات المحمية
      */
     async requireAuth() {
-        const session = await this.getSession();
+        let session = null;
+        let sessErr = null;
+        try {
+            const res = await window.supabaseClient.auth.getSession();
+            session = res.data ? res.data.session : null;
+            sessErr = res.error || null;
+        } catch (e) { sessErr = e; }
         if (!session) {
+            // النت ضعيف وتجديد الجلسة فشل: مانطلّعش المدرس برّه، نقوله يجرّب تاني
+            if (isNetworkError(sessErr)) {
+                ErrorHandler.showError('النت ضعيف ومقدرناش نتأكد من حسابك. اتأكد من النت وحمّل الصفحة تاني.', 8000);
+                return null;
+            }
             window.location.replace('login.html');
             return null;
         }
@@ -362,7 +390,13 @@ export const Auth = {
             this.bootstrapSession();
             return { session, profile: cached };
         }
-        const profile = await this.bootstrapSession();
+        let profile = await this.bootstrapSession();
+        // الخادم ماردّش (نت ضعيف): نستخدم آخر بيانات محفوظة لنفس المدرس بدل صفحة فاضية
+        if (!profile) {
+            const stored = Storage.get('user_profile');
+            const uid = session.user && session.user.id;
+            if (stored && (!stored.id || stored.id === uid)) profile = stored;
+        }
         return { session, profile };
     },
 
@@ -388,12 +422,7 @@ export const Auth = {
             }
 
             if (data.session) {
-                Storage.set('auth_session', {
-                    user_id: data.user.id,
-                    access_token: data.session.access_token,
-                    refresh_token: data.session.refresh_token,
-                    expires_at: data.session.expires_at
-                });
+                Storage.set('auth_session', { user_id: data.user.id });
                 return data.session;
             }
 
@@ -465,7 +494,7 @@ export const Auth = {
     async verifyRecoveryCode(email, code) {
         try {
             email = String(email || '').trim().toLowerCase();
-            code = String(code || '').replace(/\s+/g, '');
+            code = toLatinDigits(code).replace(/\s+/g, '');
             if (!Validators.email(email)) throw new Error('البريد الإلكتروني غير صحيح');
             if (!/^\d{6,10}$/.test(code)) throw new Error('الرمز يتكوّن من أرقام فقط (6 أرقام أو أكثر)');
 

@@ -10,11 +10,11 @@
  * + زر شات صغير بيفتح نافذة أسئلة عن الكتاب ده بالذات، والاستشهادات فيها بتفتح مكانها هنا.
  */
 
-import { icon } from './icons.js?v=20';
-import { CONFIG } from './config.js?v=20';
-import { loadPdfJs, pdfDocumentParams, loadDocxPreview, loadPptxPreview, loadJsZip, loadStyle, CDN, repairPdfBytes } from './book-libs.js?v=20';
-import { detectDir } from './book-chunker.js?v=20';
-import { BookChat } from './book-chat.js?v=20';
+import { icon } from './icons.js?v=21';
+import { CONFIG } from './config.js?v=21';
+import { loadPdfJs, pdfDocumentParams, loadDocxPreview, loadPptxPreview, loadJsZip, loadStyle, CDN, repairPdfBytes } from './book-libs.js?v=21';
+import { detectDir } from './book-chunker.js?v=21';
+import { BookChat } from './book-chat.js?v=21';
 
 const ZOOM_STEPS = [0.5, 0.67, 0.8, 1, 1.25, 1.5, 2, 2.5, 3];
 const TYPE_LABEL = { pdf: 'PDF', docx: 'Word', pptx: 'PowerPoint', txt: 'نص', image: 'صورة' };
@@ -339,10 +339,15 @@ export class BookViewer {
     }
 
     // ------------------------------------------------------------------ التحميل والعرض
-    async load() {
-        if (this.closed) return;
+    load() {
+        if (this.closed) return Promise.resolve();
         this._loading = true;
-        try { await this._load(); } finally { this._loading = false; }
+        // كل تحميل (أول مرة أو "إعادة المحاولة" أو الرجوع للأصل) ليه وعده الخاص،
+        // عشان goToSource يستنى التحميل الحالي فعلًا (قبل كده كان بيلف في حلقة لا نهائية والصفحة تهنج)
+        this._loadPromise = (async () => {
+            try { await this._load(); } finally { this._loading = false; }
+        })();
+        return this._loadPromise;
     }
 
     async _load() {
@@ -468,8 +473,8 @@ export class BookViewer {
     goToSource(src) {
         if (!src) return false;
         // الكتاب لسه بيتحمّل: نستنى يخلص وبعدين نروح للمكان (بدل ما نحوّل للنص المستخرج بدري)
-        if (this._loading && this.ready) {
-            this.ready.then(() => { if (!this.closed) this.goToSource(src); });
+        if (this._loading && this._loadPromise) {
+            this._loadPromise.then(() => { if (!this.closed && !this._loading) this.goToSource(src); }).catch(() => { /* تجاهل */ });
             return true;
         }
         if (this.mode === 'text') return this._textGoTo(src.page, src.excerpt);

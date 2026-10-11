@@ -58,8 +58,15 @@ self.addEventListener('activate', (event) => {
     event.waitUntil(self.clients.claim());
 });
 
-// معالج fetch "شفاف" بالكامل: بيمرر كل طلب للشبكة زي ما هو، من غير كاش
-// (موجود بس عشان يحقق شرط الـ installability، مش عشان يغيّر سلوك الموقع)
+// بنتدخّل في فتح الصفحات بس (مش طلبات n8n ولا الصور ولا المكتبات): لو مفيش نت خالص
+// المدرس يشوف رسالة عربي واضحة بدل صفحة المتصفح "No internet". مفيش أي كاش.
+const OFFLINE_HTML = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>مفيش نت</title>
+<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#FAF9F6;font-family:Tahoma,Arial,sans-serif;color:#29252D;text-align:center;padding:24px}
+.c{max-width:360px}h1{font-size:1.3rem;color:#4B3A5A}p{color:#6B6470;line-height:1.8}button{background:#4B3A5A;color:#fff;border:0;border-radius:12px;padding:12px 26px;font:inherit;font-size:1rem;cursor:pointer}</style></head>
+<body><div class="c"><h1>📶 مفيش اتصال بالإنترنت</h1><p>اتأكد من الواي فاي أو الباقة وجرّب تاني. كل بياناتك محفوظة، والحصة الجارية (لو فيه) لسه شغالة.</p><button onclick="location.reload()">جرّب تاني</button></div></body></html>`;
+
 self.addEventListener('fetch', (event) => {
-    event.respondWith(fetch(event.request));
+    const req = event.request;
+    if (req.mode !== 'navigate' || req.method !== 'GET') return;   // الباقي يروح للشبكة عادي من غير تدخل
+    event.respondWith(fetch(req).catch(() => new Response(OFFLINE_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8' } })));
 });

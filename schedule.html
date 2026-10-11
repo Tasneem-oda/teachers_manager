@@ -11,8 +11,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>جدولي - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=20">
-    <link rel="stylesheet" href="css/lessons.css?v=20">
+    <link rel="stylesheet" href="css/style.css?v=21">
+    <link rel="stylesheet" href="css/lessons.css?v=21">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -337,20 +337,20 @@
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=20"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+    <script type="module" src="js/config.js?v=21"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=20';
-        import { api } from './js/api.js?v=20';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=20';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=20';
-        import { icon } from './js/icons.js?v=20';
-        import { mountTimePicker, refreshTimePicker, mountDayChips } from './js/form-widgets.js?v=20';
+        import { Auth } from './js/auth.js?v=21';
+        import { api } from './js/api.js?v=21';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=21';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=21';
+        import { icon } from './js/icons.js?v=21';
+        import { mountTimePicker, refreshTimePicker, mountDayChips } from './js/form-widgets.js?v=21';
         import {
             DAY_NAMES, DAY_SHORT, EVENT_COLORS, isoDate, parseDate, weekStart, addDays, sameDay, weekDays,
             minutesToTime, formatClock12, formatRange, durationText, formatDayDate, occursOn,
             lessonItem, eventItem, itemsOn, layoutLanes, findConflicts
-        } from './js/calendar-utils.js?v=20';
+        } from './js/calendar-utils.js?v=21';
 
         renderSidebar('schedule');
         renderTopHeader({ title: 'جدولي', subtitle: 'حصصك ومواعيدك في مكان واحد' });
@@ -392,15 +392,21 @@
         // ------------------------------------------------------------ التحميل
         async function loadData() {
             try {
+                let evFailed = false;
                 const [studentsData, schedulesData, ev] = await Promise.all([
                     api.getAllStudents(),
                     api.getSchedules(),
-                    api.getPersonalEvents().catch(() => null)
+                    // null = الميزة لسه مش متفعّلة على الخادم. أي خطأ تاني (نت) مانخبّيش الميزة بسببه
+                    api.getPersonalEvents().catch(() => { evFailed = true; return []; })
                 ]);
                 students = studentsData.students || [];
                 schedules = schedulesData.schedules || [];
                 eventsAvailable = ev !== null;
                 events = ev || [];
+                if (evFailed) {
+                    ErrorHandler.showError('مواعيدك الشخصية ماتحمّلتش (النت ضعيف). هنحاول تاني لوحدنا — خلي بالك من التعارض لحد ما تظهر.', 7000);
+                    setTimeout(() => { reloadItems().catch(() => { /* تجاهل */ }); }, 10000);
+                }
                 rebuildItems();
                 $('cal-loading').style.display = 'none';
                 render();
@@ -763,13 +769,16 @@
                 if (form.type === 'event') await saveEvent(t, editing);
                 else await saveLesson(t, editing);
                 $('item-modal').classList.remove('active');
-                await reloadItems();
             } catch (err) {
                 ErrorHandler.showError(ErrorHandler.getErrorMessage(err));
+                return;
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'حفظ';
             }
+            // الحفظ نجح: لو تحديث الجدول بس اللي فشل مانقولش "حصل خطأ" (وإلا المدرس يحفظ تاني ويكرر الموعد)
+            try { await reloadItems(); }
+            catch (e) { ErrorHandler.showError('اتحفظ ✓ بس الجدول ماتحدّثش بسبب النت. حدّث الصفحة بعد شوية.', 6000); }
         });
 
         async function saveEvent(t, editing) {
@@ -812,6 +821,18 @@
                 } else {
                     payload.start_date = null;
                     payload.day_of_week = t.days[0];
+                }
+                // موعد "كل يوم" (أو مجموعة أيام): نسأل يطبّق الوقت/المدة على كل الأيام ولا اليوم ده بس
+                const members = form.editItem.group ? items.filter((x) => x.kind === 'lesson' && x.group === form.editItem.group) : [];
+                const timeChanged = t.start !== form.editItem.start || t.duration !== form.editItem.duration;
+                if (members.length > 1 && t.recurrence_type === 'daily' && timeChanged
+                    && confirm(`تطبّق الوقت الجديد على كل الأيام (${members.length} أيام)؟\nاضغط "إلغاء" لو عايز تعدّل اليوم ده بس.`)) {
+                    const results = await Promise.allSettled(members.map((m) => api.updateSchedule(m.id, { ...payload, day_of_week: m.day_of_week, start_date: null })));
+                    const bad = results.filter((r) => r.status === 'rejected').length;
+                    if (bad === members.length) throw (results[0].reason || new Error('ماتعدّلش'));
+                    if (bad) ErrorHandler.showError(`اتعدّل ${members.length - bad} من ${members.length} أيام. الباقي فيه تعارض.`);
+                    else ErrorHandler.showSuccess(`تم تعديل الحصة في كل الأيام (${members.length})`);
+                    return;
                 }
                 await api.updateSchedule(form.editItem.id, payload);
                 ErrorHandler.showSuccess('تم تعديل الحصة');
@@ -883,6 +904,6 @@
             setInterval(() => { if (!document.querySelector('.modal.active')) render(); }, 60000);
         })();
     </script>
-    <script src="js/pwa-install.js?v=20" defer></script>
+    <script src="js/pwa-install.js?v=21" defer></script>
 </body>
 </html>

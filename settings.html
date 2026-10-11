@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الإعدادات - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=20">
+    <link rel="stylesheet" href="css/style.css?v=21">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -86,21 +86,18 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="subject">المادة / المجال</label>
-                    <input type="text" id="subject" name="subject">
-                </div>
-
-                <div class="form-group">
-                    <label for="timezone">المنطقة الزمنية</label>
-                    <select id="timezone" name="timezone">
-                        <option value="Africa/Cairo">مصر (Africa/Cairo)</option>
-                        <option value="Asia/Riyadh">السعودية (Asia/Riyadh)</option>
-                        <option value="Asia/Dubai">الإمارات (Asia/Dubai)</option>
-                        <option value="Europe/London">لندن (Europe/London)</option>
+                    <label for="subject">المادة الأساسية</label>
+                    <select id="subject" name="subject">
+                        <option value="quran">القرآن الكريم</option>
+                        <option value="arabic">اللغة العربية</option>
+                        <option value="english">اللغة الإنجليزية</option>
+                        <option value="math">الرياضيات</option>
+                        <option value="science">العلوم</option>
                     </select>
+                    <div class="info-text">بتظهر تلقائيًا لما تضيف طالب جديد، وبتغيّر أسماء التقييم (الحفظ والتلاوة للقرآن).</div>
                 </div>
 
-                <button type="submit" class="btn">حفظ التغييرات</button>
+                <button type="submit" class="btn" id="profile-save">حفظ التغييرات</button>
             </form>
         </div>
 
@@ -163,15 +160,16 @@
     </main>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=20"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+    <script type="module" src="js/config.js?v=21"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=20';
-        import { Storage, ErrorHandler } from './js/utils.js?v=20';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=20';
-        import { icon } from './js/icons.js?v=20';
-        import { CONFIG } from './js/config.js?v=20';
-        import { requestPermission } from './js/notifications.js?v=20';
+        import { Auth } from './js/auth.js?v=21';
+        import { Storage, ErrorHandler, toLatinDigits } from './js/utils.js?v=21';
+        import { api } from './js/api.js?v=21';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=21';
+        import { icon } from './js/icons.js?v=21';
+        import { CONFIG } from './js/config.js?v=21';
+        import { requestPermission } from './js/notifications.js?v=21';
 
         function renderPushStatus() {
             const el = document.getElementById('push-status');
@@ -188,8 +186,13 @@
                 : 'التنبيهات لسه مش مفعّلة على الجهاز ده.';
             btn.hidden = p === 'granted';
         }
-        document.getElementById('btn-enable-push').addEventListener('click', async () => {
-            await requestPermission();
+        document.getElementById('btn-enable-push').addEventListener('click', async (e) => {
+            const b = e.currentTarget;
+            if (b.disabled) return;
+            const label = b.textContent;
+            b.disabled = true;
+            b.textContent = 'جاري التفعيل...';
+            try { await requestPermission(); } finally { b.disabled = false; b.textContent = label; }
             renderPushStatus();
         });
         renderPushStatus();
@@ -214,7 +217,11 @@
                 document.getElementById('email').value = profile.email || '';
                 document.getElementById('phone').value = profile.phone || '';
                 document.getElementById('teaching-type').value = profile.teaching_type || 'private';
-                document.getElementById('subject').value = profile.subject || '';
+                const subj = document.getElementById('subject');
+                if (profile.subject && ![...subj.options].some((o) => o.value === profile.subject)) {
+                    subj.add(new Option(profile.subject, profile.subject));   // مادة قديمة مكتوبة بإيدك: بتفضل زي ما هي
+                }
+                subj.value = profile.subject || 'quran';
             }
         });
 
@@ -222,23 +229,37 @@
         document.getElementById('profile-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            const btn = document.getElementById('profile-save');
+            const errEl = document.getElementById('profile-error');
+            errEl.style.display = 'none';
+            const data = {
+                name: document.getElementById('name').value.trim(),
+                phone: toLatinDigits(document.getElementById('phone').value).trim(),
+                teaching_type: document.getElementById('teaching-type').value,
+                subject: document.getElementById('subject').value
+            };
+            if (data.name.length < 2) { errEl.textContent = 'اكتب اسمك (حرفين على الأقل)'; errEl.style.display = 'block'; return; }
+            if (btn.disabled) return;
+            btn.disabled = true;
+            btn.textContent = 'جاري الحفظ...';
             try {
-                const name = document.getElementById('name').value;
-                const phone = document.getElementById('phone').value;
-                const teachingType = document.getElementById('teaching-type').value;
-                const subject = document.getElementById('subject').value;
-
-                // In production, this would call an API endpoint to update the profile
-                // For now, we'll just show a success message
-                
+                // الحفظ الحقيقي على الخادم (قبل كده كانت بتقول "تم الحفظ" ومفيش حاجة بتتحفظ)
+                const saved = await api.updateProfile(data);
+                const fresh = { ...(profile || {}), ...data, ...((saved && saved.profile) || {}) };
+                profile = fresh;
+                Storage.set('user_profile', fresh);
+                try { sessionStorage.removeItem('tm_profile_cache_v1'); } catch (e) { /* تجاهل */ }
+                try { localStorage.setItem('tm_teacher_subject', data.subject); } catch (e) { /* تجاهل */ }
                 document.getElementById('profile-success').style.display = 'block';
-                setTimeout(() => {
-                    document.getElementById('profile-success').style.display = 'none';
-                }, 3000);
-
+                setTimeout(() => { document.getElementById('profile-success').style.display = 'none'; }, 3000);
             } catch (error) {
-                document.getElementById('profile-error').textContent = ErrorHandler.getErrorMessage(error);
-                document.getElementById('profile-error').style.display = 'block';
+                errEl.textContent = error && error.status === 404
+                    ? 'حفظ البيانات لسه مش متاح على الخادم. كلّمنا على واتساب ونعدّلها لك فورًا.'
+                    : ErrorHandler.getErrorMessage(error);
+                errEl.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'حفظ التغييرات';
             }
         });
 
@@ -248,14 +269,24 @@
             
             const newPassword = document.getElementById('new-password').value;
             const confirmPassword = document.getElementById('confirm-password').value;
+            const currentPassword = document.getElementById('current-password').value;
+            const pErr = document.getElementById('password-error');
+            pErr.style.display = 'none';
+            const pBtn = e.submitter || document.querySelector('#password-form [type="submit"]');
 
             if (newPassword !== confirmPassword) {
-                document.getElementById('password-error').textContent = 'كلمات المرور غير متطابقة';
-                document.getElementById('password-error').style.display = 'block';
+                pErr.textContent = 'كلمات المرور غير متطابقة';
+                pErr.style.display = 'block';
                 return;
             }
+            if (pBtn && pBtn.disabled) return;
+            if (pBtn) pBtn.disabled = true;
 
             try {
+                // نتأكد من كلمة المرور الحالية الأول (قبل كده كانت مطلوبة ومش بتتراجع)
+                const email = (profile && profile.email) || document.getElementById('email').value;
+                const check = await window.supabaseClient.auth.signInWithPassword({ email, password: currentPassword });
+                if (check.error) throw new Error('كلمة المرور الحالية مش صحيحة');
                 const result = await Auth.updatePassword(newPassword);
                 
                 if (result.success) {
@@ -268,8 +299,11 @@
                     throw new Error(result.error);
                 }
             } catch (error) {
-                document.getElementById('password-error').textContent = ErrorHandler.getErrorMessage(error);
-                document.getElementById('password-error').style.display = 'block';
+                const m = error && error.message && /[\u0600-\u06FF]/.test(error.message) ? error.message : ErrorHandler.getErrorMessage(error);
+                pErr.textContent = m;
+                pErr.style.display = 'block';
+            } finally {
+                if (pBtn) pBtn.disabled = false;
             }
         });
 
@@ -294,6 +328,6 @@
             }
         };
     </script>
-    <script src="js/pwa-install.js?v=20" defer></script>
+    <script src="js/pwa-install.js?v=21" defer></script>
 </body>
 </html>

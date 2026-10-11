@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>تسجيل الدخول - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=20">
+    <link rel="stylesheet" href="css/style.css?v=21">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -56,16 +56,16 @@
         <h2>تسجيل الدخول</h2>
         <div id="reset-notice" role="status" style="display:none; background:#E8F5E9; color:#4F6F52; padding:0.85rem 1rem; border-radius:8px; margin:-1rem 0 1.5rem; font-size:0.9rem; text-align:center;">تم تغيير كلمة المرور بنجاح. سجّل الدخول بكلمة المرور الجديدة.</div>
         
-        <form id="loginForm">
+        <form id="loginForm" method="post" action="javascript:void(0)" novalidate>
             <div class="form-group">
-                <label for="email">البريد الإلكتروني أو رقم الهاتف</label>
-                <input type="text" id="email" name="email" placeholder="example@email.com" required autofocus>
+                <label for="email">البريد الإلكتروني</label>
+                <input type="email" id="email" inputmode="email" autocomplete="username" autocapitalize="off" spellcheck="false" dir="ltr" placeholder="example@email.com" required autofocus>
                 <div class="error" id="emailError"></div>
             </div>
 
             <div class="form-group">
                 <label for="password">كلمة المرور</label>
-                <input type="password" id="password" name="password" placeholder="كلمة المرور" required>
+                <input type="password" id="password" autocomplete="current-password" placeholder="كلمة المرور" required>
                 <div class="error" id="passwordError"></div>
             </div>
 
@@ -89,12 +89,12 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=20"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+    <script type="module" src="js/config.js?v=21"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=20';
-        import { Validators, ErrorHandler } from './js/utils.js?v=20';
-        import { icon } from './js/icons.js?v=20';
+        import { Auth } from './js/auth.js?v=21';
+        import { Validators, ErrorHandler } from './js/utils.js?v=21';
+        import { icon } from './js/icons.js?v=21';
 
         document.getElementById('login-logo').innerHTML = icon('graduationCap', { size: 28 });
         if (new URLSearchParams(window.location.search).get('reset') === '1') document.getElementById('reset-notice').style.display = 'block';
@@ -157,6 +157,6 @@
             }
         });
     </script>
-    <script src="js/pwa-install.js?v=20" defer></script>
+    <script src="js/pwa-install.js?v=21" defer></script>
 </body>
 </html>
