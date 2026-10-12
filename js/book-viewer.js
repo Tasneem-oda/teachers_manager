@@ -10,11 +10,11 @@
  * + زر شات صغير بيفتح نافذة أسئلة عن الكتاب ده بالذات، والاستشهادات فيها بتفتح مكانها هنا.
  */
 
-import { icon } from './icons.js?v=13';
-import { CONFIG } from './config.js?v=13';
-import { loadPdfJs, pdfDocumentParams, loadDocxPreview, loadPptxPreview, loadJsZip, loadStyle, CDN, repairPdfBytes } from './book-libs.js?v=13';
-import { detectDir } from './book-chunker.js?v=13';
-import { BookChat } from './book-chat.js?v=13';
+import { icon } from './icons.js?v=21';
+import { CONFIG } from './config.js?v=21';
+import { loadPdfJs, pdfDocumentParams, loadDocxPreview, loadPptxPreview, loadJsZip, loadStyle, CDN, repairPdfBytes } from './book-libs.js?v=21';
+import { detectDir } from './book-chunker.js?v=21';
+import { BookChat } from './book-chat.js?v=21';
 
 const ZOOM_STEPS = [0.5, 0.67, 0.8, 1, 1.25, 1.5, 2, 2.5, 3];
 const TYPE_LABEL = { pdf: 'PDF', docx: 'Word', pptx: 'PowerPoint', txt: 'نص', image: 'صورة' };
@@ -126,12 +126,16 @@ export class BookViewer {
      * @param {object} o.book  { id, title, file_type, file_name, storage_path, page_count, is_scanned, status }
      * @param {HTMLElement} [o.opener]  العنصر اللي بيرجع له الـ focus بعد الإغلاق
      * @param {() => void} [o.onClose]
+     * @param {number} [o.startPage]  يفتح على الصفحة دي (مثلًا: آخر صفحة وصلها الطالب)
+     * @param {(page:number) => void} [o.onPageChange]
      */
-    constructor({ api, book, opener, onClose }) {
+    constructor({ api, book, opener, onClose, startPage, onPageChange }) {
         this.api = api;
         this.book = book;
         this.opener = opener || null;
         this.onClose = onClose || (() => {});
+        this.onPageChange = onPageChange || null;
+        this.startPage = Number(startPage) > 1 ? Math.round(Number(startPage)) : 1;
         this.zoom = 1;
         this.page = 1;
         this.pageCount = null;
@@ -157,6 +161,9 @@ export class BookViewer {
             }
         });
         this.ready = this.load();
+        if (this.startPage > 1) {
+            this.ready.then(() => { if (!this.closed && this.pageCount && this.pageCount > 1) this.goToPage(this.startPage); }).catch(() => { /* تجاهل */ });
+        }
     }
 
     // ------------------------------------------------------------------ DOM
@@ -332,10 +339,15 @@ export class BookViewer {
     }
 
     // ------------------------------------------------------------------ التحميل والعرض
-    async load() {
-        if (this.closed) return;
+    load() {
+        if (this.closed) return Promise.resolve();
         this._loading = true;
-        try { await this._load(); } finally { this._loading = false; }
+        // كل تحميل (أول مرة أو "إعادة المحاولة" أو الرجوع للأصل) ليه وعده الخاص،
+        // عشان goToSource يستنى التحميل الحالي فعلًا (قبل كده كان بيلف في حلقة لا نهائية والصفحة تهنج)
+        this._loadPromise = (async () => {
+            try { await this._load(); } finally { this._loading = false; }
+        })();
+        return this._loadPromise;
     }
 
     async _load() {
@@ -407,6 +419,7 @@ export class BookViewer {
         this.page = n;
         if (document.activeElement !== this.pageInput) this.pageInput.value = String(n);
         this.chat.refreshContext();
+        if (this.onPageChange) { try { this.onPageChange(n); } catch (e) { /* تجاهل */ } }
     }
 
     /** بيقفل تحديث رقم الصفحة من التمرير لحد ما الحركة تخلص (scrollend أو مهلة قصيرة بعد آخر scroll) */
@@ -460,8 +473,8 @@ export class BookViewer {
     goToSource(src) {
         if (!src) return false;
         // الكتاب لسه بيتحمّل: نستنى يخلص وبعدين نروح للمكان (بدل ما نحوّل للنص المستخرج بدري)
-        if (this._loading && this.ready) {
-            this.ready.then(() => { if (!this.closed) this.goToSource(src); });
+        if (this._loading && this._loadPromise) {
+            this._loadPromise.then(() => { if (!this.closed && !this._loading) this.goToSource(src); }).catch(() => { /* تجاهل */ });
             return true;
         }
         if (this.mode === 'text') return this._textGoTo(src.page, src.excerpt);

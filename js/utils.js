@@ -2,7 +2,14 @@
  * utils.js - دوال مساعدة موحدة للتطبيق
  */
 
-import { CONFIG } from './config.js?v=13';
+import { CONFIG } from './config.js?v=21';
+
+/** أرقام عربية/فارسية (٠١٢ / ۰۱۲) ← أرقام إنجليزية. كيبوردات كتير في مصر بتكتب الأرقام العربي افتراضيًا */
+export function toLatinDigits(value) {
+    return String(value == null ? '' : value)
+        .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+        .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06F0));
+}
 
 /**
  * التحقق من البيانات (Validation)
@@ -15,6 +22,7 @@ export const Validators = {
     // الفعلية من 7 إلى 15 رقم (نطاق معقول لمعظم أرقام الهواتف حول العالم)
     phone: (phone) => {
         if (!phone) return false;
+        phone = toLatinDigits(phone);
         const digitsOnly = phone.replace(/\D/g, '');
         return CONFIG.PATTERNS.PHONE.test(phone.trim()) && digitsOnly.length >= 7 && digitsOnly.length <= 15;
     },
@@ -103,7 +111,8 @@ export const Formatters = {
     formatDateTime: (dateTime, locale = 'ar-EG') => {
         if (!dateTime) return '';
         const d = new Date(dateTime);
-        return d.toLocaleString(locale);
+        // نظام 12 ساعة دايمًا (ص / م)
+        return d.toLocaleString(locale, { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
     },
     
     formatPhone: (phone) => {
@@ -123,11 +132,8 @@ export const Formatters = {
         return str.length > length ? str.substring(0, length) + '...' : str;
     },
     
-    escapeHtml: (text) => {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
+    // بيهرب كمان " و ' عشان النص يبقى آمن جوه attributes (title="..." / data-x="...")
+    escapeHtml: (text) => String(text == null ? '' : text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
 };
 
 /**
@@ -174,10 +180,20 @@ export const Storage = {
  */
 export const ErrorHandler = {
     getErrorMessage: (error) => {
-        if (typeof error === 'string') return error;
-        if (error.error?.message) return error.error.message;
-        if (error.message) return error.message;
-        return 'حدث خطأ غير متوقع';
+        const GENERIC = 'حصلت مشكلة. جرّب تاني، ولو فضلت كلّمنا على واتساب.';
+        if (!error) return GENERIC;
+        let msg = '';
+        if (typeof error === 'string') msg = error;
+        else if (error.error?.message) msg = error.error.message;
+        else if (error.message) msg = error.message;
+        if (!msg) return GENERIC;
+        // رسائل تقنية بالإنجليزي جاية من n8n أو المتصفح (مثلًا "Error in workflow") مانعرضهاش للمدرس
+        if (!/[\u0600-\u06FF]/.test(msg)) {
+            if (/failed to fetch|network|load failed/i.test(msg)) return 'تعذّر الاتصال بالخادم. اتأكد من النت وجرّب تاني.';
+            console.warn('[error]', msg);
+            return GENERIC;
+        }
+        return msg;
     },
     
     getErrorCode: (error) => {
@@ -190,18 +206,19 @@ export const ErrorHandler = {
         const errorDiv = document.getElementById('error-toast') || createErrorToast();
         errorDiv.textContent = message;
         errorDiv.style.display = 'block';
-        
-        setTimeout(() => {
+        clearTimeout(errorDiv._tmTimer);
+        errorDiv._tmTimer = setTimeout(() => {
             errorDiv.style.display = 'none';
         }, duration);
+        try { window.dispatchEvent(new CustomEvent('tm:error-shown', { detail: String(message || '').slice(0, 120) })); } catch (e) { /* تجاهل */ }
     },
     
     showSuccess: (message, duration = 3000) => {
         const successDiv = document.getElementById('success-toast') || createSuccessToast();
         successDiv.textContent = message;
         successDiv.style.display = 'block';
-        
-        setTimeout(() => {
+        clearTimeout(successDiv._tmTimer);
+        successDiv._tmTimer = setTimeout(() => {
             successDiv.style.display = 'none';
         }, duration);
     }

@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الحصة - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=13">
+    <link rel="stylesheet" href="css/style.css?v=21">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,7 +19,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=13">
+    <link rel="stylesheet" href="css/lessons.css?v=21">
+    <link rel="stylesheet" href="css/books.css?v=21">
     <style>body { margin: 0; }</style>
 </head>
 <body>
@@ -52,6 +53,7 @@
                                     <button type="button" id="btn-ai-ready">المساعد الذكي</button>
                                 </div>
                             </div>
+                            <div class="lb-host" id="r-books"></div>
                             <div class="sp-grid2">
                                 <div class="x-card" id="r-last"></div>
                                 <div id="r-bill"></div>
@@ -65,13 +67,24 @@
                                     <span class="ls-dot" aria-hidden="true"></span>
                                     <div class="ls-bar-text">
                                         <div class="ls-bar-name" id="bar-name"></div>
-                                        <div class="ls-timer" id="bar-timer" aria-live="off">00:00</div>
+                                        <div class="ls-bar-time">
+                                            <span class="ls-timer" id="bar-timer" aria-live="off">00:00</span>
+                                            <span class="ls-left" id="bar-left" hidden></span>
+                                        </div>
                                     </div>
                                 </div>
                                 <a class="sp-icon-btn" id="bar-link" target="_blank" rel="noopener" title="فتح رابط الحصة" aria-label="فتح رابط الحصة" hidden></a>
+                                <button type="button" class="sp-icon-btn ls-pip-btn" id="btn-pip" title="نافذة صغيرة فوق Zoom / Meet" aria-label="نافذة صغيرة فوق الشاشة" hidden></button>
                                 <button type="button" class="sp-icon-btn" id="btn-open-ai-chat" title="المساعد الذكي" aria-label="المساعد الذكي"><span id="ic-ai-chat-btn" class="icon" style="display:inline-flex;"></span></button>
                                 <button type="button" class="btn btn-finish" id="btn-finish"></button>
+                                <div class="ls-progress" id="bar-progress" hidden><span></span></div>
                             </div>
+
+                            <!-- معلومات المدرس محتاجها وهو في الحصة: رقم الحصة، الشهر، الوقت، الدفع، التواصل -->
+                            <div class="ls-info" id="ls-info" aria-label="معلومات الحصة"></div>
+                            <div id="ls-bill-alert"></div>
+                            <!-- كتب الحصة: الكتب الخاصة بالطالب + آخر صفحة وصلها، تتفتح فوق الحصة من غير ما تسيبها -->
+                            <div class="lb-host" id="ls-books"></div>
 
                             <div class="ls-seg" id="ls-seg" role="tablist">
                                 <button type="button" data-view="now" class="active">الحصة الآن</button>
@@ -85,10 +98,17 @@
                                         <input type="date" id="f-date">
                                     </div>
 
-                                    <div class="ls-block" id="blk-prev-hw" hidden>
-                                        <span class="ls-label">هل تم الواجب السابق؟</span>
-                                        <div class="ls-prev-hw" id="prev-hw-text"></div>
-                                        <div class="chip-group" data-field="homework_status"></div>
+                                    <div class="ls-block ls-prev" id="blk-prev" hidden>
+                                        <span class="ls-label">من الحصة اللي فاتت <small class="ls-prev-when" id="prev-when"></small></span>
+                                        <div class="ls-plan" id="prev-plan" hidden>
+                                            <span class="ls-plan-label">📌 المخطط للحصة دي</span>
+                                            <p id="prev-plan-text"></p>
+                                        </div>
+                                        <div class="ls-prev-hw-wrap" id="blk-prev-hw" hidden>
+                                            <span class="ls-plan-label">📚 الواجب: <span class="ls-prev-hw" id="prev-hw-text"></span></span>
+                                            <span class="ls-sublabel">عمله؟</span>
+                                            <div class="chip-group" data-field="homework_status"></div>
+                                        </div>
                                     </div>
 
                                     <div class="ls-block">
@@ -153,7 +173,8 @@
                                 <div class="ls-done-icon" id="done-icon"></div>
                                 <h2 id="done-title">تم حفظ الحصة</h2>
                                 <p id="done-sub"></p>
-                                <div class="ls-done-bill" id="done-bill"></div>
+                                <div class="ls-done-next" id="done-next" hidden></div>
+<div class="ls-done-bill" id="done-bill"></div>
                                 <div class="ls-done-actions">
                                     <a class="btn" id="done-student" href="#">ملف الطالب</a>
                                     <a class="btn btn-ghost" id="done-home" href="dashboard.html">الرئيسية</a>
@@ -166,32 +187,30 @@
                          مساعد الذكاء الاصطناعي (شات تفاعلي مع ذاكرة خاصة بالطالب)
                          ============================================================ -->
                     <div id="ai-chat-overlay" style="display:none;">
-                <div class="ai-chat-card">
+                <div class="ai-chat-card" role="dialog" aria-label="مساعد الحصة">
                     <div class="ai-chat-header">
                         <div class="ai-chat-header-title">
                             <span id="ic-ai-chat-header" class="icon" style="display:inline-flex;"></span>
                             <div>
-                                <h3>مساعد الذكاء الاصطناعي</h3>
+                                <h3>مساعد الحصة</h3>
                                 <p id="ai-chat-student-name">-</p>
                             </div>
                         </div>
-                        <button type="button" id="btn-close-ai-chat" class="ai-chat-close-btn" aria-label="إغلاق">
-                            <span id="ic-ai-chat-close" class="icon" style="display:inline-flex;"></span>
-                        </button>
-                    </div>
-                    <div id="ai-chat-messages" class="ai-chat-messages">
-                        <div class="ai-chat-hint">اكتب طلبك للمساعد، مثلاً: "اشرح الصفحة التالية للطالب" — المساعد شايف سجل حصص الطالب وملاحظاتك عليه.
-                            <div class="ai-quick">
-                                <button type="button" data-quick="summary">لخّص الحصة الحالية</button>
-                                <button type="button" data-quick="homework">اقترح واجب</button>
-                                <button type="button" data-quick="activity">نشاط سريع للبداية</button>
-                            </div>
+                        <div class="ai-head-actions">
+                            <button type="button" id="btn-ai-new" class="ai-head-btn" title="محادثة جديدة" aria-label="محادثة جديدة"><span id="ic-ai-new" class="icon" style="display:inline-flex;"></span></button>
+                            <button type="button" id="btn-close-ai-chat" class="ai-chat-close-btn" aria-label="إغلاق">
+                                <span id="ic-ai-chat-close" class="icon" style="display:inline-flex;"></span>
+                            </button>
                         </div>
                     </div>
+                    <div class="ai-context-bar" id="ai-context-bar"></div>
+                    <div id="ai-chat-messages" class="ai-chat-messages" aria-live="polite"></div>
+                    <div class="ai-chips" id="ai-chips" role="toolbar" aria-label="طلبات سريعة"></div>
                     <div id="ai-chat-quota" class="ai-chat-quota"></div>
                     <form id="ai-chat-form" class="ai-chat-input-row">
-                        <textarea id="ai-chat-input" placeholder="اكتب طلبك هنا..." rows="1" maxlength="600"></textarea>
-                        <button type="submit" id="btn-ai-chat-send" class="btn">إرسال</button>
+                        <button type="button" id="btn-ai-mic" class="ai-mic" title="اتكلم بدل ما تكتب" aria-label="اتكلم بدل ما تكتب" hidden><span id="ic-ai-mic" class="icon" style="display:inline-flex;"></span></button>
+                        <textarea id="ai-chat-input" placeholder="اكتب بسرعة… مثلًا: غلط في المد" rows="1" maxlength="600"></textarea>
+                        <button type="submit" id="btn-ai-chat-send" class="btn" aria-label="إرسال"><span id="ic-ai-send" class="icon" style="display:inline-flex;"></span></button>
                     </form>
                 </div>
             </div>
@@ -201,84 +220,96 @@
     </div>
 
     <style>
-        #ai-chat-overlay {
-            position: fixed; inset: 0; z-index: 10000;
-            background: rgba(41, 37, 45, 0.55);
-            display: flex; align-items: center; justify-content: center;
-            padding: 1rem;
-        }
+        /* ======================= مساعد الحصة ======================= */
+        #ai-chat-overlay { position: fixed; inset: 0; z-index: 10000; background: rgba(41, 37, 45, 0.45); display: flex; align-items: flex-end; justify-content: center; }
         .ai-chat-card {
-            background: var(--card-bg, #FFFFFF);
-            width: 100%; max-width: 560px; height: min(80vh, 720px);
-            border-radius: 16px; display: flex; flex-direction: column;
-            overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+            background: var(--card-bg, #FFFFFF); width: 100%; max-width: 640px; height: 82%;
+            border-radius: 20px 20px 0 0; display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.22);
         }
-        .ai-chat-header {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 1rem 1.25rem; background: linear-gradient(135deg, #4B3A5A 0%, #7A6B83 100%);
-            color: #fff; flex-shrink: 0;
+        /* الكمبيوتر: لوحة جانبية والحصة ظاهرة ومتاحة جنبها */
+        @media (min-width: 1024px) {
+            #ai-chat-overlay { inset: 0 auto 0 0; width: 420px; background: transparent; align-items: stretch; }
+            .ai-chat-card { height: 100%; max-width: none; border-radius: 0; box-shadow: 8px 0 30px rgba(41,37,45,0.16); border-inline-start: 1px solid var(--border); }
+            body.ai-docked .main-content { margin-left: 420px; }
         }
-        .ai-chat-header-title { display: flex; align-items: center; gap: 0.65rem; }
-        .ai-chat-header-title h3 { margin: 0; font-size: 1rem; color: #fff; }   /* بدونها القاعدة العامة h3 { color: var(--primary) } كانت بتخلي العنوان بنفسجي على خلفية بنفسجية */
-        .ai-chat-header-title p { margin: 0.15rem 0 0; font-size: 0.8rem; opacity: 0.85; }
-        .ai-chat-close-btn { background: rgba(255,255,255,0.15); border: none; color: #fff; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
-        .ai-chat-close-btn:hover { background: rgba(255,255,255,0.3); }
-        .ai-chat-messages { flex: 1; overflow-y: auto; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; background: var(--bg-secondary, #F5F3F0); }
-        .ai-chat-hint { font-size: 0.82rem; color: var(--text-secondary, #716A74); text-align: center; padding: 1rem; }
-        .ai-chat-bubble { max-width: 85%; padding: 0.65rem 0.9rem; border-radius: 12px; font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+        .ai-chat-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.85rem 1rem; background: linear-gradient(135deg, #4B3A5A 0%, #7A6B83 100%); color: #fff; flex-shrink: 0; }
+        .ai-chat-header-title { display: flex; align-items: center; gap: 0.6rem; min-width: 0; }
+        .ai-chat-header-title h3 { margin: 0; font-size: 1rem; color: #fff; }
+        .ai-chat-header-title p { margin: 0.1rem 0 0; font-size: 0.78rem; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ai-head-actions { display: flex; gap: 0.4rem; }
+        .ai-head-btn, .ai-chat-close-btn { background: rgba(255,255,255,0.16); border: none; color: #fff; border-radius: 9px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .ai-head-btn:hover, .ai-chat-close-btn:hover { background: rgba(255,255,255,0.3); }
+        .ai-context-bar { display: flex; gap: 0.35rem; flex-wrap: wrap; padding: 0.5rem 1rem; background: #F7F3FA; border-bottom: 1px solid var(--border); font-size: 0.74rem; color: var(--text-secondary); flex-shrink: 0; }
+        .ai-context-bar span { background: #fff; border: 1px solid var(--border); border-radius: 999px; padding: 0.15rem 0.55rem; white-space: nowrap; }
+        .ai-context-bar .live { color: #B85C5C; border-color: #F0CFCF; font-weight: 700; }
+        .ai-chat-messages { flex: 1; overflow-y: auto; padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.6rem; background: var(--bg-secondary, #F5F3F0); overscroll-behavior: contain; }
+        .ai-welcome { text-align: center; color: var(--text-secondary); font-size: 0.85rem; padding: 0.6rem 0.4rem; line-height: 1.7; }
+        .ai-welcome b { color: var(--text-primary); }
+        .ai-chat-bubble { max-width: 88%; padding: 0.6rem 0.85rem; border-radius: 14px; font-size: 0.92rem; line-height: 1.65; white-space: pre-wrap; word-break: break-word; }
         .ai-chat-bubble.role-user { align-self: flex-end; background: var(--primary, #4B3A5A); color: #fff; border-bottom-left-radius: 4px; }
         .ai-chat-bubble.role-assistant { align-self: flex-start; background: #fff; border: 1px solid var(--border, #E7E1E8); color: var(--text-primary, #29252D); border-bottom-right-radius: 4px; white-space: normal; }
-        .ai-chat-bubble.role-assistant p { margin: 0 0 0.55em; }
+        .ai-chat-bubble.role-assistant p { margin: 0 0 0.45em; }
         .ai-chat-bubble.role-assistant p:last-child { margin-bottom: 0; }
-        .ai-chat-bubble.role-assistant ul { margin: 0.2em 0 0.6em; padding-inline-start: 1.35em; }
-        .ai-chat-bubble.role-assistant ul:last-child { margin-bottom: 0; }
-        .ai-chat-bubble.role-assistant li { margin-bottom: 0.3em; }
-        .ai-chat-bubble.role-assistant li:last-child { margin-bottom: 0; }
+        .ai-chat-bubble.role-assistant ul, .ai-chat-bubble.role-assistant ol { margin: 0.15em 0 0.5em; padding-inline-start: 1.3em; }
+        .ai-chat-bubble.role-assistant li { margin-bottom: 0.25em; }
         .ai-chat-bubble.role-assistant strong { color: var(--primary, #4B3A5A); font-weight: 700; }
         .ai-chat-bubble.role-error { align-self: center; background: #FBEAEA; color: #B85C5C; border: 1px solid #F0CFCF; font-size: 0.82rem; }
         .ai-chat-bubble.is-streaming > :last-child::after { content: '▍'; margin-inline-start: 2px; color: var(--primary); animation: aiCaret 0.9s steps(1) infinite; }
         @keyframes aiCaret { 50% { opacity: 0; } }
-        .ai-chat-bubble.role-loading { align-self: flex-start; background: #fff; border: 1px solid var(--border, #E7E1E8); color: var(--text-secondary, #716A74); font-size: 0.85rem; }
-        .ai-chat-quota { padding: 0.3rem 1.25rem; font-size: 0.72rem; color: var(--text-secondary, #716A74); text-align: center; flex-shrink: 0; }
-        .ai-chat-input-row { display: flex; align-items: flex-end; gap: 0.6rem; padding: 0.85rem 1.25rem; border-top: 1px solid var(--border, #E7E1E8); flex-shrink: 0; background: var(--card-bg, #FFFFFF); }
-        /* font-size لازم يكون 16px (1rem) على الأقل، لأن أي حجل أصغر بيخلي
-           سفاري في الآيفون يعمل zoom تلقائي للصفحة لما المستخدم يضغط
-           على مربع الكتابة - وده كان بيكسر شكل الشات على الموبايل */
-        .ai-chat-input-row textarea { display: block; flex: 1; min-width: 0; width: auto; margin: 0; resize: none; min-height: 44px; max-height: 120px; overflow-y: auto; padding: 0.55rem 0.85rem; border: 1px solid var(--border, #E7E1E8); border-radius: 12px; font-family: inherit; font-size: 1rem; line-height: 1.5; }
-        /* margin:0 مهم: القاعدة العامة في style.css بتضيف margin-bottom على أي textarea فكان الزر بيتمدد ويتزحلق عن المربع */
-        .ai-chat-input-row .btn { flex-shrink: 0; align-self: flex-end; height: 44px; margin: 0; padding: 0 1.2rem; border-radius: 12px; }
+        .ai-typing { align-self: flex-start; background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 0.65rem 0.9rem; display: flex; gap: 4px; align-items: center; font-size: 0.78rem; color: var(--text-secondary); }
+        .ai-typing i { width: 7px; height: 7px; border-radius: 50%; background: #9A8FA3; animation: aiDot 1.1s infinite ease-in-out; }
+        .ai-typing i:nth-child(2) { animation-delay: 0.15s; } .ai-typing i:nth-child(3) { animation-delay: 0.3s; }
+        .ai-typing span { margin-inline-start: 0.4rem; }
+        @keyframes aiDot { 0%, 80%, 100% { opacity: 0.3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+        /* أدوات تحت كل رد: ربط الرد بالحصة + طلبات متابعة سريعة */
+        .ai-tools { align-self: flex-start; display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: -0.25rem; max-width: 92%; }
+        .ai-tools button { border: 1px solid var(--border); background: #fff; color: var(--primary); border-radius: 999px; padding: 0.25rem 0.65rem; font: inherit; font-size: 0.76rem; font-weight: 600; cursor: pointer; }
+        .ai-tools button.use { background: #EEE9F3; border-color: #D9CFE3; }
+        .ai-tools button:disabled { opacity: 0.5; cursor: default; }
+        .ai-chips { display: flex; gap: 0.35rem; overflow-x: auto; padding: 0.55rem 1rem 0.2rem; flex-shrink: 0; scrollbar-width: none; background: var(--card-bg); border-top: 1px solid var(--border); }
+        .ai-chips::-webkit-scrollbar { display: none; }
+        .ai-chips button { flex-shrink: 0; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); border-radius: 999px; padding: 0.4rem 0.8rem; font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+        .ai-chips button:hover { border-color: var(--primary); color: var(--primary); }
+        .ai-chat-quota { padding: 0.15rem 1rem 0; font-size: 0.7rem; color: var(--text-secondary); text-align: center; flex-shrink: 0; background: var(--card-bg); min-height: 0.2rem; }
+        .ai-chat-input-row { display: flex; align-items: flex-end; gap: 0.45rem; padding: 0.55rem 0.8rem 0.75rem; flex-shrink: 0; background: var(--card-bg); }
+        /* font-size لازم 16px على الأقل عشان سفاري في الآيفون مايعملش zoom لما المدرس يضغط على مربع الكتابة */
+        .ai-chat-input-row textarea { display: block; flex: 1; min-width: 0; width: auto; margin: 0; resize: none; min-height: 44px; max-height: 120px; overflow-y: auto; padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: 14px; font: inherit; font-size: 1rem; line-height: 1.4; background: var(--bg-secondary); }
+        .ai-chat-input-row .btn { flex-shrink: 0; align-self: flex-end; width: 44px; height: 44px; margin: 0; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .ai-mic { flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border); background: var(--card-bg); color: var(--primary); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .ai-mic.rec { background: #B85C5C; color: #fff; border-color: #B85C5C; animation: aiPulse 1.2s infinite; }
+        @keyframes aiPulse { 50% { box-shadow: 0 0 0 6px rgba(184,92,92,0.2); } }
+        @media (max-width: 1023px) {
+            .ai-chat-header { padding-top: 0.85rem; }
+            .ai-chat-input-row { padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)); }
+        }
+        #ai-chat-overlay.kb-open .ai-chat-card { height: 100%; border-radius: 0; }
+        #ai-chat-overlay.kb-open .ai-context-bar, #ai-chat-overlay.kb-open .ai-chips, #ai-chat-overlay.kb-open .ai-chat-quota { display: none; }
         @media (max-width: 480px) {
-            /* على الموبايل: الشات بيبقى ملء الشاشة بدل كارت في النص.
-               استخدمنا height:100% (بدل 92vh) عشان يطابق الحجم الحقيقي
-               لصندوق #ai-chat-overlay نفسه (اللي بيتحدد فعليًا حسب
-               الشاشة المرئية الفعلية) - ده أضمن بكتير من وحدة vh اللي
-               مش دايمًا بتتحدث لما الكيبورد يفتح، وكانت بتخلي مربع
-               الكتابة وزرار الإرسال يختفوا تحت الكيبورد في الآيفون. */
-            #ai-chat-overlay { padding: 0; }
-            .ai-chat-card { max-width: none; width: 100%; height: 100%; border-radius: 0; }
-            .ai-chat-bubble { max-width: 92%; }
-            /* احترام الـ Safe Area (الشق العلوي وخط الهوم في الآيفون) */
-            .ai-chat-header { padding-top: calc(1rem + env(safe-area-inset-top, 0px)); }
-            .ai-chat-input-row { padding-bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px)); }
+            .ai-chat-card { height: 88%; }
+            .ai-chat-bubble { max-width: 94%; }
         }
     </style>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=13"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+    <script type="module" src="js/config.js?v=21"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=13';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=13';
-        import { api } from './js/api.js?v=13';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=13';
-        import { icon } from './js/icons.js?v=13';
+        import { Auth } from './js/auth.js?v=21';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=21';
+        import { api } from './js/api.js?v=21';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=21';
+        import { icon } from './js/icons.js?v=21';
         import {
             subjectLabel, ratingFieldLabels, RATINGS, HOMEWORK_STATUS, relativeDay, localDateISO, localTimeISO,
             formatDuration, minutesText, LessonDraft, lessonHasContent, lessonDetailsHtml, nextOccurrence, formatNextOccurrence,
-            normalizeLesson, isAbsenceRow, attendanceInfo
-        } from './js/lesson-utils.js?v=13';
-        import { openAttendanceModal } from './js/attendance.js?v=13';
-        import { showTips, dismissTip } from './js/tips.js?v=13';
-        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge } from './js/billing.js?v=13';
+            normalizeLesson, isAbsenceRow, attendanceInfo, lessonDay
+        } from './js/lesson-utils.js?v=21';
+        import { openAttendanceModal } from './js/attendance.js?v=21';
+        import { showTips, dismissTip } from './js/tips.js?v=21';
+        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=21';
+        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=21';
+        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=21';
+        import { openBookViewer } from './js/book-viewer.js?v=21';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'ابدأ الحصة وتابعها وسجّلها في مكان واحد', showSearch: false });
@@ -294,8 +325,12 @@
         $('ic-ai-chat-btn').innerHTML = icon('sparkles', { size: 18 });
         $('ic-ai-chat-header').innerHTML = icon('sparkles', { size: 18 });
         $('ic-ai-chat-close').innerHTML = icon('x', { size: 16 });
+        $('ic-ai-new').innerHTML = icon('refresh', { size: 16 });
+        $('ic-ai-mic').innerHTML = icon('mic', { size: 19 });
+        $('ic-ai-send').innerHTML = icon('send', { size: 18 });
         $('ic-more').innerHTML = icon('plus', { size: 15 });
         $('bar-link').innerHTML = icon('link', { size: 18 });
+        $('btn-pip').innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><rect x="12" y="11.5" width="7" height="5.5" rx="1.2" fill="currentColor" stroke="none"/></svg>';
         $('done-icon').innerHTML = icon('checkCircle', { size: 34 });
         $('btn-start').innerHTML = icon('play', { size: 18 }) + ' ابدأ الحصة';
 
@@ -364,36 +399,76 @@
         }
         function saveDraftNow() {
             if (!mode) return;
+            const prev = LessonDraft.load(studentIdParam);
+            const keepId = prev && prev.requestId && prev.lessonId === lesson.id && prev.mode === mode ? prev.requestId : undefined;
             const ok = LessonDraft.save(studentIdParam, {
-                mode, lessonId: lesson.id, startedAt: lesson.startedAt,
+                mode, lessonId: lesson.id, startedAt: lesson.startedAt, requestId: keepId,
                 date: $('f-date').value || null, fields: getFields(), setTopic: $('f-set-topic').checked
             });
-            if (ok) $('saved-ind').textContent = `✓ محفوظ على الجهاز تلقائيًا (${new Date().toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit' })})`;
+            $('saved-ind').textContent = ok
+                ? `✓ محفوظ على الجهاز تلقائيًا (${new Date().toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit', hour12: true })})`
+                : '⚠️ مساحة المتصفح مليانة: المكتوب مش بيتحفظ على الجهاز، احفظ الحصة أول ما تخلص.';
         }
         $('lesson-form').addEventListener('input', scheduleDraft);
         $('lesson-form').addEventListener('change', scheduleDraft);
 
         // ------------------------------------------------------------ التحميل
-        window.addEventListener('load', async () => {
+        // بنبدأ فورًا (مش مستنيين حدث load اللي بيستنى Google Tag Manager وكل الإضافات على النت الضعيف)
+        (async () => {
             const authInfo = await Auth.requireAuth();
-            if (!authInfo || !studentIdParam) { window.location.href = 'dashboard.html'; return; }
+            if (!authInfo) return;
+            if (!studentIdParam) { window.location.href = 'dashboard.html'; return; }
             try {
                 await loadOverview();
                 decideInitialState();
+                loadLessonBooks();   // مش بنستناها: الحصة تفتح فورًا والكتب تظهر لما توصل
                 $('loader').style.display = 'none';
                 $('lesson-app').style.display = 'block';
                 if (openAiParam === '1') openAiChat();
             } catch (error) {
-                $('loader').textContent = 'حدث خطأ: ' + ErrorHandler.getErrorMessage(error);
+                // الحصة شغالة والنت وقع: نفتح الحصة من المحفوظ على الجهاز بدل شاشة خطأ
+                const draft = LessonDraft.load(studentIdParam);
+                if (draft && draft.mode && (draft.mode === 'manual' || draft.lessonId)) {
+                    enterOfflineFromDraft(draft);
+                    return;
+                }
+                $('loader').innerHTML = `${esc(ErrorHandler.getErrorMessage(error))} <button type="button" class="btn btn-sm" onclick="location.reload()">حاول تاني</button>`;
                 $('loader').style.color = 'var(--danger)';
             }
-        });
+        })();
+
+        /** فتح الحصة من المسودة لما بيانات الطالب ماتحمّلتش (النت ضعيف). بنحاول نحمّل الباقي في الخلفية */
+        function enterOfflineFromDraft(draft) {
+            try { window.tmTrack && window.tmTrack('lesson_offline_open', { mode: draft.mode }); } catch (e) { /* تجاهل */ }
+            ov = { student: { id: studentIdParam, name: (LiveLesson.get(studentIdParam) || {}).name || '' }, stats: {}, lessons: [], schedules: [], billing: { available: false }, payments: [], legacy: true };
+            student = ov.student;
+            billView = computeBilling(ov.billing);
+            renderCommon();
+            if (draft.mode === 'live') {
+                lesson = { id: draft.lessonId, startedAt: draft.startedAt || Date.now() };
+                enterLive();
+            } else {
+                enterManual(draft.date);
+            }
+            setFields(draft.fields);
+            $('f-set-topic').checked = !!draft.setTopic;
+            $('loader').style.display = 'none';
+            $('lesson-app').style.display = 'block';
+            ErrorHandler.showError('النت ضعيف: فتحنا الحصة من المحفوظ على الجهاز. اكتب عادي، وهنكمّل تحميل بيانات الطالب لما النت يرجع.', 7000);
+            const retry = async () => {
+                try { await loadOverview(); prepareForm(); renderLessonBooks(); }
+                catch (e) { setTimeout(retry, 15000); }
+            };
+            setTimeout(retry, 8000);
+        }
 
         async function loadOverview() {
-            ov = await api.getStudentOverview(studentIdParam, { limit: 10 });
+            // 40 حصة بتغطي الشهر الحالي كله (عشان "الحصة رقم كام في الشهر")
+            ov = await api.getStudentOverview(studentIdParam, { limit: 40 });
             student = ov.student || {};
             billView = computeBilling(ov.billing);
             renderCommon();
+            if (mode) renderLiveInfo();
         }
 
         function decideInitialState() {
@@ -404,7 +479,12 @@
                 const started = Date.parse(ip.started_at);
                 lesson = { id: ip.id, startedAt: Number.isFinite(started) ? Date.now() - (serverNow - started) : Date.now() };
                 enterLive();
-                if (draft && draft.lessonId === ip.id) { setFields(draft.fields); $('f-set-topic').checked = !!draft.setTopic; }
+                if (draft && lessonHasContent(draft.fields)) {
+                    // نفس الحصة، أو مكتوب قديم ماتحفظش: مانمسحش أي حاجة المدرس كتبها
+                    setFields(draft.fields);
+                    $('f-set-topic').checked = !!draft.setTopic;
+                    if (draft.lessonId !== ip.id) saveDraftNow();
+                }
                 ErrorHandler.showSuccess('تم استكمال الحصة الجارية');
                 return;
             }
@@ -423,9 +503,29 @@
                 ErrorHandler.showSuccess('تم استرجاع المسودة غير المحفوظة');
                 return;
             }
-            if (draft) LessonDraft.clear(studentIdParam);   // الحصة اتقفلت من جهاز تاني أو خلصت
+            if (draft && draft.mode === 'live' && lessonHasContent(draft.fields)) {
+                // الحصة اتقفلت (من جهاز تاني أو اتلغت) والمكتوب لسه ماتحفظش: مانمسحهوش من غير ما المدرس يقرر
+                recoverClosedLiveDraft(draft);
+                return;
+            }
+            if (draft) LessonDraft.clear(studentIdParam);   // الحصة اتقفلت من جهاز تاني أو خلصت ومفيش مكتوب
+            LiveLesson.clear(studentIdParam);
+            notifyLiveLessonChanged();
             if (manualParam) { clearForm(); enterManual(); return; }
             showReady();
+        }
+
+        /** المكتوب من حصة اتقفلت بره الجهاز ده ← تسجيل يدوي بنفس التاريخ، والمدرس يختار يحفظ أو يلغي */
+        function recoverClosedLiveDraft(draft) {
+            try { window.tmTrack && window.tmTrack('lesson_draft_recovered', {}); } catch (e) { /* تجاهل */ }
+            const d = draft.startedAt ? localDateISO(new Date(draft.startedAt)) : null;
+            LiveLesson.clear(studentIdParam);
+            notifyLiveLessonChanged();
+            enterManual(d);
+            setFields(draft.fields);
+            $('f-set-topic').checked = !!draft.setTopic;
+            saveDraftNow();
+            ErrorHandler.showError('الحصة دي اتقفلت من جهاز تاني أو اتلغت، بس اللي كتبته لسه هنا. اضغط "حفظ الحصة" لو عايز تسجّله، أو "إلغاء" لو اتسجّل خلاص.', 10000);
         }
 
         // ------------------------------------------------------------ العرض
@@ -457,6 +557,7 @@
         function showReady() {
             mode = null;
             stopTimer();
+            unpublishLive();
             $('r-name').textContent = student.name || 'بدون اسم';
             const sub = [`<span>${icon('bookOpen', { size: 14 })} ${esc(subjectLabel(student.subject))}</span>`];
             if (!ov.legacy || (ov.stats && ov.stats.completed_exact)) sub.push(`<span>${icon('clipboardList', { size: 14 })} الحصة رقم ${lessonsCount() + 1}</span>`);
@@ -475,6 +576,7 @@
                 : `<div class="x-card-title"><h3>${icon('clipboard', { size: 17 })} آخر حصة</h3></div><div class="x-empty">دي أول حصة مسجّلة مع الطالب 🎉</div>`;
 
             renderBilling($('r-bill'), true);
+            renderLessonBooks();
             showState('ready');
             showTips([
                 { id: 'lesson_start', target: '#btn-start', title: 'ابدأ الحصة', text: 'الزرار ده بيشغّل العداد ويفتح رابط الحصة، وكل اللي هتكتبه بيتحفظ تلقائيًا.' },
@@ -502,7 +604,7 @@
             if (!lessons.length) { $('aside-list').innerHTML = '<div class="x-empty">لا توجد حصص سابقة</div>'; return; }
             let doneSeen = 0;
             let openedFirst = false;
-            $('aside-list').innerHTML = lessons.map((l) => {
+            $('aside-list').innerHTML = lessons.slice(0, 15).map((l) => {
                 const absent = isAbsenceRow(l);
                 const peek = absent ? attendanceInfo(l).label : (l.lesson_content || l.homework || '').split('\n')[0];
                 const num = !absent && total ? total - doneSeen : '';
@@ -519,13 +621,18 @@
 
         function prepareForm() {
             const last = lastLesson();
-            // متابعة الواجب السابق
+            // من الحصة اللي فاتت: المخطط للحصة دي + متابعة الواجب (أول حاجة المدرس محتاجها أول ما الحصة تبدأ)
+            const plan = last && last.next_assignment ? String(last.next_assignment).trim() : '';
+            $('prev-plan-text').textContent = plan;
+            $('prev-plan').hidden = !plan;
             if (last && last.homework) {
                 $('prev-hw-text').textContent = last.homework;
                 $('blk-prev-hw').hidden = false;
             } else {
                 $('blk-prev-hw').hidden = true;
             }
+            $('prev-when').textContent = last ? `(${relativeDay(last.lesson_date)})` : '';
+            $('blk-prev').hidden = !plan && !(last && last.homework);
             updateSuggest();
             // "نفس تقييم الحصة اللي فاتت": ضغطة واحدة بدل 3
             const hasRating = !!(last && (last.memorization || last.recitation || last.revision));
@@ -560,19 +667,124 @@
             scheduleDraft();
         });
 
+        // ------------------------------------------------------------ معلومات الحصة الجارية
+        /** مدة الحصة من الجدول: موعد النهارده الأقرب لوقت البدء، وإلا المدة لو كل مواعيده نفس المدة */
+        function plannedMinutes() {
+            const list = (ov && ov.schedules) || [];
+            if (!list.length) return null;
+            const startD = new Date(lesson.startedAt || Date.now());
+            const startMin = startD.getHours() * 60 + startD.getMinutes();
+            const today = list.filter((sc) => sc && sc.start_time && occursOn(sc, startD));
+            if (today.length) {
+                today.sort((a, b) => Math.abs(timeToMinutes(a.start_time) - startMin) - Math.abs(timeToMinutes(b.start_time) - startMin));
+                return Number(today[0].duration_minutes) || 45;
+            }
+            const durations = [...new Set(list.map((sc) => Number(sc.duration_minutes) || 45))];
+            return durations.length === 1 ? durations[0] : null;
+        }
+
+        /** حصص الشهر الحالي من السجل (الحصة الجارية لسه مش فيه) */
+        function monthStats() {
+            const now = new Date();
+            let present = 0;
+            let absent = 0;
+            ((ov && ov.lessons) || []).forEach((l) => {
+                const d = lessonDay(l.lesson_date);
+                if (!d || d.getFullYear() !== now.getFullYear() || d.getMonth() !== now.getMonth()) return;
+                if (isAbsenceRow(l)) { if (l.attendance !== 'teacher_cancelled') absent++; }
+                else if (!l.status || l.status === 'completed') present++;
+            });
+            let month = '';
+            try { month = now.toLocaleDateString('ar-EG', { month: 'long' }); } catch (e) { /* تجاهل */ }
+            return { present, absent, month };
+        }
+
+        /** الحساب "بعد الحصة دي" — عشان رسالة التذكير والدفعة يتحسبوا صح وهو لسه في الحصة */
+        function projectedBilling() {
+            if (!ov || !ov.billing || !billView || !billView.enabled) return billView;
+            return computeBilling({ ...ov.billing, taken: (Number(ov.billing.taken) || 0) + 1 });
+        }
+
+        function renderLiveInfo() {
+            if (!mode || !ov) return;
+            const chips = [];
+            const exact = !ov.legacy || (ov.stats && ov.stats.completed_exact);
+            if (exact) chips.push(`<span class="ls-chip">${icon('clipboardList', { size: 14 })} الحصة رقم ${lessonsCount() + 1}</span>`);
+            if (mode === 'live') {
+                const ms = monthStats();
+                chips.push(`<span class="ls-chip" title="عدد حصص الشهر ده لحد الحصة دي">${icon('calendar', { size: 14 })} ${esc(ms.month || 'الشهر ده')}: دي الحصة ${ms.present + 1}${ms.absent ? ` · غاب ${ms.absent === 1 ? 'مرة' : ms.absent === 2 ? 'مرتين' : ms.absent + ' مرات'}` : ''}</span>`);
+                const pm = lesson.plannedMin;
+                if (pm && lesson.startedAt) {
+                    const s0 = new Date(lesson.startedAt);
+                    const endMin = s0.getHours() * 60 + s0.getMinutes() + pm;
+                    chips.push(`<span class="ls-chip">${icon('clock', { size: 14 })} ${pm} د · تخلص ${esc(formatClock12(endMin))}</span>`);
+                }
+            }
+            const topic = student.current_surah || student.current_topic;
+            if (topic) chips.push(`<span class="ls-chip ls-chip-topic" title="${esc(topic)}">${icon('target', { size: 14 })} ${esc(String(topic).slice(0, 40))}</span>`);
+
+            const info = liveBillingInfo(billView);
+            if (info && info.status === 'ok') chips.push(`<span class="ls-chip ls-chip-bill">${icon('creditCard', { size: 14 })} ${esc(info.title)} · ${esc(info.sub)}</span>`);
+            else if (billView && billView.available && !billView.enabled) chips.push(`<button type="button" class="ls-chip ls-chip-btn" data-bill-act="setup">${icon('creditCard', { size: 14 })} تابع حصصه وفلوسه</button>`);
+            if (student.phone) chips.push(`<a class="ls-chip ls-chip-btn ls-chip-wa" href="${esc(whatsappUrl(student.phone, ''))}" target="_blank" rel="noopener">${icon('messageCircle', { size: 14 })} واتساب</a>`);
+            $('ls-info').innerHTML = chips.join('');
+            bindBillingActions($('ls-info'), {
+                getState: () => ({ student, view: billView }),
+                onChange: async () => { try { await loadOverview(); } catch (e) { /* تجاهل */ } }
+            });
+
+            // تنبيه الدفع (آخر حصة في الباقة / مستحق): بيظهر واضح ومعاه رسالة تذكير جاهزة محسوبة بعد الحصة دي
+            const box = $('ls-bill-alert');
+            if (info && info.status !== 'ok') {
+                box.innerHTML = `<div class="ls-bill-alert st-${info.status}">
+                    <div class="ls-bill-alert-text">${icon('creditCard', { size: 18 })}<div><strong>${esc(info.title)}</strong><span>${esc(info.sub)}</span></div></div>
+                    <div class="ls-bill-alert-actions">
+                        <button type="button" class="btn btn-sm" data-bill-act="remind">${icon('messageCircle', { size: 14 })} رسالة تذكير</button>
+                        <button type="button" class="btn btn-sm btn-ghost" data-bill-act="pay">${icon('plus', { size: 14 })} سجّل دفعة</button>
+                    </div>
+                </div>`;
+                bindBillingActions(box, {
+                    getState: () => ({ student, view: projectedBilling() }),
+                    onChange: async () => { try { await loadOverview(); } catch (e) { /* تجاهل */ } }
+                });
+            } else {
+                box.innerHTML = '';
+            }
+        }
+
+        function publishLive() {
+            if (mode !== 'live' || !lesson.startedAt) return;
+            LiveLesson.publish({
+                studentId: studentIdParam, name: student.name || '', lessonId: lesson.id,
+                startedAt: lesson.startedAt, plannedMin: lesson.plannedMin || null
+            });
+            notifyLiveLessonChanged();
+        }
+        function unpublishLive() {
+            LiveLesson.clear(studentIdParam);
+            notifyLiveLessonChanged();
+            closePip();
+        }
+
         // ------------------------------------------------------------ الحالات
         function enterLive() {
             mode = 'live';
             $('ls-bar').classList.remove('ls-bar-manual');
             $('blk-date').hidden = true;
-            $('btn-finish').innerHTML = icon('checkCircle', { size: 17 }) + ' <span class="ls-finish-text">إنهاء الحصة</span>';
+            $('btn-finish').innerHTML = icon('checkCircle', { size: 17 }) + ' <span class="ls-finish-text">إنهاء<span class="ls-finish-long"> الحصة</span></span>';
             $('btn-discard').textContent = 'بدأت بالغلط؟ احذف الحصة الجارية';
             $('btn-absent-live').hidden = false;
+            lesson.plannedMin = plannedMinutes();
+            $('btn-pip').hidden = !('documentPictureInPicture' in window);
             prepareForm();
             startTimer();
+            renderLiveInfo();
+            renderLessonBooks();
+            publishLive();
             showState('live');
             dismissTip();
             showTips([
+                { id: 'lesson_float', target: '#ls-bar', title: 'اتنقّل براحتك', text: 'تقدر تفتح أي صفحة تانية والحصة شغالة: هتلاقيها في نافذة عائمة صغيرة ترجع منها بضغطة، وكل المكتوب محفوظ.' },
                 { id: 'lesson_history_d', target: '#ls-aside', title: 'الحصص اللي فاتت', text: 'سجل الطالب قدامك طول الحصة: آخر حصة مفتوحة، والأقدم بضغطة.' },
                 { id: 'lesson_history_m', target: '#ls-seg', title: 'الحصص اللي فاتت', text: 'من تبويب "الحصص السابقة" تشوف سجل الطالب من غير ما تسيب الحصة.' },
                 { id: 'lesson_same', target: '#btn-same-rating', text: 'لو مستوى الطالب زي الحصة اللي فاتت، الزرار ده بيملأ التقييم كله بضغطة.' }
@@ -588,10 +800,16 @@
             $('blk-date').hidden = false;
             $('f-date').value = date || localDateISO();
             $('f-date').max = localDateISO();
-            $('btn-finish').innerHTML = icon('checkCircle', { size: 17 }) + ' <span class="ls-finish-text">حفظ الحصة</span>';
+            $('btn-finish').innerHTML = icon('checkCircle', { size: 17 }) + ' <span class="ls-finish-text">حفظ<span class="ls-finish-long"> الحصة</span></span>';
             $('btn-discard').textContent = 'إلغاء';
             $('btn-absent-live').hidden = true;
+            lesson.plannedMin = null;
+            $('btn-pip').hidden = true;
+            $('bar-left').hidden = true;
+            $('bar-progress').hidden = true;
             prepareForm();
+            renderLiveInfo();
+            renderLessonBooks();
             showState('live');
         }
 
@@ -601,6 +819,18 @@
                 const t = formatDuration(Date.now() - (lesson.startedAt || Date.now()));
                 $('bar-timer').textContent = t;
                 document.title = `● ${t} - الحصة`;
+                const st = timeState(lesson.startedAt || Date.now(), lesson.plannedMin);
+                const left = $('bar-left');
+                left.hidden = !st.text;
+                left.textContent = st.text ? `${st.text} من ${lesson.plannedMin}` : '';
+                left.className = `ls-left ph-${st.phase}`;
+                const prog = $('bar-progress');
+                prog.hidden = st.progress == null;
+                prog.className = `ls-progress ph-${st.phase}`;
+                if (st.progress != null) prog.firstElementChild.style.width = `${Math.round(st.progress * 100)}%`;
+                $('ls-bar').classList.toggle('is-over', st.phase === 'over');
+                timeAlerts(st);
+                updatePip(t, st);
             };
             tick();
             timerInt = setInterval(tick, 1000);
@@ -610,11 +840,34 @@
             timerInt = null;
             document.title = 'الحصة - Teachers Manager';
         }
+        function vibrate(pattern) {
+            try { if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) navigator.vibrate(pattern); } catch (e) { /* تجاهل */ }
+        }
+        // تنبيه مرة واحدة لكل حصة: قبل النهاية بـ 5 دقايق (وقت الواجب والتقييم) ولما الوقت يخلص
+        function timeAlerts(st) {
+            if (mode !== 'live' || !st.planned) return;
+            const key = `tm_lesson_alert_${lesson.id || lesson.startedAt}`;
+            let done = '';
+            try { done = sessionStorage.getItem(key) || ''; } catch (e) { /* تجاهل */ }
+            const mark = (v) => { try { sessionStorage.setItem(key, v); } catch (e) { /* تجاهل */ } };
+            if (st.phase === 'over' && !done.includes('over')) {
+                mark(done + 'over');
+                if (st.left > -60000) { ErrorHandler.showSuccess(`⏰ وقت الحصة خلص (${lesson.plannedMin} د)`, 6000); vibrate([200, 100, 200]); }
+            } else if (st.phase === 'soon' && !done.includes('soon')) {
+                mark(done + 'soon');
+                if (st.left > 4 * 60000) { ErrorHandler.showSuccess('⏳ فاضل 5 دقايق: وقت الواجب والتقييم', 6000); vibrate(150); }
+            }
+        }
 
         // ------------------------------------------------------------ بدء الحصة
         $('btn-start').addEventListener('click', async () => {
             const btn = $('btn-start');
             if (btn.disabled) return;
+            const other = LiveLesson.list().find((l) => String(l.studentId) !== String(studentIdParam));
+            if (other) {
+                const mins = Math.max(1, Math.round((Date.now() - other.startedAt) / 60000));
+                if (!confirm(`في حصة شغالة مع ${other.name || 'طالب تاني'} من ${mins} دقيقة ولسه ماتقفلتش.\nتبدأ حصة ${student.name || 'الطالب ده'}؟ (الحصة التانية هتفضل مفتوحة في النافذة العائمة)`)) return;
+            }
             // الرابط بيتفتح مباشرة مع الضغطة (بعد أي انتظار المتصفح بيمنع النوافذ الجديدة)
             if (student.lesson_link) { try { window.open(student.lesson_link, '_blank', 'noopener'); } catch (e) { /* تجاهل */ } }
             btn.disabled = true;
@@ -631,6 +884,7 @@
                 enterLive();
                 saveDraftNow();
                 ErrorHandler.showSuccess(res && res.resumed ? 'تم استكمال الحصة الجارية' : 'بدأت الحصة، بالتوفيق!');
+                try { window.tmTrack && window.tmTrack('lesson_started', { resumed: !!(res && res.resumed), has_link: !!student.lesson_link, planned_min: lesson.plannedMin || 0 }); } catch (e) { /* تجاهل */ }
             } catch (error) {
                 ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
             } finally {
@@ -650,6 +904,7 @@
                 lessonId: fromLive ? lesson.id : null,
                 onSaved: async (value) => {
                     LessonDraft.clear(studentIdParam);
+                    unpublishLive();
                     stopTimer();
                     mode = null;
                     clearForm();
@@ -678,19 +933,26 @@
                 showReady();
                 return;
             }
+            if (discarding) return;
             if (!confirm('حذف الحصة الجارية؟ مش هتتسجل ولا هتتحسب في عدد الحصص.')) return;
+            discarding = true;
             try {
                 if (lesson.id) await api.saveLesson({ action: 'discard', student_id: studentIdParam, lesson_id: lesson.id });
-                LessonDraft.clear(studentIdParam);
-                clearForm();
-                await loadOverview();
-                showReady();
-                ErrorHandler.showSuccess('تم حذف الحصة الجارية');
             } catch (error) {
+                discarding = false;
                 ErrorHandler.showError(error && error.status === 404
-                    ? 'حذف الحصة الجارية يحتاج استيراد workflow "save-lesson" في n8n.'
+                    ? 'الميزة دي مش متاحة دلوقتي. جرّب تاني بعد شوية، ولو المشكلة فضلت كلّمنا على واتساب.'
                     : ErrorHandler.getErrorMessage(error));
+                return;
             }
+            // الحذف نجح: نرجع لشاشة البداية حتى لو تحديث البيانات بعده فشل
+            LessonDraft.clear(studentIdParam);
+            clearForm();
+            try { await loadOverview(); } catch (e) { /* تجاهل */ }
+            showReady();
+            discarding = false;
+            ErrorHandler.showSuccess('تم حذف الحصة الجارية');
+            try { window.tmTrack && window.tmTrack('lesson_discarded', {}); } catch (e) { /* تجاهل */ }
         });
 
         // ------------------------------------------------------------ إنهاء الحصة
@@ -703,7 +965,10 @@
                 student_id: studentIdParam,
                 lesson_id: lesson.id,
                 ...fields,
-                local_date: mode === 'manual' ? ($('f-date').value || localDateISO()) : localDateISO(),
+                // الحصة اللي بدأت 11:40 بالليل وخلصت بعد 12 تتسجل بيوم بدايتها
+                local_date: mode === 'manual' ? ($('f-date').value || localDateISO()) : localDateISO(lesson.startedAt ? new Date(lesson.startedAt) : new Date()),
+                // رقم ثابت لكل مسودة: لو الطلب اتأخر واتبعت تاني، الخادم يقدر يعرف إنه نفس الحفظ
+                client_request_id: draftRequestId(),
                 local_time: mode === 'manual' ? null : localTimeISO(),
                 current_topic: $('f-set-topic').checked && fields.next_assignment ? fields.next_assignment.slice(0, 300) : null
             };
@@ -713,15 +978,35 @@
             const label = btn.innerHTML;
             btn.innerHTML = icon('clock', { size: 17 }) + ' <span class="ls-finish-text">جاري الحفظ...</span>';
             try {
-                await api.saveLesson(payload);
+                try {
+                    await api.saveLesson(payload);
+                } catch (saveErr) {
+                    // الطلب اتأخر: ممكن يكون اتحفظ فعلًا على الخادم. نتأكد قبل ما نقول للمدرس يحفظ تاني (عشان مايتسجلش مرتين)
+                    const code = saveErr && saveErr.error && saveErr.error.code;
+                    if (code !== 'TIMEOUT' || !(await lessonLooksSaved(payload))) throw saveErr;
+                }
                 try { localStorage.setItem('tm_ob_lesson_done', '1'); } catch (e) { /* تجاهل */ }
-                try { (window.dataLayer = window.dataLayer || []).push({ event: 'lesson_saved', lesson_mode: mode }); } catch (e) { /* تجاهل */ }
+                try {
+                    // غِنى التسجيل (من غير المحتوى نفسه): بيورّينا المدرسين بيملوا إيه فعلًا وإيه اللي بيتجاهلوه
+                    const filled = Object.entries(fields).filter(([, v]) => v && String(v).trim()).map(([k]) => k);
+                    (window.dataLayer = window.dataLayer || []).push({
+                        event: 'lesson_saved', lesson_mode: mode,
+                        minutes: mode === 'live' && lesson.startedAt ? Math.round((Date.now() - lesson.startedAt) / 60000) : 0,
+                        fields_filled: filled.length,
+                        has_rating: filled.some((k) => ['memorization', 'recitation', 'revision'].includes(k)),
+                        has_homework: filled.includes('homework'),
+                        has_next: filled.includes('next_assignment'),
+                        billing_on: !!(billView && billView.enabled)
+                    });
+                } catch (e) { /* تجاهل */ }
                 const duration = mode === 'live' && lesson.startedAt ? Date.now() - lesson.startedAt : null;
                 LessonDraft.clear(studentIdParam);
+                unpublishLive();
                 stopTimer();
                 mode = null;
-                try { await loadOverview(); } catch (e) { /* الحصة اتحفظت، الملخص بس اللي ماتحمّلش */ }
-                showDone(duration);
+                // شاشة "تم الحفظ" تظهر فورًا، والملخص (العدد والدفع) يتحدّث لما البيانات توصل
+                showDone(duration, null, true);
+                loadOverview().then(() => refreshDoneInfo(duration)).catch(() => { /* الحصة اتحفظت، الملخص بس اللي ماتحمّلش */ });
             } catch (error) {
                 ErrorHandler.showError(ErrorHandler.getErrorMessage(error) + ' — المكتوب محفوظ على الجهاز، حاول مرة أخرى.');
                 btn.innerHTML = label;
@@ -731,7 +1016,38 @@
             }
         });
 
-        function showDone(duration, absenceValue) {
+        let discarding = false;
+
+        function draftRequestId() {
+            const d = LessonDraft.load(studentIdParam) || {};
+            if (d.requestId) return d.requestId;
+            const id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            LessonDraft.save(studentIdParam, { ...d, requestId: id });
+            return id;
+        }
+
+        /** بعد مهلة الحفظ: هل الحصة دي ظهرت في سجل الطالب؟ */
+        async function lessonLooksSaved(payload) {
+            try {
+                const fresh = await api.getStudentOverview(studentIdParam, { limit: 5 });
+                return ((fresh && fresh.lessons) || []).some((l) => !isAbsenceRow(l)
+                    && String(l.lesson_date || '').slice(0, 10) === payload.local_date
+                    && String(l.lesson_content || '').trim() === String(payload.lesson_content || '').trim()
+                    && (!payload.lesson_id || l.id === payload.lesson_id || !l.id));
+            } catch (e) { return false; }
+        }
+
+        function refreshDoneInfo(duration) {
+            if (!$('state-done').classList.contains('active')) return;
+            const parts = [];
+            if (duration) parts.push(`مدة الحصة ${minutesText(duration)}`);
+            if (lessonsCount()) parts.push(`إجمالي حصص ${student.name ? student.name.split(' ')[0] : 'الطالب'}: ${lessonsCount()}`);
+            $('done-sub').textContent = parts.join(' · ');
+            renderBilling($('done-bill'), false);
+            renderDoneNext(null);
+        }
+
+        function showDone(duration, absenceValue, pendingRefresh = false) {
             if (absenceValue) {
                 const info = attendanceInfo({ status: 'cancelled', attendance: absenceValue });
                 $('done-title').textContent = `تم التسجيل: ${info.label}`;
@@ -747,40 +1063,361 @@
             }
             const parts = [];
             if (duration) parts.push(`مدة الحصة ${minutesText(duration)}`);
-            if (lessonsCount()) parts.push(`إجمالي حصص ${student.name ? student.name.split(' ')[0] : 'الطالب'}: ${lessonsCount()}`);
+            if (!pendingRefresh && lessonsCount()) parts.push(`إجمالي حصص ${student.name ? student.name.split(' ')[0] : 'الطالب'}: ${lessonsCount()}`);
             $('done-sub').textContent = parts.join(' · ');
-            renderBilling($('done-bill'), false);
+            if (pendingRefresh) { $('done-bill').innerHTML = ''; $('done-next').hidden = true; }   // بيتحدّثوا بعد ما البيانات الجديدة توصل
+            else { renderBilling($('done-bill'), false); renderDoneNext(absenceValue); }
             clearForm();
             showState('done');
+            // أول حصة متسجلة = أنسب وقت نقترح فيه تثبيت التطبيق (js/pwa-install.js بيسمع للحدث ده)
+            if (!absenceValue) {
+                try { window.dispatchEvent(new CustomEvent('tm:value-moment', { detail: { kind: 'lesson_saved' } })); } catch (e) { /* تجاهل */ }
+            }
         }
 
-        // ------------------------------------------------------------ المساعد الذكي: اقتراحات سريعة
-        function aiQuickSend(text) {
-            const input = $('ai-chat-input');
-            input.value = text;
-            $('ai-chat-form').requestSubmit();
-        }
-        document.querySelectorAll('.ai-quick button[data-quick]').forEach((b) => b.addEventListener('click', () => {
-            const kind = b.dataset.quick;
-            if (kind === 'summary') {
-                const f = getFields();
-                const lines = ['لخّص الحصة الحالية في نقاط قصيرة، واقترح المطلوب في الحصة الجاية.'];
-                if (f.lesson_content) lines.push(`ماذا تم: ${f.lesson_content}`);
-                if (f.homework) lines.push(`الواجب: ${f.homework}`);
-                if (f.performance) lines.push(`ملاحظات الأداء: ${f.performance}`);
-                if (f.notes) lines.push(`ملاحظات: ${f.notes}`);
-                aiQuickSend(lines.join('\n').slice(0, 600));
-            } else if (kind === 'homework') {
-                aiQuickSend('اقترح واجب قصير ومناسب للطالب بناءً على آخر الحصص.');
-            } else if (kind === 'activity') {
-                aiQuickSend('اقترح نشاط سريع (5 دقائق) أبدأ بيه الحصة دي مع الطالب.');
+        // الخطوة الجاية بعد الحفظ: نوجّه المدرس لأقوى ميزة لسه ماجربهاش
+        function renderDoneNext(absenceValue) {
+            const box = $('done-next');
+            box.hidden = true;
+            box.innerHTML = '';
+            if (absenceValue) return;
+            const first = student.name ? student.name.split(' ')[0] : 'الطالب';
+            const count = lessonsCount();
+            let reportKey = '';
+            try { reportKey = `tm_report_nudge_${studentIdParam}_${new Date().getFullYear()}_${new Date().getMonth()}`; } catch (e) { /* تجاهل */ }
+            let nudged = false;
+            try { nudged = !!localStorage.getItem(reportKey); } catch (e) { /* تجاهل */ }
+            if (billView && billView.available && !billView.enabled) {
+                box.innerHTML = `<strong>💳 عايز البرنامج يحسبلك حصص ${esc(first)} وفلوسه؟</strong>
+                    <span>هتعرف كام حصة فاضلة ومين عليه فلوس، وتبعت رسالة تذكير جاهزة من غير إحراج.</span>`;
+                box.hidden = false;
+                return;   // كارت التفعيل نفسه ظاهر تحت مباشرة
             }
-        }));
+            if (count >= 4 && !nudged) {
+                box.innerHTML = `<strong>📘 ${esc(first)} عمل ${esc(lessonsText(count))} لحد دلوقتي</strong>
+                    <span>ابعت لولي الأمر تقرير الشهر على واتساب: الحضور والمستوى والواجبات.</span>
+                    <a class="btn btn-sm" href="student.html?id=${encodeURIComponent(studentIdParam)}&report=1">ابعت التقرير</a>`;
+                box.hidden = false;
+                try { localStorage.setItem(reportKey, '1'); } catch (e) { /* تجاهل */ }
+            }
+        }
 
         // ============================================================
-        // مساعد الذكاء الاصطناعي (شات تفاعلي) - ميزة منفصلة تمامًا عن
-        // قسم "طلب ملخص ذكي" فوق، بذاكرة محادثة خاصة بالطالب محفوظة
-        // في السيرفر (راجع n8n/ai-chat-assistant.json لتفاصيل الباك إند)
+        // كتب الحصة
+        // - الكتب المتاحة للطالب ده (الخاصة بيه الأول، وبعدين العامة)، والأخير اللي اتفتح معاه في الأول
+        // - كل كتاب بيفتح على آخر صفحة وصلها الطالب ده (محفوظة على الجهاز لكل طالب)
+        // - الكتاب بيفتح فوق الحصة: العداد شغال والمكتوب زي ما هو، وفيه زرار يسجّل الصفحة في الحصة
+        // ============================================================
+        const BOOK_POS_KEY = `tm_book_pos_${studentIdParam}`;
+        const BOOK_HINT_KEY = 'tm_lesson_books_hint_off';
+        let lessonBooks = null;      // null = لسه بيتحمّل / [] = مفيش
+        let allBooksCount = 0;
+        let bookViewer = null;
+        const BOOK_TYPE = { pdf: 'PDF', docx: 'Word', pptx: 'PowerPoint', txt: 'نص', image: 'صورة' };
+
+        const bookPos = {
+            all() { try { return JSON.parse(localStorage.getItem(BOOK_POS_KEY) || '{}') || {}; } catch (e) { return {}; } },
+            get(id) { return this.all()[id] || null; },
+            set(id, page) {
+                try {
+                    const all = this.all();
+                    all[id] = { page: Math.max(1, Number(page) || 1), at: Date.now() };
+                    localStorage.setItem(BOOK_POS_KEY, JSON.stringify(all));
+                } catch (e) { /* تجاهل */ }
+            }
+        };
+
+        async function loadLessonBooks() {
+            try {
+                const res = await api.listBooks();
+                const books = (res && res.books) || (Array.isArray(res) ? res : []);
+                const usable = books.filter((b) => b && b.status === 'ready' && b.storage_path);
+                allBooksCount = usable.length;
+                const sid = String(studentIdParam);
+                const pos = bookPos.all();
+                lessonBooks = usable
+                    .map((b) => {
+                        const ids = (b.student_ids || []).map(String);
+                        return { ...b, mine: ids.includes(sid), general: ids.length === 0, last: pos[b.id] || null };
+                    })
+                    .filter((b) => b.mine || b.general)
+                    .sort((a, b) => ((b.last ? b.last.at : 0) - (a.last ? a.last.at : 0))
+                        || (b.mine - a.mine)
+                        || (Date.parse(b.created_at || 0) - Date.parse(a.created_at || 0)));
+            } catch (e) {
+                lessonBooks = [];   // المكتبة مش متاحة دلوقتي: الحصة تكمّل عادي
+                allBooksCount = -1;
+            }
+            renderLessonBooks();
+        }
+
+        function bookTileHtml(b, i) {
+            const unit = b.file_type === 'pptx' ? 'شريحة' : 'صفحة';
+            let meta;
+            if (b.last && b.last.page > 1) meta = `<span class="lb-resume">كمّل من ${unit} ${b.last.page}</span>`;
+            else if (b.mine) meta = `<span class="lb-mine">خاص ب${esc((student.name || 'الطالب').split(' ')[0])}</span>`;
+            else meta = `<span>${esc(BOOK_TYPE[b.file_type] || b.file_type || '')}${b.page_count ? ` · ${b.page_count} ${unit}` : ''}</span>`;
+            return `<button type="button" class="lb-tile${i === 0 && b.last ? ' is-last' : ''}" data-track="lesson_book_tile" data-book="${esc(b.id)}" title="فتح ${esc(b.title)}">
+                <span class="lb-ic">${icon(b.file_type === 'image' ? 'image' : 'bookOpen', { size: 18 })}</span>
+                <span class="lb-txt"><span class="lb-title">${esc(b.title)}</span><span class="lb-meta">${meta}</span></span>
+            </button>`;
+        }
+
+        function renderLessonBooks() {
+            const host = mode ? $('ls-books') : $('r-books');
+            ['ls-books', 'r-books'].forEach((id) => { if ($(id) !== host) $(id).innerHTML = ''; });
+            if (!host || lessonBooks === null) return;
+            if (!lessonBooks.length) {
+                let off = false;
+                try { off = localStorage.getItem(BOOK_HINT_KEY) === '1'; } catch (e) { /* تجاهل */ }
+                if (off || allBooksCount < 0) { host.innerHTML = ''; return; }
+                // تلميحة صغيرة: مفيش كتب للطالب ده لسه
+                host.innerHTML = `<div class="lb-hint">
+                    <span class="lb-ic">${icon('bookOpen', { size: 17 })}</span>
+                    <span>${allBooksCount > 0 ? `مفيش كتاب متاح ل${esc((student.name || 'الطالب').split(' ')[0])}. ` : ''}ارفع كتاب أو مذكرة الطالب من <a href="books.html">مكتبتي</a>، وهيظهر هنا تفتحه بضغطة وقت الحصة على آخر صفحة وصلها.</span>
+                    <button type="button" class="lb-hint-x" aria-label="إخفاء" title="إخفاء">${icon('x', { size: 14 })}</button>
+                </div>`;
+                host.querySelector('.lb-hint-x').addEventListener('click', () => {
+                    try { localStorage.setItem(BOOK_HINT_KEY, '1'); } catch (e) { /* تجاهل */ }
+                    host.innerHTML = '';
+                });
+                return;
+            }
+            const shown = lessonBooks.slice(0, 4);
+            host.innerHTML = `<div class="lb-card">
+                <div class="lb-head">
+                    <span class="lb-head-title">${icon('bookOpen', { size: 16 })} كتب الحصة</span>
+                    ${lessonBooks.length > shown.length ? `<button type="button" class="lb-all" data-books-all>كل الكتب (${lessonBooks.length})</button>` : ''}
+                </div>
+                <div class="lb-row">${shown.map(bookTileHtml).join('')}</div>
+            </div>`;
+        }
+
+        // ضغطة على كتاب (في الحصة أو قبلها أو من قايمة "كل الكتب")
+        document.addEventListener('click', (e) => {
+            const tile = e.target.closest('[data-book]');
+            if (tile && lessonBooks) {
+                const b = lessonBooks.find((x) => String(x.id) === tile.dataset.book);
+                if (b) { const m = tile.closest('.lb-picker'); if (m) m.remove(); openLessonBook(b, tile); }
+                return;
+            }
+            if (e.target.closest('[data-books-all]')) openBooksPicker();
+        });
+
+        function openBooksPicker() {
+            if (!lessonBooks || document.querySelector('.lb-picker')) return;
+            const modal = document.createElement('div');
+            modal.className = 'modal active lb-picker';
+            modal.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-label="كتب الحصة">
+                <div class="lb-picker-head"><h2>كتب ${esc((student.name || 'الطالب').split(' ')[0])}</h2>
+                    <button type="button" class="lb-picker-x" aria-label="إغلاق">${icon('x', { size: 18 })}</button></div>
+                <input type="search" class="lb-search" placeholder="ابحث باسم الكتاب…" aria-label="ابحث باسم الكتاب">
+                <div class="lb-list"></div>
+                <a class="lb-lib-link" href="books.html">${icon('plus', { size: 14 })} إضافة كتاب من مكتبتي</a>
+            </div>`;
+            document.body.appendChild(modal);
+            const list = modal.querySelector('.lb-list');
+            const draw = (q) => {
+                const t = String(q || '').trim().toLowerCase();
+                const items = lessonBooks.filter((b) => !t || String(b.title).toLowerCase().includes(t));
+                list.innerHTML = items.length ? items.map(bookTileHtml).join('') : '<div class="x-empty">مفيش كتاب بالاسم ده</div>';
+            };
+            draw('');
+            const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+            const onKey = (e) => { if (e.key === 'Escape') close(); };
+            document.addEventListener('keydown', onKey);
+            modal.querySelector('.lb-picker-x').addEventListener('click', close);
+            modal.addEventListener('mousedown', (e) => { if (e.target === modal) close(); });
+            const search = modal.querySelector('.lb-search');
+            search.addEventListener('input', () => draw(search.value));
+            if (window.matchMedia('(min-width: 900px)').matches) search.focus();
+        }
+
+        function openLessonBook(book, opener) {
+            if (bookViewer) return;
+            const last = bookPos.get(book.id);
+            bookViewer = openBookViewer({
+                api, book, opener,
+                startPage: last ? last.page : 1,
+                onPageChange: (p) => bookPos.set(book.id, p),
+                onClose: () => {
+                    bookViewer = null;
+                    // النافذة العائمة ترجع تختفي (إحنا في صفحة الحصة نفسها)
+                    try { window.dispatchEvent(new CustomEvent('tm:live-lesson-except', { detail: studentIdParam })); } catch (e) { /* تجاهل */ }
+                    // الكتاب اللي اتفتح يطلع الأول بآخر صفحة
+                    if (lessonBooks) {
+                        const pos = bookPos.all();
+                        lessonBooks.forEach((b) => { b.last = pos[b.id] || null; });
+                        lessonBooks.sort((a, b) => ((b.last ? b.last.at : 0) - (a.last ? a.last.at : 0)) || (b.mine - a.mine));
+                    }
+                    renderLessonBooks();
+                }
+            });
+            if (!last) bookPos.set(book.id, 1);
+            try { (window.dataLayer = window.dataLayer || []).push({ event: 'lesson_book_opened', lesson_mode: mode || 'ready' }); } catch (e) { /* تجاهل */ }
+            // الحصة شغالة: العداد يفضل ظاهر فوق الكتاب في النافذة العائمة، والضغط عليها بيقفل الكتاب ويرجع للحصة
+            if (mode === 'live') {
+                try { window.dispatchEvent(new CustomEvent('tm:live-lesson-except', { detail: null })); } catch (e) { /* تجاهل */ }
+            }
+            // زرار "سجّل الصفحة في الحصة": بيكتب اسم الكتاب ورقم الصفحة في "ماذا تم في الحصة"
+            if (mode) {
+                const tools = bookViewer.root.querySelector('.bv-tools');
+                if (tools) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'bv-btn lb-log-btn';
+                    btn.title = 'اكتب اسم الكتاب ورقم الصفحة في "ماذا تم في الحصة"';
+                    btn.innerHTML = `${icon('plus', { size: 15 })}<span>سجّل الصفحة في الحصة</span>`;
+                    btn.addEventListener('click', () => {
+                        const v = bookViewer ? bookViewer : null;
+                        const page = v && v.pageCount && v.pageCount > 1 ? v.page : null;
+                        const unit = book.file_type === 'pptx' ? 'شريحة' : 'ص';
+                        const line = `📖 ${book.title}${page ? ` — ${unit} ${page}` : ''}`;
+                        const ta = $('f-content');
+                        if (!ta.value.includes(line)) {
+                            ta.value = ta.value.trim() ? `${ta.value.trim()}\n${line}` : line;
+                            ta.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                        ErrorHandler.showSuccess(page ? `اتسجّلت ${unit === 'ص' ? 'صفحة' : 'شريحة'} ${page} في الحصة` : 'اتسجّل الكتاب في الحصة');
+                    });
+                    tools.insertBefore(btn, tools.firstChild);
+                }
+            }
+        }
+
+        // ضغطة على النافذة العائمة والكتاب مفتوح: نقفل الكتاب ونرجع للحصة من غير تحميل الصفحة
+        window.addEventListener('tm:live-lesson-go', (e) => {
+            if (bookViewer && String(e.detail) === String(studentIdParam)) {
+                e.preventDefault();
+                bookViewer.close();
+            }
+        });
+
+        // الموبايل: لما المدرس يروح لـ Zoom/واتساب الصفحة بتستخبى من غير pagehide — نحفظ فورًا.
+        // ولما يرجع: نتأكد إن الحصة لسه شغالة (ممكن تكون اتقفلت من جهاز تاني)
+        let lastLiveCheck = Date.now();
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'hidden') {
+                if (mode) { clearTimeout(draftTimer); saveDraftNow(); }
+                return;
+            }
+            if (mode !== 'live' || !lesson.id || saving || Date.now() - lastLiveCheck < 60000) return;
+            lastLiveCheck = Date.now();
+            let fresh;
+            try { fresh = await api.getStudentOverview(studentIdParam, { limit: 40 }); } catch (e) { return; }
+            if (mode !== 'live' || !fresh || fresh.legacy) return;
+            const ip = fresh.in_progress;
+            if (!ip || !ip.id || ip.id !== lesson.id) {
+                ov = fresh;
+                student = ov.student || student;
+                billView = computeBilling(ov.billing);
+                stopTimer();
+                const draft = { mode: 'live', lessonId: lesson.id, startedAt: lesson.startedAt, fields: getFields(), setTopic: $('f-set-topic').checked };
+                if (lessonHasContent(draft.fields)) recoverClosedLiveDraft(draft);
+                else { LessonDraft.clear(studentIdParam); showReady(); ErrorHandler.showError('الحصة دي اتقفلت من جهاز تاني.', 6000); }
+            }
+        });
+
+        // المدرس فتح صفحة تانية من القايمة: نحفظ المكتوب فورًا (الحصة نفسها شغالة على السيرفر)
+        window.addEventListener('pagehide', () => {
+            if (!mode) return;
+            clearTimeout(draftTimer);
+            saveDraftNow();
+            if (mode === 'live') publishLive();
+        });
+
+        // ------------------------------------------------------------ نافذة صغيرة فوق Zoom / Meet (كروم على الكمبيوتر)
+        let pipWin = null;
+        const PIP_CSS = `
+            *{box-sizing:border-box} html,body{margin:0;height:100%}
+            body{font-family:'IBM Plex Sans Arabic',Tahoma,Arial,sans-serif;background:#2E2140;color:#fff;display:flex;flex-direction:column;gap:.45rem;padding:.7rem .8rem}
+            .top{display:flex;align-items:center;gap:.5rem}
+            .dot{width:10px;height:10px;border-radius:50%;background:#3DDC84;flex-shrink:0}
+            .name{font-weight:700;font-size:.85rem;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+            .time{font-size:1.7rem;font-weight:800;font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate;line-height:1}
+            .left{font-size:.8rem;font-weight:700;color:#CFC3DD}
+            .row{display:flex;align-items:baseline;gap:.6rem}
+            .bar{height:4px;border-radius:4px;background:rgba(255,255,255,.14);overflow:hidden}.bar span{display:block;height:100%;width:0;background:#3DDC84}
+            body.ph-soon .left{color:#F4D58A} body.ph-soon .bar span{background:#F4D58A}
+            body.ph-over .left{color:#FFB4B4} body.ph-over .bar span,body.ph-over .dot{background:#FF8A8A}
+            form{display:flex;gap:.35rem;margin-top:auto}
+            input{flex:1;min-width:0;border:0;border-radius:9px;padding:.5rem .6rem;font:inherit;font-size:.85rem}
+            button{border:0;border-radius:9px;padding:.45rem .65rem;font:inherit;font-size:.8rem;font-weight:800;cursor:pointer;background:#C59A4A;color:#2E2140}
+            .back{background:rgba(255,255,255,.14);color:#fff}
+            .ok{font-size:.72rem;color:#3DDC84;min-height:1em}`;
+        async function openPip() {
+            if (!('documentPictureInPicture' in window)) return;
+            if (pipWin) { closePip(); return; }
+            try {
+                pipWin = await window.documentPictureInPicture.requestWindow({ width: 320, height: 190 });
+            } catch (e) { pipWin = null; ErrorHandler.showError('المتصفح ماسمحش بفتح النافذة الصغيرة'); return; }
+            const d = pipWin.document;
+            d.documentElement.lang = 'ar';
+            d.documentElement.dir = 'rtl';
+            d.title = 'الحصة';
+            const st = d.createElement('style');
+            st.textContent = PIP_CSS;
+            d.head.appendChild(st);
+            d.body.innerHTML = `<div class="top"><span class="dot"></span><span class="name"></span><button type="button" class="back" id="pip-back">ارجع للحصة</button></div>
+                <div class="row"><span class="time" id="pip-time">00:00</span><span class="left" id="pip-left"></span></div>
+                <div class="bar" id="pip-bar" hidden><span></span></div>
+                <form id="pip-form"><input id="pip-note" placeholder="ملاحظة سريعة عن اللي اتعمل…" maxlength="300" autocomplete="off"><button type="submit">أضف</button></form>
+                <div class="ok" id="pip-ok"></div>`;
+            d.querySelector('.name').textContent = student.name || '';
+            d.getElementById('pip-back').addEventListener('click', () => { window.focus(); closePip(); });
+            d.getElementById('pip-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const inp = d.getElementById('pip-note');
+                const v = inp.value.trim();
+                if (!v) return;
+                const ta = $('f-content');
+                ta.value = ta.value.trim() ? `${ta.value.trim()}\n${v}` : v;
+                ta.dispatchEvent(new Event('input', { bubbles: true }));   // بيتحفظ في المسودة تلقائيًا
+                inp.value = '';
+                d.getElementById('pip-ok').textContent = '✓ اتضافت لـ "ماذا تم في الحصة"';
+                setTimeout(() => { if (pipWin) d.getElementById('pip-ok').textContent = ''; }, 2500);
+            });
+            pipWin.addEventListener('pagehide', () => {
+                // ملاحظة اتكتبت ومااتضافتش: نضيفها بدل ما تضيع
+                try {
+                    const left = d.getElementById('pip-note');
+                    const v = left ? left.value.trim() : '';
+                    if (v) {
+                        const ta = $('f-content');
+                        ta.value = ta.value.trim() ? `${ta.value.trim()}\n${v}` : v;
+                        ta.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                } catch (e) { /* تجاهل */ }
+                pipWin = null;
+                $('btn-pip').classList.remove('active');
+            });
+            $('btn-pip').classList.add('active');
+            try { (window.dataLayer = window.dataLayer || []).push({ event: 'lesson_pip_opened' }); } catch (e) { /* تجاهل */ }
+            updatePip(formatDuration(Date.now() - (lesson.startedAt || Date.now())), timeState(lesson.startedAt || Date.now(), lesson.plannedMin));
+        }
+        function updatePip(t, st) {
+            if (!pipWin) return;
+            const d = pipWin.document;
+            const time = d.getElementById('pip-time');
+            if (!time) return;
+            time.textContent = t;
+            d.getElementById('pip-left').textContent = st.text ? `${st.text} من ${lesson.plannedMin}` : '';
+            d.getElementById('pip-bar').hidden = st.progress == null;
+            if (st.progress != null) d.querySelector('#pip-bar span').style.width = `${Math.round(st.progress * 100)}%`;
+            d.body.className = `ph-${st.phase}`;
+        }
+        function closePip() {
+            if (pipWin) { try { pipWin.close(); } catch (e) { /* تجاهل */ } }
+            pipWin = null;
+            $('btn-pip').classList.remove('active');
+        }
+        $('btn-pip').addEventListener('click', openPip);
+
+        // ============================================================
+        // مساعد الحصة (Lesson Copilot)
+        // - بيبعت مع كل رسالة "الحصة الجارية الآن" (اللي اتكتب في الفورم + التقييم + الوقت)
+        // - المحادثة مربوطة بالجلسة (بداية الحصة أو "محادثة جديدة")، ومحفوظة لو الشات اتقفل
+        // - أزرار سريعة حسب وضع الحصة + أدوات تحت كل رد (أقصر/أسهل/تاني/كمّل + إضافة للفورم)
         // ============================================================
         const aiChatOverlay = document.getElementById('ai-chat-overlay');
         const aiChatMessages = document.getElementById('ai-chat-messages');
@@ -788,82 +1425,228 @@
         const aiChatInput = document.getElementById('ai-chat-input');
         const aiChatSendBtn = document.getElementById('btn-ai-chat-send');
         const aiChatQuota = document.getElementById('ai-chat-quota');
+        const AI_STORE_KEY = `tm_ai_chat_${studentIdParam}`;
+        const AI_SINCE_KEY = `tm_ai_since_${studentIdParam}`;
         let aiChatBusy = false;
+        let aiHistory = [];   // [{ role, text }] للعرض بس — الذاكرة الحقيقية على السيرفر
 
-        // تنسيق آمن لماركداون بسيط راجع من الذكاء الاصطناعي (Gemini) - بيحول
-        // **نص عريض** لـ <strong> وأسطر "* " أو "- " لقائمة نقطية <ul><li>،
-        // ويحوّل الفقرات لعناصر <p> بدل ما يفضل يعرض علامات * الخام للمستخدم.
-        // النص بيتعمله escape أول حاجة (Formatters.escapeHtml) قبل أي تنسيق
-        // عشان أي HTML/سكريبت جاي من رد الموديل ميتفذش في الصفحة (حماية XSS).
+        const aiStore = {
+            load() { try { return JSON.parse(sessionStorage.getItem(AI_STORE_KEY) || '[]'); } catch (e) { return []; } },
+            save() { try { sessionStorage.setItem(AI_STORE_KEY, JSON.stringify(aiHistory.slice(-30))); } catch (e) { /* تجاهل */ } },
+            since() { try { return sessionStorage.getItem(AI_SINCE_KEY); } catch (e) { return null; } },
+            setSince(v) { try { sessionStorage.setItem(AI_SINCE_KEY, v); } catch (e) { /* تجاهل */ } }
+        };
+
+        /** "الحصة الجارية الآن" — بتتبعت مع كل رسالة */
+        function aiLessonContext() {
+            const f = getFields();
+            const last = lastLesson();
+            const ctx = {
+                mode: mode || 'ready',
+                elapsed_min: mode === 'live' && lesson.startedAt ? Math.round((Date.now() - lesson.startedAt) / 60000) : null,
+                prev_homework: last && last.homework ? last.homework : ''
+            };
+            if (mode) Object.assign(ctx, f);
+            return ctx;
+        }
+        /** بداية الجلسة: "محادثة جديدة" أو بداية الحصة (قبلها بـ 15 دقيقة عشان التحضير) */
+        function aiSessionSince() {
+            const marker = aiStore.since();
+            const lessonStart = mode === 'live' && lesson.startedAt ? new Date(lesson.startedAt - 15 * 60000).toISOString() : null;
+            if (marker && lessonStart) return marker > lessonStart ? marker : lessonStart;
+            return marker || lessonStart || null;
+        }
+
+        // ---------------- الأزرار السريعة حسب وضع الحصة
+        function aiQuickChips() {
+            const subj = String(student.subject || '');
+            const quran = subj === 'quran';
+            if (mode === 'live') {
+                return [
+                    { label: '❓ اسأله ٣ أسئلة', text: 'اسأله ٣ أسئلة على اللي بناخده دلوقتي' },
+                    { label: '🔁 اشرحها أبسط', text: 'اشرح الجزء ده بطريقة أبسط ومثال من حياته' },
+                    quran ? { label: '⚠️ بيغلط في…', text: 'غلط في ', fill: true } : { label: '⚠️ بيغلط في…', text: 'بيغلط في ', fill: true },
+                    { label: '✍️ تمرين سريع', text: 'تمرين دقيقتين يثبّت اللي اتعمل' },
+                    { label: '😴 زهق', text: 'زهق ومش مركز' },
+                    { label: '➡️ الجزء الجاي', text: 'كمّل: الجزء الجاي' },
+                    { label: '📝 لخّص الحصة', text: 'لخّص الحصة عشان أسجّلها' },
+                    { label: '📚 واجب', text: 'واجب' }
+                ];
+            }
+            if (mode === 'manual') {
+                return [
+                    { label: '📝 لخّص اللي اتكتب', text: 'لخّص الحصة عشان أسجّلها' },
+                    { label: '📚 واجب', text: 'واجب' },
+                    { label: '🎯 الحصة الجاية', text: 'حضّر الحصة الجاية' },
+                    { label: '💬 رسالة لولي الأمر', text: 'رسالة لولي الأمر عن الحصة دي' }
+                ];
+            }
+            return [
+                { label: '🎯 حضّر الحصة', text: 'حضّر الحصة الجاية' },
+                { label: '🔥 نشاط للبداية', text: 'نشاط ٣ دقايق أبدأ بيه الحصة' },
+                { label: '🔍 فين مشكلته؟', text: 'إيه أكتر حاجة محتاج يركز عليها حسب آخر الحصص؟' },
+                { label: '💬 رسالة لولي الأمر', text: 'رسالة لولي الأمر عن مستواه الفترة اللي فاتت' }
+            ];
+        }
+        function renderAiChips() {
+            const chips = aiQuickChips();
+            $('ai-chips').innerHTML = chips.map((c, i) => `<button type="button" data-chip="${i}">${esc(c.label)}</button>`).join('');
+            $('ai-chips')._chips = chips;
+        }
+        $('ai-chips').addEventListener('click', (e) => {
+            const b = e.target.closest('[data-chip]');
+            if (!b) return;
+            const c = ($('ai-chips')._chips || [])[Number(b.dataset.chip)];
+            if (!c) return;
+            if (c.fill) {   // محتاج يكمّل الجملة (مثلًا: "غلط في …")
+                aiChatInput.value = c.text;
+                autoGrowAiChatInput();
+                aiChatInput.focus();
+                aiChatInput.setSelectionRange(c.text.length, c.text.length);
+                return;
+            }
+            aiSend(c.text);
+        });
+
+        function renderAiContextBar() {
+            const parts = [];
+            if (mode === 'live') {
+                const min = lesson.startedAt ? Math.round((Date.now() - lesson.startedAt) / 60000) : 0;
+                parts.push(`<span class="live">● الحصة شغالة · ${min} د</span>`);
+            } else if (mode === 'manual') parts.push('<span>تسجيل حصة</span>');
+            else parts.push('<span>تحضير</span>');
+            if (student.current_surah) parts.push(`<span>📖 ${esc(student.current_surah)}</span>`);
+            else if (student.current_topic) parts.push(`<span>🎯 ${esc(String(student.current_topic).slice(0, 30))}</span>`);
+            const last = lastLesson();
+            if (last && last.homework) parts.push(`<span>📚 الواجب: ${esc(String(last.homework).slice(0, 26))}</span>`);
+            parts.push('<span title="المساعد شايف اللي بتكتبه في الحصة وسجل الطالب">👁️ شايف الحصة والسجل</span>');
+            $('ai-context-bar').innerHTML = parts.join('');
+        }
+
+        // ---------------- تنسيق آمن للماركداون البسيط (النص بيتعمله escape الأول — حماية XSS)
         function formatAiMarkdown(rawText) {
             const escaped = Formatters.escapeHtml(rawText || '');
             const inlineFormat = (s) => s
-                // **عريض** أو __عريض__
                 .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
                 .replace(/__(.+?)__/g, '<strong>$1</strong>')
-                // *مائل* (مفرد) بعد ما خلصنا من الأزواج المزدوجة فوق
                 .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
-
             const lines = escaped.split('\n');
             let html = '';
-            let inList = false;
-            const closeList = () => { if (inList) { html += '</ul>'; inList = false; } };
-
+            let list = null;
+            const closeList = () => { if (list) { html += `</${list}>`; list = null; } };
             lines.forEach((line) => {
-                const trimmed = line.trim();
-                const bulletMatch = trimmed.match(/^[*\-•]\s+(.*)$/);
-                if (bulletMatch) {
-                    if (!inList) { html += '<ul>'; inList = true; }
-                    html += `<li>${inlineFormat(bulletMatch[1])}</li>`;
+                const t = line.trim();
+                const ul = t.match(/^[*\-•]\s+(.*)$/);
+                const ol = t.match(/^(?:\d+|[٠-٩]+)[.)]\s+(.*)$/);
+                if (ul || ol) {
+                    const kind = ul ? 'ul' : 'ol';
+                    if (list !== kind) { closeList(); html += `<${kind}>`; list = kind; }
+                    html += `<li>${inlineFormat((ul || ol)[1])}</li>`;
                 } else {
                     closeList();
-                    if (trimmed !== '') {
-                        html += `<p>${inlineFormat(trimmed)}</p>`;
-                    }
+                    if (t) html += `<p>${inlineFormat(t.replace(/^#{1,4}\s*/, ''))}</p>`;
                 }
             });
             closeList();
             return html || '<p></p>';
         }
+        /** نص عادي من الماركداون (عشان يتضاف لخانات الحصة) */
+        function aiPlain(text) {
+            return String(text || '')
+                .replace(/\*\*(.+?)\*\*/g, '$1').replace(/__(.+?)__/g, '$1')
+                .replace(/^#{1,4}\s*/gm, '').replace(/^[*•]\s+/gm, '- ')
+                .replace(/\n{3,}/g, '\n\n').trim();
+        }
 
-        function renderAiChatMessage(role, text) {
-            // نشيل أي رسالة "جاري التفكير..." أو نص الترحيب قبل ما نضيف رسالة حقيقية
-            const loadingEl = aiChatMessages.querySelector('.role-loading');
-            if (loadingEl) loadingEl.remove();
-            const hintEl = aiChatMessages.querySelector('.ai-chat-hint');
-            if (hintEl) hintEl.remove();
+        function aiScrollBottom(force) {
+            const near = aiChatMessages.scrollHeight - aiChatMessages.scrollTop - aiChatMessages.clientHeight < 120;
+            if (force || near) aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
+        }
+        function aiRemoveTransient() {
+            aiChatMessages.querySelectorAll('.ai-typing, .ai-welcome').forEach((el) => el.remove());
+        }
+        function aiWelcome() {
+            const live = mode === 'live';
+            aiChatMessages.innerHTML = `<div class="ai-welcome">
+                ${live ? '<b>المساعد شايف الحصة دي لحظة بلحظة.</b>' : '<b>المساعد عارف سجل الطالب كله.</b>'}<br>
+                اكتب بسرعة زي ما بتكلم زميل: «<b>غلط في المد</b>»، «<b>أسهل</b>»، «<b>كمّل</b>»، «<b>زهق</b>»، «<b>اسأله</b>».
+            </div>`;
+        }
 
+        function renderAiChatMessage(role, text, opts = {}) {
+            aiRemoveTransient();
+            aiChatMessages.querySelectorAll('.ai-tools').forEach((el) => { if (!opts.keepTools) el.remove(); });
             const bubble = document.createElement('div');
             bubble.className = `ai-chat-bubble role-${role}`;
-            if (role === 'assistant') {
-                // ردود المساعد الذكي بس هي اللي بتتنسق كماركداون (عناوين/تعداد نقطي/Bold)،
-                // أما رسالة المستخدم ورسائل الخطأ فبتفضل نص عادي زي ما هي
-                bubble.innerHTML = formatAiMarkdown(text);
-            } else {
-                bubble.textContent = text;
-            }
+            if (role === 'assistant') bubble.innerHTML = formatAiMarkdown(text);
+            else bubble.textContent = text;
             aiChatMessages.appendChild(bubble);
-            aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
+            aiScrollBottom(true);
+            return bubble;
+        }
+        /** أدوات تحت آخر رد: طلبات متابعة + ربط الرد بالحصة */
+        function renderAiTools(text) {
+            const tools = document.createElement('div');
+            tools.className = 'ai-tools';
+            const formOpen = mode === 'live' || mode === 'manual';
+            tools.innerHTML = `
+                <button type="button" data-f="أقصر">أقصر</button>
+                <button type="button" data-f="أسهل">أسهل</button>
+                <button type="button" data-f="تاني">مثال تاني</button>
+                <button type="button" data-f="كمّل">كمّل</button>
+                <button type="button" class="use" data-use="copy">📋 نسخ</button>
+                ${formOpen ? `<button type="button" class="use" data-use="homework">➕ للواجب</button>
+                <button type="button" class="use" data-use="content">➕ للي اتعمل</button>` : ''}`;
+            tools.addEventListener('click', async (e) => {
+                const b = e.target.closest('button');
+                if (!b || b.disabled) return;
+                if (b.dataset.f) { aiSend(b.dataset.f); return; }
+                const plain = aiPlain(text);
+                if (b.dataset.use === 'copy') {
+                    try { await navigator.clipboard.writeText(plain); ErrorHandler.showSuccess('تم النسخ'); }
+                    catch (err) { ErrorHandler.showError('مقدرناش ننسخ تلقائيًا'); }
+                    return;
+                }
+                const id = b.dataset.use === 'homework' ? 'f-homework' : 'f-content';
+                const el = $(id);
+                el.value = el.value.trim() ? `${el.value.trim()}\n${plain}` : plain;
+                el.dispatchEvent(new Event('input', { bubbles: true }));   // بيحفظ المسودة تلقائيًا
+                b.disabled = true;
+                b.textContent = '✓ اتضاف';
+                try { (window.dataLayer = window.dataLayer || []).push({ event: 'ai_reply_used', target: b.dataset.use }); } catch (err) { /* تجاهل */ }
+            });
+            aiChatMessages.appendChild(tools);
+            aiScrollBottom(true);
+        }
+        function showAiTyping(label) {
+            aiRemoveTransient();
+            const el = document.createElement('div');
+            el.className = 'ai-typing';
+            el.innerHTML = `<i></i><i></i><i></i><span>${esc(label || 'بيفكر')}</span>`;
+            aiChatMessages.appendChild(el);
+            aiScrollBottom(true);
         }
 
-        function showAiChatLoading() {
-            const bubble = document.createElement('div');
-            bubble.className = 'ai-chat-bubble role-loading';
-            bubble.textContent = 'جاري التفكير...';
-            aiChatMessages.appendChild(bubble);
-            aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
+        function restoreAiHistory() {
+            aiHistory = aiStore.load();
+            if (!aiHistory.length) { aiWelcome(); return; }
+            aiChatMessages.innerHTML = '';
+            aiHistory.forEach((m) => renderAiChatMessage(m.role, m.text, { keepTools: true }));
+            const last = aiHistory[aiHistory.length - 1];
+            if (last && last.role === 'assistant') renderAiTools(last.text);
         }
 
-        // بنخلّي الشات يتبع الشاشة المرئية الفعلية (ارتفاعها + إزاحتها) عشان مربع الكتابة
-        // وزر الإرسال يفضلوا فوق الكيبورد في أندرويد وآيفون، بدل ما يتثبتوا تحته
+        // ---------------- فتح وقفل
         function fitAiChatToViewport() {
+            if (window.matchMedia('(min-width: 1024px)').matches) { aiChatOverlay.style.top = ''; aiChatOverlay.style.height = ''; return; }
             const vv = window.visualViewport;
             if (!vv) return;
             aiChatOverlay.style.top = Math.max(0, Math.round(vv.offsetTop)) + 'px';
             aiChatOverlay.style.height = Math.round(vv.height) + 'px';
             aiChatOverlay.style.bottom = 'auto';
+            // الكيبورد مفتوح: الشات ياخد الشاشة كلها ونخبّي الشريط والاختصارات عشان الرد يبان
+            aiChatOverlay.classList.toggle('kb-open', vv.height < window.innerHeight * 0.75);
         }
-
         function autoGrowAiChatInput() {
             aiChatInput.style.height = 'auto';
             const content = aiChatInput.scrollHeight;
@@ -871,120 +1654,193 @@
             const border = aiChatInput.offsetHeight - aiChatInput.clientHeight;
             aiChatInput.style.height = Math.max(44, Math.min(content + border, 120)) + 'px';
         }
-
         function openAiChat() {
             if (!studentIdParam) return;
+            const docked = window.matchMedia('(min-width: 1024px)').matches;
             aiChatOverlay.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
+            document.body.classList.toggle('ai-docked', docked);
+            if (!docked) document.body.style.overflow = 'hidden';
+            if (!aiChatMessages.children.length || !aiHistory.length) restoreAiHistory();
+            renderAiChips();
+            renderAiContextBar();
             fitAiChatToViewport();
             autoGrowAiChatInput();
-            aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
-            aiChatInput.focus({ preventScroll: true });
+            aiScrollBottom(true);
+            if (docked) aiChatInput.focus({ preventScroll: true });
+            try { (window.dataLayer = window.dataLayer || []).push({ event: 'ai_opened', lesson_mode: mode || 'ready' }); } catch (e) { /* تجاهل */ }
         }
-
         function closeAiChat() {
             aiChatOverlay.style.display = 'none';
             document.body.style.overflow = '';
+            document.body.classList.remove('ai-docked');
+            stopMic();
         }
-
-        document.getElementById('btn-open-ai-chat').addEventListener('click', openAiChat);
+        document.getElementById('btn-open-ai-chat').addEventListener('click', () => (aiChatOverlay.style.display === 'none' ? openAiChat() : closeAiChat()));
+        document.getElementById('btn-close-ai-chat').addEventListener('click', closeAiChat);
         aiChatInput.addEventListener('input', autoGrowAiChatInput);
         aiChatOverlay.addEventListener('mousedown', (e) => { if (e.target === aiChatOverlay) closeAiChat(); });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && aiChatOverlay.style.display !== 'none') closeAiChat();
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && aiChatOverlay.style.display !== 'none') closeAiChat(); });
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => { if (aiChatOverlay.style.display !== 'none') { fitAiChatToViewport(); aiScrollBottom(); } });
+            window.visualViewport.addEventListener('scroll', () => { if (aiChatOverlay.style.display !== 'none') fitAiChatToViewport(); });
+        }
+        // تحديث شريط الحالة (دقايق الحصة) كل دقيقة والشات مفتوح
+        setInterval(() => { if (aiChatOverlay.style.display !== 'none') renderAiContextBar(); }, 60000);
+
+        $('btn-ai-new').addEventListener('click', () => {
+            if (aiChatBusy) return;
+            aiStore.setSince(new Date().toISOString());
+            aiHistory = [];
+            aiStore.save();
+            aiChatQuota.textContent = '';
+            aiWelcome();
+            ErrorHandler.showSuccess('بدأنا محادثة جديدة');
         });
 
-        // معالجة ظهور كيبورد الموبايل: لما الكيبورد يفتح، الشاشة المرئية
-        // (visualViewport) بتصغر - بنستخدم ده عشان نتأكد إن آخر رسالة
-        // ومربع الكتابة يفضلوا ظاهرين فوق الكيبورد دايمًا (مش مستخبيين
-        // تحته)، وده بيحصل غالبًا في أندرويد وبعض نسخ سفاري الأقدم
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', () => {
-                if (aiChatOverlay.style.display !== 'none') {
-                    fitAiChatToViewport();
-                    aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
-                }
-            });
-            window.visualViewport.addEventListener('scroll', () => {
-                if (aiChatOverlay.style.display !== 'none') fitAiChatToViewport();
-            });
-        }
-
-        document.getElementById('btn-close-ai-chat').addEventListener('click', closeAiChat);
-
-        // إرسال بالـ Enter (وShift+Enter لسطر جديد بدل الإرسال)
         aiChatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
                 e.preventDefault();
                 aiChatForm.requestSubmit();
             }
         });
 
+        // ---------------- الإدخال بالصوت (لو المتصفح بيدعمه)
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognizer = null;
+        function stopMic() {
+            if (recognizer) { try { recognizer.stop(); } catch (e) { /* تجاهل */ } }
+        }
+        if (SpeechRec) {
+            const micBtn = $('btn-ai-mic');
+            micBtn.hidden = false;
+            micBtn.addEventListener('click', () => {
+                if (recognizer) { stopMic(); return; }
+                try {
+                    recognizer = new SpeechRec();
+                    recognizer.lang = 'ar-EG';
+                    recognizer.interimResults = true;
+                    recognizer.continuous = false;
+                    const base = aiChatInput.value.trim();
+                    recognizer.onresult = (ev) => {
+                        const said = Array.from(ev.results).map((r) => r[0].transcript).join(' ');
+                        aiChatInput.value = (base ? base + ' ' : '') + said;
+                        autoGrowAiChatInput();
+                        if (ev.results[ev.results.length - 1].isFinal && aiChatInput.value.trim()) {
+                            stopMic();
+                            aiChatForm.requestSubmit();
+                        }
+                    };
+                    recognizer.onerror = (ev) => {
+                        if (ev.error === 'not-allowed') ErrorHandler.showError('اسمح للمتصفح يستخدم المايك عشان تقدر تتكلم');
+                    };
+                    recognizer.onend = () => { micBtn.classList.remove('rec'); recognizer = null; };
+                    micBtn.classList.add('rec');
+                    recognizer.start();
+                } catch (e) {
+                    micBtn.classList.remove('rec');
+                    recognizer = null;
+                }
+            });
+        }
+
+        // ---------------- الإرسال
+        function aiSend(text) {
+            if (aiChatBusy) return;   // مانمسحش اللي المدرس بيكتبه وفيه طلب لسه شغال
+            const typed = aiChatInput.value;
+            aiChatInput.value = text;
+            aiChatForm.requestSubmit();   // الإرسال بيقرا الرسالة فورًا
+            if (typed.trim() && typed !== text) { aiChatInput.value = typed; autoGrowAiChatInput(); }
+        }
+
         aiChatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (aiChatBusy) return;
-
             const message = aiChatInput.value.trim();
             if (!message) return;
+            stopMic();
 
             aiChatBusy = true;
             aiChatSendBtn.disabled = true;
-            aiChatInput.disabled = true;
+            try { (window.dataLayer = window.dataLayer || []).push({ event: 'ai_request', lesson_mode: mode || 'ready' }); } catch (err) { /* تجاهل */ }
 
             renderAiChatMessage('user', message);
+            aiHistory.push({ role: 'user', text: message });
+            aiStore.save();
             aiChatInput.value = '';
             autoGrowAiChatInput();
-            showAiChatLoading();
+            // طلبات الشرح (تفسير/اشرح/حضّر...) بتاخد ثواني أكتر من الطلبات السريعة
+            const deep = /تفسير|فس?ّ?ر|معن[ىي]|اشرح|شرح|إعراب|اعراب|قاعد|أحكام|احكام|حضّ?ر|خطة/.test(message);
+            showAiTyping(deep ? 'بيجهّز الشرح' : 'بيكتب');
+            const typingTimers = [
+                setTimeout(() => { const t = aiChatMessages.querySelector('.ai-typing span'); if (t) t.textContent = deep ? 'بيراجع المعلومة' : 'ثانية واحدة'; }, 6000),
+                setTimeout(() => { const t = aiChatMessages.querySelector('.ai-typing span'); if (t) t.textContent = 'لسه بيجهّز… قرّب يخلص'; }, 18000)
+            ];
+            // حد أقصى للانتظار: لو مفيش رد خلال 75 ثانية بنوقف ونقول للمدرس
+            // مهلة "سكوت": لو مفيش ولا حرف وصل خلال 60 ثانية نوقف. طول ما الرد بيوصل مانقطعهوش
+            const aborter = new AbortController();
+            let hardStop = setTimeout(() => aborter.abort(), 60000);
+            const bumpIdle = () => { clearTimeout(hardStop); hardStop = setTimeout(() => aborter.abort(), 45000); };
 
-            // الرد بيتكتب قدام المعلم أول بأول (بث مباشر) بدل ما يستنى الرد كامل
             let liveBubble = null;
             let pendingText = '';
             let frame = 0;
-            const nearBottom = () => aiChatMessages.scrollHeight - aiChatMessages.scrollTop - aiChatMessages.clientHeight < 80;
             const paint = () => {
                 frame = 0;
                 if (!liveBubble) {
-                    renderAiChatMessage('assistant', '');
-                    liveBubble = aiChatMessages.lastElementChild;
+                    liveBubble = renderAiChatMessage('assistant', '');
                     liveBubble.classList.add('is-streaming');
                 }
-                const stick = nearBottom();
                 liveBubble.innerHTML = formatAiMarkdown(pendingText);
-                if (stick) aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
+                aiScrollBottom();
             };
             try {
                 const result = await api.chatWithAIAssistantStream(studentIdParam, message, {
-                    onText: (text) => { pendingText = text; if (!frame) frame = requestAnimationFrame(paint); },
-                    onRetry: () => {
-                        const loading = aiChatMessages.querySelector('.role-loading');
-                        if (loading) loading.textContent = 'النظام مشغول لحظة، جاري إعادة المحاولة...';
-                    }
+                    lessonContext: aiLessonContext(),
+                    sessionSince: aiSessionSince(),
+                    signal: aborter.signal,
+                    onText: (text) => { bumpIdle(); pendingText = text; if (!frame) frame = requestAnimationFrame(paint); },
+                    onRetry: () => showAiTyping('ثانية واحدة')
                 });
-                if (frame) { cancelAnimationFrame(frame); }
+                if (frame) cancelAnimationFrame(frame);
                 pendingText = result.reply;
                 paint();
                 liveBubble.classList.remove('is-streaming');
-                if (result.partialError) {
-                    renderAiChatMessage('error', ErrorHandler.getErrorMessage(result.partialError) || 'انقطع الرد قبل اكتماله.');
-                }
+                aiHistory.push({ role: 'assistant', text: result.reply });
+                aiStore.save();
+                renderAiTools(result.reply);
+                if (result.partialError) renderAiChatMessage('error', ErrorHandler.getErrorMessage(result.partialError) || 'انقطع الرد قبل اكتماله.', { keepTools: true });
                 if (typeof result.remaining_today === 'number') {
-                    aiChatQuota.textContent = `متبقٍ ${result.remaining_today} طلب اليوم`;
+                    aiChatQuota.textContent = result.remaining_today <= 10 ? `فاضل ${result.remaining_today} طلب النهارده` : '';
                 }
             } catch (error) {
                 if (frame) cancelAnimationFrame(frame);
                 if (liveBubble) liveBubble.classList.remove('is-streaming');
-                const loading = aiChatMessages.querySelector('.role-loading');
-                if (loading) loading.remove();
-                // رسائل الأخطاء (الحد اليومي / ازدحام / طلب غير صالح) بترجع بنص عربي واضح من الـ backend
-                renderAiChatMessage('error', ErrorHandler.getErrorMessage(error) || 'حدث خطأ أثناء التواصل مع المساعد الذكي.');
+                aiRemoveTransient();
+                const timedOut = aborter.signal.aborted;
+                const errText = timedOut ? 'المساعد اتأخر أكتر من اللازم. جرّب تاني، ولو اتكرر جرّب سؤال أقصر.' : (ErrorHandler.getErrorMessage(error) || 'حصلت مشكلة مع المساعد، جرّب تاني.');
+                if (pendingText && pendingText.trim()) {
+                    // جزء من الرد وصل قبل ما يقف: نحتفظ بيه بدل ما يضيع
+                    if (!liveBubble) paint();
+                    aiHistory.push({ role: 'assistant', text: pendingText });
+                    aiStore.save();
+                    renderAiTools(pendingText);
+                    renderAiChatMessage('error', `${errText} (ده اللي وصل من الرد)`, { keepTools: true });
+                } else {
+                    renderAiChatMessage('error', errText, { keepTools: true });
+                    // نرجّع الرسالة لمربع الكتابة عشان يبعتها تاني بضغطة
+                    if (!aiChatInput.value) { aiChatInput.value = message; autoGrowAiChatInput(); }
+                    aiHistory.pop();
+                    aiStore.save();
+                }
             } finally {
+                typingTimers.forEach(clearTimeout);
+                clearTimeout(hardStop);
                 aiChatBusy = false;
                 aiChatSendBtn.disabled = false;
-                aiChatInput.disabled = false;
-                aiChatInput.focus();
+                if (window.matchMedia('(min-width: 1024px)').matches) aiChatInput.focus();
             }
         });
         </script>
-    <script src="js/pwa-install.js?v=13" defer></script>
+    <script src="js/pwa-install.js?v=21" defer></script>
 </body>
 </html>

@@ -263,8 +263,9 @@ button.sp-stat:hover { border-color: var(--primary); }
     .ls-hero h1 { font-size: 1.3rem; }
     .ls-two { grid-template-columns: 1fr; }
     .ls-bar { padding: 0.5rem 0.6rem; gap: 0.45rem; }
-    .ls-bar .btn-finish .ls-finish-text { display: none; }
-    .ls-bar .btn-finish { padding: 0.6rem 0.75rem; }
+    .ls-bar .btn-finish .ls-finish-long { display: none; }
+    .ls-bar .btn-finish { padding: 0.6rem 0.7rem; }
+    .ls-bar .sp-icon-btn { width: 38px; height: 38px; }
     .ls-rating-row { gap: 0.35rem; }
     .ls-rating-row .ls-rating-name { width: 100%; }
     .ls-rating-row .chip-group { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); width: 100%; gap: 0.3rem; }
@@ -373,3 +374,128 @@ button.sp-stat:hover { border-color: var(--primary); }
 .lh-same { background: none; border: 1px dashed var(--border); color: var(--primary); border-radius: 999px; padding: 0.3rem 0.75rem; font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; margin-top: 0.4rem; }
 .lh-same:hover { border-color: var(--primary); }
 .due-item[hidden] { display: none; }
+
+/* الخطوة الجاية بعد حفظ الحصة */
+.ls-done-next { text-align: start; margin: 1.2rem auto 0; max-width: 520px; background: rgba(197,154,74,0.12); border: 1px solid rgba(197,154,74,0.35); border-radius: 12px; padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.35rem; }
+.ls-done-next strong { color: var(--text-primary); font-size: 0.95rem; }
+.ls-done-next span { color: var(--text-secondary); font-size: 0.85rem; }
+.ls-done-next .btn { align-self: flex-start; margin-top: 0.3rem; text-decoration: none; }
+
+/* ===== فلوس الشهر (js/income.js) ===== */
+.inc-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 1rem 1.2rem; margin-bottom: 1.25rem; }
+.inc-card.inc-hot { border-color: rgba(197,154,74,0.55); background: linear-gradient(180deg, rgba(197,154,74,0.08), var(--card-bg)); }
+.inc-head h3 { margin: 0 0 0.6rem; font-size: 1rem; color: var(--primary); }
+.inc-sub { color: var(--text-secondary); font-size: 0.88rem; margin: 0 0 0.7rem; }
+.inc-stats { display: flex; gap: 1.5rem; margin-bottom: 0.7rem; flex-wrap: wrap; }
+.inc-stats b { display: block; font-size: 1.45rem; color: var(--text-primary); line-height: 1.2; }
+.inc-stats small { color: var(--text-secondary); font-size: 0.8rem; }
+.inc-stats-lg { justify-content: space-between; background: var(--bg-secondary); border-radius: 12px; padding: 0.9rem 1rem; margin: 0.8rem 0; }
+.inc-months { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.inc-list { max-height: 45vh; overflow-y: auto; }
+.inc-row { display: flex; justify-content: space-between; gap: 0.75rem; padding: 0.55rem 0.2rem; border-bottom: 1px solid var(--border); font-size: 0.92rem; }
+.inc-row a { color: var(--primary); text-decoration: none; font-weight: 600; }
+.inc-note { font-size: 0.78rem; color: var(--text-secondary); margin: 0.6rem 0 0; }
+
+/* ============================== أثناء الحصة: الوقت والمعلومات ============================== */
+.ls-bar-time { display: flex; align-items: baseline; gap: 0.45rem; flex-wrap: wrap; }
+.ls-left { font-size: 0.74rem; font-weight: 700; color: var(--text-secondary); background: var(--bg-secondary); border-radius: 999px; padding: 0.05rem 0.5rem; white-space: nowrap; }
+.ls-left.ph-soon { background: #FCEFCB; color: #7A5A12; }
+.ls-left.ph-over { background: #F8DADA; color: #8E2E2E; }
+.ls-progress { position: absolute; inset-inline: 14px; bottom: 0; height: 3px; border-radius: 3px; background: var(--bg-secondary); overflow: hidden; }
+.ls-progress span { display: block; height: 100%; width: 0; background: #25A35A; transition: width 0.6s linear; }
+.ls-progress.ph-soon span { background: #D9A93A; }
+.ls-progress.ph-over span { background: var(--danger); }
+.ls-bar.is-over .ls-dot { background: var(--danger); }
+@media (max-width: 900px) { .ls-pip-btn { display: none !important; } }
+.ls-pip-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+.ls-info { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: -0.35rem 0 0.8rem; }
+.ls-info:empty { display: none; }
+.ls-chip { display: inline-flex; align-items: center; gap: 0.35rem; background: var(--card-bg); border: 1px solid var(--border); border-radius: 999px; padding: 0.32rem 0.75rem; font: inherit; font-size: 0.8rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; text-decoration: none; line-height: 1.4; }
+.ls-chip svg { color: var(--text-secondary); flex-shrink: 0; }
+.ls-chip-topic { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+.ls-chip-bill { background: #EEF5EF; border-color: #CFE3D2; color: #2F4D32; }
+.ls-chip-bill svg { color: #4E7A53; }
+.ls-chip-btn { cursor: pointer; color: var(--primary); }
+.ls-chip-btn:hover { border-color: var(--primary); }
+.ls-chip-wa { color: #1F8A4C; }
+.ls-chip-wa svg { color: #25A35A; }
+
+.ls-bill-alert { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; border-radius: 14px; padding: 0.8rem 1rem; margin-bottom: 0.9rem; border: 1px solid; }
+.ls-bill-alert.st-low { background: #FDF5DF; border-color: #EBD08C; color: #5C4410; }
+.ls-bill-alert.st-due { background: #FBEAEA; border-color: #EDC3C3; color: #7A2323; }
+.ls-bill-alert-text { display: flex; gap: 0.6rem; align-items: flex-start; min-width: 0; }
+.ls-bill-alert-text svg { flex-shrink: 0; margin-top: 0.15rem; }
+.ls-bill-alert-text strong { display: block; font-size: 0.95rem; }
+.ls-bill-alert-text span { display: block; font-size: 0.82rem; opacity: 0.9; }
+.ls-bill-alert-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+.ls-prev .ls-prev-when { font-weight: 500; color: var(--text-light); font-size: 0.8rem; }
+.ls-plan { background: #FCF7E0; border: 1px solid #F0DFA6; border-radius: 10px; padding: 0.6rem 0.75rem; margin-bottom: 0.7rem; }
+.ls-plan p { margin: 0.2rem 0 0; white-space: pre-wrap; font-size: 0.95rem; color: var(--text-primary); line-height: 1.6; }
+.ls-plan-label { display: block; font-size: 0.8rem; font-weight: 700; color: #6F5718; }
+.ls-prev-hw-wrap .ls-plan-label { color: var(--text-primary); font-size: 0.88rem; margin-bottom: 0.45rem; }
+.ls-prev-hw-wrap .ls-prev-hw { display: inline; margin: 0; font-weight: 500; color: var(--text-secondary); white-space: pre-wrap; }
+.ls-sublabel { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem; }
+
+@media (max-width: 560px) {
+    /* الموبايل: المعلومات في سطر واحد بيتسحب بالعرض بدل ما تاخد نص الشاشة */
+    .ls-info { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -1rem; padding-inline: 1rem; -webkit-overflow-scrolling: touch; }
+    .ls-info::-webkit-scrollbar { display: none; }
+    .ls-chip { font-size: 0.78rem; padding: 0.3rem 0.65rem; }
+    .ls-bill-alert { padding: 0.75rem 0.85rem; }
+    .ls-bill-alert-actions { width: 100%; }
+    .ls-bill-alert-actions .btn { flex: 1; justify-content: center; }
+}
+
+/* ============================== كتب الحصة ============================== */
+.lb-host:empty { display: none; }
+.lb-host { margin-bottom: 0.9rem; }
+#r-books { max-width: 760px; margin-inline: auto; }
+.lb-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 0.75rem 0.85rem 0.85rem; }
+.lb-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.6rem; }
+.lb-head-title { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 700; font-size: 0.92rem; color: var(--text-primary); }
+.lb-head-title svg { color: var(--secondary); }
+.lb-all { background: none; border: 0; color: var(--primary); font: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer; padding: 0.2rem 0.3rem; }
+.lb-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem; }
+.lb-tile { display: flex; align-items: center; gap: 0.55rem; text-align: start; background: var(--bg-secondary); border: 1px solid transparent; border-radius: 12px; padding: 0.55rem 0.6rem; font: inherit; color: var(--text-primary); cursor: pointer; min-width: 0; transition: border-color 0.15s, background 0.15s; }
+.lb-tile:hover { border-color: var(--primary); background: #fff; }
+.lb-tile:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.lb-tile.is-last { background: #FCF7E0; border-color: #F0DFA6; }
+.lb-ic { width: 34px; height: 34px; border-radius: 9px; background: #fff; color: var(--primary); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--border); }
+.lb-txt { display: flex; flex-direction: column; min-width: 0; gap: 0.1rem; }
+.lb-title { font-weight: 700; font-size: 0.84rem; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.lb-meta { font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-resume { color: #8A6A26; font-weight: 700; }
+.lb-mine { color: var(--primary); font-weight: 600; }
+
+.lb-hint { display: flex; align-items: center; gap: 0.6rem; background: transparent; border: 1px dashed var(--border); border-radius: 12px; padding: 0.55rem 0.7rem; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6; }
+.lb-hint a { color: var(--primary); font-weight: 700; }
+.lb-hint .lb-ic { width: 30px; height: 30px; }
+.lb-hint-x { margin-inline-start: auto; background: none; border: 0; color: var(--text-light); cursor: pointer; padding: 0.3rem; display: inline-flex; flex-shrink: 0; }
+
+.lb-picker .modal-content { max-width: 520px; max-height: 82vh; display: flex; flex-direction: column; gap: 0.7rem; }
+.lb-picker-head { display: flex; align-items: center; justify-content: space-between; }
+.lb-picker-head h2 { margin: 0; font-size: 1.1rem; }
+.lb-picker-x { background: none; border: 0; cursor: pointer; color: var(--text-secondary); padding: 0.3rem; display: inline-flex; }
+.lb-search { width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 0.6rem 0.8rem; font: inherit; font-size: 1rem; margin: 0; }
+.lb-list { display: flex; flex-direction: column; gap: 0.45rem; overflow-y: auto; min-height: 0; }
+.lb-list .lb-tile { width: 100%; }
+.lb-lib-link { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--primary); font-size: 0.85rem; font-weight: 700; text-decoration: none; align-self: flex-start; }
+
+/* زرار "سجّل الصفحة في الحصة" جوه عارض الكتاب */
+.bv-btn.lb-log-btn { width: auto; gap: 0.3rem; padding: 0 0.7rem; background: #C59A4A; color: #2E2140; border-color: #C59A4A; font-weight: 700; font-size: 0.8rem; white-space: nowrap; }
+.bv-btn.lb-log-btn:hover { background: #B88B3D; }
+
+@media (max-width: 900px) {
+    .lb-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+    /* الموبايل: الكتب في سطر بيتسحب بالعرض */
+    .lb-card { padding: 0.65rem 0.7rem 0.75rem; }
+    .lb-row { display: flex; overflow-x: auto; scrollbar-width: none; margin-inline: -0.7rem; padding-inline: 0.7rem; -webkit-overflow-scrolling: touch; }
+    .lb-row::-webkit-scrollbar { display: none; }
+    .lb-row .lb-tile { flex: 0 0 72%; max-width: 250px; }
+    .bv-btn.lb-log-btn span { display: none; }
+    .bv-btn.lb-log-btn { padding: 0; width: 36px; }
+}

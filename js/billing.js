@@ -10,9 +10,9 @@
  *   postpaid : الدفع بعد عدد حصص (مثلًا كل 4 حصص) → التذكير لما المستحق يوصل للعدد ده
  */
 
-import { api } from './api.js?v=13';
-import { Formatters, ErrorHandler } from './utils.js?v=13';
-import { icon } from './icons.js?v=13';
+import { api } from './api.js?v=21';
+import { Formatters, ErrorHandler, toLatinDigits } from './utils.js?v=21';
+import { icon } from './icons.js?v=21';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 
@@ -64,7 +64,8 @@ export function computeBilling(billing) {
 
     if (view.mode === 'prepaid') {
         view.used = balance >= 0 && balance <= size ? size - balance : null;
-        view.progress = view.used != null ? view.used / size : 1;
+        // رصيد أكبر من باقة (دفع مقدمًا لأكتر من باقة): الشريط فاضي مش مليان
+        view.progress = view.used != null ? view.used / size : (balance > size ? 0 : 1);
         if (balance > 1) {
             view.status = 'ok';
             view.headline = `باقي ${lessonsText(balance)}`;
@@ -117,6 +118,38 @@ export function billingBadge(view) {
     return { text: view.headline, status: view.status };
 }
 
+/**
+ * وضع الحصة الجارية في الحساب (الحصة دي لسه ماتحسبتش، فبنحسب "بعد الحصة دي")
+ * { status: ok|low|due, title, sub, actions: bool }
+ */
+export function liveBillingInfo(view) {
+    if (!view || !view.enabled) return null;
+    const amt = (n) => (view.price ? ` (${money(view.price * n)})` : '');
+    const b = view.balance;
+    if (view.mode === 'prepaid') {
+        if (b >= 2) {
+            const inPkg = b <= view.size;
+            return {
+                status: 'ok',
+                title: inPkg ? `الحصة ${view.size - b + 1} من ${view.size} في الباقة` : `مدفوع مقدمًا: ${lessonsText(b)}`,
+                sub: `بعد الحصة دي باقي ${lessonsText(b - 1)}`,
+                actions: false
+            };
+        }
+        if (b === 1) {
+            return { status: 'low', title: `آخر حصة في الباقة (${view.size} من ${view.size})`, sub: `فكّره بالتجديد${amt(view.size)} قبل الحصة الجاية`, actions: true };
+        }
+        return { status: 'due', title: 'الباقة خلصت — الحصة دي مش مدفوعة', sub: `بعدها يكون عليه ${lessonsText(view.owed + 1)}${amt(view.owed + 1)}`, actions: true };
+    }
+    // الدفع بعد عدد حصص
+    if (b > 0) return { status: 'ok', title: `مدفوع مقدمًا: ${lessonsText(b)}`, sub: `بعد الحصة دي باقي ${lessonsText(b - 1)}`, actions: false };
+    const n = view.owed + 1;
+    if (n > view.size) return { status: 'due', title: `متأخر في الدفع: عليه ${lessonsText(n)} بالحصة دي`, sub: `المستحق${amt(n)} — كان المفروض يدفع كل ${lessonsText(view.size)}`, actions: true };
+    if (n === view.size) return { status: 'due', title: `الحصة ${n} من ${n} — وقت الدفع`, sub: `بعد الحصة دي المستحق ${lessonsText(n)}${amt(n)}`, actions: true };
+    if (n === view.size - 1) return { status: 'low', title: `الحصة ${n} من ${view.size} قبل الدفع`, sub: 'موعد الدفع بعد الحصة الجاية', actions: false };
+    return { status: 'ok', title: `الحصة ${n} من ${view.size} قبل الدفع`, sub: `الدفع بعد ${lessonsText(view.size - n)}`, actions: false };
+}
+
 // ------------------------------------------------------------------ رسالة التذكير
 export const REMINDER_TONES = [
     { value: 'friendly', label: 'ودية' },
@@ -134,7 +167,9 @@ export function buildReminder(view, student, tone = 'friendly') {
     if (tone === 'statement') {
         const lines = [hi, 'ملخص الحصص من بداية المتابعة:'];
         lines.push(`• الحصص اللي تمت: ${view.taken}`);
-        lines.push(`• الحصص المدفوعة: ${view.paid + view.adjusted}`);
+        lines.push(`• الحصص المدفوعة: ${view.paid}`);
+        if (view.adjusted > 0) lines.push(`• حصص إضافية/تعويض: ${view.adjusted}`);
+        else if (view.adjusted < 0) lines.push(`• حصص اتخصمت: ${-view.adjusted}`);
         if (view.balance > 0) lines.push(`• المتبقي من المدفوع: ${lessonsText(view.balance)}`);
         else if (view.owed > 0) lines.push(`• المستحق: ${lessonsText(view.owed)}${owedAmt}`);
         else lines.push('• لا يوجد مستحق حاليًا');
@@ -162,11 +197,12 @@ export function buildReminder(view, student, tone = 'friendly') {
 
 // رقم مصري محلي (01xxxxxxxxx) بيتحوّل لـ 201xxxxxxxxx، وأي رقم دولي بيتقبل زي ما هو
 export function normalizePhone(phone) {
-    let d = String(phone || '').replace(/[^\d+]/g, '');
+    let d = toLatinDigits(phone || '').replace(/[^\d+]/g, '');
     if (!d) return null;
     if (d.startsWith('+')) d = d.slice(1);
     else if (d.startsWith('00')) d = d.slice(2);
     else if (/^01\d{9}$/.test(d)) d = '20' + d.slice(1);
+    else if (/^1[0125]\d{8}$/.test(d)) d = '20' + d;   // رقم مصري اتكتب من غير الصفر (1012345678)
     else if (d.startsWith('0')) return null;   // رقم محلي لبلد غير معروف
     d = d.replace(/\D/g, '');
     return d.length >= 8 ? d : null;
@@ -182,7 +218,7 @@ export function whatsappUrl(phone, text) {
 export function billingCardHtml(view, opts = {}) {
     if (!view || !view.available) {
         return `<div class="bill-card bill-off"><div class="bill-off-text">${icon('creditCard', { size: 18 })}
-            <div><strong>متابعة الدفع غير مفعّلة على الخادم بعد</strong><span>تحتاج تشغيل ملف SQL واستيراد workflows الدفع في n8n.</span></div></div></div>`;
+            <div><strong>متابعة الدفع مش متاحة دلوقتي</strong><span>جرّب تاني بعد شوية، ولو المشكلة فضلت كلّمنا على واتساب.</span></div></div></div>`;
     }
     if (!view.enabled) {
         return `<div class="bill-card bill-off">
@@ -217,6 +253,7 @@ export function bindBillingActions(container, ctx) {
     container.querySelectorAll('[data-bill-act]').forEach((btn) => {
         btn.addEventListener('click', () => {
             const act = btn.dataset.billAct;
+            try { if (window.tmTrack) window.tmTrack('billing_action', { action: act, page_mode: document.body.dataset.mode || '' }, { gtm: false }); } catch (e) { /* تجاهل */ }
             const s = ctx.getState();
             if (act === 'setup' || act === 'settings') openBillingSetup(s, ctx.onChange);
             else if (act === 'pay') openPaymentModal(s, ctx.onChange);
@@ -253,8 +290,58 @@ async function submitBilling(m, btn, studentId, action, data, onChange, successM
     btn.textContent = 'جاري الحفظ...';
     try {
         await api.studentBilling(studentId, action, data);
+        try { sessionStorage.removeItem('tm_income_cache_v1'); } catch (e) { /* فلوس الشهر تتحسب من جديد */ }
+        api.clearBillingDueCache();
         m.close();
         ErrorHandler.showSuccess(successMsg);
+        if (onChange) onChange();
+    } catch (e) {
+        err.textContent = ErrorHandler.getErrorMessage(e);
+        err.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = label;
+    }
+}
+
+/** الطلاب اللي متابعة الدفع مش مفعّلة عندهم (ماعدا الطالب الحالي) */
+async function loadStudentsWithoutBilling(excludeId) {
+    const [all, due] = await Promise.all([
+        api.getAllStudents(),
+        api.getBillingDue().catch(() => null)
+    ]);
+    if (!due) return [];   // مانقدرش نعرف مين مفعّل، فمانعرضش الاختيار أحسن من إننا نغيّر إعدادات حد بالغلط
+    const enabled = new Set(((due && due.students) || []).filter((s) => s.billing && s.billing.mode).map((s) => String(s.id)));
+    return ((all && all.students) || []).filter((s) => String(s.id) !== String(excludeId) && !enabled.has(String(s.id)));
+}
+
+/** حفظ نفس النظام للطالب الحالي + باقي الطلاب (رصيد البداية صفر للباقيين) */
+async function applyToAll(m, btn, studentId, data, others, onChange) {
+    const err = m.$('.bm-error');
+    err.style.display = 'none';
+    btn.disabled = true;
+    const label = btn.textContent;
+    try {
+        btn.textContent = 'جاري الحفظ...';
+        await api.studentBilling(studentId, 'settings', data);
+        api.clearBillingDueCache();
+        const rest = { ...data, opening_lessons: 0 };
+        const failed = [];
+        let done = 0;
+        const queue = [...others];
+        const worker = async () => {
+            while (queue.length) {
+                const st = queue.shift();
+                try { await api.studentBilling(st.id, 'settings', rest); }
+                catch (e) { failed.push(st.name || ''); }
+                done++;
+                btn.textContent = `جاري الحفظ ${done} من ${others.length}...`;
+            }
+        };
+        await Promise.all([worker(), worker(), worker()]);
+        m.close();
+        try { sessionStorage.removeItem('tm_income_cache_v1'); } catch (e) { /* تجاهل */ }
+        if (failed.length) ErrorHandler.showError(`اتفعّلت المتابعة لـ ${others.length - failed.length + 1} طالب. ماتفعّلتش لـ: ${failed.join('، ')}`);
+        else ErrorHandler.showSuccess(`تم تفعيل متابعة الدفع لـ ${others.length + 1} طالب`);
         if (onChange) onChange();
     } catch (e) {
         err.textContent = ErrorHandler.getErrorMessage(e);
@@ -289,6 +376,10 @@ export function openBillingSetup(state, onChange) {
             <input type="checkbox" id="bm-unexcused" ${view.enabled && view.countUnexcused === false ? '' : 'checked'}>
             <span>الغياب بدون عذر يتحسب من الحصص <small>(الغياب بعذر مش بيتحسب)</small></span>
         </label>
+        ${firstTime ? `<label class="bm-check" id="bm-all-wrap" hidden>
+            <input type="checkbox" id="bm-all">
+            <span id="bm-all-text">طبّق نفس النظام على باقي الطلاب</span>
+        </label>` : ''}
         ${firstTime ? `<div class="bm-field bm-opening">
             <label for="bm-opening" id="bm-opening-label"></label>
             <input type="number" id="bm-opening" min="0" max="500" inputmode="numeric" value="0">
@@ -308,6 +399,17 @@ export function openBillingSetup(state, onChange) {
     };
     m.el.querySelectorAll('input[name="bm-mode"]').forEach((r) => r.addEventListener('change', sync));
     sync();
+
+    // أول تفعيل: نعرض اختيار "نفس النظام لباقي الطلاب" (المحفّظ عنده 30 طالب = 30 مرة إعداد قبل كده)
+    let others = [];
+    if (firstTime) {
+        loadStudentsWithoutBilling(student.id).then((list) => {
+            others = list;
+            if (!others.length || !m.el.isConnected) return;
+            m.$('#bm-all-text').textContent = `طبّق نفس النظام على باقي الطلاب اللي لسه مالهمش متابعة دفع (${others.length === 1 ? 'طالب واحد' : others.length === 2 ? 'طالبين' : others.length <= 10 ? others.length + ' طلاب' : others.length + ' طالب'})`;
+            m.$('#bm-all-wrap').hidden = false;
+        }).catch(() => { /* الاختيار ده إضافي، لو فشل نكمّل عادي */ });
+    }
     m.$('#bm-save').addEventListener('click', (e) => {
         const md = m.el.querySelector('input[name="bm-mode"]:checked').value;
         const size = parseInt(m.$('#bm-size').value, 10);
@@ -317,7 +419,13 @@ export function openBillingSetup(state, onChange) {
             const o = Math.max(0, parseInt(m.$('#bm-opening').value, 10) || 0);
             data.opening_lessons = md === 'prepaid' ? o : -o;
         }
-        submitBilling(m, e.currentTarget, student.id, 'settings', data, onChange, 'تم حفظ إعدادات الدفع');
+        const applyAll = firstTime && others.length && m.$('#bm-all') && m.$('#bm-all').checked;
+        if (firstTime) try { (window.dataLayer = window.dataLayer || []).push({ event: 'billing_enabled', billing_mode: md, students_count: applyAll ? others.length + 1 : 1 }); } catch (e) { /* تجاهل */ }
+        if (!applyAll) {
+            submitBilling(m, e.currentTarget, student.id, 'settings', data, onChange, 'تم حفظ إعدادات الدفع');
+            return;
+        }
+        applyToAll(m, e.currentTarget, student.id, data, others, onChange);
     });
     const dis = m.$('#bm-disable');
     if (dis) dis.addEventListener('click', (e) => {
@@ -403,6 +511,7 @@ export function openReminder(state) {
     const msg = m.$('#bm-msg');
     const wa = m.$('#bm-wa');
     const refreshLink = () => { wa.href = whatsappUrl(student.phone, msg.value); };
+    wa.addEventListener('click', () => { try { (window.dataLayer = window.dataLayer || []).push({ event: 'payment_reminder_sent' }); } catch (e) { /* تجاهل */ } });
     const setTone = (tone) => {
         m.el.querySelectorAll('.bm-tone').forEach((b) => b.classList.toggle('active', b.dataset.tone === tone));
         msg.value = buildReminder(view, student, tone);

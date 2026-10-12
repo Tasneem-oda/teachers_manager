@@ -20,6 +20,22 @@ export const CONFIG = {
         ONESIGNAL_APP_ID: '8cba05cf-844b-4e83-a7e7-8dbce1264ae3'
     },
     
+    // ------------------------------------------------------------------
+    // الأسعار والفترة المجانية (مكان واحد تتغيّر منه في كل البرنامج)
+    // FREE_UNTIL: آخر يوم في الفترة المجانية لكل المسجلين (لازم يطابق
+    // تاريخ trial_ends_at في قاعدة البيانات - راجع n8n/FREE_PERIOD_MIGRATION.sql)
+    // ------------------------------------------------------------------
+    PRICING: {
+        FREE_UNTIL: '2026-12-31',
+        FREE_UNTIL_LABEL: '31 ديسمبر 2026',
+        PLANS: [
+            { id: 'starter', name: 'البداية', price: 99, students: 10, desc: 'لحد 10 طلاب' },
+            { id: 'pro', name: 'الاحترافية', price: 150, students: null, desc: 'طلاب بلا حد وكل المزايا' }
+        ]
+    },
+    SUPPORT_WHATSAPP: '201037728764',
+    SITE_URL: 'https://teachers-manager.online',
+
     // API Endpoints تجميع لسهولة الصيانة
     API_ENDPOINTS: {
         AUTH: {
@@ -74,6 +90,25 @@ export const CONFIG = {
         },
         ADMIN: {
             GET_USERS: '/admin/get-users'
+        },
+        // ملخص فلوس الشهر (كام طالب دفع وإجمالي المحصّل) - n8n/monthly-income.json
+        INCOME: {
+            MONTHLY: '/monthly-income'
+        },
+        // اقتراحات المدرسين (زرار "عندك اقتراح؟") - n8n/submit-suggestion.json
+        PROFILE: {
+            UPDATE: '/update-profile'            // n8n/update-profile.json
+        },
+        TRACKING: {
+            EVENTS: '/track-events'              // n8n/track-events.json (تتبع الاستخدام)
+        },
+        SUGGESTIONS: {
+            SUBMIT: '/submit-suggestion'
+        },
+        // المواعيد الشخصية في الجدول (مش حصص) - n8n/get-personal-events.json + n8n/save-personal-event.json
+        EVENTS: {
+            GET_ALL: '/get-personal-events',
+            SAVE: '/save-personal-event'
         },
         // مركز الإشعارات (نافذة زر الجرس 🔔) - مقروءة / غير مقروءة
         NOTIFICATIONS: {
@@ -163,8 +198,20 @@ export const CONFIG = {
     }
 };
 
-// استخراج دالة التهيئة من مكتبة المتصفح لتفادي التضارب
-const { createClient } = window.supabase;
+// لو مكتبة Supabase ماتحمّلتش (نت ضعيف / حاجب إعلانات): رسالة واضحة بدل صفحة واقفة من غير سبب
+if (typeof window !== 'undefined' && !window.supabase) {
+    const showLoadError = () => {
+        if (document.getElementById('tm-load-error')) return;
+        const bar = document.createElement('div');
+        bar.id = 'tm-load-error';
+        bar.setAttribute('role', 'alert');
+        bar.style.cssText = 'position:fixed;inset:0 0 auto 0;z-index:99999;background:#7A2323;color:#fff;padding:14px 16px;font:600 15px/1.6 Tahoma,Arial,sans-serif;text-align:center;direction:rtl';
+        bar.innerHTML = 'الصفحة ماتحمّلتش كاملة بسبب ضعف النت. <button type="button" style="margin-inline-start:8px;background:#fff;color:#7A2323;border:0;border-radius:8px;padding:6px 14px;font:inherit;cursor:pointer">حمّل تاني</button>';
+        bar.querySelector('button').addEventListener('click', () => location.reload());
+        document.body.appendChild(bar);
+    };
+    if (document.body) showLoadError(); else document.addEventListener('DOMContentLoaded', showLoadError);
+}
 
 // تهيئة وتصدير الكائن بالاسم الذي تعتمد عليه باقي الملفات
 // إضافة هذا الكود في نهاية ملف config.js أسفل كائن CONFIG

@@ -3,8 +3,8 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=13';
-import { APIUtils, Storage } from './utils.js?v=13';
+import { CONFIG } from './config.js?v=21';
+import { APIUtils, Storage } from './utils.js?v=21';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -21,18 +21,25 @@ async function apiCall(endpoint, method = 'GET', body = null, options = {}) {
         if (options.signal.aborted) controller.abort();
         else options.signal.addEventListener('abort', onExternalAbort, { once: true });
     }
-    if (options.timeoutMs) {
-        timer = setTimeout(() => { timedOut = true; controller.abort(); }, options.timeoutMs);
+    // مهلة افتراضية لكل الطلبات: لو n8n تقيل، المدرس يشوف رسالة واضحة بدل ما يفضل مستني
+    const timeoutMs = options.timeoutMs === 0 ? 0 : (options.timeoutMs || 30000);
+    if (timeoutMs) {
+        timer = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
     }
 
-    try {
-        // 1. الحصول على الجلسة والـ token
-        const { data: { session }, error } = await window.supabaseClient.auth.getSession();
+    // وضع "قراءة فقط" بعد نهاية الفترة المجانية/الاشتراك (js/sidebar.js بيحدده):
+    // القراءة شغالة عادي، والحفظ الجديد بيفتح نافذة الاشتراك بدل ما يتنفذ.
+    if (isBlockedByReadOnly(endpoint, method)) {
+        if (timer) clearTimeout(timer);
+        try { if (window.tmOpenSubscribePrompt) window.tmOpenSubscribePrompt(window.__tmReadOnlyReason); } catch (e) { /* تجاهل */ }
+        throw { error: { code: 'READ_ONLY', message: 'التسجيل الجديد محتاج اشتراك. بياناتك كلها محفوظة.' } };
+    }
 
-        if (error || !session) {
-            window.location.href = 'login.html';
-            throw new Error('AUTH_EXPIRED');
-        }
+    const t0 = Date.now();
+    let failure = null;
+    try {
+        // 1. الحصول على الجلسة والـ token (النت الضعيف مايتعاملش كأن المدرس اتسجّل خروجه)
+        const session = await getSessionOrRedirect();
 
         // 2. بناء الـ headers
         const headers = APIUtils.buildHeaders(session.access_token);
@@ -69,20 +76,56 @@ async function apiCall(endpoint, method = 'GET', body = null, options = {}) {
         return data;
 
     } catch (error) {
-        if (error === 'AUTH_EXPIRED') {
+        if (error && error.error && error.error.code === 'AUTH_EXPIRED') {
             throw error;
         }
 
-        if (error && (error.status === 401 || error.status === 403)) {
-            await window.supabaseClient.auth.signOut();
+        // 401 = الجلسة خلصت فعلًا. (403 ممكن تكون قاعدة عمل، فمانخرجش المدرس بسببها)
+        if (error && error.status === 401) {
+            try { await window.supabaseClient.auth.signOut({ scope: 'local' }); } catch (e) { /* تجاهل */ }
             window.location.href = 'login.html';
         }
 
+        failure = error;
         throw error;
     } finally {
         if (timer) clearTimeout(timer);
         if (options.signal) options.signal.removeEventListener('abort', onExternalAbort);
+        // تتبع: الطلبات البطيئة/الفاشلة (js/track.js)
+        try { if (window.__tmTrackApi) window.__tmTrackApi(endpoint, Date.now() - t0, failure); } catch (e) { /* تجاهل */ }
     }
+}
+
+let billingDueCache = null;
+
+/**
+ * الجلسة الحالية. لو التجديد فشل بسبب النت (مش لأن الجلسة انتهت) بنرمي خطأ "نت" بدل ما نودّي المدرس لصفحة الدخول.
+ */
+async function getSessionOrRedirect() {
+    let res;
+    try {
+        res = await window.supabaseClient.auth.getSession();
+    } catch (e) {
+        throw { error: { code: 'NETWORK', message: 'تعذّر الاتصال بالخادم. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.' } };
+    }
+    const session = res && res.data ? res.data.session : null;
+    const err = res ? res.error : null;
+    if (session) return session;
+    if (err && /fetch|network|retryable|timeout/i.test(`${err.name || ''} ${err.message || ''}`)) {
+        throw { error: { code: 'NETWORK', message: 'تعذّر الاتصال بالخادم. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.' } };
+    }
+    window.location.href = 'login.html';
+    throw { error: { code: 'AUTH_EXPIRED', message: 'انتهت الجلسة، سجّل الدخول تاني.' } };
+}
+
+// الطلبات اللي مسموحة حتى في وضع القراءة فقط (الاشتراك، الاقتراحات، الإشعارات)
+// (get-book-content و ask مش "حفظ": قراءة الكتب مسموحة زي ما وعدنا المدرس في شريط القراءة فقط) + أحداث التتبع
+const READ_ONLY_ALLOWED = ['/check-subscription', '/submit-suggestion', '/mark-notifications-read', '/bootstrap-session', '/initialize-teacher', '/monthly-income', '/get-book-content', '/track-events', '/update-profile'];
+function isBlockedByReadOnly(endpoint, method) {
+    if (typeof window === 'undefined' || !window.__tmReadOnly) return false;
+    if (String(method || 'GET').toUpperCase() === 'GET') return false;
+    const path = String(endpoint || '').split('?')[0];
+    return !READ_ONLY_ALLOWED.some((p) => path === p || path.endsWith(p));
 }
 
 // الـ webhook مش متسجل في n8n (workflow جديد لسه متستوردش) ← n8n بيرجّع 404
@@ -151,16 +194,21 @@ export function createJsonStreamSplitter(onObject) {
     };
 }
 
-async function streamAiChatOnce(studentId, message, onText, signal) {
-    const { data: { session }, error } = await window.supabaseClient.auth.getSession();
-    if (error || !session) { window.location.href = 'login.html'; throw new Error('AUTH_EXPIRED'); }
+async function streamAiChatOnce(studentId, message, onText, signal, extra = {}) {
+    if (isBlockedByReadOnly(CONFIG.API_ENDPOINTS.AI.CHAT, 'POST')) {
+        try { if (window.tmOpenSubscribePrompt) window.tmOpenSubscribePrompt(window.__tmReadOnlyReason); } catch (e) { /* تجاهل */ }
+        throw { error: { code: 'READ_ONLY', message: 'المساعد الذكي محتاج اشتراك. بياناتك كلها محفوظة.' } };
+    }
+    const session = await getSessionOrRedirect();
 
     let response;
     try {
         response = await fetch(APIUtils.buildUrl(CONFIG.API_ENDPOINTS.AI.CHAT), {
             method: 'POST',
             headers: APIUtils.buildHeaders(session.access_token),
-            body: JSON.stringify({ student_id: studentId, message }),
+            // lesson_context: اللي بيحصل في الحصة دلوقتي (عشان المساعد يربط ردوده بالحصة الجارية)
+            // session_since: بداية الجلسة (الذاكرة بتتحمّل من الوقت ده بس)
+            body: JSON.stringify({ student_id: studentId, message, lesson_context: extra.lessonContext || null, session_since: extra.sessionSince || null }),
             signal
         });
     } catch (netError) {
@@ -205,12 +253,19 @@ async function streamAiChatOnce(studentId, message, onText, signal) {
     if (response.body && response.body.getReader) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        for (;;) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            splitter.push(decoder.decode(value, { stream: true }));
+        try {
+            for (;;) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                splitter.push(decoder.decode(value, { stream: true }));
+            }
+            splitter.push(decoder.decode());
+        } catch (readErr) {
+            // النت قطع في نص الرد: نرجّع اللي وصل بدل ما يضيع
+            if (reply) return { reply, remaining_today: undefined, partialError: { error: { code: 'NETWORK', message: 'النت قطع قبل ما الرد يكمل. ده اللي وصل.' } } };
+            if (readErr && readErr.name === 'AbortError') throw { error: { code: 'ABORTED', message: 'تم إلغاء الطلب' }, aborted: true };
+            throw { error: { code: 'NETWORK', message: 'تعذّر الاتصال بالخادم. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.' } };
         }
-        splitter.push(decoder.decode());
     } else {
         splitter.push(await response.text());
     }
@@ -244,6 +299,25 @@ export const api = {
             `${CONFIG.API_ENDPOINTS.STUDENTS.GET_ALL}?page=${page}&limit=${limit}`,
             'GET'
         );
+    },
+
+    /**
+     * كل الطلاب (مش أول 100 بس): بيجيب الصفحات ورا بعض لحد ما تخلص.
+     * المحفّظ ممكن يكون عنده أكتر من 100 طالب، وقبل كده الباقي كان بيختفي من غير رسالة.
+     */
+    async getAllStudents(pageSize = 100, maxPages = 20) {
+        const all = [];
+        for (let page = 1; page <= maxPages; page++) {
+            const data = await this.getStudents(page, pageSize);
+            const batch = (data && data.students) || [];
+            all.push(...batch);
+            const total = data && (data.total || (data.pagination && data.pagination.total));
+            if (batch.length < pageSize || (total && all.length >= total)) break;
+        }
+        // حماية من التكرار لو الخادم بيتجاهل رقم الصفحة
+        const seen = new Set();
+        const students = all.filter((s) => { const k = String(s.id); if (seen.has(k)) return false; seen.add(k); return true; });
+        return { students, total: students.length };
     },
 
     async getStudent(studentId) {
@@ -316,14 +390,64 @@ export const api = {
      * كل الطلاب اللي متابعة الدفع مفعّلة ليهم مع بيانات الرصيد (الرئيسية بتفلتر اللي محتاجين تذكير).
      * لو workflow "billing-due" لسه متستوردش بيرجّع null والكارت مش بيظهر.
      */
-    async getBillingDue() {
+    /**
+     * فلوس الشهر من الخادم (n8n/monthly-income.json). month = 'YYYY-MM'.
+     * لو الـ workflow لسه متستوردش بيرجّع null، والواجهة بتحسبها بنفسها (js/income.js).
+     */
+    async getMonthlyIncome(month) {
         try {
-            return await apiCall(CONFIG.API_ENDPOINTS.STUDENTS.BILLING_DUE, 'GET');
+            const data = await apiCall(`${CONFIG.API_ENDPOINTS.INCOME.MONTHLY}?month=${encodeURIComponent(month)}`, 'GET', null, { timeoutMs: 20000 });
+            return data && data.available !== false ? data : null;
         } catch (error) {
             if (isMissingWebhook(error)) return null;
             throw error;
         }
     },
+
+    /**
+     * المواعيد الشخصية (دكتور، مشوار، اجتماع...). بيرجّع null لو الـ workflow لسه متستوردش.
+     */
+    async getPersonalEvents() {
+        try {
+            const data = await apiCall(CONFIG.API_ENDPOINTS.EVENTS.GET_ALL, 'GET');
+            return (data && data.events) || [];
+        } catch (error) {
+            if (isMissingWebhook(error)) return null;
+            throw error;
+        }
+    },
+
+    /** إضافة/تعديل/حذف موعد شخصي. payload.action = create | update | delete */
+    async savePersonalEvent(payload) {
+        return await apiCall(CONFIG.API_ENDPOINTS.EVENTS.SAVE, 'POST', payload);
+    },
+
+    /** تعديل بيانات المدرس (الاسم/الموبايل/نوع التدريس/المادة) — n8n/update-profile.json */
+    async updateProfile(data) {
+        return await apiCall(CONFIG.API_ENDPOINTS.PROFILE.UPDATE, 'POST', data);
+    },
+
+    /** اقتراح جديد من المدرس (n8n/submit-suggestion.json) */
+    async submitSuggestion(suggestion, allowName, page) {
+        return await apiCall(CONFIG.API_ENDPOINTS.SUGGESTIONS.SUBMIT, 'POST', { suggestion, allow_name: !!allowName, page: page || '' });
+    },
+
+    async getBillingDue() {
+        // نفس الطلب بيتنادى من أكتر من مكان في نفس الصفحة (الرئيسية وفلوس الشهر): نستخدم نفس الرد 20 ثانية
+        if (billingDueCache && (Date.now() - billingDueCache.ts) < 20000) return billingDueCache.promise;
+        const promise = (async () => {
+            try {
+                return await apiCall(CONFIG.API_ENDPOINTS.STUDENTS.BILLING_DUE, 'GET');
+            } catch (error) {
+                if (isMissingWebhook(error)) return null;
+                throw error;
+            }
+        })();
+        billingDueCache = { ts: Date.now(), promise };
+        promise.catch(() => { billingDueCache = null; });
+        return promise;
+    },
+    clearBillingDueCache() { billingDueCache = null; },
 
     // action: settings | disable | add_payment | adjust | delete_payment
     async studentBilling(studentId, action, data = {}) {
@@ -394,7 +518,8 @@ export const api = {
             // الخادم القديم: الغياب بيتسجل كإلغاء حصة النهارده بس
             if (data.action === 'absence') return await apiCall(CONFIG.API_ENDPOINTS.LESSONS.CANCEL, 'POST', { student_id: data.student_id });
             const legacy = { ...data, performance_notes: data.performance };
-            return await apiCall(CONFIG.API_ENDPOINTS.LESSONS.FINALIZE, 'POST', { id: data.lesson_id || data.student_id, ...legacy });
+            const legacyBody = data.lesson_id ? { id: data.lesson_id, ...legacy } : legacy;
+            return await apiCall(CONFIG.API_ENDPOINTS.LESSONS.FINALIZE, 'POST', legacyBody);
         }
     },
 
@@ -549,15 +674,15 @@ export const api = {
      * لسه القديم (رد JSON واحد) بيقرأه عادي. لو النظام "مشغول" بيعيد المحاولة تلقائيًا.
      * بيرجّع { reply, remaining_today }
      */
-    async chatWithAIAssistantStream(studentId, message, { onText, onRetry, signal } = {}) {
+    async chatWithAIAssistantStream(studentId, message, { onText, onRetry, signal, lessonContext, sessionSince } = {}) {
         for (let attempt = 0; ; attempt++) {
             try {
-                return await streamAiChatOnce(studentId, message, onText, signal);
+                return await streamAiChatOnce(studentId, message, onText, signal, { lessonContext, sessionSince });
             } catch (error) {
                 const code = error && error.error && error.error.code;
                 if (code === 'BUSY' && attempt < 3 && !(signal && signal.aborted)) {
                     if (onRetry) onRetry(attempt + 1);
-                    await new Promise((r) => setTimeout(r, 1500 + attempt * 1500));
+                    await new Promise((r) => setTimeout(r, 1200 + attempt * 800));
                     continue;
                 }
                 throw error;
@@ -738,6 +863,7 @@ export const api = {
     // فقط (مع الاستشهاد بالمصدر).
     //   options.bookId    : تقييد السؤال بكتاب واحد (شات جوه الكتاب نفسه)
     //   options.studentId : تقييد بمصادر طالب معيّن
+    //   options.page      : الصفحة الحالية في الكتاب ("اشرحلي الصفحة دي")
     //   options.history   : آخر رسائل المحادثة [{ role: 'user'|'assistant', text }] عشان أسئلة المتابعة
     //   options.signal    : لإيقاف الطلب
     async askSources(question, options = {}) {
@@ -750,6 +876,8 @@ export const api = {
                 question,
                 student_id: opts.studentId || null,
                 book_id: opts.bookId || null,
+                // الصفحة اللي المدرس بيتصفّحها: الخادم بيقدّم مقاطعها الأول (n8n/ask-sources.json)
+                page: Number(opts.page) > 0 ? Number(opts.page) : null,
                 history: Array.isArray(opts.history) ? opts.history : []
             },
             { signal: opts.signal, timeoutMs: CONFIG.LIMITS.AI_TIMEOUT }

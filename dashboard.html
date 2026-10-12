@@ -11,8 +11,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الرئيسية - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=14">
-    <link rel="stylesheet" href="css/lessons.css?v=14">
+    <link rel="stylesheet" href="css/style.css?v=21">
+    <link rel="stylesheet" href="css/lessons.css?v=21">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -84,6 +84,7 @@
                     <div id="trial-banner-root"></div>
                     <div id="onboarding-root"></div>
                     <div id="due-root"></div>
+                    <div id="income-root"></div>
 
                     <div class="stats-row" id="stats-row"></div>
 
@@ -116,6 +117,7 @@
                                 <a href="schedule.html" style="font-size:0.82rem; color:var(--primary); text-decoration:none; font-weight:600;">عرض الجدول كامل</a>
                             </div>
                             <div id="today-lessons-list"></div>
+                            <div id="today-events" class="today-events" hidden></div>
                         </div>
 
                         <!-- المساعد الذكي + الملاحظات -->
@@ -152,8 +154,10 @@
                         <h3 style="margin-bottom:1rem;">روابط سريعة</h3>
                         <div class="quick-links-grid">
                             <a href="students.html?action=add" class="quick-link-btn"><span class="icon" id="ic-ql-add"></span> إضافة طالب</a>
-                            <a href="schedule.html" class="quick-link-btn"><span class="icon" id="ic-ql-schedule"></span> جدول المواعيد</a>
+                            <a href="schedule.html" class="quick-link-btn"><span class="icon" id="ic-ql-schedule"></span> جدولي</a>
+                            <a href="schedule.html?add=event" class="quick-link-btn"><span class="icon" id="ic-ql-event"></span> موعد شخصي</a>
                             <a href="books.html" class="quick-link-btn"><span class="icon" id="ic-ql-books"></span> مكتبتي</a>
+                            <a href="#" class="quick-link-btn" id="ql-income"><span class="icon" id="ic-ql-income"></span> فلوس الشهر</a>
                             <a href="students.html" class="quick-link-btn"><span class="icon" id="ic-ql-notes"></span> ملاحظات الطلاب</a>
                             <a href="subscription.html" class="quick-link-btn"><span class="icon" id="ic-ql-sub"></span> الاشتراك</a>
                             <a href="settings.html" class="quick-link-btn"><span class="icon" id="ic-ql-settings"></span> الإعدادات</a>
@@ -167,19 +171,22 @@
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="js/config.js?v=13"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+    <script type="module" src="js/config.js?v=21"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=13';
-        import { api } from './js/api.js?v=13';
-        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=13';
-        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=13';
-        import { icon } from './js/icons.js?v=13';
-        import { renderOnboarding } from './js/onboarding.js?v=13';
-        import { openAttendanceModal } from './js/attendance.js?v=13';
-        import { ATTENDANCE } from './js/lesson-utils.js?v=13';
-        import { computeBilling, openReminder, lessonsText } from './js/billing.js?v=13';
-        import { showTips } from './js/tips.js?v=13';
+        import { Auth } from './js/auth.js?v=21';
+        import { api } from './js/api.js?v=21';
+        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=21';
+        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=21';
+        import { icon } from './js/icons.js?v=21';
+        import { renderOnboarding } from './js/onboarding.js?v=21';
+        import { openAttendanceModal } from './js/attendance.js?v=21';
+        import { ATTENDANCE } from './js/lesson-utils.js?v=21';
+        import { computeBilling, openReminder, lessonsText } from './js/billing.js?v=21';
+        import { showTips } from './js/tips.js?v=21';
+        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=21';
+        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=21';
+        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=21';
 
         renderSidebar('dashboard');
 
@@ -198,6 +205,9 @@
         document.getElementById('ic-ql-notes').innerHTML = icon('edit', { size: 19 });
         document.getElementById('ic-ql-sub').innerHTML = icon('creditCard', { size: 19 });
         document.getElementById('ic-ql-settings').innerHTML = icon('gear', { size: 19 });
+        document.getElementById('ic-ql-income').innerHTML = icon('creditCard', { size: 19 });
+        document.getElementById('ic-ql-event').innerHTML = icon('clock', { size: 19 });
+        document.getElementById('ql-income').addEventListener('click', (e) => { e.preventDefault(); openIncomeModal(new Date().getDate() <= 5 ? -1 : 0); });
 
         function greeting() {
             const h = new Date().getHours();
@@ -213,7 +223,7 @@
             const items = [
                 { icon: 'users', color: 'var(--primary)', bg: 'rgba(75,58,90,0.1)', num: data.studentsCount ?? 0, label: 'إجمالي الطلاب', link: 'students.html' },
                 { icon: 'calendar', color: 'var(--secondary)', bg: 'rgba(197,154,74,0.15)', num: data.todayLessonsCount ?? 0, label: 'حصص اليوم', link: 'schedule.html' },
-                { icon: 'clock', color: 'var(--success)', bg: 'rgba(111,143,114,0.15)', num: (data.schedules || []).length, label: 'مواعيد ثابتة أسبوعيًا', link: 'schedule.html' },
+                { icon: 'clock', color: 'var(--success)', bg: 'rgba(111,143,114,0.15)', num: new Set((data.schedules || []).map((s, i) => s.recurrence_group_id || s.id || `i${i}`)).size, label: 'مواعيد ثابتة', link: 'schedule.html' },
                 { icon: 'creditCard', color: 'var(--warning)', bg: 'rgba(212,165,116,0.2)', num: data.subscription?.status === 'trial' ? 'تجريبي' : (data.subscription?.status === 'active' ? 'فعّال' : '—'), label: 'حالة الاشتراك', link: 'subscription.html' }
             ];
             document.getElementById('stats-row').innerHTML = items.map(it => `
@@ -232,8 +242,13 @@
         // import في n8n مثلاً) بنكمل عادي من غير تمييز حالات - مفيش كسر للصفحة.
         let todayStatusMap = {};
 
+        // مفتاح كل موعد: الطالب + الساعة (عشان لو الطالب عنده حصتين النهارده كل واحدة تاخد حالتها)
+        const slotKey = (studentId, startTime) => `${studentId}|${String(startTime || '').substring(0, 5)}`;
+        function statusInfo(lesson) {
+            return todayStatusMap[slotKey(lesson.student_id, lesson.start_time)] || todayStatusMap[lesson.student_id] || {};
+        }
         function getLessonState(lesson) {
-            const info = todayStatusMap[lesson.student_id] || {};
+            const info = statusInfo(lesson);
             const status = info.status || null;
             if (status === 'completed') return { state: 'completed', lessonId: info.lessonId };
             if (status === 'cancelled') return { state: 'cancelled', lessonId: info.lessonId };
@@ -246,9 +261,31 @@
                 const now = new Date();
                 const startMinutes = t.hours * 60 + t.minutes;
                 const nowMinutes = now.getHours() * 60 + now.getMinutes();
+                const dur = Number(lesson.duration_minutes) || 45;
+                // في وقتها دلوقتي (لسه ماخلصتش) ≠ فات ميعادها
+                if (nowMinutes >= startMinutes && nowMinutes < startMinutes + dur) return { state: 'now', lessonId: null };
                 if (nowMinutes > startMinutes) return { state: 'late', lessonId: null };
             }
             return { state: 'upcoming', lessonId: null };
+        }
+
+        /**
+         * النافذة العائمة بتاعة الحصة الجارية: لو الحصة اتقفلت من جهاز تاني، الخادم بيقول إن مفيش حصة شغالة
+         * للطالب ده النهارده ← نشيلها بدل ما تفضل عداد وهمي لحد 8 ساعات.
+         * (بس للطلاب اللي ليهم موعد النهارده، عشان الحصة الإضافية اللي من غير موعد ماتتمسحش بالغلط)
+         */
+        function reconcileLiveLessons(rows) {
+            if (!Array.isArray(rows)) return;
+            const today = new Date().toDateString();
+            let changed = false;
+            LiveLesson.list().forEach((l) => {
+                if (Date.now() - l.startedAt < 3 * 60000) return;
+                if (new Date(l.startedAt).toDateString() !== today) return;
+                const mine = rows.filter((r) => String(r.student_id) === String(l.studentId));
+                if (!mine.length) return;
+                if (!mine.some((r) => r.lesson_status === 'in_progress')) { LiveLesson.clear(l.studentId); changed = true; }
+            });
+            if (changed) notifyLiveLessonChanged();
         }
 
         function renderTodayLessons(lessons) {
@@ -274,22 +311,24 @@
                     badge = `<span class="lesson-status-badge status-completed">${icon('checkCircle', { size: 11 })} تمت بنجاح</span>`;
                 } else if (state === 'cancelled') {
                     // اتلغت يدويًا: شكل مميز (باهت + خط فوق الاسم)، من غير أي أزرار
-                    const att = (todayStatusMap[l.student_id] || {}).attendance;
+                    const att = statusInfo(l).attendance;
                     const attLabel = ATTENDANCE[att] ? ATTENDANCE[att].label : 'تم إلغاء الحصة';
                     badge = `<span class="lesson-status-badge status-cancelled">${icon('x', { size: 11 })} ${Formatters.escapeHtml(attLabel)}</span>`;
                 } else if (state === 'in_progress') {
                     // بدأها المعلم فعلاً ولسه ماخلصهاش - إتاحة المتابعة، من غير زرار إلغاء
                     badge = `<span class="lesson-status-badge status-in-progress">${icon('clock', { size: 11 })} قيد التنفيذ الآن</span>`;
-                    actionsHtml = `<button class="btn btn-start" onclick="location.href='lesson.html?student_id=${l.student_id}'">${icon('play', { size: 13 })} متابعة الحصة</button>`;
+                    actionsHtml = `<button class="btn btn-start" data-track="dash_resume_lesson" onclick="location.href='lesson.html?student_id=${l.student_id}'">${icon('play', { size: 13 })} متابعة الحصة</button>`;
                 } else {
                     // upcoming أو late: لسه ماعملهاش، فيها إمكانية البدء في أي وقت + إلغائها
                     if (state === 'late') {
                         badge = `<span class="lesson-status-badge status-late">${icon('clock', { size: 11 })} فات ميعادها</span>`;
+                    } else if (state === 'now') {
+                        badge = `<span class="lesson-status-badge status-in-progress">${icon('clock', { size: 11 })} وقتها دلوقتي</span>`;
                     }
                     actionsHtml = `
                         <div class="lesson-actions">
-                            <button class="btn btn-start" onclick="location.href='lesson.html?student_id=${l.student_id}'">${icon('play', { size: 13 })} ابدأ الحصة</button>
-                            <button type="button" class="btn-cancel-lesson" data-student-id="${l.student_id}" data-student-name="${Formatters.escapeHtml(l.student_name || '')}">${icon('userX', { size: 13 })} غاب؟</button>
+                            <button class="btn btn-start" data-track="dash_start_lesson" onclick="location.href='lesson.html?student_id=${l.student_id}'">${icon('play', { size: 13 })} ابدأ الحصة</button>
+                            <button type="button" class="btn-cancel-lesson" data-track="dash_absent" data-student-id="${l.student_id}" data-student-name="${Formatters.escapeHtml(l.student_name || '')}">${icon('userX', { size: 13 })} غاب؟</button>
                         </div>
                     `;
                 }
@@ -375,6 +414,8 @@
 
         async function loadDashboard() {
             try {
+                // السرعة: الطلبين بيتبعتوا مع بعض بدل ما واحد يستنى التاني
+                const todayPromise = api.getTodayLessons().catch(() => null);
                 const data = await api.getDashboard();
                 dashboardData = data;
 
@@ -383,14 +424,18 @@
                 // بنكمل عادي من غير تمييز حالات بدل ما نكسر الداشبورد كله.
                 todayStatusMap = {};
                 try {
-                    const todayStatus = await api.getTodayLessons();
+                    const todayStatus = (await todayPromise) || {};
                     (todayStatus.lessons || []).forEach(item => {
-                        todayStatusMap[item.student_id] = {
+                        const info = {
                             status: item.lesson_status || null,
                             lessonId: item.lesson_id || null,
                             attendance: item.attendance || null
                         };
+                        todayStatusMap[slotKey(item.student_id, item.start_time)] = info;
+                        // احتياطي للنسخة القديمة من الخادم: آخر حالة للطالب
+                        if (!todayStatusMap[item.student_id] || info.status) todayStatusMap[item.student_id] = info;
                     });
+                    reconcileLiveLessons(todayStatus.lessons);
                 } catch (statusError) {
                     todayStatusMap = {};
                 }
@@ -408,8 +453,7 @@
 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('content').style.display = 'block';
-                await loadBillingDue();
-                refreshOnboarding();
+                await Promise.all([loadBillingDue(), refreshOnboarding(), loadIncomeCard(), loadTodayEvents()]);
                 // جاي من إشعار "فاضل حصص متسجلتش": نوديه على حصص النهارده على طول
                 if (new URLSearchParams(location.search).get('pending') === '1') {
                     const list = document.getElementById('today-lessons-list');
@@ -421,7 +465,9 @@
                 }
             } catch (err) {
                 ErrorHandler.showError(ErrorHandler.getErrorMessage(err));
-                document.getElementById('loading').textContent = 'تعذر تحميل بيانات لوحة التحكم.';
+                const ld = document.getElementById('loading');
+                ld.innerHTML = 'تعذّر تحميل الصفحة. اتأكد من النت. <button type="button" class="btn btn-sm" id="dash-retry">حاول تاني</button>';
+                document.getElementById('dash-retry').addEventListener('click', () => { ld.textContent = 'جاري التحميل...'; loadDashboard(); });
             }
         }
 
@@ -459,6 +505,40 @@
             if (n === 2) return 'طالبين';
             if (n <= 10) return `${n} طلاب`;
             return `${n} طالب`;
+        }
+
+        // مواعيدك الشخصية النهارده (دكتور، مشوار...) تحت حصص اليوم
+        async function loadTodayEvents() {
+            const box = document.getElementById('today-events');
+            try {
+                const evs = await api.getPersonalEvents();
+                const list = itemsOn((evs || []).map(eventItem), new Date());
+                if (!list.length) { box.hidden = true; box.innerHTML = ''; return; }
+                const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+                box.innerHTML = `<h4>📌 مواعيدك التانية النهارده</h4>` + list.map((it) => {
+                    const c = EVENT_COLORS[it.color] || EVENT_COLORS.gold;
+                    const past = it.start + it.duration <= nowMin;
+                    return `<a href="schedule.html" class="te-item${past ? ' is-past' : ''}" style="border-inline-start-color:${c.border}">
+                        <b>${Formatters.escapeHtml(it.title)}</b><span>${Formatters.escapeHtml(formatRange(it.start, it.duration))}</span></a>`;
+                }).join('');
+                box.hidden = false;
+            } catch (e) {
+                box.hidden = true;
+            }
+        }
+
+        // كارت "فلوس الشهر": كام طالب دفع وجمعت كام (بيظهر بس لو فيه طلاب متابعة دفعهم مفعّلة)
+        async function loadIncomeCard() {
+            const root = document.getElementById('income-root');
+            if (!root) return;
+            try {
+                const due = await api.getBillingDue();
+                const hasBilling = ((due && due.students) || []).some((s) => s.billing && s.billing.mode);
+                if (!hasBilling) { root.innerHTML = ''; return; }
+                await renderIncomeCard(root);
+            } catch (e) {
+                root.innerHTML = '';
+            }
         }
 
         // الطلاب اللي محتاجين تذكير دفع (باقتهم خلصت/قربت، أو وصلوا لموعد الدفع)
@@ -502,6 +582,6 @@
             await loadDashboard();
         })();
     </script>
-    <script src="js/pwa-install.js?v=13" defer></script>
+    <script src="js/pwa-install.js?v=21" defer></script>
 </body>
 </html>

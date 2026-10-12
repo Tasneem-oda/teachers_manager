@@ -33,10 +33,10 @@
  * كل جزء بيفشل بصمت (من غير ما يكسر باقي الصفحة) لو لسه معمولش الإعداد بتاعه.
  * ============================================================================
  */
-import { CONFIG } from './config.js?v=13';
-import { Auth } from './auth.js?v=13';
-import { api } from './api.js?v=13';
-import { ErrorHandler } from './utils.js?v=13';
+import { CONFIG } from './config.js?v=21';
+import { Auth } from './auth.js?v=21';
+import { api } from './api.js?v=21';
+import { ErrorHandler } from './utils.js?v=21';
 
 const PROMPT_DISMISS_KEY = 'tm_notif_prompt_dismissed';
 const BADGE_CACHE_KEY = 'tm_notif_badge_cache_v1';
@@ -252,7 +252,19 @@ export async function requestPermission() {
         return;
     }
 
-    return new Promise((resolve) => {
+    // لو خدمة الإشعارات ماتحمّلتش (نت ضعيف / حاجب إعلانات) مانسيبش الزرار معلّق للأبد
+    let settled = false;
+    const fallback = new Promise((resolve) => setTimeout(async () => {
+        if (settled) return resolve();
+        try {
+            if ('Notification' in window && Notification.permission === 'default') await Notification.requestPermission();
+        } catch (e) { /* تجاهل */ }
+        if ('Notification' in window && Notification.permission !== 'granted') {
+            ErrorHandler.showError('خدمة التنبيهات ماردّتش (ممكن النت ضعيف). جرّب تاني بعد شوية.');
+        }
+        resolve();
+    }, 10000));
+    const main = new Promise((resolve) => {
         runWhenOneSignalReady(async (OneSignal) => {
             try {
                 await OneSignal.Notifications.requestPermission();
@@ -262,9 +274,11 @@ export async function requestPermission() {
                     'تعذّر تفعيل الإشعارات. تأكد إن الإشعارات مش محظورة من إعدادات المتصفح لهذا الموقع، ولو بتستخدم آيفون، تأكد إنك فتحت الموقع من الشاشة الرئيسية بعد إضافته (Add to Home Screen) لا من متصفح Safari مباشرة.'
                 );
             }
+            settled = true;
             resolve();
         });
     });
+    return Promise.race([main, fallback]);
 }
 
 /* ============================================================================
