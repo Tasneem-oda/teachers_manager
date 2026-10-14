@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>ملف الطالب - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=21">
+    <link rel="stylesheet" href="css/style.css?v=23">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,7 +19,7 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=21">
+    <link rel="stylesheet" href="css/lessons.css?v=23">
     <style>
         .loading { text-align: center; padding: 2rem; color: var(--primary); }
         .empty-state { text-align: center; padding: 2rem; color: var(--text-secondary); }
@@ -189,19 +189,19 @@
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=21"></script>
+    <script type="module" src="js/config.js?v=23"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=21';
-        import { api } from './js/api.js?v=21';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=21';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=21';
-        import { icon } from './js/icons.js?v=21';
-        import { openStudentAppointments } from './js/student-appointments.js?v=21';
-        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=21';
-        import { openAttendanceModal } from './js/attendance.js?v=21';
-        import { openMonthlyReport } from './js/report.js?v=21';
-        import { showTips } from './js/tips.js?v=21';
-        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=21';
+        import { Auth } from './js/auth.js?v=23';
+        import { api } from './js/api.js?v=23';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=23';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=23';
+        import { icon } from './js/icons.js?v=23';
+        import { openStudentAppointments } from './js/student-appointments.js?v=23';
+        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=23';
+        import { openAttendanceModal } from './js/attendance.js?v=23';
+        import { openMonthlyReport } from './js/report.js?v=23';
+        import { showTips } from './js/tips.js?v=23';
+        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=23';
 
         renderSidebar('students');
         renderTopHeader({ title: 'ملف الطالب', subtitle: 'كل ما يخص الطالب في مكان واحد' });
@@ -410,11 +410,30 @@
                 return `<details class="lh-item${absent ? ' lh-absent' : ''}" ${open ? 'open' : ''}>
                     <summary>${num ? `<span class="lh-num">#${num}</span>` : ''}<span class="lh-date">${esc(formatLessonDate(l.lesson_date))}</span>
                         <span class="lh-peek">${esc(peek)}</span><span class="lh-caret">${icon('chevronDown', { size: 16 })}</span></summary>
-                    <div class="lh-body">${lessonDetailsHtml(l, student.subject, icon)}</div></details>`;
+                    <div class="lh-body">${lessonDetailsHtml(l, student.subject, icon)}
+                        ${l.id ? `<button type="button" class="lh-del" data-del-lesson="${esc(l.id)}" data-absent="${absent ? '1' : ''}">${icon('trash', { size: 13 })} ${absent ? 'مسح الغياب ده' : 'مسح الحصة دي'}</button>` : ''}</div></details>`;
             }).join('');
             // history_total = كل الصفوف (حصص + غياب). لو الخادم مابيبعتهوش: نعرض الزرار طول ما آخر صفحة كانت كاملة
             $('btn-more-lessons').hidden = st.history_total ? lessons.length >= Number(st.history_total) : (lessons.length % PAGE !== 0 || lessons.length === 0);
         }
+
+        // مسح حصة أو غياب اتسجل بالغلط (save-lesson: action = delete)
+        $('lessons-list').addEventListener('click', async (e) => {
+            const b = e.target.closest('[data-del-lesson]');
+            if (!b || b.disabled) return;
+            const absent = b.dataset.absent === '1';
+            if (!confirm(absent ? 'مسح الغياب ده؟ لو كان متخصوم من الباقة هيرجع.' : 'مسح الحصة دي نهائيًا؟ هتتشال من السجل ومن عدد الحصص والباقة.')) return;
+            b.disabled = true;
+            try {
+                await api.saveLesson({ action: 'delete', student_id: studentId, lesson_id: b.dataset.delLesson });
+                try { sessionStorage.removeItem('tm_income_cache_v1'); } catch (er) { /* تجاهل */ }
+                ErrorHandler.showSuccess(absent ? 'اتمسح الغياب' : 'اتمسحت الحصة');
+                await loadOverview();
+            } catch (err) {
+                b.disabled = false;
+                ErrorHandler.showError(err && err.status === 404 ? 'المسح محتاج تحديث save-lesson على الخادم.' : ErrorHandler.getErrorMessage(err));
+            }
+        });
 
         $('btn-add-absence').addEventListener('click', () => openAttendanceModal({
             studentId,
@@ -633,6 +652,6 @@
 
         window.openBillingSetup = () => openBillingSetup({ student, view: billView }, billingCtx.onChange);
     </script>
-    <script src="js/pwa-install.js?v=21" defer></script>
+    <script src="js/pwa-install.js?v=23" defer></script>
 </body>
 </html>

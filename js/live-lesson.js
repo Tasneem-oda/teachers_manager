@@ -196,6 +196,7 @@ export function mountFloatingLesson({ exceptStudentId = null } = {}) {
             <span class="tm-float-more" hidden></span>
             <span class="tm-float-bar" hidden><span></span></span>`;
         document.body.appendChild(el);
+        document.body.classList.add('tm-has-float');   // الصفحات اللي فيها زرار عائم تحت (الجدول) بترفعه فوق النافذة
         let isMin = false;
         try { isMin = localStorage.getItem(MIN_KEY) === '1'; } catch (e) { /* تجاهل */ }
         setMin(isMin);
@@ -283,6 +284,7 @@ export function mountFloatingLesson({ exceptStudentId = null } = {}) {
         timer = null;
         if (el) el.remove();
         el = null;
+        document.body.classList.remove('tm-has-float');
         current = null;
     }
 

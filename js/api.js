@@ -3,8 +3,8 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=21';
-import { APIUtils, Storage } from './utils.js?v=21';
+import { CONFIG } from './config.js?v=23';
+import { APIUtils, Storage } from './utils.js?v=23';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -514,7 +514,7 @@ export const api = {
         try {
             return await apiCall(CONFIG.API_ENDPOINTS.LESSONS.SAVE, 'POST', data);
         } catch (error) {
-            if (!isMissingWebhook(error) || data.action === 'discard') throw error;
+            if (!isMissingWebhook(error) || data.action === 'discard' || data.action === 'delete') throw error;
             // الخادم القديم: الغياب بيتسجل كإلغاء حصة النهارده بس
             if (data.action === 'absence') return await apiCall(CONFIG.API_ENDPOINTS.LESSONS.CANCEL, 'POST', { student_id: data.student_id });
             const legacy = { ...data, performance_notes: data.performance };

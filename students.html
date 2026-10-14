@@ -11,8 +11,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الطلاب - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=21">
-    <link rel="stylesheet" href="css/lessons.css?v=21">
+    <link rel="stylesheet" href="css/style.css?v=23">
+    <link rel="stylesheet" href="css/lessons.css?v=23">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -61,6 +61,7 @@
                 </div>
 
                 <div class="filters-row">
+                    <input type="search" id="student-search" placeholder="ابحث باسم الطالب أو رقمه…" aria-label="ابحث عن طالب" autocomplete="off" style="flex:1; min-width:180px; max-width:320px; margin:0;">
                     <select id="filter-subject">
                         <option value="">جميع المواد</option>
                         <option value="quran">القرآن الكريم</option>
@@ -162,15 +163,15 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=21"></script>
+    <script type="module" src="js/config.js?v=23"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=21';
-        import { api } from './js/api.js?v=21';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=21';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=21';
-        import { icon } from './js/icons.js?v=21';
-        import { openStudentAppointments } from './js/student-appointments.js?v=21';
-        import { subjectLabel } from './js/lesson-utils.js?v=21';
+        import { Auth } from './js/auth.js?v=23';
+        import { api } from './js/api.js?v=23';
+        import { ErrorHandler, Formatters, toLatinDigits } from './js/utils.js?v=23';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=23';
+        import { icon } from './js/icons.js?v=23';
+        import { openStudentAppointments } from './js/student-appointments.js?v=23';
+        import { subjectLabel } from './js/lesson-utils.js?v=23';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الطلاب', subtitle: 'إدارة كل طلابك من مكان واحد' });
@@ -222,8 +223,8 @@
             await loadStudents();
             const searchTerm = urlParams.get('search');
             if (searchTerm) {
-                const filtered = allStudents.filter(s => (s.name || '').toLowerCase().includes(searchTerm.toLowerCase()));
-                renderStudents(filtered);
+                document.getElementById('student-search').value = searchTerm;
+                applyFilter();
             }
         })();
 
@@ -248,7 +249,7 @@
                            <button type="button" class="btn" data-empty-add>أضف أول طالب</button>
                            <button type="button" class="btn" data-empty-bulk style="background: var(--bg-muted); color: var(--text-primary);">إضافة أكثر من طالب</button>
                        </div>`
-                    : '<div class="empty-state">لا يوجد طلاب بهذه المادة.</div>';
+                    : '<div class="empty-state">مفيش طلاب بالبحث أو المادة دي.</div>';
                 const a = container.querySelector('[data-empty-add]');
                 const b = container.querySelector('[data-empty-bulk]');
                 if (a) a.addEventListener('click', openAdd);
@@ -289,11 +290,15 @@
             window.location.href = `student.html?id=${encodeURIComponent(e.target.dataset.open)}`;
         });
 
+        // البحث + المادة مع بعض (البحث كان مستخبي على الموبايل ومفيش بديل)
         function applyFilter() {
             const subject = document.getElementById('filter-subject').value;
-            renderStudents(allStudents.filter(s => !subject || s.subject === subject));
+            const q = toLatinDigits(document.getElementById('student-search').value).trim().toLowerCase();
+            renderStudents(allStudents.filter(s => (!subject || s.subject === subject)
+                && (!q || String(s.name || '').toLowerCase().includes(q) || toLatinDigits(s.phone || '').includes(q))));
         }
         document.getElementById('filter-subject').addEventListener('change', applyFilter);
+        document.getElementById('student-search').addEventListener('input', applyFilter);
 
         document.getElementById('btn-add-new').addEventListener('click', openAdd);
         document.getElementById('btn-add-bulk').addEventListener('click', openBulk);
@@ -420,6 +425,6 @@
             }
         };
     </script>
-    <script src="js/pwa-install.js?v=21" defer></script>
+    <script src="js/pwa-install.js?v=23" defer></script>
 </body>
 </html>

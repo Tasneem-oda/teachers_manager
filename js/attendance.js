@@ -6,10 +6,10 @@
  * لو فيه حصة جارية (lessonId) بتتحوّل هي نفسها لغياب بدل ما يتعمل صف جديد.
  */
 
-import { api } from './api.js?v=21';
-import { Formatters, ErrorHandler } from './utils.js?v=21';
-import { icon } from './icons.js?v=21';
-import { localDateISO } from './lesson-utils.js?v=21';
+import { api } from './api.js?v=23';
+import { Formatters, ErrorHandler } from './utils.js?v=23';
+import { icon } from './icons.js?v=23';
+import { localDateISO } from './lesson-utils.js?v=23';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 
@@ -22,6 +22,42 @@ const OPTIONS = [
 /**
  * @param {{studentId:string, studentName?:string, lessonId?:string|null, date?:string, onSaved?:Function}} opts
  */
+/** الغياب بيغيّر الباقة والفلوس: الكروت في الرئيسية لازم تتحسب من جديد */
+function clearMoneyCaches() {
+    try { api.clearBillingDueCache(); } catch (e) { /* تجاهل */ }
+    try { sessionStorage.removeItem('tm_income_cache_v1'); } catch (e) { /* تجاهل */ }
+}
+
+/** رسالة صغيرة فيها زرار "تراجع" (8 ثواني) */
+function showUndo(text, onUndo) {
+    const old = document.getElementById('tm-undo');
+    if (old) old.remove();
+    const bar = document.createElement('div');
+    bar.id = 'tm-undo';
+    bar.setAttribute('role', 'status');
+    bar.style.cssText = 'position:fixed;z-index:9998;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));background:#2E2140;color:#fff;border-radius:12px;padding:.65rem .8rem .65rem 1rem;display:flex;align-items:center;gap:.8rem;box-shadow:0 8px 24px rgba(0,0,0,.25);font-size:.9rem;max-width:calc(100vw - 32px)';
+    bar.innerHTML = `<span></span><button type="button" style="background:#C59A4A;color:#2E2140;border:0;border-radius:9px;padding:.4rem .8rem;font:inherit;font-weight:800;cursor:pointer;white-space:nowrap">تراجع</button>`;
+    bar.querySelector('span').textContent = text;
+    document.body.appendChild(bar);
+    const timer = setTimeout(() => bar.remove(), 8000);
+    bar.querySelector('button').addEventListener('click', async (e) => {
+        const b = e.currentTarget;
+        if (b.disabled) return;
+        b.disabled = true;
+        b.textContent = '...';
+        try {
+            await onUndo();
+            clearTimeout(timer);
+            bar.remove();
+            ErrorHandler.showSuccess('اتلغى تسجيل الغياب');
+        } catch (err) {
+            clearTimeout(timer);
+            bar.remove();
+            ErrorHandler.showError(err && err.status === 404 ? 'التراجع محتاج تحديث save-lesson على الخادم.' : ErrorHandler.getErrorMessage(err));
+        }
+    });
+}
+
 export function openAttendanceModal(opts) {
     const { studentId, studentName = '', lessonId = null, onSaved } = opts || {};
     if (!studentId) return;
@@ -66,7 +102,7 @@ export function openAttendanceModal(opts) {
         modal.querySelectorAll('.att-option').forEach((b) => { b.disabled = true; });
         btn.classList.add('is-busy');
         try {
-            await api.saveLesson({
+            const res = await api.saveLesson({
                 action: 'absence',
                 attendance: btn.dataset.value,
                 student_id: studentId,
@@ -75,11 +111,21 @@ export function openAttendanceModal(opts) {
                 notes: $('#att-note').value.trim() || null
             });
             try { (window.dataLayer = window.dataLayer || []).push({ event: 'absence_saved', attendance: btn.dataset.value }); } catch (e) { /* تجاهل */ }
+            clearMoneyCaches();
             busy = false;
             close(true);
             const opt = OPTIONS.find((o) => o.value === btn.dataset.value);
-            ErrorHandler.showSuccess(`تم التسجيل: ${opt ? opt.title : 'غياب'}`);
             if (onSaved) onSaved(btn.dataset.value);
+            // "تراجع" لـ 8 ثواني: بس لو الغياب ده اتعمل كسطر جديد (created).
+            // لو الخادم حدّث سطر موجود (حصة شغالة أو غياب قديم) المسح هيمسح حاجة تانية، فمانعرضش تراجع
+            const savedId = res && res.lesson_id;
+            if (savedId && !lessonId && res.created === true) showUndo(`تم التسجيل: ${opt ? opt.title : 'غياب'}`, async () => {
+                await api.saveLesson({ action: 'delete', student_id: studentId, lesson_id: savedId });
+                clearMoneyCaches();
+                try { (window.dataLayer = window.dataLayer || []).push({ event: 'absence_undone', attendance: btn.dataset.value }); } catch (e) { /* تجاهل */ }
+                if (opts.onUndone) opts.onUndone(); else if (onSaved) onSaved(null);
+            });
+            else ErrorHandler.showSuccess(`تم التسجيل: ${opt ? opt.title : 'غياب'}`);
         } catch (e) {
             if (e && e.status === 404) console.warn('[dev] تسجيل الغياب محتاج workflow "save-lesson" في n8n');
             err.textContent = e && e.status === 404

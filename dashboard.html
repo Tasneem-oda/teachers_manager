@@ -11,8 +11,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الرئيسية - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=21">
-    <link rel="stylesheet" href="css/lessons.css?v=21">
+    <link rel="stylesheet" href="css/style.css?v=23">
+    <link rel="stylesheet" href="css/lessons.css?v=23">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -172,21 +172,21 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=21"></script>
+    <script type="module" src="js/config.js?v=23"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=21';
-        import { api } from './js/api.js?v=21';
-        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=21';
-        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=21';
-        import { icon } from './js/icons.js?v=21';
-        import { renderOnboarding } from './js/onboarding.js?v=21';
-        import { openAttendanceModal } from './js/attendance.js?v=21';
-        import { ATTENDANCE } from './js/lesson-utils.js?v=21';
-        import { computeBilling, openReminder, lessonsText } from './js/billing.js?v=21';
-        import { showTips } from './js/tips.js?v=21';
-        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=21';
-        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=21';
-        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=21';
+        import { Auth } from './js/auth.js?v=23';
+        import { api } from './js/api.js?v=23';
+        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=23';
+        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=23';
+        import { icon } from './js/icons.js?v=23';
+        import { renderOnboarding } from './js/onboarding.js?v=23';
+        import { openAttendanceModal } from './js/attendance.js?v=23';
+        import { ATTENDANCE } from './js/lesson-utils.js?v=23';
+        import { computeBilling, openReminder, lessonsText } from './js/billing.js?v=23';
+        import { showTips } from './js/tips.js?v=23';
+        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=23';
+        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=23';
+        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=23';
 
         renderSidebar('dashboard');
 
@@ -582,6 +582,6 @@
             await loadDashboard();
         })();
     </script>
-    <script src="js/pwa-install.js?v=21" defer></script>
+    <script src="js/pwa-install.js?v=23" defer></script>
 </body>
 </html>

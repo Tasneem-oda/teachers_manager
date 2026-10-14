@@ -11,8 +11,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>جدولي - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=21">
-    <link rel="stylesheet" href="css/lessons.css?v=21">
+    <link rel="stylesheet" href="css/style.css?v=23">
+    <link rel="stylesheet" href="css/lessons.css?v=23">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -166,6 +166,8 @@
                 box-shadow: 0 8px 22px rgba(75,58,90,0.35); font-size: 0;
             }
             .cal-add-btn svg { width: 24px; height: 24px; }
+            /* الحصة الجارية ظاهرة كنافذة عائمة تحت: الزرار يطلع فوقها بدل ما تغطيه */
+            body.tm-has-float .cal-add-btn { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
             .wk-scroll { max-height: calc(100dvh - 210px - 68px); min-height: 320px; }
             .cal-summary { margin-inline-start: 0; width: 100%; }
             .agenda { padding-bottom: 72px; }
@@ -338,19 +340,19 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=21"></script>
+    <script type="module" src="js/config.js?v=23"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=21';
-        import { api } from './js/api.js?v=21';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=21';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=21';
-        import { icon } from './js/icons.js?v=21';
-        import { mountTimePicker, refreshTimePicker, mountDayChips } from './js/form-widgets.js?v=21';
+        import { Auth } from './js/auth.js?v=23';
+        import { api } from './js/api.js?v=23';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=23';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=23';
+        import { icon } from './js/icons.js?v=23';
+        import { mountTimePicker, refreshTimePicker, mountDayChips } from './js/form-widgets.js?v=23';
         import {
             DAY_NAMES, DAY_SHORT, EVENT_COLORS, isoDate, parseDate, weekStart, addDays, sameDay, weekDays,
             minutesToTime, formatClock12, formatRange, durationText, formatDayDate, occursOn,
             lessonItem, eventItem, itemsOn, layoutLanes, findConflicts
-        } from './js/calendar-utils.js?v=21';
+        } from './js/calendar-utils.js?v=23';
 
         renderSidebar('schedule');
         renderTopHeader({ title: 'جدولي', subtitle: 'حصصك ومواعيدك في مكان واحد' });
@@ -687,6 +689,15 @@
             $('delete-actions').hidden = !it;
             $('btn-delete-group').hidden = !(it && it.group && items.filter((x) => x.kind === it.kind && x.group === it.group).length > 1);
             $('btn-delete').textContent = it ? (it.kind === 'lesson' ? 'حذف الموعد ده' : 'حذف') : 'حذف';
+            // تحويل موعد موجود لـ "كل يوم" كان بيحفظ يوم واحد مكتوب عليه "كل يوم".
+            // في التعديل: "كل يوم" متاح بس لو الموعد أصلًا يومي (ولتحويل موعد ليومي: احذفيه واعمليه جديد)
+            const dailyBtn = document.querySelector('#rec-seg [data-rec="daily"]');
+            if (dailyBtn) {
+                const lock = !!it && it.recurrence_type !== 'daily';
+                dailyBtn.disabled = lock;
+                dailyBtn.title = lock ? 'عشان تخلّيه كل يوم: احذف الموعد ده واعمل موعد جديد "كل يوم"' : '';
+                dailyBtn.style.opacity = lock ? '0.45' : '';
+            }
 
             if (it) {
                 $('item-title').textContent = it.kind === 'lesson' ? `تعديل حصة ${it.title}` : 'تعديل الموعد';
@@ -904,6 +915,6 @@
             setInterval(() => { if (!document.querySelector('.modal.active')) render(); }, 60000);
         })();
     </script>
-    <script src="js/pwa-install.js?v=21" defer></script>
+    <script src="js/pwa-install.js?v=23" defer></script>
 </body>
 </html>

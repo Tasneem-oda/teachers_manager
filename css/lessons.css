@@ -499,3 +499,7 @@ button.sp-stat:hover { border-color: var(--primary); }
     .bv-btn.lb-log-btn span { display: none; }
     .bv-btn.lb-log-btn { padding: 0; width: 36px; }
 }
+
+/* مسح حصة/غياب من سجل الطالب */
+.lh-del { display: inline-flex; align-items: center; gap: 0.3rem; margin-top: 0.7rem; background: none; border: 0; color: var(--danger); font: inherit; font-size: 0.78rem; cursor: pointer; padding: 0.2rem 0; opacity: 0.8; }
+.lh-del:hover { opacity: 1; text-decoration: underline; }

@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الحصة - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=21">
+    <link rel="stylesheet" href="css/style.css?v=23">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,8 +19,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=21">
-    <link rel="stylesheet" href="css/books.css?v=21">
+    <link rel="stylesheet" href="css/lessons.css?v=23">
+    <link rel="stylesheet" href="css/books.css?v=23">
     <style>body { margin: 0; }</style>
 </head>
 <body>
@@ -292,24 +292,24 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=21"></script>
+    <script type="module" src="js/config.js?v=23"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=21';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=21';
-        import { api } from './js/api.js?v=21';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=21';
-        import { icon } from './js/icons.js?v=21';
+        import { Auth } from './js/auth.js?v=23';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=23';
+        import { api } from './js/api.js?v=23';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=23';
+        import { icon } from './js/icons.js?v=23';
         import {
             subjectLabel, ratingFieldLabels, RATINGS, HOMEWORK_STATUS, relativeDay, localDateISO, localTimeISO,
             formatDuration, minutesText, LessonDraft, lessonHasContent, lessonDetailsHtml, nextOccurrence, formatNextOccurrence,
             normalizeLesson, isAbsenceRow, attendanceInfo, lessonDay
-        } from './js/lesson-utils.js?v=21';
-        import { openAttendanceModal } from './js/attendance.js?v=21';
-        import { showTips, dismissTip } from './js/tips.js?v=21';
-        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=21';
-        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=21';
-        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=21';
-        import { openBookViewer } from './js/book-viewer.js?v=21';
+        } from './js/lesson-utils.js?v=23';
+        import { openAttendanceModal } from './js/attendance.js?v=23';
+        import { showTips, dismissTip } from './js/tips.js?v=23';
+        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=23';
+        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=23';
+        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=23';
+        import { openBookViewer } from './js/book-viewer.js?v=23';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'ابدأ الحصة وتابعها وسجّلها في مكان واحد', showSearch: false });
@@ -409,6 +409,8 @@
                 ? `✓ محفوظ على الجهاز تلقائيًا (${new Date().toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit', hour12: true })})`
                 : '⚠️ مساحة المتصفح مليانة: المكتوب مش بيتحفظ على الجهاز، احفظ الحصة أول ما تخلص.';
         }
+        // Enter في خانة التاريخ كان بيبعت الفورم ويطلّع المدرس برّه الحصة
+        $('lesson-form').addEventListener('submit', (e) => e.preventDefault());
         $('lesson-form').addEventListener('input', scheduleDraft);
         $('lesson-form').addEventListener('change', scheduleDraft);
 
@@ -456,7 +458,7 @@
             $('lesson-app').style.display = 'block';
             ErrorHandler.showError('النت ضعيف: فتحنا الحصة من المحفوظ على الجهاز. اكتب عادي، وهنكمّل تحميل بيانات الطالب لما النت يرجع.', 7000);
             const retry = async () => {
-                try { await loadOverview(); prepareForm(); renderLessonBooks(); }
+                try { await loadOverview(); prepareForm(); loadLessonBooks(); }
                 catch (e) { setTimeout(retry, 15000); }
             };
             setTimeout(retry, 8000);
@@ -910,6 +912,11 @@
                     clearForm();
                     try { await loadOverview(); } catch (e) { /* الغياب اتسجل */ }
                     showDone(null, value);
+                },
+                // "تراجع": نرجع لشاشة بداية الحصة
+                onUndone: async () => {
+                    try { await loadOverview(); } catch (e) { /* تجاهل */ }
+                    showReady();
                 }
             });
         }
@@ -1235,6 +1242,8 @@
 
         function openLessonBook(book, opener) {
             if (bookViewer) return;
+            // على الكمبيوتر المساعد بيغطي شريط أدوات الكتاب: نقفله الأول
+            if (aiChatOverlay.style.display !== 'none') closeAiChat();
             const last = bookPos.get(book.id);
             bookViewer = openBookViewer({
                 api, book, opener,
@@ -1841,6 +1850,6 @@
             }
         });
         </script>
-    <script src="js/pwa-install.js?v=21" defer></script>
+    <script src="js/pwa-install.js?v=23" defer></script>
 </body>
 </html>

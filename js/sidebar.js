@@ -1,13 +1,13 @@
 /**
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
-import { Auth } from './auth.js?v=21';
-import { icon } from './icons.js?v=21';
-import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=21';
-import { CONFIG } from './config.js?v=21';
-import { openSuggestionModal } from './suggestions.js?v=21';
-import { mountFloatingLesson } from './live-lesson.js?v=21';
-import { initTracking } from './track.js?v=21';
+import { Auth } from './auth.js?v=23';
+import { icon } from './icons.js?v=23';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=23';
+import { CONFIG } from './config.js?v=23';
+import { openSuggestionModal } from './suggestions.js?v=23';
+import { mountFloatingLesson } from './live-lesson.js?v=23';
+import { initTracking } from './track.js?v=23';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
@@ -44,7 +44,7 @@ export async function getSubscriptionCached() {
     if (subFetchPromise) return subFetchPromise;
 
     subFetchPromise = (async () => {
-        const { api } = await import('./api.js?v=21');
+        const { api } = await import('./api.js?v=23');
         const data = await api.checkSubscription();
         try {
             sessionStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));

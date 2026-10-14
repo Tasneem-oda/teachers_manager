@@ -33,10 +33,10 @@
  * كل جزء بيفشل بصمت (من غير ما يكسر باقي الصفحة) لو لسه معمولش الإعداد بتاعه.
  * ============================================================================
  */
-import { CONFIG } from './config.js?v=21';
-import { Auth } from './auth.js?v=21';
-import { api } from './api.js?v=21';
-import { ErrorHandler } from './utils.js?v=21';
+import { CONFIG } from './config.js?v=23';
+import { Auth } from './auth.js?v=23';
+import { api } from './api.js?v=23';
+import { ErrorHandler } from './utils.js?v=23';
 
 const PROMPT_DISMISS_KEY = 'tm_notif_prompt_dismissed';
 const BADGE_CACHE_KEY = 'tm_notif_badge_cache_v1';

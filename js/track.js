@@ -15,8 +15,8 @@
  *   وأي event بيتعمله push في dataLayer في أي مكان في البرنامج.
  */
 
-import { CONFIG } from './config.js?v=21';
-import { APIUtils } from './utils.js?v=21';
+import { CONFIG } from './config.js?v=23';
+import { APIUtils } from './utils.js?v=23';
 
 const QUEUE_KEY = 'tm_track_queue_v1';
 const SESSION_KEY = 'tm_track_session';
@@ -113,7 +113,8 @@ async function flush({ beacon = false } = {}) {
             persist();
         }
     } catch (e) {
-        // النت مقطوع: الأحداث ترجع للطابور وتتبعت بعدين
+        // النت مقطوع (أو الصفحة اتقفلت): الأحداث ترجع للطابور وتتبعت بعدين
+        // (لو الطلب وصل فعلًا وهو بيقفل الصفحة، الخادم بيتجاهل التكرار بالرقم المميز لكل حدث)
         queue = batch.concat(queue);
         persist();
     } finally {
@@ -135,6 +136,7 @@ export function track(event, props = {}, { gtm = true } = {}) {
         try { (window.dataLayer = window.dataLayer || []).push({ event: name, ...props, __tm_mirrored: true }); } catch (e) { /* تجاهل */ }
     }
     queue.push({
+        i: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`,   // رقم مميز: الخادم مايسجّلش نفس الحدث مرتين
         e: name,
         p: pageName(),
         props: cleanProps(props),

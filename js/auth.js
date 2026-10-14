@@ -7,8 +7,8 @@
  * في كل مكان (وليس window.supabase، لأن هذا الأخير هو مكتبة supabase-js
  * الخام القادمة من الـ CDN وليس عميلاً مهيّأً، وليس لديه خاصية .auth).
  */
-import { CONFIG } from './config.js?v=21';
-import { APIUtils, Storage, ErrorHandler, Validators, toLatinDigits } from './utils.js?v=21';
+import { CONFIG } from './config.js?v=23';
+import { APIUtils, Storage, ErrorHandler, Validators, toLatinDigits } from './utils.js?v=23';
 
 /** fetch بمهلة: على النت الضعيف الدخول/التسجيل مايفضلش يلف للأبد */
 async function fetchWithTimeout(url, options = {}, ms = 12000) {
@@ -16,6 +16,19 @@ async function fetchWithTimeout(url, options = {}, ms = 12000) {
     const t = setTimeout(() => ctl.abort(), ms);
     try { return await fetch(url, { ...options, signal: ctl.signal }); }
     finally { clearTimeout(t); }
+}
+
+/** النت وقع قبل ما الصفحة تحمّل: بدل "جاري التحميل" اللي مابيخلصش، رسالة وزرار "حاول تاني" */
+function showOfflineRetry() {
+    const show = () => {
+        const el = document.querySelector('#loading, #loader, #cal-loading, .ls-loader, .loading');
+        if (!el) return;
+        el.style.display = '';
+        el.removeAttribute('hidden');
+        el.innerHTML = 'النت ضعيف ومقدرناش نحمّل بياناتك. <button type="button" class="btn btn-sm" style="margin-inline-start:6px">حاول تاني</button>';
+        el.querySelector('button').addEventListener('click', () => location.reload());
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', show); else show();
 }
 
 const isNetworkError = (err) => !!err && /fetch|network|retryable|timeout|load failed/i.test(`${err.name || ''} ${err.message || ''}`);
@@ -377,6 +390,7 @@ export const Auth = {
             // النت ضعيف وتجديد الجلسة فشل: مانطلّعش المدرس برّه، نقوله يجرّب تاني
             if (isNetworkError(sessErr)) {
                 ErrorHandler.showError('النت ضعيف ومقدرناش نتأكد من حسابك. اتأكد من النت وحمّل الصفحة تاني.', 8000);
+                showOfflineRetry();
                 return null;
             }
             window.location.replace('login.html');
