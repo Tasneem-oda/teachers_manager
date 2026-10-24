@@ -11,10 +11,11 @@
  * من غير أي تعديل أو إضافة على أي workflow في n8n.
  */
 
-import { api } from './api.js?v=23';
-import { ErrorHandler, Formatters } from './utils.js?v=23';
-import { icon } from './icons.js?v=23';
-import { mountTimePicker, refreshTimePicker, mountDayChips, weekIndex } from './form-widgets.js?v=23';
+import { api } from './api.js?v=24';
+import { ErrorHandler, Formatters, uuidv4 } from './utils.js?v=24';
+import { icon } from './icons.js?v=24';
+import { mountTimePicker, refreshTimePicker, mountDayChips, weekIndex } from './form-widgets.js?v=24';
+import { parseDate, isoDate } from './calendar-utils.js?v=24';
 
 const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const RECURRENCE_LABELS = { weekly: 'أسبوعيًا', daily: 'يوميًا', monthly: 'شهريًا', none: 'مرة واحدة' };
@@ -26,9 +27,9 @@ let currentOptions = {};
 let studentSchedules = [];
 let dayChips = null;
 
+// لازم يكون UUID حقيقي: الخادم بيتجاهل أي قيمة تانية (وكانت مواعيد "كل يوم" بتتحفظ من غير مجموعة)
 function genGroupId() {
-    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-    return 'grp-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+    return uuidv4();
 }
 
 function injectMarkup() {
@@ -218,7 +219,7 @@ function openEditForm(sch) {
     document.getElementById('sapp-day-hint').hidden = true;
     dayChips.setMulti(false);
     dayChips.set([sch.day_of_week]);
-    document.getElementById('sapp-date').value = sch.start_date ? String(sch.start_date).substring(0, 10) : '';
+    document.getElementById('sapp-date').value = parseDate(sch.start_date) ? isoDate(parseDate(sch.start_date)) : '';
     document.getElementById('sapp-time').value = String(sch.start_time).substring(0, 5);
     refreshTimePicker(document.getElementById('sapp-time'));
     const dur = document.getElementById('sapp-duration');

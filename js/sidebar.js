@@ -1,13 +1,13 @@
 /**
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
-import { Auth } from './auth.js?v=23';
-import { icon } from './icons.js?v=23';
-import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=23';
-import { CONFIG } from './config.js?v=23';
-import { openSuggestionModal } from './suggestions.js?v=23';
-import { mountFloatingLesson } from './live-lesson.js?v=23';
-import { initTracking } from './track.js?v=23';
+import { Auth } from './auth.js?v=24';
+import { icon } from './icons.js?v=24';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=24';
+import { CONFIG } from './config.js?v=24';
+import { openSuggestionModal } from './suggestions.js?v=24';
+import { mountFloatingLesson } from './live-lesson.js?v=24';
+import { initTracking } from './track.js?v=24';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
@@ -44,7 +44,7 @@ export async function getSubscriptionCached() {
     if (subFetchPromise) return subFetchPromise;
 
     subFetchPromise = (async () => {
-        const { api } = await import('./api.js?v=23');
+        const { api } = await import('./api.js?v=24');
         const data = await api.checkSubscription();
         try {
             sessionStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
@@ -101,7 +101,7 @@ export function renderSidebar(activeKey) {
 
     document.getElementById('sidebar-logout').addEventListener('click', async (e) => {
         e.preventDefault();
-        unlinkOnSignOut(); // فك ربط الجهاز عن هوية المعلم قبل الخروج (إشعارات Push)
+        await unlinkOnSignOut(); // فك ربط الجهاز عن هوية المعلم قبل الخروج (إشعارات Push)
         await Auth.signOut();
         window.location.href = 'login.html';
     });
@@ -324,7 +324,7 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
     document.getElementById('header-suggest').addEventListener('click', () => openSuggestionModal());
 
     document.getElementById('header-logout-mobile').addEventListener('click', async () => {
-        unlinkOnSignOut();
+        await unlinkOnSignOut();
         await Auth.signOut();
         window.location.href = 'login.html';
     });

@@ -24,11 +24,24 @@ const pad = (n) => String(n).padStart(2, '0');
 export function isoDate(d) {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
-/** تاريخ محلي من "2026-10-09" أو "2026-10-09T00:00:00Z" */
+/**
+ * تاريخ محلي من "2026-10-09" أو "2026-10-09T00:00:00Z" أو توقيت كامل.
+ * مهم: n8n على سيرفر بتوقيت مصر بيرجّع عمود التاريخ (date) كتوقيت كامل بـ UTC، يعني 24 أكتوبر بيوصل
+ * "2026-10-23T21:00:00.000Z". قبل كده كنا بناخد أول 10 حروف ← الموعد "مرة واحدة" كان بيظهر يوم قبل ميعاده
+ * (ومايظهرش في يومه في الجدول)، والشهري كان بيتزحلق يوم، وفتح التعديل كان بيحفظه على اليوم الغلط.
+ */
 export function parseDate(value) {
     if (!value) return null;
-    const m = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
-    return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+    if (value instanceof Date) return isNaN(value) ? null : new Date(value.getFullYear(), value.getMonth(), value.getDate());
+    const s = String(value);
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) return null;
+    // توقيت كامل مش منتصف الليل UTC بالظبط = تاريخ اتحوّل لتوقيت في الطريق: نرجّعه لليوم المحلي الصحيح
+    if (/T\d{2}:\d{2}/.test(s) && !/T00:00(:00(\.0+)?)?(Z|[+-]00:?00)?$/.test(s)) {
+        const d = new Date(s);
+        if (!isNaN(d)) return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
 }
 /** سبت الأسبوع اللي فيه التاريخ ده */
 export function weekStart(date = new Date()) {

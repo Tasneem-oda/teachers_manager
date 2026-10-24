@@ -15,8 +15,8 @@
  *   وأي event بيتعمله push في dataLayer في أي مكان في البرنامج.
  */
 
-import { CONFIG } from './config.js?v=23';
-import { APIUtils } from './utils.js?v=23';
+import { CONFIG } from './config.js?v=24';
+import { APIUtils } from './utils.js?v=24';
 
 const QUEUE_KEY = 'tm_track_queue_v1';
 const SESSION_KEY = 'tm_track_session';
@@ -29,6 +29,17 @@ let queue = [];
 let flushTimer = null;
 let installed = false;
 let sending = false;
+let stopped = false;   // بعد تسجيل الخروج: مانسجّلش ولا نحفظ أحداث تانية في الصفحة دي
+
+/** تسجيل الخروج: نمسح الطابور (وإلا أحداث المدرس اللي خرج كانت بتتبعت باسم اللي يدخل بعده على نفس الجهاز) */
+export function resetTracking() {
+    stopped = true;
+    queue = [];
+    token = null;
+    if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
+    try { localStorage.removeItem(QUEUE_KEY); } catch (e) { /* تجاهل */ }
+}
+if (typeof window !== 'undefined') window.__tmTrackReset = resetTracking;
 
 const pageName = () => {
     const p = (location.pathname.split('/').pop() || 'index').replace(/\.html$/, '') || 'index';
@@ -88,7 +99,7 @@ function endpoint() {
 }
 
 async function flush({ beacon = false } = {}) {
-    if (!queue.length || (sending && !beacon)) return;
+    if (stopped || !queue.length || (sending && !beacon)) return;
     const url = endpoint();
     if (!url) return;
     if (!token) await refreshToken();
@@ -109,14 +120,12 @@ async function flush({ beacon = false } = {}) {
         // 404 = الـ workflow لسه متستوردش، 400 = دفعة مرفوضة: مانكدّسش الأحداث للأبد
         if (!(res.ok || res.status === 404 || res.status === 400)) {
             if (res.status === 401) token = null;
-            queue = batch.concat(queue);
-            persist();
+            if (!stopped) { queue = batch.concat(queue); persist(); }
         }
     } catch (e) {
         // النت مقطوع (أو الصفحة اتقفلت): الأحداث ترجع للطابور وتتبعت بعدين
         // (لو الطلب وصل فعلًا وهو بيقفل الصفحة، الخادم بيتجاهل التكرار بالرقم المميز لكل حدث)
-        queue = batch.concat(queue);
-        persist();
+        if (!stopped) { queue = batch.concat(queue); persist(); }
     } finally {
         sending = false;
     }
@@ -130,7 +139,7 @@ function schedule() {
 
 /** تسجيل حدث. props = أرقام وقيم قصيرة بس (مفيش نص كتبه المدرس) */
 export function track(event, props = {}, { gtm = true } = {}) {
-    if (!event || typeof event !== 'string') return;
+    if (!event || typeof event !== 'string' || stopped) return;
     const name = event.replace(/[^a-z0-9_]/gi, '_').slice(0, 50).toLowerCase();
     if (gtm) {
         try { (window.dataLayer = window.dataLayer || []).push({ event: name, ...props, __tm_mirrored: true }); } catch (e) { /* تجاهل */ }

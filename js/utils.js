@@ -2,13 +2,28 @@
  * utils.js - دوال مساعدة موحدة للتطبيق
  */
 
-import { CONFIG } from './config.js?v=23';
+import { CONFIG } from './config.js?v=24';
 
 /** أرقام عربية/فارسية (٠١٢ / ۰۱۲) ← أرقام إنجليزية. كيبوردات كتير في مصر بتكتب الأرقام العربي افتراضيًا */
 export function toLatinDigits(value) {
     return String(value == null ? '' : value)
         .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
         .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06F0));
+}
+
+/**
+ * معرّف UUID v4 صحيح على كل المتصفحات.
+ * crypto.randomUUID مش موجودة في موبايلات قديمة (آيفون قبل iOS 15.4 وأندرويد قديم)، والبديل القديم
+ * كان بيرجّع نص مش UUID فالخادم كان بيرفضه بصمت (ومواعيد "كل يوم" كانت بتفقد ربطها ببعض).
+ */
+export function uuidv4() {
+    try { if (window.crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID(); } catch (e) { /* نكمّل بالبديل */ }
+    const b = new Uint8Array(16);
+    try { crypto.getRandomValues(b); } catch (e) { for (let i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256); }
+    b[6] = (b[6] & 0x0f) | 0x40;
+    b[8] = (b[8] & 0x3f) | 0x80;
+    const h = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
 /**

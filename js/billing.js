@@ -10,9 +10,9 @@
  *   postpaid : الدفع بعد عدد حصص (مثلًا كل 4 حصص) → التذكير لما المستحق يوصل للعدد ده
  */
 
-import { api } from './api.js?v=23';
-import { Formatters, ErrorHandler, toLatinDigits } from './utils.js?v=23';
-import { icon } from './icons.js?v=23';
+import { api } from './api.js?v=24';
+import { Formatters, ErrorHandler, toLatinDigits } from './utils.js?v=24';
+import { icon } from './icons.js?v=24';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 
