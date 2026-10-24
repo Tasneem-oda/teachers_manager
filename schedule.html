@@ -708,7 +708,7 @@
                 setColor(it.kind === 'event' ? it.color : 'gold');
                 dayChips.setMulti(false);
                 dayChips.set([it.day_of_week]);
-                $('f-date').value = it.start_date ? String(it.start_date).slice(0, 10) : isoDate(selected);
+                $('f-date').value = parseDate(it.start_date) ? isoDate(parseDate(it.start_date)) : isoDate(selected);
                 $('f-time').value = minutesToTime(it.start);
                 const dur = $('f-duration');
                 if (![...dur.options].some((o) => Number(o.value) === it.duration)) dur.add(new Option(durationText(it.duration), String(it.duration)));
