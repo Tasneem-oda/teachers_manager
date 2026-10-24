@@ -7,8 +7,8 @@
  * في كل مكان (وليس window.supabase، لأن هذا الأخير هو مكتبة supabase-js
  * الخام القادمة من الـ CDN وليس عميلاً مهيّأً، وليس لديه خاصية .auth).
  */
-import { CONFIG } from './config.js?v=23';
-import { APIUtils, Storage, ErrorHandler, Validators, toLatinDigits } from './utils.js?v=23';
+import { CONFIG } from './config.js?v=24';
+import { APIUtils, Storage, ErrorHandler, Validators, toLatinDigits } from './utils.js?v=24';
 
 /** fetch بمهلة: على النت الضعيف الدخول/التسجيل مايفضلش يلف للأبد */
 async function fetchWithTimeout(url, options = {}, ms = 12000) {
@@ -34,14 +34,19 @@ function showOfflineRetry() {
 const isNetworkError = (err) => !!err && /fetch|network|retryable|timeout|load failed/i.test(`${err.name || ''} ${err.message || ''}`);
 
 /** كل حاجة محفوظة على الجهاز تخص المدرس اللي خرج (عشان الموبايل المشترك مايعرضش بيانات مدرس تاني) */
-const USER_LOCAL_KEYS = ['auth_session', 'user_profile', 'tm_pending_init', 'tm_live_lessons', 'tm_teacher_subject'];
-const USER_SESSION_KEYS = ['tm_sub_cache_v1', 'tm_profile_cache_v1', 'tm_income_cache_v1'];
+// (طابور التتبع tm_track_queue_v1 كان بيفضل بعد الخروج ويتبعت باسم المدرس اللي داخل بعده،
+//  ونقطة الإشعارات وخطوات البداية كانت بتظهر للمدرس الجديد بحالة المدرس القديم)
+const USER_LOCAL_KEYS = ['auth_session', 'user_profile', 'tm_pending_init', 'tm_live_lessons', 'tm_teacher_subject',
+    'tm_track_queue_v1', 'tm_signup_source', 'tm_welcome_seen'];
+const USER_SESSION_KEYS = ['tm_sub_cache_v1', 'tm_profile_cache_v1', 'tm_income_cache_v1', 'tm_notif_badge_cache_v1', 'tm_ro_prompt', 'tm_track_session'];
 function clearUserData() {
+    try { if (window.__tmTrackReset) window.__tmTrackReset(); } catch (e) { /* تجاهل */ }
     USER_LOCAL_KEYS.forEach((k) => { try { localStorage.removeItem(k); } catch (e) { /* تجاهل */ } });
     USER_SESSION_KEYS.forEach((k) => { try { sessionStorage.removeItem(k); } catch (e) { /* تجاهل */ } });
     try {
-        Object.keys(localStorage).filter((k) => k.startsWith('tm_lesson_draft:') || k.startsWith('tm_book_pos_') || k.startsWith('tm_ai_')).forEach((k) => localStorage.removeItem(k));
-        Object.keys(sessionStorage).filter((k) => k.startsWith('tm_ai_')).forEach((k) => sessionStorage.removeItem(k));
+        Object.keys(localStorage).filter((k) => k.startsWith('tm_lesson_draft:') || k.startsWith('tm_book_pos_') || k.startsWith('tm_ai_')
+            || k.startsWith('tm_ob_') || k.startsWith('tm_report_nudge_')).forEach((k) => localStorage.removeItem(k));
+        Object.keys(sessionStorage).filter((k) => k.startsWith('tm_ai_') || k.startsWith('tm_lesson_alert_')).forEach((k) => sessionStorage.removeItem(k));
     } catch (e) { /* تجاهل */ }
 }
 
@@ -139,9 +144,19 @@ export const Auth = {
             }
             
             // 2. إنشاء الحساب في Supabase Auth
+            // بيانات المدرس بتتحفظ كمان مع الحساب نفسه في Supabase: لو تجهيز الملف في n8n فشل
+            // (النت فصل، أو أكّد الإيميل من موبايل تاني) الخادم بيعمل الملف منها أول ما يدخل (bootstrap-session)
             const { data: authData, error: authError } = await window.supabaseClient.auth.signUp({
                 email: email,
-                password: password
+                password: password,
+                options: {
+                    data: {
+                        name: String(name || '').trim().slice(0, 100),
+                        phone: String(phone || '').trim().slice(0, 30),
+                        teaching_type: teachingType || 'private',
+                        subject: subject || ''
+                    }
+                }
             });
 
             if (authError) {
@@ -177,6 +192,8 @@ export const Auth = {
                 const src = Storage.get('tm_signup_source') || {};
                 (window.dataLayer = window.dataLayer || []).push({ event: 'sign_up', subject, ...src });
             } catch (e) { /* تجاهل */ }
+            // مصدر التسجيل اتبعت مع الحساب ده: مايتحسبش تاني لحساب جديد على نفس الجهاز
+            if (initResult.ok) Storage.remove('tm_signup_source');
 
             // تأكيد الإيميل مفعّل: مفيش جلسة لسه، المدرس لازم يفتح الإيميل الأول
             if (!authData.session) {

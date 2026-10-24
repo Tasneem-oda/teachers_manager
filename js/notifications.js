@@ -33,10 +33,10 @@
  * كل جزء بيفشل بصمت (من غير ما يكسر باقي الصفحة) لو لسه معمولش الإعداد بتاعه.
  * ============================================================================
  */
-import { CONFIG } from './config.js?v=23';
-import { Auth } from './auth.js?v=23';
-import { api } from './api.js?v=23';
-import { ErrorHandler } from './utils.js?v=23';
+import { CONFIG } from './config.js?v=24';
+import { Auth } from './auth.js?v=24';
+import { api } from './api.js?v=24';
+import { ErrorHandler } from './utils.js?v=24';
 
 const PROMPT_DISMISS_KEY = 'tm_notif_prompt_dismissed';
 const BADGE_CACHE_KEY = 'tm_notif_badge_cache_v1';
@@ -210,7 +210,7 @@ function showEnablePrompt() {
         <div class="tm-notif-icon">🔔</div>
         <div class="tm-notif-text">
             <p class="tm-notif-title">فعّل تذكير الحصص اليومي</p>
-            <p class="tm-notif-desc">هنبعتلك إشعار كل يوم بحصص المعلم المجدولة اليوم حسب جدولك.</p>
+            <p class="tm-notif-desc">هنبعتلك إشعار كل صباح بحصصك ومواعيدك المجدولة النهارده.</p>
         </div>
         <div class="tm-notif-actions">
             <button type="button" class="tm-notif-btn-enable" id="tm-notif-enable-btn">تفعيل الإشعارات</button>
@@ -437,11 +437,15 @@ function renderActiveTab() {
         : renderEmptyState(activeTab);
 
     listEl.querySelectorAll('.tm-notif-item').forEach((el) => {
-        el.addEventListener('click', () => {
+        el.addEventListener('click', async () => {
             const id = el.dataset.id;
             const url = el.dataset.url;
-            if (el.dataset.unread === '1') markOneRead(id);
-            if (url) window.location.href = url;
+            const pending = el.dataset.unread === '1' ? markOneRead(id) : null;
+            if (url) {
+                // الانتقال للصفحة كان بيقطع طلب "مقروء" قبل ما يوصل، فالإشعار كان بيرجع غير مقروء
+                if (pending) await Promise.race([pending, new Promise((r) => setTimeout(r, 1500))]);
+                window.location.href = url;
+            }
         });
     });
 }
@@ -502,7 +506,7 @@ async function fetchAndRenderNotifications() {
 /** تحديث تفاؤلي فوري (Optimistic UI) قبل انتظار رد الخادم */
 function markOneRead(id) {
     const idx = cache.unread.findIndex((n) => n.id === id);
-    if (idx === -1) return;
+    if (idx === -1) return null;
     const [item] = cache.unread.splice(idx, 1);
     item.is_read = true;
     item.read_at = new Date().toISOString();
@@ -512,7 +516,7 @@ function markOneRead(id) {
     updateBellBadge();
     if (activeTab === 'unread') renderActiveTab();
 
-    api.markNotificationsRead(id).catch((e) => {
+    return api.markNotificationsRead(id).catch((e) => {
         console.warn('تعذّر تحديث حالة الإشعار على الخادم:', e);
     });
 }
@@ -722,9 +726,18 @@ export async function initPushNotifications() {
  * لو جهاز مشترك (كمبيوتر مكتب مثلاً) منبعتش إشعارات معلم لمعلم تاني بالغلط
  */
 export function unlinkOnSignOut() {
-    try {
-        runWhenOneSignalReady(async (OneSignal) => {
-            await OneSignal.logout();
-        });
-    } catch (e) { /* تجاهل بصمت */ }
+    // بيرجّع Promise (بحد أقصى ثانية ونص): قبل كده الصفحة كانت بتتنقل لصفحة الدخول قبل ما فك الربط يخلص،
+    // فالجهاز كان بيفضل يستقبل إشعارات المدرس اللي خرج
+    return new Promise((resolve) => {
+        let done = false;
+        const finish = () => { if (!done) { done = true; resolve(); } };
+        setTimeout(finish, 1500);
+        try {
+            if (!document.getElementById('onesignal-sdk')) { finish(); return; }
+            runWhenOneSignalReady(async (OneSignal) => {
+                try { await OneSignal.logout(); } catch (e) { /* تجاهل */ }
+                finish();
+            });
+        } catch (e) { finish(); }
+    });
 }
