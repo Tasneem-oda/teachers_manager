@@ -3,19 +3,24 @@
  * (أسماء المواد، التقييمات بالعربي، التواريخ النسبية، أقرب موعد قادم، مسودة الحصة)
  */
 
-import { Formatters } from './utils.js?v=24';
+import { Formatters } from './utils.js?v=27';
 
 export const SUBJECTS = {
     quran: 'القرآن الكريم',
     english: 'اللغة الإنجليزية',
     arabic: 'اللغة العربية',
     math: 'الرياضيات',
-    science: 'العلوم'
+    science: 'العلوم',
+    programming: 'البرمجة',      // v25: كانت في التسجيل بس، فكانت بتظهر بالإنجليزي في باقي الصفحات
+    other: 'أخرى'
 };
 
 export function subjectLabel(subject) {
     if (!subject) return 'بدون مادة';
-    return SUBJECTS[subject] || SUBJECTS[String(subject).toLowerCase()] || subject;
+    const known = SUBJECTS[subject] || SUBJECTS[String(subject).toLowerCase()];
+    if (known) return known;
+    // مادة مكتوبة بالعربي بإيد المدرس بتفضل زي ما هي، ورمز إنجليزي مش معروف مايظهرش للمدرس
+    return /[\u0600-\u06FF]/.test(String(subject)) ? String(subject) : 'أخرى';
 }
 
 export function isQuran(subject) {

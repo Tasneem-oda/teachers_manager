@@ -3,8 +3,8 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=24';
-import { APIUtils, Storage } from './utils.js?v=24';
+import { CONFIG } from './config.js?v=27';
+import { APIUtils, Storage } from './utils.js?v=27';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -29,7 +29,7 @@ async function apiCall(endpoint, method = 'GET', body = null, options = {}) {
 
     // وضع "قراءة فقط" بعد نهاية الفترة المجانية/الاشتراك (js/sidebar.js بيحدده):
     // القراءة شغالة عادي، والحفظ الجديد بيفتح نافذة الاشتراك بدل ما يتنفذ.
-    if (isBlockedByReadOnly(endpoint, method)) {
+    if (isBlockedByReadOnly(endpoint, method, body)) {
         if (timer) clearTimeout(timer);
         try { if (window.tmOpenSubscribePrompt) window.tmOpenSubscribePrompt(window.__tmReadOnlyReason); } catch (e) { /* تجاهل */ }
         throw { error: { code: 'READ_ONLY', message: 'التسجيل الجديد محتاج اشتراك. بياناتك كلها محفوظة.' } };
@@ -121,10 +121,14 @@ async function getSessionOrRedirect() {
 // الطلبات اللي مسموحة حتى في وضع القراءة فقط (الاشتراك، الاقتراحات، الإشعارات)
 // (get-book-content و ask مش "حفظ": قراءة الكتب مسموحة زي ما وعدنا المدرس في شريط القراءة فقط) + أحداث التتبع
 const READ_ONLY_ALLOWED = ['/check-subscription', '/submit-suggestion', '/mark-notifications-read', '/bootstrap-session', '/initialize-teacher', '/monthly-income', '/get-book-content', '/track-events', '/update-profile'];
-function isBlockedByReadOnly(endpoint, method) {
+// v27: طلبات المجموعات كلها POST، فبنسمح بالقراءة بس (عرض المجموعات/الحصة/كشف الاشتراك) في وضع القراءة فقط
+const READ_ONLY_ACTIONS = { '/groups': ['list', 'get'], '/group-session': ['prepare'], '/group-billing': ['month'] };
+function isBlockedByReadOnly(endpoint, method, body = null) {
     if (typeof window === 'undefined' || !window.__tmReadOnly) return false;
     if (String(method || 'GET').toUpperCase() === 'GET') return false;
     const path = String(endpoint || '').split('?')[0];
+    const readActions = READ_ONLY_ACTIONS[path];
+    if (readActions && body && readActions.includes(body.action)) return false;
     return !READ_ONLY_ALLOWED.some((p) => path === p || path.endsWith(p));
 }
 
@@ -195,7 +199,9 @@ export function createJsonStreamSplitter(onObject) {
 }
 
 async function streamAiChatOnce(studentId, message, onText, signal, extra = {}) {
-    if (isBlockedByReadOnly(CONFIG.API_ENDPOINTS.AI.CHAT, 'POST')) {
+    // v27: نفس الدالة بتخدم مساعد حصة المجموعة (endpoint + body مختلفين)
+    const endpoint = extra.endpoint || CONFIG.API_ENDPOINTS.AI.CHAT;
+    if (isBlockedByReadOnly(endpoint, 'POST')) {
         try { if (window.tmOpenSubscribePrompt) window.tmOpenSubscribePrompt(window.__tmReadOnlyReason); } catch (e) { /* تجاهل */ }
         throw { error: { code: 'READ_ONLY', message: 'المساعد الذكي محتاج اشتراك. بياناتك كلها محفوظة.' } };
     }
@@ -203,12 +209,12 @@ async function streamAiChatOnce(studentId, message, onText, signal, extra = {}) 
 
     let response;
     try {
-        response = await fetch(APIUtils.buildUrl(CONFIG.API_ENDPOINTS.AI.CHAT), {
+        response = await fetch(APIUtils.buildUrl(endpoint), {
             method: 'POST',
             headers: APIUtils.buildHeaders(session.access_token),
             // lesson_context: اللي بيحصل في الحصة دلوقتي (عشان المساعد يربط ردوده بالحصة الجارية)
             // session_since: بداية الجلسة (الذاكرة بتتحمّل من الوقت ده بس)
-            body: JSON.stringify({ student_id: studentId, message, lesson_context: extra.lessonContext || null, session_since: extra.sessionSince || null }),
+            body: JSON.stringify({ ...(extra.groupId ? { group_id: extra.groupId } : { student_id: studentId }), message, lesson_context: extra.lessonContext || null, session_since: extra.sessionSince || null }),
             signal
         });
     } catch (netError) {
@@ -414,6 +420,81 @@ export const api = {
         } catch (error) {
             if (isMissingWebhook(error)) return null;
             throw error;
+        }
+    },
+
+    // ------------------------------------------------------------------ v26: المجموعات
+    /** كل طلبات المجموعات بتروح لنفس الـ workflow (action). 404 = الـ workflow لسه متستوردش */
+    async groupsCall(payload) {
+        try {
+            return await apiCall(CONFIG.API_ENDPOINTS.GROUPS.API, 'POST', payload);
+        } catch (error) {
+            if (isMissingWebhook(error)) throw { error: { code: 'GROUPS_NOT_READY', message: 'ميزة المجموعات لسه ماتفعّلتش على الخادم. كلّم الدعم.' }, status: 404 };
+            throw error;
+        }
+    },
+    async listGroups() { const d = await this.groupsCall({ action: 'list' }); return (d && d.groups) || []; },
+    async getGroup(groupId) { const d = await this.groupsCall({ action: 'get', group_id: groupId }); return d && d.detail; },
+    /** إنشاء (من غير group_id) أو تعديل. data: name, subject, lesson_link, notes, color, billable, add[], schedules[] */
+    async saveGroup(data) { return await this.groupsCall({ action: 'save', ...data }); },
+    async setGroupMembers(groupId, add = [], remove = []) { return await this.groupsCall({ action: 'set_members', group_id: groupId, add, remove }); },
+    /** v27: force = true يحفظ حتى لو فيه تعارض مواعيد (الخادم بيرجّع blocked + conflicts لو فيه تعارض ومافيش force) */
+    async setGroupSchedules(groupId, schedules, force = false) { return await this.groupsCall({ action: 'set_schedules', group_id: groupId, schedules, force: !!force }); },
+    async archiveGroup(groupId, archived = true) { return await this.groupsCall({ action: archived ? 'archive' : 'unarchive', group_id: groupId }); },
+    async deleteGroup(groupId) { return await this.groupsCall({ action: 'delete', group_id: groupId }); },
+    async groupSession(payload) {
+        try {
+            return await apiCall(CONFIG.API_ENDPOINTS.GROUPS.SESSION, 'POST', payload);
+        } catch (error) {
+            if (isMissingWebhook(error)) throw { error: { code: 'GROUPS_NOT_READY', message: 'ميزة المجموعات لسه ماتفعّلتش على الخادم. كلّم الدعم.' }, status: 404 };
+            throw error;
+        }
+    },
+    async prepareGroupSession(groupId, { sessionId = null, date = null } = {}) {
+        const d = await this.groupSession({ action: 'prepare', group_id: groupId, session_id: sessionId || undefined, date: date || undefined });
+        return d && d.prepare;
+    },
+    async saveGroupSession(payload) { return await this.groupSession({ action: 'save', ...payload }); },
+    async deleteGroupSession(groupId, sessionId) { return await this.groupSession({ action: 'delete', group_id: groupId, session_id: sessionId }); },
+    /** v27: "ابدأ الحصة" للمجموعة. لو فيه حصة شغالة بيرجّعها (resumed). بيرجّع { session_id, started_at, server_now, resumed } */
+    async startGroupSession(groupId, startTime = null) {
+        return await this.groupSession({ action: 'start', group_id: groupId, start_time: startTime || undefined });
+    },
+
+    // ------------------------------------------------------------------ v27: الاشتراك الشهري للمجموعة
+    async groupBillingCall(payload) {
+        try {
+            return await apiCall(CONFIG.API_ENDPOINTS.GROUPS.BILLING, 'POST', payload);
+        } catch (error) {
+            if (isMissingWebhook(error)) throw { error: { code: 'GROUPS_NOT_READY', message: 'الاشتراك الشهري للمجموعات لسه ماتفعّلش على الخادم (group-billing). كلّم الدعم.' }, status: 404 };
+            throw error;
+        }
+    },
+    /** month = 'YYYY-MM' (فاضي = الشهر الحالي). بيرجّع { month, group, members[], totals, months[] } */
+    async getGroupBilling(groupId, month = '') { return await this.groupBillingCall({ action: 'month', group_id: groupId, month: month || undefined }); },
+    /** amount فاضي = الباقي عليه في الشهر */
+    async payGroupFee(groupId, studentId, month, amount = null, note = '') {
+        return await this.groupBillingCall({ action: 'pay', group_id: groupId, student_id: studentId, month: month || undefined, amount: amount == null || amount === '' ? undefined : Number(amount), note });
+    },
+    async removeGroupPayment(groupId, paymentId) { return await this.groupBillingCall({ action: 'unpay', group_id: groupId, payment_id: paymentId }); },
+    /** fee = null يرجع لمبلغ المجموعة، 0 = معفي */
+    async setGroupMemberFee(groupId, studentId, fee) { return await this.groupBillingCall({ action: 'set_fee', group_id: groupId, student_id: studentId, fee: fee == null ? '' : fee }); },
+
+    /** v27: مساعد حصة المجموعة (نفس شات الحصة الخاصة لكن بسياق المجموعة) */
+    async groupAiChatStream(groupId, message, { onText, onRetry, signal, lessonContext, sessionSince } = {}) {
+        for (let attempt = 0; ; attempt++) {
+            try {
+                return await streamAiChatOnce(null, message, onText, signal, { lessonContext, sessionSince, groupId, endpoint: CONFIG.API_ENDPOINTS.GROUPS.AI_CHAT });
+            } catch (error) {
+                const code = error && error.error && error.error.code;
+                if (code === 'BUSY' && attempt < 3 && !(signal && signal.aborted)) {
+                    if (onRetry) onRetry(attempt + 1);
+                    await new Promise((r) => setTimeout(r, 1200 + attempt * 800));
+                    continue;
+                }
+                if (error && error.status === 404) throw { error: { code: 'GROUPS_NOT_READY', message: 'مساعد حصة المجموعة لسه ماتفعّلش على الخادم (group-ai-chat).' } };
+                throw error;
+            }
         }
     },
 

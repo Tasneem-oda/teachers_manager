@@ -5,11 +5,11 @@
  * الحضور والغياب، مستوى الحفظ/التلاوة/المراجعة، الواجبات، اللي خلصناه، والخطة الجاية.
  */
 
-import { ErrorHandler } from './utils.js?v=24';
-import { icon } from './icons.js?v=24';
-import { lessonDay, ratingFieldLabels, ratingLabel, normalizeLesson } from './lesson-utils.js?v=24';
-import { whatsappUrl } from './billing.js?v=24';
-import { CONFIG } from './config.js?v=24';
+import { ErrorHandler } from './utils.js?v=27';
+import { icon } from './icons.js?v=27';
+import { lessonDay, ratingFieldLabels, ratingLabel, normalizeLesson } from './lesson-utils.js?v=27';
+import { whatsappUrl } from './billing.js?v=27';
+import { CONFIG } from './config.js?v=27';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -18,7 +18,7 @@ export function monthStart(offset = 0, now = new Date()) {
 }
 
 function monthLabel(d) {
-    try { return d.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' }); } catch (e) { return `${d.getMonth() + 1}/${d.getFullYear()}`; }
+    try { return d.toLocaleDateString('ar-EG-u-nu-latn', { month: 'long', year: 'numeric' }); } catch (e) { return `${d.getMonth() + 1}/${d.getFullYear()}`; }
 }
 
 function inMonth(lesson, start) {

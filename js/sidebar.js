@@ -1,17 +1,20 @@
 /**
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
-import { Auth } from './auth.js?v=24';
-import { icon } from './icons.js?v=24';
-import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=24';
-import { CONFIG } from './config.js?v=24';
-import { openSuggestionModal } from './suggestions.js?v=24';
-import { mountFloatingLesson } from './live-lesson.js?v=24';
-import { initTracking } from './track.js?v=24';
+import { Auth } from './auth.js?v=27';
+import { icon } from './icons.js?v=27';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=27';
+import { CONFIG } from './config.js?v=27';
+import { openSuggestionModal } from './suggestions.js?v=27';
+import { mountFloatingLesson } from './live-lesson.js?v=27';
+import { initTracking } from './track.js?v=27';
+import { askChoice } from './utils.js?v=27';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
     { key: 'students', href: 'students.html', icon: 'users', label: 'الطلاب' },
+    // v26: على الموبايل المجموعات من تاب جوه صفحة الطلاب (شريط التنقل مايستحملش 6 أزرار)
+    { key: 'groups', href: 'groups.html', icon: 'group', label: 'المجموعات', desktopOnly: true },
     { key: 'schedule', href: 'schedule.html', icon: 'calendar', label: 'جدولي' },
     { key: 'books', href: 'books.html', icon: 'bookOpen', label: 'مكتبتي' },
     { key: 'settings', href: 'settings.html', icon: 'gear', label: 'الإعدادات' }
@@ -44,7 +47,7 @@ export async function getSubscriptionCached() {
     if (subFetchPromise) return subFetchPromise;
 
     subFetchPromise = (async () => {
-        const { api } = await import('./api.js?v=24');
+        const { api } = await import('./api.js?v=27');
         const data = await api.checkSubscription();
         try {
             sessionStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
@@ -65,7 +68,7 @@ export function renderSidebar(activeKey) {
     if (!root) return;
 
     const navHtml = NAV_ITEMS.map(item => `
-        <a href="${item.href}" class="${item.key === activeKey ? 'active' : ''}">
+        <a href="${item.href}" class="${[item.key === activeKey ? 'active' : '', item.desktopOnly ? 'nav-desktop-only' : '', item.key === 'students' && activeKey === 'groups' ? 'active-mobile' : ''].filter(Boolean).join(' ')}">
             <span class="icon">${icon(item.icon, { size: 19 })}</span>
             <span class="label">${item.label}</span>
         </a>
@@ -82,6 +85,10 @@ export function renderSidebar(activeKey) {
             </div>
             <nav class="sidebar-nav">${navHtml}</nav>
             <div class="sidebar-footer">
+                <a href="#" id="sidebar-install" class="tm-install-entry" hidden>
+                    <span class="icon">${icon('download', { size: 19 })}</span>
+                    <span class="label">ثبّت التطبيق</span>
+                </a>
                 <a href="#" id="sidebar-suggest">
                     <span class="icon">${icon('lightbulb', { size: 19 })}</span>
                     <span class="label">عندك اقتراح؟</span>
@@ -94,6 +101,12 @@ export function renderSidebar(activeKey) {
         </aside>
     `;
 
+    document.getElementById('sidebar-install').addEventListener('click', (e) => {
+        e.preventDefault();
+        openInstall();
+    });
+    syncInstallEntries();
+
     document.getElementById('sidebar-suggest').addEventListener('click', (e) => {
         e.preventDefault();
         openSuggestionModal();
@@ -101,6 +114,9 @@ export function renderSidebar(activeKey) {
 
     document.getElementById('sidebar-logout').addEventListener('click', async (e) => {
         e.preventDefault();
+        // v25: تأكيد قبل الخروج (ضغطة غلط = دخول بالإيميل وكلمة السر من الأول)
+        const ok = await askChoice({ title: 'تسجيل الخروج', message: 'تخرج من البرنامج على الجهاز ده؟ بياناتك محفوظة.', choices: [{ label: 'اخرج', value: 'yes' }] });
+        if (!ok) return;
         await unlinkOnSignOut(); // فك ربط الجهاز عن هوية المعلم قبل الخروج (إشعارات Push)
         await Auth.signOut();
         window.location.href = 'login.html';
@@ -112,7 +128,10 @@ export function renderSidebar(activeKey) {
     // الحصة الجارية في نافذة عائمة: المدرس يتنقّل في البرنامج والحصة شغالة ويرجع لها بضغطة
     try {
         const onLessonPage = /\/lesson(\.html)?\/?$/.test(location.pathname);
-        mountFloatingLesson({ exceptStudentId: onLessonPage ? new URLSearchParams(location.search).get('student_id') : null });
+        // v27: صفحة حصة المجموعة مابتعرضش النافذة العائمة لنفس المجموعة
+        const onGroupLesson = /\/group-lesson(\.html)?\/?$/.test(location.pathname);
+        const qs = new URLSearchParams(location.search);
+        mountFloatingLesson({ exceptStudentId: onLessonPage ? qs.get('student_id') : (onGroupLesson ? `group:${qs.get('group_id')}` : null) });
     } catch (e) { /* النافذة إضافية: لو فشلت الصفحة تكمّل عادي */ }
 }
 
@@ -163,7 +182,7 @@ const WHATSAPP_NUMBER = CONFIG.SUPPORT_WHATSAPP;
 export function trialEndLabel(sub) {
     try {
         if (sub && sub.trial_ends_at) {
-            return new Date(sub.trial_ends_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+            return new Date(sub.trial_ends_at).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' });
         }
     } catch (e) { /* تجاهل */ }
     return CONFIG.PRICING.FREE_UNTIL_LABEL;
@@ -278,6 +297,23 @@ export async function renderTrialBanner(containerId = 'trial-banner-root', { pro
     }
 }
 
+// ------------------------------------------------------------------ v27: زرار "ثبّت التطبيق" (js/pwa-install.js)
+function appInstalled() {
+    try {
+        return window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: minimal-ui)').matches
+            || window.navigator.standalone === true;
+    } catch (e) { return false; }
+}
+function syncInstallEntries() {
+    const installed = (window.tmInstall && window.tmInstall.isInstalled) ? window.tmInstall.isInstalled() : appInstalled();
+    document.querySelectorAll('.tm-install-entry').forEach((el) => { el.hidden = installed; });
+}
+function openInstall() {
+    if (window.tmInstall) window.tmInstall.open();
+    else window.addEventListener('tm:install-state', () => window.tmInstall && window.tmInstall.open(), { once: true });
+}
+window.addEventListener('tm:install-state', syncInstallEntries);
+
 function escapeBannerText(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -301,6 +337,9 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
                     <span class="icon">${icon('search', { size: 16 })}</span>
                     <input type="text" id="global-search" placeholder="ابحث عن طالب...">
                 </div>` : ''}
+                <button type="button" class="bell-btn header-install tm-install-entry" id="header-install" title="ثبّت التطبيق" aria-label="ثبّت التطبيق" hidden>
+                    ${icon('download', { size: 17 })}<span>ثبّت</span>
+                </button>
                 <button type="button" class="bell-btn" id="header-suggest" title="عندك اقتراح؟" aria-label="عندك اقتراح؟">
                     ${icon('lightbulb', { size: 18 })}
                 </button>
@@ -322,8 +361,12 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
     `;
 
     document.getElementById('header-suggest').addEventListener('click', () => openSuggestionModal());
+    document.getElementById('header-install').addEventListener('click', () => openInstall());
+    syncInstallEntries();
 
     document.getElementById('header-logout-mobile').addEventListener('click', async () => {
+        const ok = await askChoice({ title: 'تسجيل الخروج', message: 'تخرج من البرنامج على الجهاز ده؟ بياناتك محفوظة.', choices: [{ label: 'اخرج', value: 'yes' }] });
+        if (!ok) return;
         await unlinkOnSignOut();
         await Auth.signOut();
         window.location.href = 'login.html';

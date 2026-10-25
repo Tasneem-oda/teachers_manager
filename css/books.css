@@ -9,11 +9,11 @@
 .lib-intro-text p { margin: 0; color: var(--text-secondary); font-size: 0.88rem; }
 
 .ask-card { margin-bottom: 1.5rem; }
-.ask-card .ask-row { display: flex; gap: 0.6rem; align-items: flex-start; flex-wrap: wrap; }
+.ask-card .ask-row { display: flex; gap: 0.6rem; align-items: flex-end; flex-wrap: wrap; } /* v25: الزرار على نفس خط آخر الخانة */
 .ask-card textarea {
     flex: 1; min-width: 220px; resize: vertical; min-height: 76px; max-height: 200px; margin: 0;
-    padding: 0.7rem 0.9rem; border: 1px solid var(--border); border-radius: 10px;
-    font-family: inherit; font-size: 1rem; line-height: 1.6; background: var(--bg-secondary);
+    padding: 0.7rem 0.9rem; border: 1px solid var(--field-border); border-radius: 10px;
+    font-family: inherit; font-size: 1rem; line-height: 1.6; background: #fff;
 }
 .ask-card textarea:focus { background: #fff; }
 .ask-card .ask-row .btn { min-height: 46px; }
@@ -50,8 +50,8 @@
 .book-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
 .book-type-tag { font-size: 0.7rem; font-weight: 600; color: var(--text-secondary); background: var(--bg-muted); border-radius: 6px; padding: 0.12rem 0.45rem; }
 .book-status-badge { display: inline-flex; align-items: center; gap: 0.3rem; width: fit-content; font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 20px; }
-.book-status-badge.status-ready { background: #E8F5E9; color: var(--success); }
-.book-status-badge.status-processing, .book-status-badge.status-uploading { background: rgba(197,154,74,0.2); color: #8a6a26; }
+.book-status-badge.status-ready { background: #E8F5E9; color: var(--success-text); }
+.book-status-badge.status-processing, .book-status-badge.status-uploading { background: rgba(197,154,74,0.2); color: var(--gold-text); }
 .book-status-badge.status-failed { background: rgba(184,92,92,0.12); color: var(--danger); }
 .book-status-badge.status-stalled { background: rgba(184,92,92,0.12); color: var(--danger); }
 .book-scope-tag { font-size: 0.72rem; color: var(--text-secondary); }
@@ -64,14 +64,14 @@
 .book-progress-actions { display: flex; gap: 0.4rem; }
 
 .book-card-actions { display: flex; gap: 0.5rem; margin-top: 0.3rem; flex-wrap: wrap; }
-.book-card-actions .btn { flex: 1; padding: 0.45rem 0.6rem; font-size: 0.78rem; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; }
-.btn-muted { background: var(--bg-muted) !important; color: var(--text-primary) !important; }
+.book-card-actions .btn { flex: 1; padding: 0.45rem 0.6rem; min-height: 40px; font-size: 0.85rem; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; }
+.btn-muted { background: var(--card-bg) !important; color: var(--primary) !important; border: 1px solid var(--secondary-btn-border) !important; } /* v25: كان رمادي على رمادي (شكله زرار معطّل) */
 .book-icon-btn {
-    width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
-    background: var(--bg-secondary); color: var(--text-secondary); cursor: pointer;
+    width: 40px; height: 40px; border-radius: 8px; border: 1px solid var(--secondary-btn-border);
+    background: var(--card-bg); color: var(--text-secondary); cursor: pointer;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.book-icon-btn.danger:hover { background: #FBEAEA; color: var(--danger); border-color: #F0CFCF; }
+.book-icon-btn.danger:hover { background: #FBEAEA; color: var(--danger); border-color: var(--danger-border); }
 
 .file-type-choice { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin-bottom: 1rem; }
 .file-type-choice label {
@@ -179,7 +179,7 @@ mark.bv-mark { background: rgba(197, 154, 74, 0.45); color: inherit; border-radi
 }
 .bv-tpage { padding: 0.2rem 0 1rem; border-bottom: 1px dashed var(--border); margin-bottom: 1rem; transition: box-shadow .3s ease; }
 .bv-tpage:last-child { border-bottom: none; margin-bottom: 0; }
-.bv-tpage-head { font-size: 0.72rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.5rem; letter-spacing: .02em; }
+.bv-tpage-head { font-size: 0.72rem; font-weight: 700; color: var(--secondary-strong); margin-bottom: 0.5rem; letter-spacing: .02em; }
 .bv-tpage h3 { font-size: 1.05rem; margin: 0.6rem 0 0.4rem; }
 .bv-tpage p { margin: 0 0 0.75rem; white-space: pre-wrap; }
 
@@ -287,7 +287,7 @@ mark.bv-mark { background: rgba(197, 154, 74, 0.45); color: inherit; border-radi
 .bc-src:hover { border-color: var(--primary); color: var(--primary); }
 .bc-tool { border: none; background: transparent; color: var(--text-light); width: 28px; height: 28px; border-radius: 7px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
 .bc-tool:hover { background: var(--bg-muted); color: var(--primary); }
-.bc-tool.is-done { color: var(--success); }
+.bc-tool.is-done { color: var(--success-text); }
 .bc-retry { display: inline-flex; align-items: center; gap: 0.3rem; border: 1px solid #F0CFCF; background: #fff; color: var(--danger); font: inherit; font-size: 0.76rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 999px; cursor: pointer; }
 .bc-retry:hover { background: #FBEAEA; }
 

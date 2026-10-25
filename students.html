@@ -11,8 +11,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الطلاب - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=24">
-    <link rel="stylesheet" href="css/lessons.css?v=24">
+    <link rel="stylesheet" href="css/style.css?v=27">
+    <link rel="stylesheet" href="css/lessons.css?v=27">
+    <link rel="stylesheet" href="css/groups.css?v=27">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -28,14 +29,12 @@
         .student-name { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.4rem; }
         .student-info { color: var(--text-secondary); font-size: 0.86rem; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 0.35rem; }
         .student-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
-        .student-actions .btn { flex: 1; padding: 0.5rem; font-size: 0.82rem; margin: 0; display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; }
+        .student-actions .btn { flex: 1; padding: 0.5rem; font-size: 0.85rem; margin: 0; display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; white-space: nowrap; min-height: 42px; }
         .form-group { margin-bottom: 1.25rem; }
         .form-group label { display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.88rem; }
         .filters-row { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
         .filters-row select { max-width: 220px; margin: 0; }
         @media (max-width: 480px) {
-            .student-actions { flex-wrap: wrap; }
-            .student-actions .btn { flex: 1 1 calc(50% - 0.25rem); }
             .filters-row select { max-width: 100%; flex: 1; }
         }
     </style>
@@ -52,10 +51,14 @@
             <div id="top-header-root"></div>
 
             <div class="page-body">
+                <nav class="people-tabs" aria-label="الطلاب والمجموعات">
+                    <a href="students.html" class="active" aria-current="page"><span id="ic-tab-students" class="icon" style="display:inline-flex"></span> الطلاب</a>
+                    <a href="groups.html"><span id="ic-tab-groups" class="icon" style="display:inline-flex"></span> المجموعات</a>
+                </nav>
                 <div class="flex" style="margin-bottom: 1.5rem;">
-                    <h1 style="margin:0;">قائمة الطلاب</h1>
+                    <h1 class="page-title-dup" style="margin:0;">قائمة الطلاب</h1>
                     <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-                    <button class="btn" id="btn-add-bulk" style="background: var(--bg-muted); color: var(--text-primary);">إضافة أكثر من طالب</button>
+                    <button class="btn btn-outline" id="btn-add-bulk">إضافة أكثر من طالب</button>
                     <button class="btn" id="btn-add-new"><span id="ic-add-btn" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> طالب جديد</button>
                     </div>
                 </div>
@@ -69,6 +72,8 @@
                         <option value="arabic">اللغة العربية</option>
                         <option value="math">الرياضيات</option>
                         <option value="science">العلوم</option>
+                        <option value="programming">البرمجة</option>
+                        <option value="other">أخرى</option>
                     </select>
                 </div>
 
@@ -102,6 +107,8 @@
                         <option value="arabic">اللغة العربية</option>
                         <option value="math">الرياضيات</option>
                         <option value="science">العلوم</option>
+                        <option value="programming">البرمجة</option>
+                        <option value="other">أخرى</option>
                     </select>
                 </div>
                 <details class="x-more">
@@ -121,7 +128,7 @@
                 </details>
                 <div style="display: flex; gap: 1rem;">
                     <button type="submit" class="btn" id="add-save">حفظ</button>
-                    <button type="button" class="btn close-modal" data-close="add-student-modal" style="background: var(--bg-muted); color: var(--text-primary);">إلغاء</button>
+                    <button type="button" class="btn btn-outline close-modal" data-close="add-student-modal">إلغاء</button>
                 </div>
             </form>
             <div class="add-student-alt">عندك طلاب كتير؟ <button type="button" id="open-bulk">أضفهم كلهم مرة واحدة</button></div>
@@ -149,12 +156,14 @@
                         <option value="arabic">اللغة العربية</option>
                         <option value="math">الرياضيات</option>
                         <option value="science">العلوم</option>
+                        <option value="programming">البرمجة</option>
+                        <option value="other">أخرى</option>
                     </select>
                 </div>
                 <div class="bulk-progress" id="bulk-progress" aria-live="polite"></div>
                 <div style="display: flex; gap: 1rem;">
                     <button type="submit" class="btn" id="bulk-save">إضافة الطلاب</button>
-                    <button type="button" class="btn close-modal" data-close="bulk-modal" style="background: var(--bg-muted); color: var(--text-primary);">إلغاء</button>
+                    <button type="button" class="btn btn-outline close-modal" data-close="bulk-modal">إلغاء</button>
                 </div>
             </form>
         </div>
@@ -163,19 +172,21 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=24"></script>
+    <script type="module" src="js/config.js?v=27"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=24';
-        import { api } from './js/api.js?v=24';
-        import { ErrorHandler, Formatters, toLatinDigits } from './js/utils.js?v=24';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=24';
-        import { icon } from './js/icons.js?v=24';
-        import { openStudentAppointments } from './js/student-appointments.js?v=24';
-        import { subjectLabel } from './js/lesson-utils.js?v=24';
+        import { Auth } from './js/auth.js?v=27';
+        import { api } from './js/api.js?v=27';
+        import { ErrorHandler, Formatters, toLatinDigits } from './js/utils.js?v=27';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=27';
+        import { icon } from './js/icons.js?v=27';
+        import { openStudentAppointments } from './js/student-appointments.js?v=27';
+        import { subjectLabel } from './js/lesson-utils.js?v=27';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الطلاب', subtitle: 'إدارة كل طلابك من مكان واحد' });
         document.getElementById('ic-add-btn').innerHTML = icon('plus', { size: 16 });
+        document.getElementById('ic-tab-students').innerHTML = icon('users', { size: 16 });
+        document.getElementById('ic-tab-groups').innerHTML = icon('group', { size: 16 });
 
         const loader = document.getElementById('loader');
         const container = document.getElementById('students-container');
@@ -247,7 +258,7 @@
                            <p style="font-size:1.05rem; font-weight:700; color:var(--text-primary); margin:0 0 0.4rem;">ابدأ بإضافة طلابك 👋</p>
                            <p style="margin:0 0 1rem;">الاسم بس يكفي، وتقدر تضيفهم كلهم مرة واحدة من الورق.</p>
                            <button type="button" class="btn" data-empty-add>أضف أول طالب</button>
-                           <button type="button" class="btn" data-empty-bulk style="background: var(--bg-muted); color: var(--text-primary);">إضافة أكثر من طالب</button>
+                           <button type="button" class="btn btn-outline" data-empty-bulk>إضافة أكثر من طالب</button>
                        </div>`
                     : '<div class="empty-state">مفيش طلاب بالبحث أو المادة دي.</div>';
                 const a = container.querySelector('[data-empty-add]');
@@ -264,8 +275,8 @@
                     <div class="student-info">${icon('phone', { size: 14 })} ${Formatters.escapeHtml(student.phone || 'بدون رقم')}</div>
                     <div class="student-actions">
                         <a href="student.html?id=${encodeURIComponent(student.id)}" class="btn">عرض الملف</a>
-                        <button class="btn btn-open-appts" style="background: var(--secondary);" data-id="${Formatters.escapeHtml(String(student.id))}">${icon('calendar', { size: 14 })} موعد</button>
-                        <button class="btn btn-danger btn-del-student" data-id="${Formatters.escapeHtml(String(student.id))}">${icon('trash', { size: 14 })} حذف</button>
+                        <button class="btn btn-outline btn-open-appts" data-id="${Formatters.escapeHtml(String(student.id))}">${icon('calendar', { size: 14 })} المواعيد</button>
+                        <!-- v25: زرار "حذف" اتشال من الكارت (كان أكبر زرار فيه). الحذف من ملف الطالب ← البيانات -->
                     </div>
                 </div>
             `).join('');
@@ -425,6 +436,6 @@
             }
         };
     </script>
-    <script src="js/pwa-install.js?v=24" defer></script>
+    <script src="js/pwa-install.js?v=27" defer></script>
 </body>
 </html>

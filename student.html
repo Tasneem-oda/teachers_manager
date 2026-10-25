@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>ملف الطالب - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=24">
+    <link rel="stylesheet" href="css/style.css?v=27">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,7 +19,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=24">
+    <link rel="stylesheet" href="css/lessons.css?v=27">
+    <link rel="stylesheet" href="css/groups.css?v=27">
     <style>
         .loading { text-align: center; padding: 2rem; color: var(--primary); }
         .empty-state { text-align: center; padding: 2rem; color: var(--text-secondary); }
@@ -48,6 +49,7 @@
                         <div style="min-width:0; flex:1;">
                             <h1 class="sp-name" id="sp-name"></h1>
                             <div class="sp-sub" id="sp-sub"></div>
+                            <div class="sp-groups" id="sp-groups" hidden></div>
                             <div class="sp-contact" id="sp-contact"></div>
                         </div>
                         <div class="sp-cta">
@@ -152,6 +154,8 @@
                                         <option value="arabic">اللغة العربية</option>
                                         <option value="math">الرياضيات</option>
                                         <option value="science">العلوم</option>
+                                        <option value="programming">البرمجة</option>
+                                        <option value="other">أخرى</option>
                                     </select></div>
                                 <div class="form-group"><label for="e-link">رابط الحصة</label><input type="url" id="e-link" dir="ltr" maxlength="500" placeholder="https://zoom.us/..."></div>
                                 <div class="form-group"><label for="e-topic">الموضوع الحالي</label><input type="text" id="e-topic" maxlength="300"></div>
@@ -189,19 +193,20 @@
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=24"></script>
+    <script type="module" src="js/config.js?v=27"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=24';
-        import { api } from './js/api.js?v=24';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=24';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=24';
-        import { icon } from './js/icons.js?v=24';
-        import { openStudentAppointments } from './js/student-appointments.js?v=24';
-        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=24';
-        import { openAttendanceModal } from './js/attendance.js?v=24';
-        import { openMonthlyReport } from './js/report.js?v=24';
-        import { showTips } from './js/tips.js?v=24';
-        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=24';
+        import { Auth } from './js/auth.js?v=27';
+        import { api } from './js/api.js?v=27';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=27';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=27';
+        import { icon } from './js/icons.js?v=27';
+        import { openStudentAppointments } from './js/student-appointments.js?v=27';
+        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=27';
+        import { openAttendanceModal } from './js/attendance.js?v=27';
+        import { openMonthlyReport } from './js/report.js?v=27';
+        import { showTips } from './js/tips.js?v=27';
+        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=27';
+        import { groupTitle, groupColorClass } from './js/groups-utils.js?v=27';
 
         renderSidebar('students');
         renderTopHeader({ title: 'ملف الطالب', subtitle: 'كل ما يخص الطالب في مكان واحد' });
@@ -270,6 +275,20 @@
             const sub = [`<span>${icon('bookOpen', { size: 14 })} ${esc(subjectLabel(student.subject))}</span>`];
             if (student.current_topic) sub.push(`<span>${icon('target', { size: 14 })} ${esc(student.current_topic)}</span>`);
             $('sp-sub').innerHTML = sub.join('');
+            // v26: المجموعات اللي الطالب فيها
+            const myGroups = (ov.groups || []).filter((g) => !g.left_at && g.status !== 'archived');
+            $('sp-groups').hidden = !myGroups.length;
+            $('sp-groups').innerHTML = myGroups.map((g) => {
+                // v27: حالة الاشتراك الشهري للمجموعة
+                let sub = '';
+                if (g.billing_type === 'monthly' && g.monthly_fee != null) {
+                    const fee = Number(g.monthly_fee) || 0;
+                    const paid = Number(g.paid_this_month) || 0;
+                    sub = fee <= 0 ? ' · معفي' : (paid >= fee ? ' · دفع الشهر ده ✓' : ` · عليه ${fee - paid} ج`);
+                }
+                const href = `group.html?id=${encodeURIComponent(g.group_id || g.id)}${sub && !sub.includes('✓') && !sub.includes('معفي') ? '#billing' : ''}`;
+                return `<a class="${groupColorClass(g.color)}" href="${href}">${icon('group', { size: 13 })} ${esc(groupTitle(g.group_name || g.name))}${esc(sub)}</a>`;
+            }).join('');
 
             const phoneOk = !!normalizePhone(student.phone);
             const btns = [];
@@ -282,7 +301,7 @@
 
             const btn = $('btn-lesson');
             btn.href = `lesson.html?student_id=${encodeURIComponent(studentId)}`;
-            if (ov.in_progress) { btn.className = 'btn sp-live'; btn.innerHTML = ' استكمل الحصة الجارية'; }
+            if (ov.in_progress) { btn.className = 'btn sp-live'; btn.innerHTML = icon('play', { size: 16 }) + ' استكمل الحصة الجارية'; }
             else { btn.className = 'btn'; btn.innerHTML = icon('play', { size: 16 }) + ' ابدأ الحصة'; }
         }
 
@@ -402,19 +421,33 @@
             let openedFirst = false;
             list.innerHTML = lessons.map((l) => {
                 const absent = isAbsenceRow(l);
+                const isGroup = !!l.group_session_id;
+                const groupUrl = isGroup && l.group_id ? `group-lesson.html?group_id=${encodeURIComponent(l.group_id)}&session_id=${encodeURIComponent(l.group_session_id)}` : '';
                 const peek = absent ? attendanceInfo(l).label : (l.lesson_content || l.homework || '').split('\n')[0];
                 const num = !absent && total && !ov.legacy ? total - doneSeen : '';
                 if (!absent) doneSeen++;
                 const open = !absent && !openedFirst;
                 if (open) openedFirst = true;
                 return `<details class="lh-item${absent ? ' lh-absent' : ''}" ${open ? 'open' : ''}>
-                    <summary>${num ? `<span class="lh-num">#${num}</span>` : ''}<span class="lh-date">${esc(formatLessonDate(l.lesson_date))}</span>
+                    <summary>${num ? `<span class="lh-num">#${num}</span>` : ''}<span class="lh-date">${esc(formatLessonDate(l.lesson_date))}</span>${isGroup ? `<span class="tag-group">${icon('group', { size: 11 })} ${esc(groupTitle(l.group_name || ''))}</span>` : ''}
                         <span class="lh-peek">${esc(peek)}</span><span class="lh-caret">${icon('chevronDown', { size: 16 })}</span></summary>
                     <div class="lh-body">${lessonDetailsHtml(l, student.subject, icon)}
-                        ${l.id ? `<button type="button" class="lh-del" data-del-lesson="${esc(l.id)}" data-absent="${absent ? '1' : ''}">${icon('trash', { size: 13 })} ${absent ? 'مسح الغياب ده' : 'مسح الحصة دي'}</button>` : ''}</div></details>`;
+                        ${l.id && isGroup ? `<div class="lh-actions">
+                            ${groupUrl ? `<a class="lh-edit" href="${groupUrl}">${icon('edit', { size: 13 })} تعديل حصة المجموعة</a>` : '<span class="muted" style="font-size:0.82rem;">حصة مجموعة (اتمسحت المجموعة)</span>'}
+                        </div>` : ''}
+                        ${l.id && !isGroup ? `<div class="lh-actions">
+                            ${!absent && l.status !== 'in_progress' ? `<a class="lh-edit" href="lesson.html?student_id=${encodeURIComponent(studentId)}&edit_lesson=${encodeURIComponent(l.id)}">${icon('edit', { size: 13 })} تعديل الحصة</a>` : ''}
+                            <button type="button" class="lh-del" data-del-lesson="${esc(l.id)}" data-absent="${absent ? '1' : ''}">${icon('trash', { size: 13 })} ${absent ? 'مسح الغياب ده' : 'مسح الحصة دي'}</button>
+                        </div>` : ''}</div></details>`;
             }).join('');
             // history_total = كل الصفوف (حصص + غياب). لو الخادم مابيبعتهوش: نعرض الزرار طول ما آخر صفحة كانت كاملة
             $('btn-more-lessons').hidden = st.history_total ? lessons.length >= Number(st.history_total) : (lessons.length % PAGE !== 0 || lessons.length === 0);
+        }
+
+        // v25: رجوع من تعديل حصة
+        if (new URLSearchParams(location.search).get('edited') === '1') {
+            ErrorHandler.showSuccess('اتعدّلت الحصة');
+            try { history.replaceState(null, '', location.pathname + '?id=' + encodeURIComponent(studentId) + location.hash); } catch (e) { /* تجاهل */ }
         }
 
         // مسح حصة أو غياب اتسجل بالغلط (save-lesson: action = delete)
@@ -652,6 +685,6 @@
 
         window.openBillingSetup = () => openBillingSetup({ student, view: billView }, billingCtx.onChange);
     </script>
-    <script src="js/pwa-install.js?v=24" defer></script>
+    <script src="js/pwa-install.js?v=27" defer></script>
 </body>
 </html>

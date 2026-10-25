@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-NXC2WZMT');</script>
+    <!-- End Google Tag Manager -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>المجموعة - Teachers Manager</title>
+    <link rel="stylesheet" href="css/style.css?v=27">
+    <link rel="stylesheet" href="css/lessons.css?v=27">
+    <link rel="stylesheet" href="css/groups.css?v=27">
+    <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
+    <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4B3A5A">
+</head>
+<body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NXC2WZMT"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+    <div class="app-shell">
+        <div id="sidebar-root"></div>
+
+        <main class="main-content">
+            <div id="top-header-root"></div>
+
+            <div class="page-body">
+                <div class="loader" id="loader">جاري تحميل المجموعة...</div>
+                <div id="app" hidden>
+                    <div id="archived-bar" class="gp-archived-bar" hidden>
+                        <span>المجموعة دي مؤرشفة: مش بتظهر في الجدول ولا الرئيسية، وحصصها القديمة محفوظة.</span>
+                        <button type="button" class="btn btn-sm btn-outline" id="btn-unarchive">رجّعها</button>
+                    </div>
+
+                    <!-- v27: حصة شغالة دلوقتي -->
+                    <div id="live-bar" class="gp-live-bar" hidden></div>
+
+                    <div class="x-card" id="head-card">
+                        <div class="gp-head">
+                            <div class="group-badge" id="g-badge"></div>
+                            <div style="flex:1; min-width:0;">
+                                <h1 id="g-title"></h1>
+                                <div class="gp-sub" id="g-sub"></div>
+                            </div>
+                        </div>
+                        <div class="gp-actions">
+                            <a class="btn" id="btn-start"></a>
+                            <a class="btn btn-outline" id="btn-session"></a>
+                            <a class="btn btn-outline" id="btn-link" target="_blank" rel="noopener" hidden></a>
+                            <button type="button" class="btn btn-outline" id="btn-share-last" hidden></button>
+                        </div>
+                    </div>
+
+                    <nav class="sp-tabs gp-tabs" role="tablist">
+                        <button type="button" class="sp-tab active" data-tab="members" role="tab">الطلاب <span class="sp-count" id="cnt-members"></span></button>
+                        <button type="button" class="sp-tab" data-tab="sessions" role="tab">الحصص <span class="sp-count" id="cnt-sessions"></span></button>
+                        <button type="button" class="sp-tab" data-tab="billing" role="tab" id="tab-billing" hidden>الاشتراك <span class="sp-count" id="cnt-unpaid"></span></button>
+                        <button type="button" class="sp-tab" data-tab="schedule" role="tab">المواعيد</button>
+                        <button type="button" class="sp-tab" data-tab="settings" role="tab">الإعدادات</button>
+                    </nav>
+
+                    <!-- الطلاب -->
+                    <section class="tab-pane" data-pane="members">
+                        <div class="x-card">
+                            <div class="x-card-title">
+                                <h3><span id="ic-members" class="icon" style="display:inline-flex"></span> طلاب المجموعة</h3>
+                                <button type="button" class="btn btn-sm" id="btn-add-members"><span id="ic-add" class="icon" style="display:inline-flex"></span> إضافة طلاب</button>
+                            </div>
+                            <div id="members-list"></div>
+                            <details class="former-members" id="former-wrap" hidden>
+                                <summary>طلاب سابقين (<span id="former-count"></span>)</summary>
+                                <div id="former-list"></div>
+                            </details>
+                            <p class="muted" style="font-size:0.82rem; margin:0.8rem 0 0;" id="billing-note"></p>
+                        </div>
+                    </section>
+
+                    <!-- الحصص -->
+                    <section class="tab-pane" data-pane="sessions" hidden>
+                        <div class="x-card">
+                            <div class="x-card-title">
+                                <h3><span id="ic-sessions" class="icon" style="display:inline-flex"></span> حصص المجموعة</h3>
+                                <a class="btn btn-sm btn-outline" id="btn-past-session">تسجيل حصة فاتت</a>
+                            </div>
+                            <div id="sessions-list"></div>
+                        </div>
+                    </section>
+
+                    <!-- v27: الاشتراك الشهري -->
+                    <section class="tab-pane" data-pane="billing" hidden>
+                        <div class="x-card">
+                            <div class="gb-head">
+                                <h3 style="margin:0; font-size:1.02rem;"><span id="ic-billing" class="icon" style="display:inline-flex"></span> الاشتراك الشهري</h3>
+                                <div class="gb-month">
+                                    <button type="button" class="icon-btn" id="gb-prev" aria-label="الشهر اللي فات"></button>
+                                    <b id="gb-month-label"></b>
+                                    <button type="button" class="icon-btn" id="gb-next" aria-label="الشهر الجاي"></button>
+                                </div>
+                            </div>
+                            <div id="gb-body"><div class="pick-empty">جاري التحميل...</div></div>
+                        </div>
+                    </section>
+
+                    <!-- المواعيد -->
+                    <section class="tab-pane" data-pane="schedule" hidden>
+                        <div class="x-card">
+                            <div class="x-card-title"><h3><span id="ic-schedule" class="icon" style="display:inline-flex"></span> مواعيد المجموعة</h3></div>
+                            <div id="sched-editor"></div>
+                            <div id="sched-conflicts" class="gl-same-day" hidden style="margin-top:0.8rem;"></div>
+                            <button type="button" class="btn" id="btn-save-schedule" style="margin-top:1rem;">حفظ المواعيد</button>
+                        </div>
+                    </section>
+
+                    <!-- الإعدادات -->
+                    <section class="tab-pane" data-pane="settings" hidden>
+                        <div class="x-card">
+                            <form id="settings-form" class="x-form" novalidate>
+                                <div class="form-group"><label for="s-name">اسم المجموعة *</label><input type="text" id="s-name" maxlength="80" required></div>
+                                <div class="form-group"><label for="s-subject">المادة</label><select id="s-subject"></select></div>
+                                <div class="form-group"><label for="s-link">رابط الحصة</label><input type="url" id="s-link" dir="ltr" placeholder="https://..."></div>
+                                <div class="form-group"><label for="s-color">اللون في الجدول</label><select id="s-color"></select></div>
+                                <div class="form-group"><label for="s-notes">ملاحظات عن المجموعة</label><textarea id="s-notes" maxlength="1000" rows="3" placeholder="مثلًا: المنهج، المكان، مواعيد الامتحانات..."></textarea></div>
+                                <div class="form-group">
+                                    <label>طريقة الحساب</label>
+                                    <div class="bt-seg" role="radiogroup" aria-label="طريقة الحساب">
+                                        <label><input type="radio" name="s-bt" value="per_lesson"> بالحصة <small>كل حصة بتتخصم من باقة/رصيد الطالب زي حصصه العادية</small></label>
+                                        <label><input type="radio" name="s-bt" value="monthly"> اشتراك شهري <small>مبلغ ثابت لكل طالب في الشهر، والحصص مابتتخصمش من رصيده</small></label>
+                                    </div>
+                                    <div class="fee-row" id="s-fee-row" hidden><input type="number" id="s-fee" min="0" max="1000000" step="1" inputmode="decimal" placeholder="مثلًا 300"><span>جنيه لكل طالب في الشهر</span></div>
+                                    <label class="gl-cancel" id="s-billable-row" style="margin-top:0.3rem !important;"><input type="checkbox" id="s-billable"> حصص المجموعة بتتخصم من رصيد كل طالب</label>
+                                </div>
+                                <p class="muted" style="font-size:0.82rem; margin:0.2rem 0 1rem;">التغيير ده بيتطبّق على الحصص الجاية بس. الحصص اللي اتسجلت قبل كده بتفضل زي ما اتحسبت.</p>
+                                <button type="submit" class="btn" id="btn-save-settings">حفظ التغييرات</button>
+                            </form>
+                        </div>
+                        <div class="x-card">
+                            <h3 style="margin:0 0 0.4rem; font-size:1rem;">أرشفة المجموعة</h3>
+                            <p class="muted" style="font-size:0.88rem; margin:0 0 0.8rem;">لو المجموعة خلصت (آخر السنة مثلًا): بتختفي من الجدول والرئيسية والتنبيهات، وكل حصصها بتفضل محفوظة وتقدر ترجّعها.</p>
+                            <button type="button" class="btn btn-outline" id="btn-archive">أرشفة المجموعة</button>
+                        </div>
+                        <div class="x-card" style="border-color: var(--danger-border);">
+                            <h3 style="margin:0 0 0.4rem; font-size:1rem; color:var(--danger);">حذف المجموعة</h3>
+                            <p class="muted" style="font-size:0.88rem; margin:0 0 0.8rem;">المجموعة ومواعيدها وسجل حصصها بيتمسحوا. حضور كل طالب بيفضل في ملفه كحصة عادية.</p>
+                            <button type="button" class="btn btn-danger" id="btn-delete">حذف المجموعة</button>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- إضافة طلاب -->
+    <div class="modal" id="add-modal">
+        <div class="modal-content" style="max-width:520px;">
+            <span class="close-modal" data-close="add-modal">&times;</span>
+            <h2>إضافة طلاب للمجموعة</h2>
+            <div id="add-picker"></div>
+            <div style="display:flex; gap:0.75rem; margin-top:1rem;">
+                <button type="button" class="btn" id="btn-add-confirm">إضافة</button>
+                <button type="button" class="btn btn-outline close-modal" data-close="add-modal">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- v27: تسجيل دفعة اشتراك -->
+    <div class="modal" id="pay-modal">
+        <div class="modal-content" style="max-width:420px;">
+            <span class="close-modal" data-close="pay-modal">&times;</span>
+            <h2 id="pay-title">تسجيل دفع</h2>
+            <p class="muted" id="pay-sub" style="margin:-0.4rem 0 1rem; font-size:0.88rem;"></p>
+            <div class="form-group"><label for="pay-amount">المبلغ (جنيه)</label><input type="number" id="pay-amount" min="1" step="1" inputmode="decimal"></div>
+            <div class="form-group"><label for="pay-note">ملاحظة (اختياري)</label><input type="text" id="pay-note" maxlength="300" placeholder="مثلًا: كاش / فودافون كاش"></div>
+            <div style="display:flex; gap:0.75rem; margin-top:0.5rem;">
+                <button type="button" class="btn" id="btn-pay-confirm">سجّل الدفع</button>
+                <button type="button" class="btn btn-outline close-modal" data-close="pay-modal">إلغاء</button>
+            </div>
+        </div>
+    </div>
+    <!-- v27: مبلغ خاص لطالب -->
+    <div class="modal" id="fee-modal">
+        <div class="modal-content" style="max-width:420px;">
+            <span class="close-modal" data-close="fee-modal">&times;</span>
+            <h2 id="fee-title">مبلغ خاص</h2>
+            <p class="muted" style="margin:-0.4rem 0 1rem; font-size:0.88rem;">لو الطالب ليه خصم (أخوات مثلًا) أو معفي. اكتب 0 لو معفي.</p>
+            <div class="form-group"><label for="fee-amount">المبلغ الشهري (جنيه)</label><input type="number" id="fee-amount" min="0" step="1" inputmode="decimal"></div>
+            <div style="display:flex; gap:0.75rem; margin-top:0.5rem; flex-wrap:wrap;">
+                <button type="button" class="btn" id="btn-fee-save">حفظ</button>
+                <button type="button" class="btn btn-outline" id="btn-fee-reset">رجّعه لمبلغ المجموعة</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="error-toast" style="display:none;"></div>
+    <div id="success-toast" style="display:none;"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+    <script type="module" src="js/config.js?v=27"></script>
+    <script type="module">
+        import { Auth } from './js/auth.js?v=27';
+        import { api } from './js/api.js?v=27';
+        import { ErrorHandler, Formatters, askChoice } from './js/utils.js?v=27';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=27';
+        import { icon } from './js/icons.js?v=27';
+        import { subjectLabel, formatLessonDate } from './js/lesson-utils.js?v=27';
+        import { computeBilling, billingBadge, whatsappUrl } from './js/billing.js?v=27';
+        import { parseDate, formatClock12, timeToMinutes, lessonItem, findConflicts } from './js/calendar-utils.js?v=27';
+        import { groupTitle, groupColorClass, membersText, scheduleSummary, subjectOptionsHtml, mountScheduleEditor, mountStudentPicker, quickCreateStudent, sessionShareText, GROUP_COLORS, GROUP_COLOR_LABELS, saveWithConflictCheck, todayScheduleTime, monthLabel, shiftMonth, currentMonthKey } from './js/groups-utils.js?v=27';
+        import { money } from './js/billing.js?v=27';
+
+        const $ = (id) => document.getElementById(id);
+        const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
+        const params = new URLSearchParams(location.search);
+        const groupId = params.get('id');
+
+        renderSidebar('groups');
+        renderTopHeader({ title: 'المجموعة', subtitle: 'الطلاب والحصص والمواعيد' });
+        $('ic-members').innerHTML = icon('users', { size: 17 });
+        $('ic-add').innerHTML = icon('plus', { size: 15 });
+        $('ic-sessions').innerHTML = icon('clipboardList', { size: 17 });
+        $('ic-schedule').innerHTML = icon('calendar', { size: 17 });
+        $('ic-billing').innerHTML = icon('creditCard', { size: 17 });
+        $('gb-prev').innerHTML = icon('chevronRight', { size: 18 });
+        $('gb-next').innerHTML = icon('chevronLeft', { size: 18 });
+
+        let detail = null;
+        let currentTab = 'members';
+        let billingById = new Map();
+        let schedEditor = null;
+        let addPicker = null;
+
+        (async () => {
+            const authInfo = await Auth.requireAuth();
+            if (!authInfo) return;
+            if (!groupId) { location.href = 'groups.html'; return; }
+            await load();
+            if (params.get('created') === '1') {
+                ErrorHandler.showSuccess('اتعملت المجموعة');
+                try { history.replaceState(null, '', `group.html?id=${encodeURIComponent(groupId)}`); } catch (e) { /* تجاهل */ }
+            }
+            const tab = (location.hash || '').replace('#', '');
+            if (['members', 'sessions', 'schedule', 'settings', 'billing'].includes(tab)) showTab(tab);
+        })();
+
+        async function load() {
+            try {
+                const [d, due] = await Promise.all([
+                    api.getGroup(groupId),
+                    api.getBillingDue().catch(() => null)
+                ]);
+                if (!d) throw new Error('المجموعة دي مش موجودة');
+                detail = d;
+                billingById = new Map(((due && due.students) || []).map((s) => [String(s.id), computeBilling(s.billing)]));
+                render();
+                $('loader').style.display = 'none';
+                $('app').hidden = false;
+            } catch (error) {
+                $('loader').innerHTML = `${esc(ErrorHandler.getErrorMessage(error))} <button type="button" class="btn btn-sm" id="retry">حاول تاني</button> <a class="btn btn-sm btn-outline" href="groups.html">كل المجموعات</a>`;
+                const r = $('retry');
+                if (r) r.addEventListener('click', () => { $('loader').textContent = 'جاري تحميل المجموعة...'; load(); });
+            }
+        }
+
+        const activeMembers = () => detail.members.filter((m) => !m.left_at);
+        const formerMembers = () => detail.members.filter((m) => m.left_at);
+
+        function render() {
+            const g = detail.group;
+            const archived = g.status === 'archived';
+            document.title = `${groupTitle(g.name)} - Teachers Manager`;
+            $('head-card').className = `x-card ${groupColorClass(g.color)}`;
+            $('g-badge').innerHTML = icon('group', { size: 26 });
+            $('g-title').textContent = groupTitle(g.name);
+            $('g-sub').innerHTML = [
+                `<span>${icon('users', { size: 14 })} ${esc(membersText(activeMembers().length))}</span>`,
+                g.subject ? `<span>${icon('bookOpen', { size: 14 })} ${esc(subjectLabel(g.subject))}</span>` : '',
+                `<span>${icon('calendar', { size: 14 })} ${esc(scheduleSummary(detail.schedules))}</span>`,
+                g.billing_type === 'monthly'
+                    ? `<span>${icon('creditCard', { size: 14 })} اشتراك ${esc(money(Number(g.monthly_fee) || 0))} ج/شهر</span>`
+                    : (g.billable ? '' : `<span>${icon('creditCard', { size: 14 })} مش بتتحسب في الفلوس</span>`)
+            ].filter(Boolean).join('');
+            $('archived-bar').hidden = !archived;
+
+            // v27: "ابدأ الحصة" (عدّاد + مساعد) أو "سجّل حصة" بعد ما تخلص
+            const live = detail.live;
+            const lb = $('live-bar');
+            lb.hidden = !live;
+            if (live) {
+                const since = new Date(live.started_at).toLocaleTimeString('ar-EG-u-nu-latn', { hour: 'numeric', minute: '2-digit' });
+                lb.innerHTML = `<span>● فيه حصة شغالة للمجموعة دي من ${esc(since)}</span>
+                    <a class="btn btn-sm" href="group-lesson.html?group_id=${encodeURIComponent(groupId)}&session_id=${encodeURIComponent(live.id)}">${icon('play', { size: 14 })} كمّل الحصة</a>`;
+            }
+            const noMembers = !activeMembers().length;
+            const start = $('btn-start');
+            const t = todayScheduleTime(detail.schedules);
+            start.innerHTML = live ? `${icon('play', { size: 18 })} كمّل الحصة الشغالة` : `${icon('play', { size: 18 })} ابدأ الحصة`;
+            start.href = live
+                ? `group-lesson.html?group_id=${encodeURIComponent(groupId)}&session_id=${encodeURIComponent(live.id)}`
+                : `group-lesson.html?group_id=${encodeURIComponent(groupId)}&start=1${t ? `&time=${encodeURIComponent(t)}` : ''}`;
+            const sb = $('btn-session');
+            sb.innerHTML = `${icon('checkCircle', { size: 18 })} سجّل حصة خلصت`;
+            sb.href = `group-lesson.html?group_id=${encodeURIComponent(groupId)}${t ? `&time=${encodeURIComponent(t)}` : ''}`;
+            [start, sb].forEach((b) => {
+                b.style.display = archived ? 'none' : '';
+                if (noMembers) { b.setAttribute('aria-disabled', 'true'); b.style.opacity = '.6'; b.style.pointerEvents = 'none'; }
+                else { b.removeAttribute('aria-disabled'); b.style.opacity = ''; b.style.pointerEvents = ''; }
+            });
+            sb.hidden = !!live;
+            $('btn-link').hidden = !g.lesson_link;
+            if (g.lesson_link) { $('btn-link').href = g.lesson_link; $('btn-link').innerHTML = `${icon('link', { size: 16 })} رابط الحصة`; }
+            const last = (detail.sessions || []).find((s) => s.status === 'completed');
+            const share = $('btn-share-last');
+            share.hidden = !last;
+            if (last) {
+                share.innerHTML = `${icon('messageCircle', { size: 16 })} ابعت آخر حصة`;
+                share.onclick = () => window.open(whatsappUrl('', sessionShareText(g.name, last)), '_blank', 'noopener');
+            }
+            const monthly = g.billing_type === 'monthly';
+            $('tab-billing').hidden = !monthly;
+            const unpaid = monthly ? activeMembers().filter((m) => memberFee(m) > 0 && Number(m.paid_this_month || 0) < memberFee(m)).length : 0;
+            $('cnt-unpaid').textContent = unpaid || '';
+            renderMembers();
+            renderSessions();
+            renderSchedule();
+            renderSettings();
+            if (monthly && currentTab === 'billing') loadBilling();
+        }
+        const memberFee = (m) => (m.monthly_fee != null ? Number(m.monthly_fee) : Number(detail.group.monthly_fee) || 0);
+
+        function billingChip(studentId) {
+            // v27: المجموعة باشتراك شهري: الحالة من الاشتراك مش من رصيد الطالب
+            if (detail.group.billing_type === 'monthly') {
+                const m = detail.members.find((x) => String(x.student_id) === String(studentId));
+                if (!m) return '';
+                const fee = memberFee(m);
+                const paid = Number(m.paid_this_month || 0);
+                if (fee <= 0) return `<span class="bill-chip sub">معفي</span>`;
+                if (paid >= fee) return `<span class="bill-chip ok">${icon('check', { size: 11 })} دفع الشهر ده</span>`;
+                return `<span class="bill-chip due">${icon('creditCard', { size: 11 })} ${paid > 0 ? `باقي ${esc(money(fee - paid))} ج` : 'لسه مادفعش الشهر ده'}</span>`;
+            }
+            const view = billingById.get(String(studentId));
+            const b = billingBadge(view);
+            return b ? `<span class="bill-chip ${b.status}">${icon('creditCard', { size: 11 })} ${esc(b.text)}</span>` : '';
+        }
+
+        function memberRow(m, former = false) {
+            const initial = (m.name || '؟').trim().charAt(0);
+            const stats = [`حضر ${m.present}`, m.absent ? `غاب ${m.absent}` : ''].filter(Boolean).join(' · ');
+            return `<div class="member-row">
+                <div class="member-avatar">${esc(initial)}</div>
+                <div class="member-main">
+                    <a href="student.html?id=${encodeURIComponent(m.student_id)}">${esc(m.name)}</a>
+                    <div class="member-stats"><span>${esc(stats)}</span>${former ? `<span>خرج ${esc(formatLessonDate(m.left_at))}</span>` : billingChip(m.student_id)}</div>
+                </div>
+                <div class="member-actions">
+                    ${m.phone && !former ? `<a class="icon-btn" href="${esc(whatsappUrl(m.phone, ''))}" target="_blank" rel="noopener" title="واتساب" aria-label="واتساب ${esc(m.name)}">${icon('messageCircle', { size: 17 })}</a>` : ''}
+                    ${former
+                        ? `<button type="button" class="btn btn-sm btn-outline" data-rejoin="${esc(m.student_id)}">رجّعه</button>`
+                        : `<button type="button" class="icon-btn danger" data-remove="${esc(m.student_id)}" data-name="${esc(m.name)}" title="شيله من المجموعة" aria-label="شيل ${esc(m.name)} من المجموعة">${icon('userX', { size: 17 })}</button>`}
+                </div>
+            </div>`;
+        }
+
+        function renderMembers() {
+            const act = activeMembers();
+            const old = formerMembers();
+            $('cnt-members').textContent = act.length;
+            $('members-list').innerHTML = act.length
+                ? act.map((m) => memberRow(m)).join('')
+                : '<div class="x-empty">لسه مفيش طلاب في المجموعة. اضغط "إضافة طلاب".</div>';
+            $('former-wrap').hidden = !old.length;
+            $('former-count').textContent = old.length;
+            $('former-list').innerHTML = old.map((m) => memberRow(m, true)).join('');
+            $('billing-note').textContent = detail.group.billing_type === 'monthly'
+                ? `اشتراك شهري: ${money(Number(detail.group.monthly_fee) || 0)} جنيه لكل طالب. تابع مين دفع من تاب "الاشتراك".`
+                : (detail.group.billable
+                    ? 'الدفع بيتحسب لكل طالب من ملفه: حصة المجموعة بتتخصم من رصيده زي حصته العادية.'
+                    : 'حصص المجموعة دي مش بتتخصم من رصيد الطلاب (الحضور بس اللي بيتسجل).');
+        }
+
+        $('members-list').addEventListener('click', onMemberAction);
+        $('former-list').addEventListener('click', onMemberAction);
+        async function onMemberAction(e) {
+            const rm = e.target.closest('[data-remove]');
+            const rj = e.target.closest('[data-rejoin]');
+            if (rm) {
+                const ok = await askChoice({
+                    title: `شيل ${rm.dataset.name} من المجموعة؟`,
+                    message: 'حضوره في الحصص اللي فاتت بيفضل محفوظ، ومش هيظهر في الحصص الجاية.',
+                    choices: [{ label: 'شيله من المجموعة', value: 'yes', danger: true }]
+                });
+                if (!ok) return;
+                try { await api.setGroupMembers(groupId, [], [rm.dataset.remove]); ErrorHandler.showSuccess('اتشال من المجموعة'); await load(); }
+                catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
+            } else if (rj) {
+                try { await api.setGroupMembers(groupId, [rj.dataset.rejoin], []); ErrorHandler.showSuccess('رجع للمجموعة'); await load(); }
+                catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
+            }
+        }
+
+        $('btn-add-members').addEventListener('click', async () => {
+            $('add-picker').innerHTML = '<div class="pick-empty">جاري تحميل الطلاب...</div>';
+            $('add-modal').classList.add('active');
+            let students = [];
+            try { students = ((await api.getAllStudents()).students) || []; } catch (e) { /* تجاهل */ }
+            addPicker = mountStudentPicker($('add-picker'), {
+                students,
+                excludeIds: activeMembers().map((m) => m.student_id),
+                onCreateStudent: (name) => quickCreateStudent(api, name, detail.group.subject)
+            });
+        });
+        $('btn-add-confirm').addEventListener('click', async () => {
+            const ids = addPicker ? addPicker.getSelected() : [];
+            if (!ids.length) { ErrorHandler.showError('اختار طالب واحد على الأقل'); return; }
+            const b = $('btn-add-confirm');
+            b.disabled = true;
+            try {
+                await api.setGroupMembers(groupId, ids, []);
+                $('add-modal').classList.remove('active');
+                ErrorHandler.showSuccess(ids.length === 1 ? 'اتضاف طالب للمجموعة' : `اتضاف ${membersText(ids.length)}`);
+                await load();
+            } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
+            finally { b.disabled = false; }
+        });
+
+        // ------------------------------------------------------------ الحصص
+        function renderSessions() {
+            const list = detail.sessions || [];
+            $('cnt-sessions').textContent = detail.sessions_total || list.length || '';
+            $('btn-past-session').href = `group-lesson.html?group_id=${encodeURIComponent(groupId)}&past=1`;
+            $('btn-past-session').style.display = detail.group.status === 'archived' ? 'none' : '';
+            $('sessions-list').innerHTML = list.length ? list.map((s) => {
+                const d = parseDate(s.session_date);
+                const day = d ? d.getDate() : '';
+                const mon = d ? d.toLocaleDateString('ar-EG-u-nu-latn', { month: 'short', weekday: 'short' }) : '';
+                const counts = s.status === 'in_progress'
+                    ? '<span class="cnt live">● شغالة دلوقتي</span>'
+                    : s.status === 'cancelled'
+                    ? '<span class="cnt c">الحصة اتلغت</span>'
+                    : `<span class="cnt p">حضر ${s.present_count}</span>${s.absent_count ? `<span class="cnt a">غاب ${s.absent_count}</span>` : ''}`;
+                return `<a class="session-row" href="group-lesson.html?group_id=${encodeURIComponent(groupId)}&session_id=${encodeURIComponent(s.id)}">
+                    <div class="session-date"><b>${day}</b><small>${esc(mon)}</small></div>
+                    <div class="session-main">
+                        <p>${esc(s.lesson_content || (s.status === 'cancelled' ? 'اتلغت' : s.status === 'in_progress' ? 'الحصة لسه شغالة: اضغط تكمّلها' : 'من غير محتوى مكتوب'))}</p>
+                        <div class="session-counts">${counts}${s.start_time ? `<span class="cnt c">${esc(formatClock12(timeToMinutes(s.start_time)))}</span>` : ''}</div>
+                    </div>
+                    ${icon('chevronLeft', { size: 18 })}
+                </a>`;
+            }).join('') : '<div class="x-empty">لسه مفيش حصص متسجلة للمجموعة دي.</div>';
+            if ((detail.sessions_total || 0) > list.length) {
+                $('sessions-list').insertAdjacentHTML('beforeend', `<p class="muted" style="font-size:0.85rem; text-align:center;">بيظهر آخر ${list.length} حصة. الحصص الأقدم موجودة في ملف كل طالب.</p>`);
+            }
+        }
+
+        // ------------------------------------------------------------ المواعيد
+        function renderSchedule() {
+            schedEditor = mountScheduleEditor($('sched-editor'), detail.schedules || []);
+            if (schedEditor.isEmpty()) schedEditor.addDefault();
+            $('sched-conflicts').hidden = true;
+        }
+        $('btn-save-schedule').addEventListener('click', async () => {
+            let schedules;
+            try { schedules = schedEditor.get(); } catch (err) { ErrorHandler.showError(err.message); return; }
+            const b = $('btn-save-schedule');
+            b.disabled = true;
+            try {
+                // v27: الخادم بيفحص التعارض مع حصص الطلاب والمجموعات التانية، ولو فيه بيسأل "تحفظ برضه؟"
+                const res = await saveWithConflictCheck((force) => api.setGroupSchedules(groupId, schedules, force));
+                if (!res) return;
+                try { window.dispatchEvent(new CustomEvent('tm:schedules-changed')); } catch (e) { /* تجاهل */ }
+                ErrorHandler.showSuccess(schedules.length ? 'اتحفظت المواعيد' : 'اتشالت كل المواعيد');
+                await load();
+                showTab('schedule');
+            } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
+            finally { b.disabled = false; }
+        });
+
+        // ------------------------------------------------------------ الإعدادات
+        function syncBillingInputs() {
+            const monthly = (document.querySelector('input[name="s-bt"]:checked') || {}).value === 'monthly';
+            $('s-fee-row').hidden = !monthly;
+            $('s-billable-row').hidden = monthly;
+        }
+        document.querySelectorAll('input[name="s-bt"]').forEach((r) => r.addEventListener('change', syncBillingInputs));
+        function renderSettings() {
+            const g = detail.group;
+            $('s-name').value = g.name || '';
+            $('s-subject').innerHTML = subjectOptionsHtml(g.subject || '');
+            $('s-link').value = g.lesson_link || '';
+            $('s-notes').value = g.notes || '';
+            $('s-billable').checked = g.billable !== false;
+            const bt = g.billing_type === 'monthly' ? 'monthly' : 'per_lesson';
+            document.querySelectorAll('input[name="s-bt"]').forEach((r) => { r.checked = r.value === bt; });
+            $('s-fee').value = g.monthly_fee != null ? Number(g.monthly_fee) : '';
+            syncBillingInputs();
+            $('s-color').innerHTML = GROUP_COLORS.map((c) => `<option value="${c}" ${c === g.color ? 'selected' : ''}>${GROUP_COLOR_LABELS[c]}</option>`).join('');
+            $('btn-archive').textContent = g.status === 'archived' ? 'رجّع المجموعة' : 'أرشفة المجموعة';
+        }
+        $('settings-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = $('s-name').value.trim();
+            if (!name) { ErrorHandler.showError('اكتب اسم المجموعة'); return; }
+            const link = $('s-link').value.trim();
+            if (link && !/^https?:\/\//i.test(link)) { ErrorHandler.showError('رابط الحصة لازم يبدأ بـ https://'); return; }
+            const billingType = (document.querySelector('input[name="s-bt"]:checked') || {}).value === 'monthly' ? 'monthly' : 'per_lesson';
+            const fee = $('s-fee').value === '' ? null : Number($('s-fee').value);
+            if (billingType === 'monthly' && !(fee > 0)) { ErrorHandler.showError('اكتب مبلغ الاشتراك الشهري للطالب'); $('s-fee').focus(); return; }
+            const b = $('btn-save-settings');
+            b.disabled = true;
+            try {
+                await api.saveGroup({
+                    group_id: groupId, name, subject: $('s-subject').value, lesson_link: link, notes: $('s-notes').value.trim(), color: $('s-color').value,
+                    billable: $('s-billable').checked, billing_type: billingType, monthly_fee: billingType === 'monthly' ? fee : undefined
+                });
+                ErrorHandler.showSuccess('اتحفظت التغييرات');
+                await load();
+                showTab('settings');
+            } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
+            finally { b.disabled = false; }
+        });
+        async function setArchived(archived) {
+            try {
+                await api.archiveGroup(groupId, archived);
+                try { window.dispatchEvent(new CustomEvent('tm:schedules-changed')); } catch (e) { /* تجاهل */ }
+                ErrorHandler.showSuccess(archived ? 'اتأرشفت المجموعة' : 'رجعت المجموعة');
+                await load();
+            } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
+        }
+        $('btn-archive').addEventListener('click', () => setArchived(detail.group.status !== 'archived'));
+        $('btn-unarchive').addEventListener('click', () => setArchived(false));
+        $('btn-delete').addEventListener('click', async () => {
+            const pick = await askChoice({
+                title: `حذف ${groupTitle(detail.group.name)}؟`,
+                message: 'المجموعة ومواعيدها وسجل حصصها هيتمسحوا نهائيًا. حضور كل طالب هيفضل في ملفه. لو المجموعة خلصت بس، الأرشفة أحسن.',
+                choices: [{ label: 'أرشفة بدل الحذف', value: 'archive' }, { label: 'احذف نهائيًا', value: 'delete', danger: true }]
+            });
+            if (pick === 'archive') return setArchived(true);
+            if (pick !== 'delete') return;
+            try {
+                await api.deleteGroup(groupId);
+                try { window.dispatchEvent(new CustomEvent('tm:schedules-changed')); } catch (e) { /* تجاهل */ }
+                location.href = 'groups.html';
+            } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
+        });
+
+        // ------------------------------------------------------------ v27: الاشتراك الشهري
+        let billMonth = currentMonthKey();
+        let billData = null;
+        let payTarget = null;
+        let feeTarget = null;
+        async function loadBilling() {
+            $('gb-month-label').textContent = monthLabel(billMonth);
+            $('gb-next').disabled = billMonth >= currentMonthKey();
+            try {
+                billData = await api.getGroupBilling(groupId, billMonth);
+                renderBilling();
+            } catch (err) {
+                $('gb-body').innerHTML = `<div class="x-empty">${esc(ErrorHandler.getErrorMessage(err))}</div>`;
+            }
+        }
+        const STATUS_TXT = { paid: 'دفع', partial: 'دفع جزء', due: 'لسه مادفعش', free: 'معفي' };
+        function renderBilling() {
+            const d = billData;
+            if (!d) return;
+            const t = d.totals || {};
+            const rows = d.members || [];
+            $('gb-body').innerHTML = `
+                <div class="gb-totals">
+                    <div><b>${esc(money(Number(t.collected) || 0))}</b><small>اتحصّل (جنيه)</small></div>
+                    <div><b>${esc(money(Math.max(0, (Number(t.expected) || 0) - (Number(t.collected) || 0))))}</b><small>باقي (جنيه)</small></div>
+                    <div><b>${Number(t.unpaid) || 0}</b><small>لسه مادفعوش</small></div>
+                </div>
+                ${rows.length ? rows.map((m) => `
+                    <div class="gb-row" data-sid="${esc(m.student_id)}">
+                        <div class="member-avatar">${esc((m.name || '؟').trim().charAt(0))}</div>
+                        <div class="member-main">
+                            <a href="student.html?id=${encodeURIComponent(m.student_id)}">${esc(m.name)}</a>
+                            <div class="member-stats">
+                                <span class="gb-status ${esc(m.status)}">${STATUS_TXT[m.status] || ''}</span>
+                                <span>${m.status === 'free' ? 'من غير اشتراك' : `${esc(money(Number(m.paid) || 0))} من ${esc(money(Number(m.due) || 0))} ج`}${m.custom_fee != null ? ' · مبلغ خاص' : ''}</span>
+                                <span>حضر ${Number(m.attended) || 0} الشهر ده</span>
+                                ${m.left_at ? '<span>خرج من المجموعة</span>' : ''}
+                            </div>
+                        </div>
+                        <div class="gb-actions">
+                            ${m.status === 'due' || m.status === 'partial' ? `<button type="button" class="btn btn-sm" data-pay>${icon('plus', { size: 14 })} سجّل دفع</button>` : ''}
+                            ${(m.status === 'due' || m.status === 'partial') && m.phone ? `<a class="icon-btn" data-remind href="#" title="رسالة تذكير" aria-label="رسالة تذكير لـ ${esc(m.name)}">${icon('messageCircle', { size: 17 })}</a>` : ''}
+                            <button type="button" class="icon-btn" data-fee title="مبلغ خاص" aria-label="مبلغ خاص لـ ${esc(m.name)}">${icon('edit', { size: 16 })}</button>
+                        </div>
+                        ${(m.payments || []).length ? `<div class="gb-pays">${m.payments.map((p) => `<span>${esc(money(Number(p.amount)))} ج · ${esc(new Date(p.paid_at).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short' }))}${p.note ? ` · ${esc(p.note)}` : ''}
+                            <button type="button" data-unpay="${esc(p.id)}" title="امسح الدفعة دي" aria-label="امسح الدفعة دي">×</button></span>`).join('')}</div>` : ''}
+                    </div>`).join('') : '<div class="x-empty">مفيش طلاب في المجموعة في الشهر ده.</div>'}
+                ${(d.months || []).length ? `<div class="gb-months">${d.months.map((x) => `<div><b>${esc(money(Number(x.collected) || 0))}</b>${esc(monthLabel(x.month, true))}</div>`).join('')}</div>` : ''}
+                <p class="muted" style="font-size:0.82rem; margin:0.8rem 0 0;">الاشتراك ${esc(money(Number((d.group || {}).monthly_fee) || 0))} جنيه لكل طالب في الشهر. الفلوس اللي بتتسجل هنا بتدخل في "فلوس الشهر" في الرئيسية.</p>`;
+        }
+        $('gb-prev').addEventListener('click', () => { billMonth = shiftMonth(billMonth, -1); loadBilling(); });
+        $('gb-next').addEventListener('click', () => { if (billMonth < currentMonthKey()) { billMonth = shiftMonth(billMonth, 1); loadBilling(); } });
+        $('gb-body').addEventListener('click', async (e) => {
+            const row = e.target.closest('.gb-row');
+            const m = row && (billData.members || []).find((x) => String(x.student_id) === row.dataset.sid);
+            if (e.target.closest('[data-pay]') && m) {
+                payTarget = m;
+                $('pay-title').textContent = `دفع ${m.name}`;
+                $('pay-sub').textContent = `اشتراك ${monthLabel(billMonth)} · باقي عليه ${money(Number(m.remaining) || 0)} جنيه`;
+                $('pay-amount').value = Number(m.remaining) || '';
+                $('pay-note').value = '';
+                $('pay-modal').classList.add('active');
+                setTimeout(() => $('pay-amount').select(), 60);
+            } else if (e.target.closest('[data-fee]') && m) {
+                feeTarget = m;
+                $('fee-title').textContent = `مبلغ خاص لـ ${m.name}`;
+                $('fee-amount').value = m.custom_fee != null ? Number(m.custom_fee) : '';
+                $('fee-modal').classList.add('active');
+            } else if (e.target.closest('[data-remind]') && m) {
+                e.preventDefault();
+                const txt = `السلام عليكم، ده تذكير باشتراك ${groupTitle(detail.group.name)} لشهر ${monthLabel(billMonth)}: ${money(Number(m.remaining) || 0)} جنيه. شكرًا 🌸`;
+                window.open(whatsappUrl(m.phone, txt), '_blank', 'noopener');
+            } else if (e.target.closest('[data-unpay]')) {
+                const ok = await askChoice({ title: 'تمسح الدفعة دي؟', message: 'لو اتسجلت بالغلط بس. المبلغ هيتشال من فلوس الشهر.', choices: [{ label: 'امسحها', value: 'yes', danger: true }] });
+                if (!ok) return;
+                try { await api.removeGroupPayment(groupId, e.target.closest('[data-unpay]').dataset.unpay); ErrorHandler.showSuccess('اتمسحت الدفعة'); await afterBillingChange(); }
+                catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
+            }
+        });
+        async function afterBillingChange() {
+            await loadBilling();
+            try { const d2 = await api.getGroup(groupId); if (d2) { detail = d2; const keep = currentTab; render(); showTab(keep); } } catch (e) { /* تجاهل */ }
+        }
+        $('btn-pay-confirm').addEventListener('click', async () => {
+            if (!payTarget) return;
+            const amount = Number($('pay-amount').value);
+            if (!(amount > 0)) { ErrorHandler.showError('اكتب المبلغ'); return; }
+            const b = $('btn-pay-confirm');
+            b.disabled = true;
+            try {
+                await api.payGroupFee(groupId, payTarget.student_id, billMonth, amount, $('pay-note').value.trim());
+                $('pay-modal').classList.remove('active');
+                ErrorHandler.showSuccess(`اتسجل ${money(amount)} جنيه لـ ${payTarget.name}`);
+                try { window.tmTrack && window.tmTrack('group_fee_paid', {}); } catch (er) { /* تجاهل */ }
+                await afterBillingChange();
+            } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
+            finally { b.disabled = false; }
+        });
+        async function saveFee(value) {
+            if (!feeTarget) return;
+            try {
+                await api.setGroupMemberFee(groupId, feeTarget.student_id, value);
+                $('fee-modal').classList.remove('active');
+                ErrorHandler.showSuccess(value == null ? 'رجع لمبلغ المجموعة' : 'اتحفظ المبلغ الخاص');
+                await afterBillingChange();
+            } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
+        }
+        $('btn-fee-save').addEventListener('click', () => {
+            const v = $('fee-amount').value;
+            if (v === '' || !(Number(v) >= 0)) { ErrorHandler.showError('اكتب المبلغ (0 لو معفي)'); return; }
+            saveFee(Number(v));
+        });
+        $('btn-fee-reset').addEventListener('click', () => saveFee(null));
+
+        // ------------------------------------------------------------ التابات
+        function showTab(name) {
+            if (name === 'billing' && $('tab-billing').hidden) name = 'members';
+            currentTab = name;
+            document.querySelectorAll('.sp-tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
+            document.querySelectorAll('.tab-pane').forEach((p) => { p.hidden = p.dataset.pane !== name; });
+            if (name === 'billing') loadBilling();
+        }
+        document.querySelectorAll('.sp-tab').forEach((t) => t.addEventListener('click', () => {
+            showTab(t.dataset.tab);
+            try { history.replaceState(null, '', `#${t.dataset.tab}`); } catch (e) { /* تجاهل */ }
+        }));
+        document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => $(b.dataset.close).classList.remove('active')));
+    </script>
+    <script src="js/pwa-install.js?v=27" defer></script>
+</body>
+</html>

@@ -6,10 +6,10 @@
  * (أبطأ شوية لأنها طلب لكل طالب، فبتشتغل لما المدرس يضغط بس).
  */
 
-import { api } from './api.js?v=24';
-import { Formatters, ErrorHandler } from './utils.js?v=24';
-import { icon } from './icons.js?v=24';
-import { lessonsText, money } from './billing.js?v=24';
+import { api } from './api.js?v=27';
+import { Formatters, ErrorHandler } from './utils.js?v=27';
+import { icon } from './icons.js?v=27';
+import { lessonsText, money } from './billing.js?v=27';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 const CACHE_KEY = 'tm_income_cache_v1';
@@ -22,7 +22,7 @@ export function monthKey(offset = 0, now = new Date()) {
 }
 export function monthLabel(key) {
     const [y, m] = key.split('-').map(Number);
-    try { return new Date(y, m - 1, 1).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' }); }
+    try { return new Date(y, m - 1, 1).toLocaleDateString('ar-EG-u-nu-latn', { month: 'long', year: 'numeric' }); }
     catch (e) { return key; }
 }
 function studentsWord(n) {

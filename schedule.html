@@ -11,8 +11,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>جدولي - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=24">
-    <link rel="stylesheet" href="css/lessons.css?v=24">
+    <link rel="stylesheet" href="css/style.css?v=27">
+    <link rel="stylesheet" href="css/lessons.css?v=27">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -39,7 +39,7 @@
         .wk-label { font-weight: 700; color: var(--text-primary); min-width: 9.5rem; text-align: center; font-size: 0.95rem; }
         .today-btn { border: 1px solid var(--border); background: var(--card-bg); color: var(--primary); border-radius: 10px; padding: 0 0.85rem; height: 38px; font: inherit; font-weight: 600; cursor: pointer; }
         .seg { display: inline-flex; background: var(--bg-secondary); border-radius: 12px; padding: 3px; gap: 2px; }
-        .seg button { border: 0; background: transparent; border-radius: 9px; padding: 0.45rem 0.95rem; font: inherit; font-size: 0.88rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
+        .seg button { border: 0; background: transparent; border-radius: 9px; padding: 0.45rem 0.95rem; font: inherit; font-size: 0.88rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; min-height: 40px; }
         .seg button.active { background: var(--card-bg); color: var(--primary); box-shadow: 0 1px 3px rgba(41,37,45,0.12); }
 
         .cal-legend { display: flex; gap: 0.9rem; flex-wrap: wrap; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem; }
@@ -68,7 +68,7 @@
         .ds-dots .d-l { background: var(--lesson-border); }
         .ds-dots .d-e { background: #C59A4A; }
         .day-strip button.is-today { border-color: var(--secondary); }
-        .day-strip button.is-today .ds-name { color: var(--secondary); font-weight: 700; }
+        .day-strip button.is-today .ds-name { color: var(--secondary-strong); font-weight: 700; }
         .day-strip button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
         .day-strip button.active .ds-name { color: rgba(255,255,255,0.85); }
         .day-strip button.active .d-l { background: #fff; }
@@ -111,7 +111,7 @@
         .wk-dayhead { display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border-inline-start: 1px solid var(--border); }
         .wk-dayhead b { font-size: 0.85rem; color: var(--text-primary); }
         .wk-dayhead small { font-size: 0.74rem; color: var(--text-secondary); }
-        .wk-dayhead.is-today b { color: #fff; background: var(--secondary); border-radius: 999px; padding: 0 0.55rem; }
+        .wk-dayhead.is-today b { color: #fff; background: var(--secondary-strong); border-radius: 999px; padding: 0 0.55rem; }
         .wk-timecol { position: sticky; inset-inline-start: 0; z-index: 15; background: var(--card-bg); border-inline-end: 1px solid var(--border); }
         .wk-hour { position: absolute; inset-inline: 0; font-size: 0.7rem; color: var(--text-secondary); text-align: center; transform: translateY(-50%); white-space: nowrap; }
         .wk-col { position: relative; border-inline-start: 1px solid var(--border); cursor: copy; }
@@ -340,19 +340,20 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=24"></script>
+    <script type="module" src="js/config.js?v=27"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=24';
-        import { api } from './js/api.js?v=24';
-        import { ErrorHandler, Formatters, uuidv4 } from './js/utils.js?v=24';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=24';
-        import { icon } from './js/icons.js?v=24';
-        import { mountTimePicker, refreshTimePicker, mountDayChips } from './js/form-widgets.js?v=24';
+        import { Auth } from './js/auth.js?v=27';
+        import { api } from './js/api.js?v=27';
+        import { ErrorHandler, Formatters, uuidv4, askChoice } from './js/utils.js?v=27';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=27';
+        import { icon } from './js/icons.js?v=27';
+        import { mountTimePicker, refreshTimePicker, mountDayChips } from './js/form-widgets.js?v=27';
         import {
             DAY_NAMES, DAY_SHORT, EVENT_COLORS, isoDate, parseDate, weekStart, addDays, sameDay, weekDays,
             minutesToTime, formatClock12, formatRange, durationText, formatDayDate, occursOn,
             lessonItem, eventItem, itemsOn, layoutLanes, findConflicts
-        } from './js/calendar-utils.js?v=24';
+        } from './js/calendar-utils.js?v=27';
+        import { groupTitle, membersText } from './js/groups-utils.js?v=27';
 
         renderSidebar('schedule');
         renderTopHeader({ title: 'جدولي', subtitle: 'حصصك ومواعيدك في مكان واحد' });
@@ -376,7 +377,18 @@
         // ------------------------------------------------------------ الحالة
         let students = [];
         let schedules = [];
+        let groupSchedules = [];
         let events = [];
+        // ألوان حصص المجموعات في الجدول (نفس ألوان groups.css)
+        const GROUP_CAL = {
+            purple: { bg: 'rgba(75,58,90,0.14)', border: '#4B3A5A', text: '#3A2C47' },
+            gold: { bg: 'rgba(197,154,74,0.22)', border: '#A27A2E', text: '#5E4513' },
+            green: { bg: 'rgba(111,143,114,0.22)', border: '#4E6B51', text: '#34493A' },
+            blue: { bg: 'rgba(64,120,180,0.16)', border: '#2F5D8A', text: '#22476B' },
+            rose: { bg: 'rgba(200,90,130,0.16)', border: '#A04565', text: '#7A2F4B' },
+            gray: { bg: 'rgba(90,85,96,0.14)', border: '#5A5560', text: '#403C45' }
+        };
+        const KIND_TAG = { lesson: 'حصة', group: 'مجموعة', event: 'موعد' };
         let eventsAvailable = true;
         let items = [];
         let view = LS.get('tm_cal_view') || (window.matchMedia('(max-width: 900px)').matches ? 'day' : 'week');
@@ -387,6 +399,12 @@
             const nameOf = new Map(students.map((s) => [String(s.id), s.name]));
             items = [
                 ...schedules.map((s) => lessonItem(s, nameOf.get(String(s.student_id)))),
+                // حصص المجموعات: بتظهر وبتتحسب في التعارض كتحذير، والتعديل من صفحة المجموعة
+                ...groupSchedules.map((g) => ({
+                    ...lessonItem(g, groupTitle(g.group_name)),
+                    kind: 'group', group: null, group_id: g.group_id,
+                    color: g.color || 'purple', members_count: Number(g.members_count) || 0
+                })),
                 ...events.map(eventItem)
             ];
         }
@@ -403,6 +421,7 @@
                 ]);
                 students = studentsData.students || [];
                 schedules = schedulesData.schedules || [];
+                groupSchedules = schedulesData.group_schedules || [];
                 eventsAvailable = ev !== null;
                 events = ev || [];
                 if (evFailed) {
@@ -426,10 +445,10 @@
             const end = days[6];
             const sameMonth = wStart.getMonth() === end.getMonth();
             $('wk-label').textContent = sameMonth
-                ? `${wStart.getDate().toLocaleString('ar-EG')} – ${formatDayDate(end, { day: 'numeric', month: 'long' })}`
+                ? `${wStart.getDate().toLocaleString('ar-EG-u-nu-latn')} – ${formatDayDate(end, { day: 'numeric', month: 'long' })}`
                 : `${formatDayDate(wStart, { day: 'numeric', month: 'short' })} – ${formatDayDate(end, { day: 'numeric', month: 'short' })}`;
             let lessons = 0, evs = 0;
-            days.forEach((d) => itemsOn(items, d).forEach((it) => { if (it.kind === 'lesson') lessons++; else evs++; }));
+            days.forEach((d) => itemsOn(items, d).forEach((it) => { if (it.kind !== 'event') lessons++; else evs++; }));
             const lw = (n) => n === 1 ? 'حصة واحدة' : n === 2 ? 'حصتين' : n <= 10 ? `${n} حصص` : `${n} حصة`;
             const ew = (n) => n === 1 ? 'موعد واحد' : n === 2 ? 'موعدين' : n <= 10 ? `${n} مواعيد` : `${n} موعد`;
             $('cal-summary').textContent = (lessons || evs) ? `الأسبوع ده: ${[lessons ? lw(lessons) : '', evs ? ew(evs) : ''].filter(Boolean).join(' · ')}` : 'الأسبوع ده فاضي';
@@ -441,10 +460,11 @@
 
         function itemColors(it) {
             if (it.kind === 'lesson') return { bg: 'var(--lesson-bg)', border: 'var(--lesson-border)', text: 'var(--lesson-text)' };
+            if (it.kind === 'group') return GROUP_CAL[it.color] || GROUP_CAL.purple;
             return EVENT_COLORS[it.color] || EVENT_COLORS.gold;
         }
         function itemSub(it) {
-            const parts = [it.kind === 'lesson' ? 'حصة' : 'موعد شخصي', durationText(it.duration)];
+            const parts = [it.kind === 'lesson' ? 'حصة' : it.kind === 'group' ? `حصة مجموعة · ${membersText(it.members_count)}` : 'موعد شخصي', durationText(it.duration)];
             if (it.recurrence_type !== 'weekly') parts.push(REC_LABEL[it.recurrence_type] || '');
             if (it.kind === 'event' && it.note) parts.push(it.note);
             return parts.filter(Boolean).join(' · ');
@@ -457,20 +477,20 @@
             if (!days.some((d) => sameDay(d, selected))) selected = sameDay(wStart, weekStart(today)) ? new Date(today.getFullYear(), today.getMonth(), today.getDate()) : wStart;
             $('day-strip').innerHTML = days.map((d) => {
                 const list = itemsOn(items, d);
-                const nL = list.filter((x) => x.kind === 'lesson').length;
+                const nL = list.filter((x) => x.kind !== 'event').length;
                 const nE = list.length - nL;
                 const dots = `${nL ? '<i class="d-l"></i>' : ''}${nE ? '<i class="d-e"></i>' : ''}`;
                 return `<button type="button" role="tab" data-date="${isoDate(d)}" class="${sameDay(d, selected) ? 'active' : ''} ${sameDay(d, today) ? 'is-today' : ''}"
                         aria-selected="${sameDay(d, selected)}" aria-label="${esc(formatDayDate(d))}: ${list.length ? list.length + ' مواعيد' : 'فاضي'}">
                     <span class="ds-name">${DAY_SHORT[d.getDay()]}</span>
-                    <span class="ds-num">${d.getDate().toLocaleString('ar-EG')}</span>
+                    <span class="ds-num">${d.getDate().toLocaleString('ar-EG-u-nu-latn')}</span>
                     <span class="ds-dots">${dots}</span>
                 </button>`;
             }).join('');
 
             const list = itemsOn(items, selected);
             $('day-title').textContent = sameDay(selected, today) ? `النهارده، ${formatDayDate(selected, { day: 'numeric', month: 'long' })}` : formatDayDate(selected);
-            const nL = list.filter((x) => x.kind === 'lesson').length;
+            const nL = list.filter((x) => x.kind !== 'event').length;
             const nE = list.length - nL;
             $('day-count').textContent = list.length ? [nL ? `${nL} ${nL === 1 ? 'حصة' : 'حصص'}` : '', nE ? `${nE} ${nE === 1 ? 'موعد' : 'مواعيد'}` : ''].filter(Boolean).join(' · ') : '';
 
@@ -491,8 +511,8 @@
                 const past = isToday && it.start + it.duration <= nowMin;
                 html += `<button type="button" class="ag-item ${past ? 'is-past' : ''}" data-idx="${i}" style="border-inline-start-color:${c.border}">
                     <span class="ag-time"><b>${formatClock12(it.start)}</b><small>لحد ${formatClock12(it.start + it.duration)}</small></span>
-                    <span class="ag-main"><span class="ag-title" style="display:block">${it.kind === 'event' ? '📌 ' : ''}${esc(it.title)}</span><span class="ag-sub" style="display:block">${esc(itemSub(it))}</span></span>
-                    <span class="ag-tag ${it.kind === 'lesson' ? 'tag-lesson' : ''}" style="${it.kind === 'event' ? `background:${c.bg};color:${c.text}` : ''}">${it.kind === 'lesson' ? 'حصة' : 'موعد'}</span>
+                    <span class="ag-main"><span class="ag-title" style="display:block">${it.kind === 'event' ? '📌 ' : it.kind === 'group' ? '👥 ' : ''}${esc(it.title)}</span><span class="ag-sub" style="display:block">${esc(itemSub(it))}</span></span>
+                    <span class="ag-tag ${it.kind === 'lesson' ? 'tag-lesson' : ''}" style="${it.kind !== 'lesson' ? `background:${c.bg};color:${c.text}` : ''}">${KIND_TAG[it.kind] || 'موعد'}</span>
                 </button>`;
             });
             ag.innerHTML = html;
@@ -519,6 +539,7 @@
             const row = e.target.closest('.ag-item');
             if (!row) return;
             const it = ($('agenda')._list || [])[Number(row.dataset.idx)];
+            if (it && it.kind === 'group') { location.href = `group.html?id=${encodeURIComponent(it.group_id)}#schedule`; return; }
             if (it) openItemModal({ edit: it });
         });
 
@@ -555,7 +576,7 @@
                     html += `<button type="button" class="wk-block" data-day="${i}" data-idx="${idx}"
                         style="top:${top + 1}px; height:${h}px; inset-inline-start:calc(${it.lane * w}% + 2px); width:calc(${w}% - 4px); background:${c.bg}; border-color:${c.border}; color:${c.text}"
                         title="${esc(it.title)} · ${esc(formatRange(it.start, it.duration))}">
-                        <b>${it.kind === 'event' ? '📌 ' : ''}${esc(it.title)}</b>${h >= 36 ? `<span>${esc(formatRange(it.start, it.duration))}</span>` : ''}</button>`;
+                        <b>${it.kind === 'event' ? '📌 ' : it.kind === 'group' ? '👥 ' : ''}${esc(it.title)}</b>${h >= 36 ? `<span>${esc(formatRange(it.start, it.duration))}</span>` : ''}</button>`;
                 });
                 if (isToday) {
                     const nowMin = today.getHours() * 60 + today.getMinutes();
@@ -583,6 +604,7 @@
             const block = e.target.closest('.wk-block');
             if (block) {
                 const it = grid._weekItems[Number(block.dataset.day)][Number(block.dataset.idx)];
+                if (it && it.kind === 'group') { location.href = `group.html?id=${encodeURIComponent(it.group_id)}#schedule`; return; }
                 if (it) openItemModal({ edit: it });
                 return;
             }
@@ -755,7 +777,7 @@
             const exclude = form.editItem ? `${form.editItem.kind}:${form.editItem.id}` : '';
             const list = findConflicts(items, t, exclude).slice(0, 3);
             if (!list.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
-            box.innerHTML = '⚠️ بيتعارض مع: ' + list.map((it) => `${it.kind === 'lesson' ? 'حصة' : 'موعد'} <b>${esc(it.title)}</b> (${DAY_NAMES[it.day_of_week]} ${esc(formatRange(it.start, it.duration))})`).join('، ')
+            box.innerHTML = '⚠️ بيتعارض مع: ' + list.map((it) => `${KIND_TAG[it.kind] || 'موعد'} <b>${esc(it.title)}</b> (${DAY_NAMES[it.day_of_week]} ${esc(formatRange(it.start, it.duration))})`).join('، ')
                 + (form.type === 'lesson' && list.some((x) => x.kind === 'lesson') ? '<br><small>الحصص اللي بتتعارض مع حصة تانية مش هتتحفظ.</small>' : '<br><small>تقدر تحفظ عادي لو ده مقصود.</small>');
             box.style.display = 'block';
         }
@@ -778,7 +800,7 @@
             btn.textContent = 'جاري الحفظ...';
             try {
                 if (form.type === 'event') await saveEvent(t, editing);
-                else await saveLesson(t, editing);
+                else if (await saveLesson(t, editing) === 'cancelled') return;   // رجع من نافذة الاختيار: النموذج يفضل مفتوح
                 $('item-modal').classList.remove('active');
             } catch (err) {
                 ErrorHandler.showError(ErrorHandler.getErrorMessage(err));
@@ -836,8 +858,17 @@
                 // موعد "كل يوم" (أو مجموعة أيام): نسأل يطبّق الوقت/المدة على كل الأيام ولا اليوم ده بس
                 const members = form.editItem.group ? items.filter((x) => x.kind === 'lesson' && x.group === form.editItem.group) : [];
                 const timeChanged = t.start !== form.editItem.start || t.duration !== form.editItem.duration;
-                if (members.length > 1 && t.recurrence_type === 'daily' && timeChanged
-                    && confirm(`تطبّق الوقت الجديد على كل الأيام (${members.length} أيام)؟\nاضغط "إلغاء" لو عايز تعدّل اليوم ده بس.`)) {
+                let applyAll = false;
+                if (members.length > 1 && t.recurrence_type === 'daily' && timeChanged) {
+                    const pick = await askChoice({
+                        title: 'تعديل الوقت',
+                        message: `الموعد ده متكرر في ${members.length} أيام.`,
+                        choices: [{ label: 'عدّل اليوم ده بس', value: 'one' }, { label: `عدّل كل الأيام (${members.length})`, value: 'all' }]
+                    });
+                    if (!pick) return 'cancelled';
+                    applyAll = pick === 'all';
+                }
+                if (applyAll) {
                     const results = await Promise.allSettled(members.map((m) => api.updateSchedule(m.id, { ...payload, day_of_week: m.day_of_week, start_date: null })));
                     const bad = results.filter((r) => r.status === 'rejected').length;
                     if (bad === members.length) throw (results[0].reason || new Error('ماتعدّلش'));
@@ -897,6 +928,7 @@
                 eventsAvailable ? api.getPersonalEvents().catch(() => events) : Promise.resolve(null)
             ]);
             schedules = schedulesData.schedules || [];
+            groupSchedules = schedulesData.group_schedules || [];
             if (ev) events = ev;
             rebuildItems();
             render();
@@ -915,6 +947,6 @@
             setInterval(() => { if (!document.querySelector('.modal.active')) render(); }, 60000);
         })();
     </script>
-    <script src="js/pwa-install.js?v=24" defer></script>
+    <script src="js/pwa-install.js?v=27" defer></script>
 </body>
 </html>

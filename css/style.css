@@ -11,7 +11,7 @@
     --primary-hover: #3F304D;
     --secondary: #C59A4A;
     --success: #6F8F72;
-    --danger: #B85C5C;
+    --danger: #A44C4C;          /* v25: كان #B85C5C (تباين 4.45 مع الأبيض) */
     --warning: #D4A574;
     
     /* خلفيات */
@@ -22,11 +22,22 @@
     /* النصوص */
     --text-primary: #29252D;
     --text-secondary: #716A74;
-    --text-light: #A8A2AA;
+    --text-light: #776F7A;      /* v25: كان #A8A2AA (تباين 2.4) */
     
     /* الحدود */
-    --border: #E7E1E8;
+    --border: #E7E1E8;          /* حدود الكروت والفواصل */
     --card-bg: #FFFFFF;
+
+    /* v25: ألوان بتباين كافي (4.5:1 للنص و 3:1 للحدود) */
+    --field-border: #8F8693;    /* حدود الخانات (كانت --border بتباين 1.3) */
+    --secondary-strong: #8A6A26;/* ذهبي غامق: أي خلفية عليها نص أبيض */
+    --gold-text: #7A5A1C;       /* نص ذهبي على خلفية فاتحة */
+    --success-text: #4E6B51;    /* نص أخضر على خلفية فاتحة + خلفية لنص أبيض */
+    --danger-text: #A44C4C;
+    --danger-border: #C47070;   /* حد زرار خطر بإطار */
+    --whatsapp: #1E7E46;        /* كان #25D366 (تباين 2.0 مع الأبيض) */
+    --whatsapp-hover: #17683A;
+    --secondary-btn-border: #A8A0AB;
 
     /* السايدبار */
     --sidebar-bg: #2E2140;
@@ -75,15 +86,21 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-primary { background-color: var(--primary); }
-.btn-secondary { background-color: var(--secondary); }
-.btn-success { background-color: var(--success); }
+.btn-secondary { background-color: var(--secondary-strong); }
+.btn-success { background-color: var(--success-text); }
 .btn-danger { background-color: var(--danger); }
+/* v25: .btn:hover كان بيقلب أي زرار ملوّن (أحمر/أخضر/ذهبي) لبنفسجي وقت الضغط */
+.btn-danger:hover { background-color: #8E3F3F; }
+.btn-secondary:hover { background-color: #74591F; }
+.btn-success:hover { background-color: #3F5942; }
+.btn.btn-outline:hover, .btn.btn-outline:focus-visible { color: var(--primary); }
 
 /* Forms */
 input, textarea, select {
     width: 100%;
     padding: 0.75rem;
-    border: 1px solid var(--border);
+    border: 1px solid var(--field-border);
+    background-color: #fff;
     border-radius: 8px;
     margin-bottom: 1rem;
     font-family: inherit;
@@ -144,8 +161,9 @@ input:focus, textarea:focus, select:focus {
 .sidebar-logo { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.5rem 1.5rem; }
 .sidebar-logo .logo-icon {
     width: 40px; height: 40px; border-radius: 10px;
-    background: var(--secondary); display: flex; align-items: center; justify-content: center;
-    font-size: 1.3rem; flex-shrink: 0;
+    /* v27: خلفية اللوجو بيضا */
+    background: #FFFFFF; color: var(--primary); display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 .sidebar-logo h1 { color: #fff; font-size: 1.05rem; margin: 0; }
 .sidebar-logo p { color: var(--sidebar-text-muted); font-size: 0.75rem; margin: 0; }
@@ -213,16 +231,16 @@ input:focus, textarea:focus, select:focus {
 .sub-lock-card h2 { font-size: 1.2rem; margin-bottom: 0.75rem; }
 .sub-lock-reassure {
     display: flex; align-items: center; gap: 0.4rem; justify-content: center; text-align: right;
-    background: #E8F5E9; color: var(--success); font-weight: 600; font-size: 0.85rem;
+    background: #E8F5E9; color: var(--success-text); font-weight: 600; font-size: 0.85rem;
     padding: 0.7rem 0.9rem; border-radius: 10px; margin-bottom: 1rem; line-height: 1.6;
 }
 .sub-lock-desc { color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 1.25rem; line-height: 1.6; }
 .sub-lock-whatsapp {
     display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-    background: #25D366; color: #fff; text-decoration: none; font-weight: 700;
+    background: var(--whatsapp); color: #fff; text-decoration: none; font-weight: 700;
     padding: 0.8rem 1rem; border-radius: 10px; margin: 0 0 0.9rem;
 }
-.sub-lock-whatsapp:hover { background: #1ebe57; }
+.sub-lock-whatsapp:hover { background: var(--whatsapp-hover); }
 .sub-lock-link {
     display: block; color: var(--text-secondary); font-size: 0.82rem; text-decoration: none;
     margin-top: 0.5rem; background: none; border: none; cursor: pointer; width: 100%; font-family: inherit;
@@ -296,12 +314,12 @@ input:focus, textarea:focus, select:focus {
     font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 20px; width: fit-content;
 }
 .lesson-status-badge.status-late { background: rgba(212,165,116,0.2); color: #8a6118; }
-.lesson-status-badge.status-in-progress { background: rgba(197,154,74,0.2); color: var(--secondary); }
-.lesson-status-badge.status-completed { background: #E8F5E9; color: var(--success); }
-.lesson-status-badge.status-cancelled { background: rgba(184,92,92,0.12); color: var(--danger); }
+.lesson-status-badge.status-in-progress { background: rgba(197,154,74,0.2); color: var(--gold-text); }
+.lesson-status-badge.status-completed { background: #E8F5E9; color: var(--success-text); }
+.lesson-status-badge.status-cancelled { background: rgba(184,92,92,0.12); color: var(--danger-text); }
 .btn-cancel-lesson {
     padding: 0.45rem 0.7rem; font-size: 0.78rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.3rem;
-    flex-shrink: 0; background: var(--card-bg); color: var(--danger); border: 1px solid #F0CFCF; cursor: pointer;
+    flex-shrink: 0; background: var(--card-bg); color: var(--danger); border: 1px solid var(--danger-border); cursor: pointer;
 }
 .btn-cancel-lesson:hover { background: #FBEAEA; }
 
@@ -352,8 +370,8 @@ input:focus, textarea:focus, select:focus {
 .quick-links-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
 .quick-link-btn {
     display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
-    background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px;
-    padding: 0.9rem 0.5rem; text-decoration: none; color: var(--text-primary); font-size: 0.78rem; font-weight: 600;
+    background: var(--card-bg); border: 1px solid var(--secondary-btn-border); border-radius: 12px;
+    padding: 0.9rem 0.5rem; text-decoration: none; color: var(--text-primary); font-size: 0.85rem; font-weight: 600;
 }
 .quick-link-btn:hover { background: var(--bg-muted); }
 .quick-link-btn .icon { display: flex; }
@@ -374,7 +392,7 @@ input:focus, textarea:focus, select:focus {
     .sidebar-nav { flex-direction: row; gap: 0.15rem; }
     .sidebar-nav a {
         flex: 1; flex-direction: column; gap: 0.2rem; padding: 0.45rem 0.2rem;
-        font-size: 0.66rem; text-align: center; border-radius: 10px;
+        font-size: 0.75rem; text-align: center; border-radius: 10px; /* v25: كان 0.66rem */
         min-width: 0;
     }
     .sidebar-nav a .label {
@@ -401,20 +419,30 @@ input:focus, textarea:focus, select:focus {
     /* لوحة التحكم: تكديس عمودي بدل عمودين جنبًا إلى جنب على الشاشات الصغيرة */
     .dashboard-grid { grid-template-columns: 1fr; }
 
-    /* عنصر "حصص اليوم": عرض عمودي مرتب بدل ازدحام العناصر بجانب بعضها */
-    .lesson-item { flex-direction: column; align-items: stretch; gap: 0.6rem; }
-    .lesson-item .lesson-main { width: 100%; }
+    /* عنصر "حصص اليوم" (v25): الوقت جنب الاسم بخط واضح، والزرارين في صف واحد بنفس الارتفاع */
+    .lesson-item { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+    .lesson-item .lesson-main { flex: 1 1 0; min-width: 0; order: 1; }
     .lesson-item .lesson-time {
-        width: 100%; box-sizing: border-box; text-align: center;
-        background: var(--bg-secondary); padding: 0.4rem 0.6rem; border-radius: 8px;
+        order: 2; font-size: 0.95rem; font-weight: 700; color: var(--text-primary);
+        background: none; padding: 0; width: auto;
     }
-    .lesson-item .btn-start { width: 100%; justify-content: center; }
-    .lesson-actions { width: 100%; flex-direction: column; }
-    .lesson-actions .btn-start, .lesson-actions .btn-cancel-lesson { width: 100%; justify-content: center; }
+    .lesson-item > .btn-start, .lesson-actions { order: 3; flex: 1 1 100%; }
+    .lesson-item .btn-start { width: 100%; justify-content: center; min-height: 44px; font-size: 0.9rem; }
+    .lesson-actions { display: flex; flex-direction: row; gap: 0.5rem; }
+    .lesson-actions .btn-start { flex: 2 1 0; width: auto; }
+    .lesson-actions .btn-cancel-lesson { flex: 1 1 0; justify-content: center; min-height: 44px; font-size: 0.85rem; }
 
     .modal-content { padding: 1.25rem; border-radius: 14px; }
 
-    #error-toast, #success-toast { left: 12px; right: 12px; max-width: none; top: calc(12px + env(safe-area-inset-top, 0px)); }
+
+    /* v25: مساحة لمس كافية للأزرار على الموبايل، والنص في نص الزرار */
+    .btn, .btn-sm { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; min-height: 44px; }
+
+    /* v25: العنوان بيتكرر مرتين (الهيدر + عنوان الصفحة)، فبنخفي التاني على الموبايل */
+    .page-title-dup { display: none !important; }
+
+    /* v25: زرار الخروج اتشال من الهيدر (بقى في الإعدادات) عشان العنوان مايتقطعش والضغطة الغلط ماتخرجش المدرس */
+    #header-logout-mobile { display: none !important; }
 }
 
 @media (max-width: 480px) {
@@ -423,7 +451,7 @@ input:focus, textarea:focus, select:focus {
     .search-box { display: none; }
     .stats-row { grid-template-columns: 1fr 1fr; }
     .quick-links-grid { grid-template-columns: repeat(2, 1fr); }
-    .sidebar-nav a { font-size: 0.6rem; padding: 0.4rem 0.1rem; }
+    .sidebar-nav a { font-size: 0.75rem; padding: 0.4rem 0.1rem; } /* v25: كان 0.6rem (9.6px) */
 }
 
 /* ============================================================
@@ -498,13 +526,14 @@ span.close-modal:hover { background: var(--bg-muted); color: var(--text-primary)
     box-shadow: 0 8px 20px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 0.5rem;
 }
 #error-toast { background: var(--danger); }
-#success-toast { background: var(--success); }
+#success-toast { background: var(--success-text); }
 
 /* ============================================================
    عناصر عامة إضافية
    ============================================================ */
 .btn-sm { padding: 0.45rem 0.9rem; font-size: 0.82rem; }
-.btn.btn-outline { background: var(--bg-muted); color: var(--text-primary); }
+.btn.btn-outline { background: var(--card-bg); color: var(--primary); border: 1px solid var(--secondary-btn-border); }
+.btn.btn-outline:hover { background: var(--bg-secondary); }
 .badge-icon-row { display: inline-flex; align-items: center; gap: 0.35rem; }
 ::selection { background: rgba(75,58,90,0.18); }
 a { color: inherit; }
@@ -526,12 +555,12 @@ button { font-family: inherit; }
 .sapp-item-meta { font-size: 0.8rem; color: var(--text-secondary); }
 .sapp-item-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
 .sapp-icon-btn {
-    width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
+    width: 40px; height: 40px; border-radius: 8px; border: 1px solid var(--secondary-btn-border);
     background: var(--card-bg); color: var(--text-secondary); cursor: pointer;
     display: flex; align-items: center; justify-content: center;
 }
 .sapp-icon-btn:hover { background: var(--bg-muted); color: var(--text-primary); }
-.sapp-icon-btn.danger:hover { background: #FBEAEA; color: var(--danger); border-color: #F0CFCF; }
+.sapp-icon-btn.danger:hover { background: #FBEAEA; color: var(--danger); border-color: var(--danger-border); }
 
 /* دليل البداية جوه بوب أب المواعيد: الخطوة الجاية */
 .sapp-next { background: rgba(111,143,114,0.12); border: 1px solid rgba(111,143,114,0.35); border-radius: 12px; padding: 0.8rem 1rem; margin-bottom: 1rem; }
@@ -539,7 +568,7 @@ button { font-family: inherit; }
 .sapp-next .btn { width: 100%; }
 
 /* زرار ثانوي (كان معرّف في lessons.css بس، فمكانش بيظهر صح في باقي الصفحات) */
-.btn-ghost { background: transparent !important; color: var(--primary) !important; border: 1px solid var(--border) !important; box-shadow: none !important; }
+.btn-ghost { background: transparent !important; color: var(--primary) !important; border: 1px solid var(--secondary-btn-border) !important; box-shadow: none !important; }
 .btn-ghost:hover { background: rgba(75, 58, 90, 0.06) !important; }
 
 /* وضع "قراءة فقط" بعد نهاية الفترة المجانية */
@@ -553,9 +582,39 @@ button { font-family: inherit; }
 /* مواعيد شخصية النهارده (الرئيسية) */
 .today-events { margin-top: 0.9rem; border-top: 1px dashed var(--border); padding-top: 0.8rem; }
 .today-events h4 { margin: 0 0 0.55rem; font-size: 0.9rem; color: var(--text-primary); }
-.te-item { display: flex; justify-content: space-between; gap: 0.6rem; align-items: center; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-inline-start: 4px solid #C59A4A; border-radius: 10px; margin-bottom: 0.4rem; text-decoration: none; color: var(--text-primary); font-size: 0.88rem; }
+.te-item { display: flex; justify-content: space-between; gap: 0.6rem; align-items: center; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-inline-start: 4px solid var(--secondary); border-radius: 10px; margin-bottom: 0.4rem; text-decoration: none; color: var(--text-primary); font-size: 0.88rem; }
 .te-item span { color: var(--text-secondary); font-size: 0.8rem; white-space: nowrap; }
 .te-item.is-past { opacity: 0.55; }
 
 /* خاصية hidden لازم تخفي العنصر دايمًا حتى لو ليه display في CSS (كانت بتتلغي في بعض العناصر) */
 [hidden] { display: none !important; }
+
+/* v25: شريط تابات أفقي فيه بقية مخفية: تدريج على الطرف يوضّح إن فيه تابات تانية */
+.tabs-fade { -webkit-mask-image: linear-gradient(to left, #000 85%, transparent); mask-image: linear-gradient(to left, #000 85%, transparent); }
+.tabs-fade.at-end { -webkit-mask-image: none; mask-image: none; }
+
+/* v25: نافذة الاختيار (askChoice في utils.js) */
+.tm-choice { z-index: 3500; }
+.tm-choice-box { max-width: 420px; }
+.tm-choice-title { margin: 0 0 0.5rem; font-size: 1.1rem; }
+.tm-choice-msg { margin: 0 0 1.1rem; color: var(--text-secondary); line-height: 1.7; white-space: pre-line; }
+.tm-choice-actions { display: flex; flex-direction: column; gap: 0.5rem; }
+.tm-choice-actions .btn { width: 100%; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+
+/* v25: على الموبايل الرسالة تحت فوق شريط التنقل (قريبة من الإيد وبعيدة عن الـ notch).
+   لازم تفضل بعد قاعدة #error-toast الأساسية عشان تغلبها */
+@media (max-width: 900px) {
+    #error-toast, #success-toast { left: 12px; right: 12px; max-width: none; top: auto; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* v26: عنصر المجموعات في السايدبار للكمبيوتر بس، وعلى الموبايل "الطلاب" بيتعلّم وهو في صفحات المجموعات */
+@media (max-width: 900px) {
+    .sidebar-nav a.nav-desktop-only { display: none; }
+    .sidebar-nav a.active-mobile { background: var(--sidebar-active-bg); color: #fff; }
+}
+
+/* v27: زرار "ثبّت التطبيق" في الهيدر (يظهر طول ما التطبيق مش مثبّت) */
+.bell-btn.header-install { width: auto; padding: 0 0.7rem; gap: 0.3rem; color: var(--primary); font: inherit; font-size: 0.82rem; font-weight: 700; border-color: var(--secondary-btn-border, #CFC4D8); }
+.bell-btn.header-install[hidden] { display: none !important; }
+.sidebar-footer a[hidden] { display: none !important; }
+@media (min-width: 901px) { .bell-btn.header-install { display: none !important; } }
