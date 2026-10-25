@@ -94,7 +94,7 @@ export function durationText(min) {
     return `${min} دقيقة`;
 }
 export function formatDayDate(d, opts = { weekday: 'long', day: 'numeric', month: 'long' }) {
-    try { return d.toLocaleDateString('ar-EG', opts); } catch (e) { return isoDate(d); }
+    try { return d.toLocaleDateString('ar-EG-u-nu-latn', opts); } catch (e) { return isoDate(d); }
 }
 
 /** هل العنصر بيحصل في التاريخ ده؟ (نفس منطق SQL) */

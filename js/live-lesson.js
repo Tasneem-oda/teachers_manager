@@ -178,7 +178,8 @@ export function mountFloatingLesson({ exceptStudentId = null } = {}) {
         // صفحة الحصة نفسها (مثلًا والكتاب مفتوح فوقها) بتقدر ترجّع المدرس من غير تحميل الصفحة من جديد
         const ev = new CustomEvent('tm:live-lesson-go', { cancelable: true, detail: current.studentId });
         if (!window.dispatchEvent(ev)) return;
-        window.location.href = `lesson.html?student_id=${encodeURIComponent(current.studentId)}`;
+        // v27: حصة المجموعة الشغالة ليها رابط خاص (group-lesson.html)
+        window.location.href = current.url || `lesson.html?student_id=${encodeURIComponent(current.studentId)}`;
     }
 
     function build() {

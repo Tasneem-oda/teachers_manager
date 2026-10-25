@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-NXC2WZMT');</script>
+    <!-- End Google Tag Manager -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>حصة المجموعة - Teachers Manager</title>
+    <link rel="stylesheet" href="css/style.css?v=27">
+    <link rel="stylesheet" href="css/lessons.css?v=27">
+    <link rel="stylesheet" href="css/groups.css?v=27">
+    <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
+    <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4B3A5A">
+</head>
+<body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NXC2WZMT"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+    <div class="app-shell">
+        <div id="sidebar-root"></div>
+
+        <main class="main-content">
+            <div id="top-header-root"></div>
+
+            <div class="page-body" style="max-width:760px;">
+                <div class="loader" id="loader">جاري تجهيز الحصة...</div>
+
+                <div id="app" hidden>
+                    <div class="gl-topline">
+                        <a class="muted" id="back-link" style="display:inline-flex; align-items:center; gap:0.3rem; font-size:0.9rem;"></a>
+                        <button type="button" class="btn btn-sm btn-outline gl-ai-btn" id="btn-ai-top"></button>
+                    </div>
+                    <!-- v27: الحصة شغالة (عدّاد + المساعد الذكي) -->
+                    <div id="live-bar" class="gl-live" hidden>
+                        <span class="gl-live-dot" aria-hidden="true"></span>
+                        <div class="gl-live-main">
+                            <b id="live-clock" dir="ltr">00:00</b>
+                            <small id="live-left"></small>
+                        </div>
+                        <button type="button" class="btn btn-sm gl-live-ai" id="btn-ai-live"></button>
+                        <div class="gl-live-bar"><span id="live-progress"></span></div>
+                    </div>
+                    <div id="same-day" class="gl-same-day" hidden></div>
+                    <!-- v27: ابدأ الحصة بدل التسجيل بعدها -->
+                    <div id="start-card" class="x-card gl-start" hidden>
+                        <div>
+                            <b>الحصة لسه هتبدأ؟</b>
+                            <p>ابدأها دلوقتي: عدّاد للوقت، وتسجّل الحضور والمحتوى وانت شغال، والمساعد الذكي جنبك بأسئلة وأنشطة للمجموعة.</p>
+                        </div>
+                        <button type="button" class="btn" id="btn-start-live"></button>
+                    </div>
+
+                    <form id="session-form" novalidate>
+                        <div class="x-card">
+                            <div class="gl-top">
+                                <div><label for="f-date">التاريخ</label><input type="date" id="f-date" required></div>
+                                <div><label for="f-time">الوقت</label><input type="time" id="f-time"></div>
+                            </div>
+                            <label class="gl-cancel"><input type="checkbox" id="f-cancelled"> الحصة اتلغت (مني أنا)</label>
+                            <p class="muted" id="cancel-hint" style="font-size:0.82rem; margin:0.2rem 0 0;" hidden>كل الطلاب هيتسجل لهم "حصة ملغية من المدرس" ومش هتتخصم من حد.</p>
+                        </div>
+
+                        <div class="x-card" id="prev-card" hidden>
+                            <div class="gl-prev" id="prev-box"></div>
+                        </div>
+
+                        <div class="x-card" id="att-card">
+                            <div class="att-head">
+                                <h3 style="margin:0; font-size:1.02rem;">الحضور</h3>
+                                <button type="button" class="btn btn-sm btn-outline" id="btn-all-present">الكل حضر</button>
+                            </div>
+                            <div class="att-summary" id="att-summary"></div>
+                            <div id="att-list" style="margin-top:0.6rem;"></div>
+                        </div>
+
+                        <div class="x-card" id="content-card">
+                            <div class="gl-field">
+                                <label for="f-content">أخدنا إيه النهارده؟</label>
+                                <textarea id="f-content" maxlength="5000" placeholder="الدرس أو الجزء اللي اتشرح..."></textarea>
+                            </div>
+                            <div class="gl-field">
+                                <label for="f-homework">الواجب</label>
+                                <textarea id="f-homework" maxlength="3000" placeholder="الواجب لكل المجموعة..."></textarea>
+                            </div>
+                            <div class="gl-field">
+                                <label for="f-next">الحصة الجاية</label>
+                                <textarea id="f-next" maxlength="3000" placeholder="هنبدأ منين المرة الجاية؟"></textarea>
+                            </div>
+                            <label class="gl-cancel" style="font-weight:500 !important; font-size:0.9rem;"><input type="checkbox" id="f-set-topic" style="accent-color:var(--primary);" checked> حدّث "الدرس الحالي" في ملف كل طالب حضر</label>
+                            <details class="x-more" id="notes-more">
+                                <summary>+ ملاحظات خاصة بيك</summary>
+                                <div class="gl-field"><textarea id="f-notes" maxlength="3000" placeholder="ملاحظات للمدرس بس، مش بتتبعت للطلاب"></textarea></div>
+                            </details>
+                            <div class="gl-saved-ind" id="draft-ind"></div>
+                        </div>
+
+                        <div class="gl-save-bar">
+                            <button type="submit" class="btn" id="btn-save"></button>
+                            <button type="button" class="btn btn-outline" id="btn-delete" hidden style="flex:0 0 auto;"></button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="done" class="x-card gl-done" hidden></div>
+            </div>
+        </main>
+    </div>
+
+    <div id="error-toast" style="display:none;"></div>
+    <div id="success-toast" style="display:none;"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+    <script type="module" src="js/config.js?v=27"></script>
+    <script type="module">
+        import { Auth } from './js/auth.js?v=27';
+        import { api } from './js/api.js?v=27';
+        import { ErrorHandler, Formatters, askChoice, uuidv4 } from './js/utils.js?v=27';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=27';
+        import { icon } from './js/icons.js?v=27';
+        import { RATINGS, HOMEWORK_STATUS, ratingFieldLabels, formatLessonDate, localDateISO } from './js/lesson-utils.js?v=27';
+        import { whatsappUrl } from './js/billing.js?v=27';
+        import { formatClock12, timeToMinutes } from './js/calendar-utils.js?v=27';
+        import { groupTitle, membersText, sessionShareText } from './js/groups-utils.js?v=27';
+        import { mountGroupAi } from './js/group-ai.js?v=27';
+        import { LiveLesson, clockText, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=27';
+
+        const $ = (id) => document.getElementById(id);
+        const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
+        const params = new URLSearchParams(location.search);
+        const groupId = params.get('group_id');
+        let sessionId = params.get('session_id') || null;
+        const todayIso = localDateISO(new Date());
+
+        renderSidebar('groups');
+        renderTopHeader({ title: 'حصة المجموعة', subtitle: 'الحضور والواجب لكل الطلاب مرة واحدة' });
+        $('btn-all-present').textContent = 'الكل حضر';
+
+        let prep = null;
+        let state = new Map(); // student_id → { attendance, rating, homework_status, note }
+        let clientRequestId = null;
+        let saving = false;
+        let isLive = false;          // v27: الحصة شغالة دلوقتي (in_progress)
+        let liveStartedAt = null;    // ms بتوقيت الجهاز
+        let livePlannedMin = null;
+        let liveTimer = null;
+        let ai = null;
+        const draftKey = () => `tm_gsession_draft_${groupId}_${sessionId || 'new'}`;
+        const liveKey = () => `group:${groupId}`;
+        $('btn-ai-top').innerHTML = `${icon('sparkles', { size: 15 })} المساعد`;
+        $('btn-ai-live').innerHTML = `${icon('sparkles', { size: 15 })} المساعد`;
+        $('btn-start-live').innerHTML = `${icon('play', { size: 16 })} ابدأ الحصة دلوقتي`;
+
+        (async () => {
+            const authInfo = await Auth.requireAuth();
+            if (!authInfo) return;
+            if (!groupId) { location.href = 'groups.html'; return; }
+            // v27: جاي من "ابدأ الحصة" (الرئيسية/المجموعة): نبدأ الحصة على الخادم الأول
+            if (params.get('start') === '1' && !sessionId) {
+                const ok = await startLive(params.get('time'));
+                if (!ok) return;
+            }
+            await load(sessionId ? null : (params.get('date') || todayIso));
+        })();
+
+        async function load(date) {
+            $('loader').style.display = '';
+            $('app').hidden = true;
+            try {
+                prep = await api.prepareGroupSession(groupId, { sessionId, date });
+                if (!prep || !prep.group) throw new Error('المجموعة دي مش موجودة');
+                if (sessionId && !prep.session) throw new Error('الحصة دي مش موجودة أو اتمسحت');
+                init();
+                $('loader').style.display = 'none';
+                $('app').hidden = false;
+            } catch (error) {
+                $('loader').innerHTML = `${esc(ErrorHandler.getErrorMessage(error))} <button type="button" class="btn btn-sm" id="retry">حاول تاني</button> <a class="btn btn-sm btn-outline" href="group.html?id=${encodeURIComponent(groupId)}">صفحة المجموعة</a>`;
+                const r = $('retry');
+                if (r) r.addEventListener('click', () => { $('loader').textContent = 'جاري تجهيز الحصة...'; load(date); });
+            }
+        }
+
+        async function startLive(time) {
+            $('loader').textContent = 'جاري بدء الحصة...';
+            try {
+                const res = await api.startGroupSession(groupId, time && /^\d{2}:\d{2}/.test(time) ? time.slice(0, 5) : null);
+                if (!res || !res.session_id) throw { error: { message: 'مقدرناش نبدأ الحصة. لو المجموعة مؤرشفة رجّعها الأول.' } };
+                sessionId = res.session_id;
+                try { history.replaceState(null, '', `group-lesson.html?group_id=${encodeURIComponent(groupId)}&session_id=${encodeURIComponent(sessionId)}`); } catch (e) { /* تجاهل */ }
+                if (res.resumed) ErrorHandler.showSuccess('الحصة كانت شغالة بالفعل، كمّلنا منها');
+                try { window.tmTrack && window.tmTrack(res.resumed ? 'group_live_resumed' : 'group_live_started', {}); } catch (e) { /* تجاهل */ }
+                return true;
+            } catch (error) {
+                $('loader').innerHTML = `${esc(ErrorHandler.getErrorMessage(error))} <a class="btn btn-sm btn-outline" href="group.html?id=${encodeURIComponent(groupId)}">صفحة المجموعة</a>`;
+                return false;
+            }
+        }
+
+        function readDraft() {
+            try { const raw = localStorage.getItem(draftKey()); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+        }
+        function clearDraft() { try { localStorage.removeItem(draftKey()); } catch (e) { /* تجاهل */ } }
+        let draftTimer = null;
+        function saveDraft() {
+            if (sessionId && !isLive) return; // تعديل حصة قديمة بيتحفظ على الخادم بس (الحصة الشغالة ليها مسودة)
+            clearTimeout(draftTimer);
+            draftTimer = setTimeout(() => {
+                try {
+                    localStorage.setItem(draftKey(), JSON.stringify({
+                        at: Date.now(), date: $('f-date').value, time: $('f-time').value, cancelled: $('f-cancelled').checked,
+                        content: $('f-content').value, homework: $('f-homework').value, next: $('f-next').value, notes: $('f-notes').value,
+                        set_topic: $('f-set-topic').checked, crid: clientRequestId, att: [...state.entries()]
+                    }));
+                    $('draft-ind').textContent = 'اتحفظت مسودة على الجهاز ده';
+                } catch (e) { /* تجاهل */ }
+            }, 400);
+        }
+
+        function init() {
+            const g = prep.group;
+            const s = prep.session;
+            document.title = `${groupTitle(g.name)} - حصة`;
+            isLive = !!(s && s.status === 'in_progress');
+            renderTopHeader({ title: groupTitle(g.name), subtitle: isLive ? 'الحصة شغالة' : (s ? 'تعديل حصة متسجلة' : 'تسجيل حصة') });
+            $('back-link').href = `group.html?id=${encodeURIComponent(groupId)}${s ? '#sessions' : ''}`;
+            $('back-link').innerHTML = `${icon('chevronRight', { size: 16 })} ${esc(groupTitle(g.name))}`;
+
+            // القيم الأساسية
+            $('f-date').max = todayIso;
+            $('f-date').value = s ? s.session_date : (params.get('date') || todayIso);
+            const qt = params.get('time');
+            const now = new Date();
+            $('f-time').value = s && s.start_time ? String(s.start_time).slice(0, 5)
+                : (qt && /^\d{2}:\d{2}/.test(qt) ? qt.slice(0, 5) : `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
+            $('f-cancelled').checked = !!(s && s.status === 'cancelled');
+            $('f-content').value = (s && s.lesson_content) || '';
+            $('f-homework').value = (s && s.homework) || '';
+            $('f-next').value = (s && s.next_assignment) || '';
+            $('f-notes').value = (s && s.notes) || '';
+            $('f-set-topic').checked = !s || isLive;
+            if (s && s.notes) $('notes-more').open = true;
+
+            state = new Map();
+            (prep.members || []).forEach((m) => {
+                const r = m.row;
+                state.set(String(m.student_id), {
+                    attendance: r ? (r.status === 'completed' ? 'present' : (r.attendance === 'absent_excused' ? 'absent_excused' : (r.attendance === 'teacher_cancelled' ? 'present' : 'absent_unexcused'))) : 'present',
+                    rating: (r && r.rating) || null,
+                    homework_status: (r && r.homework_status) || null,
+                    note: (r && r.note) || ''
+                });
+            });
+            clientRequestId = uuidv4();
+
+            // استرجاع المسودة (حصة جديدة أو شغالة، ولو أحدث من 18 ساعة)
+            const d = (!s || isLive) && readDraft();
+            if (d && Date.now() - d.at < 18 * 3600 * 1000) {
+                if (d.date && d.date <= todayIso) $('f-date').value = d.date;
+                if (d.time) $('f-time').value = d.time;
+                $('f-cancelled').checked = !!d.cancelled;
+                $('f-content').value = d.content || '';
+                $('f-homework').value = d.homework || '';
+                $('f-next').value = d.next || '';
+                $('f-notes').value = d.notes || '';
+                $('f-set-topic').checked = d.set_topic !== false;
+                if (d.crid) clientRequestId = d.crid; // نفس المعرّف: لو الحفظ الأول وصل الخادم مايتكررش
+                (d.att || []).forEach(([id, v]) => { if (state.has(id)) state.set(id, v); });
+                $('draft-ind').textContent = 'رجّعنا المسودة اللي ماتحفظتش';
+            } else if (d) clearDraft();
+
+            renderSameDay();
+            renderPrev();
+            renderAttendance();
+            applyCancelled();
+            $('btn-save').innerHTML = `${icon('check', { size: 18 })} ${saveLabel()}`;
+            $('btn-delete').hidden = !s;
+            $('btn-delete').innerHTML = isLive ? `${icon('x', { size: 17 })} إلغاء` : `${icon('trash', { size: 17 })} حذف`;
+            setupLive();
+            setupAi();
+            if (g.status === 'archived' && !s) {
+                $('same-day').hidden = false;
+                $('same-day').innerHTML = 'المجموعة دي مؤرشفة. رجّعها من الإعدادات الأول عشان تسجّل حصص جديدة.';
+                $('btn-save').disabled = true;
+            }
+        }
+
+        const saveLabel = () => (isLive ? 'خلّصت الحصة، سجّلها' : (sessionId ? 'حفظ التعديلات' : 'حفظ الحصة'));
+
+        // ------------------------------------------------------------ v27: الحصة الشغالة
+        function setupLive() {
+            const s = prep.session;
+            const g = prep.group;
+            clearInterval(liveTimer);
+            $('live-bar').hidden = !isLive;
+            $('btn-ai-top').hidden = isLive;   // في الحصة الشغالة الزرار جوه شريط العدّاد
+            // حصة جديدة النهارده ومفيش حصة شغالة: نعرض "ابدأ الحصة"
+            const canStart = !s && !prep.live && g.status !== 'archived' && $('f-date').value === todayIso && (prep.members || []).length > 0;
+            $('start-card').hidden = !canStart;
+            if (!isLive) { LiveLesson.clear(liveKey()); return; }
+            // وقت البداية من الخادم (مع فرق ساعة الجهاز)
+            const offset = prep.server_now ? (Date.parse(prep.server_now) - Date.now()) : 0;
+            liveStartedAt = Date.parse(s.started_at || s.created_at) - offset;
+            livePlannedMin = (prep.schedule_today && Number(prep.schedule_today.duration_minutes)) || 60;
+            $('f-date').value = s.session_date;
+            $('f-date').disabled = true;
+            $('f-cancelled').closest('label').hidden = true;
+            LiveLesson.publish({ studentId: liveKey(), name: groupTitle(g.name), lessonId: s.id, startedAt: liveStartedAt, plannedMin: livePlannedMin,
+                url: `group-lesson.html?group_id=${encodeURIComponent(groupId)}&session_id=${encodeURIComponent(s.id)}` });
+            notifyLiveLessonChanged();
+            const tick = () => {
+                const st = timeState(liveStartedAt, livePlannedMin);
+                $('live-clock').textContent = clockText(st.elapsed);
+                $('live-left').textContent = st.text || '';
+                $('live-bar').classList.toggle('ph-soon', st.phase === 'soon');
+                $('live-bar').classList.toggle('ph-over', st.phase === 'over');
+                $('live-progress').style.width = st.progress == null ? '0' : `${Math.round(st.progress * 100)}%`;
+            };
+            tick();
+            liveTimer = setInterval(tick, 1000);
+        }
+        $('btn-start-live').addEventListener('click', () => {
+            const t = $('f-time').value;
+            saveDraft();
+            location.href = `group-lesson.html?group_id=${encodeURIComponent(groupId)}&start=1${t ? `&time=${encodeURIComponent(t)}` : ''}`;
+        });
+
+        // ------------------------------------------------------------ v27: المساعد الذكي
+        function aiContext() {
+            const members = prep.members || [];
+            const present = [...state.values()].filter((v) => v.attendance === 'present').length;
+            const absentNames = members.filter((m) => (state.get(String(m.student_id)) || {}).attendance !== 'present').map((m) => String(m.name || '').split(' ')[0]);
+            return {
+                mode: isLive ? 'live' : (prep.session ? 'manual' : 'ready'),
+                elapsed_min: isLive && liveStartedAt ? Math.round((Date.now() - liveStartedAt) / 60000) : null,
+                present_count: members.length ? present : null,
+                absent_names: absentNames.join('، '),
+                lesson_content: $('f-content').value.trim(),
+                homework: $('f-homework').value.trim(),
+                next_assignment: $('f-next').value.trim(),
+                notes: $('f-notes').value.trim(),
+                prev_homework: (prep.last_session && prep.last_session.homework) || ''
+            };
+        }
+        function setupAi() {
+            if (ai) { if (isLive && prep.session) ai.setSince(prep.session.started_at); return; }
+            ai = mountGroupAi({
+                groupId,
+                groupName: groupTitle(prep.group.name),
+                getContext: aiContext,
+                sessionSince: isLive && prep.session ? prep.session.started_at : null,
+                onUse: (field, text) => {
+                    const el = field === 'homework' ? $('f-homework') : $('f-content');
+                    el.value = el.value.trim() ? `${el.value.trim()}\n${text}` : text;
+                    saveDraft();
+                    ErrorHandler.showSuccess(field === 'homework' ? 'اتحط في الواجب' : 'اتحط في "أخدنا إيه"');
+                }
+            });
+        }
+        $('btn-ai-top').addEventListener('click', () => ai && ai.open());
+        $('btn-ai-live').addEventListener('click', () => ai && ai.open());
+
+        function renderSameDay() {
+            const box = $('same-day');
+            const list = prep.same_day || [];
+            // v27: فيه حصة شغالة للمجموعة دي: نكمّلها بدل ما نسجّل حصة تانية
+            if (!prep.session && prep.live) {
+                box.hidden = false;
+                box.innerHTML = `فيه حصة شغالة للمجموعة دي من الساعة ${esc(new Date(prep.live.started_at).toLocaleTimeString('ar-EG-u-nu-latn', { hour: 'numeric', minute: '2-digit' }))}.
+                    <div><a class="btn btn-sm" href="group-lesson.html?group_id=${encodeURIComponent(groupId)}&session_id=${encodeURIComponent(prep.live.id)}">كمّل الحصة الشغالة</a></div>`;
+                return;
+            }
+            if (prep.session || !list.length) { box.hidden = true; return; }
+            const first = list[0];
+            const t = first.start_time ? ` الساعة ${formatClock12(timeToMinutes(first.start_time))}` : '';
+            box.hidden = false;
+            box.innerHTML = `اتسجلت حصة للمجموعة دي في نفس اليوم${esc(t)}${first.status === 'cancelled' ? ' (ملغية)' : ''}. لو دي نفس الحصة عدّلها بدل ما تسجّلها مرتين.
+                <div><a class="btn btn-sm" href="group-lesson.html?group_id=${encodeURIComponent(groupId)}&session_id=${encodeURIComponent(first.id)}">عدّل الحصة المتسجلة</a></div>`;
+        }
+
+        function renderPrev() {
+            const p = prep.last_session;
+            if (!p || (!p.homework && !p.next_assignment)) { $('prev-card').hidden = true; return; }
+            $('prev-card').hidden = false;
+            $('prev-box').innerHTML = `
+                <b>من الحصة اللي فاتت (${esc(formatLessonDate(p.session_date))})</b>
+                ${p.next_assignment ? `<div>📌 كان المفروض: ${esc(p.next_assignment)}</div>` : ''}
+                ${p.homework ? `<div>📝 الواجب: ${esc(p.homework)}</div>` : ''}
+                ${p.next_assignment && !$('f-content').value ? '<button type="button" class="btn btn-sm btn-outline" id="btn-use-plan">استخدمه كمحتوى الحصة</button>' : ''}`;
+            const u = $('btn-use-plan');
+            if (u) u.addEventListener('click', () => { $('f-content').value = p.next_assignment; u.remove(); saveDraft(); });
+        }
+
+        const ATT_OPTS = [
+            { v: 'present', label: 'حضر' },
+            { v: 'absent_excused', label: 'غاب بعذر' },
+            { v: 'absent_unexcused', label: 'غاب' }
+        ];
+
+        function renderAttendance() {
+            const members = prep.members || [];
+            const labels = ratingFieldLabels(prep.group.subject);
+            if (!members.length) {
+                $('att-list').innerHTML = `<div class="x-empty">مفيش طلاب في المجموعة في التاريخ ده. <a href="group.html?id=${encodeURIComponent(groupId)}">ضيف طلاب</a></div>`;
+                updateSummary();
+                return;
+            }
+            $('att-list').innerHTML = members.map((m) => {
+                const id = String(m.student_id);
+                const st = state.get(id);
+                const absent = st.attendance !== 'present';
+                const hasDetails = st.rating || st.homework_status || st.note;
+                return `<div class="att-row ${absent ? 'is-absent' : ''}" data-id="${esc(id)}">
+                    <div class="att-line">
+                        <div class="att-name"><span class="member-avatar">${esc((m.name || '؟').trim().charAt(0))}</span><span>${esc(m.name)}${m.left_at ? ' <small class="muted">(خرج من المجموعة)</small>' : ''}</span></div>
+                        <div class="att-seg" role="group" aria-label="حضور ${esc(m.name)}">
+                            ${ATT_OPTS.map((o) => `<button type="button" data-v="${o.v}" aria-pressed="${st.attendance === o.v}">${o.label}</button>`).join('')}
+                        </div>
+                    </div>
+                    <details class="att-more" ${hasDetails ? 'open' : ''}>
+                        <summary>${hasDetails ? 'تقييمه' : '+ تقييم وملاحظة'}</summary>
+                        <span class="att-lbl">${esc(labels.memorization)}</span>
+                        <div class="chip-group" data-field="rating">${RATINGS.map((r) => `<button type="button" data-val="${r.value}" aria-pressed="${st.rating === r.value}">${r.label}</button>`).join('')}</div>
+                        <span class="att-lbl">الواجب اللي فات</span>
+                        <div class="chip-group" data-field="homework_status">${HOMEWORK_STATUS.map((h) => `<button type="button" data-val="${h.value}" aria-pressed="${st.homework_status === h.value}">${h.label}</button>`).join('')}</div>
+                        <input type="text" class="att-note" maxlength="500" placeholder="ملاحظة على الطالب ده (بتظهر في ملفه)" value="${esc(st.note)}" aria-label="ملاحظة على ${esc(m.name)}">
+                    </details>
+                </div>`;
+            }).join('');
+            updateSummary();
+        }
+
+        $('att-list').addEventListener('click', (e) => {
+            const row = e.target.closest('.att-row');
+            if (!row) return;
+            const st = state.get(row.dataset.id);
+            const seg = e.target.closest('.att-seg button');
+            if (seg) {
+                st.attendance = seg.dataset.v;
+                row.querySelectorAll('.att-seg button').forEach((b) => b.setAttribute('aria-pressed', String(b === seg)));
+                row.classList.toggle('is-absent', st.attendance !== 'present');
+                updateSummary(); saveDraft();
+                return;
+            }
+            const chip = e.target.closest('.chip-group button');
+            if (chip) {
+                const field = chip.parentElement.dataset.field;
+                st[field] = st[field] === chip.dataset.val ? null : chip.dataset.val; // دوسة تانية تشيل الاختيار
+                chip.parentElement.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(st[field] === b.dataset.val)));
+                saveDraft();
+            }
+        });
+        $('att-list').addEventListener('input', (e) => {
+            if (!e.target.classList.contains('att-note')) return;
+            state.get(e.target.closest('.att-row').dataset.id).note = e.target.value;
+            saveDraft();
+        });
+        $('btn-all-present').addEventListener('click', () => {
+            state.forEach((v) => { v.attendance = 'present'; });
+            renderAttendance(); saveDraft();
+        });
+
+        function updateSummary() {
+            const vals = [...state.values()];
+            const present = vals.filter((v) => v.attendance === 'present').length;
+            const absent = vals.length - present;
+            $('att-summary').textContent = vals.length ? `حضر ${present} من ${vals.length}${absent ? ` · غاب ${absent}` : ''}` : '';
+        }
+
+        function applyCancelled() {
+            const c = $('f-cancelled').checked;
+            $('cancel-hint').hidden = !c;
+            $('att-card').hidden = c;
+            ['f-content', 'f-homework', 'f-next'].forEach((id) => { $(id).closest('.gl-field').hidden = c; });
+            $('f-set-topic').closest('label').hidden = c;
+            $('prev-card').hidden = c || !prep.last_session || (!prep.last_session.homework && !prep.last_session.next_assignment);
+        }
+        $('f-cancelled').addEventListener('change', () => { applyCancelled(); saveDraft(); });
+        ['f-time', 'f-content', 'f-homework', 'f-next', 'f-notes', 'f-set-topic'].forEach((id) => $(id).addEventListener('input', saveDraft));
+        $('f-set-topic').addEventListener('change', saveDraft);
+
+        // تغيير التاريخ في حصة جديدة: الطلاب ممكن يختلفوا (اللي انضم/خرج) فنجهّز تاني
+        $('f-date').addEventListener('change', async () => {
+            const v = $('f-date').value;
+            if (!v || v > todayIso) { ErrorHandler.showError('اختار تاريخ النهارده أو يوم فات'); $('f-date').value = todayIso; return; }
+            if (prep.session) return;
+            try {
+                const old = state;
+                const p = await api.prepareGroupSession(groupId, { date: v });
+                if (p) {
+                    prep.members = p.members; prep.same_day = p.same_day; prep.last_session = p.last_session;
+                    state = new Map();
+                    (p.members || []).forEach((m) => state.set(String(m.student_id), old.get(String(m.student_id)) || { attendance: 'present', rating: null, homework_status: null, note: '' }));
+                    prep.live = p.live; prep.schedule_today = p.schedule_today;
+                    renderSameDay(); renderPrev(); renderAttendance(); applyCancelled(); setupLive(); saveDraft();
+                }
+            } catch (e) { /* نكمّل باللي عندنا */ }
+        });
+
+        // ------------------------------------------------------------ الحفظ
+        $('session-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (saving) return;
+            const date = $('f-date').value;
+            if (!date || date > todayIso) { ErrorHandler.showError('اختار تاريخ الحصة (النهارده أو يوم فات)'); return; }
+            if (!state.size) { ErrorHandler.showError('مفيش طلاب في الحصة. ضيف طلاب للمجموعة الأول.'); return; }
+            const cancelled = $('f-cancelled').checked;
+            const payload = {
+                group_id: groupId,
+                session_id: sessionId || undefined,
+                client_request_id: sessionId ? undefined : clientRequestId,
+                // الحصة الشغالة: وقتها = وقت البداية
+                date,
+                start_time: $('f-time').value || undefined,
+                status: cancelled ? 'cancelled' : 'completed',
+                lesson_content: cancelled ? '' : $('f-content').value.trim(),
+                homework: cancelled ? '' : $('f-homework').value.trim(),
+                next_assignment: cancelled ? '' : $('f-next').value.trim(),
+                notes: $('f-notes').value.trim(),
+                set_topic: !cancelled && $('f-set-topic').checked,
+                attendance: [...state.entries()].map(([student_id, v]) => ({
+                    student_id, attendance: v.attendance,
+                    rating: v.attendance === 'present' ? v.rating : null,
+                    homework_status: v.attendance === 'present' ? v.homework_status : null,
+                    note: (v.note || '').trim() || null
+                }))
+            };
+            saving = true;
+            const b = $('btn-save');
+            b.disabled = true;
+            b.textContent = 'جاري الحفظ...';
+            try {
+                const res = await api.saveGroupSession(payload);
+                clearDraft();
+                if (isLive) {
+                    clearInterval(liveTimer);
+                    LiveLesson.clear(liveKey());
+                    notifyLiveLessonChanged();
+                    if (ai) ai.clear();
+                }
+                try { window.tmTrack && window.tmTrack(sessionId ? 'group_session_edited' : 'group_session_saved', { members: payload.attendance.length, cancelled }); } catch (er) { /* تجاهل */ }
+                showDone(res || {}, payload);
+            } catch (error) {
+                ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
+                b.disabled = false;
+                b.innerHTML = `${icon('check', { size: 18 })} ${saveLabel()}`;
+            } finally { saving = false; }
+        });
+
+        function showDone(res, payload) {
+            const g = prep.group;
+            const wasEdit = !!sessionId && !isLive;
+            const liveMinutes = isLive && liveStartedAt ? Math.max(1, Math.round((Date.now() - liveStartedAt) / 60000)) : null;
+            isLive = false;
+            $('live-bar').hidden = true;
+            sessionId = res.session_id || sessionId;
+            const cancelled = payload.status === 'cancelled';
+            const present = payload.attendance.filter((a) => a.attendance === 'present').length;
+            const absents = payload.attendance.filter((a) => a.attendance !== 'present');
+            const byId = new Map((prep.members || []).map((m) => [String(m.student_id), m]));
+            const shareText = sessionShareText(g.name, { session_date: payload.date, status: payload.status, lesson_content: payload.lesson_content, homework: payload.homework, next_assignment: payload.next_assignment });
+            const absentMsg = (name) => `السلام عليكم، ${name} ماحضرش حصة ${groupTitle(g.name)} النهارده.${payload.lesson_content ? `\nاللي أخدناه: ${payload.lesson_content}` : ''}${payload.homework ? `\nالواجب: ${payload.homework}` : ''}`;
+
+            $('app').hidden = true;
+            const done = $('done');
+            done.hidden = false;
+            done.innerHTML = `
+                <div style="color:var(--success-text);">${icon('checkCircle', { size: 46 })}</div>
+                <h2>${wasEdit ? 'اتحفظت التعديلات' : (cancelled ? 'اتسجلت الحصة كملغية' : 'اتسجلت الحصة')}</h2>
+                ${liveMinutes ? `<p class="muted" style="margin:0 0 0.2rem;">مدة الحصة: ${liveMinutes} دقيقة</p>` : ''}
+                <p class="muted" style="margin:0;">${cancelled ? `اتسجلت "ملغية من المدرس" لـ ${esc(membersText(payload.attendance.length))} ومش هتتخصم من حد.` : `حضر ${present} من ${payload.attendance.length}${absents.length ? ` · غاب ${absents.length}` : ''}. كل طالب اتسجلت حصته في ملفه.`}</p>
+                <div class="gl-done-actions">
+                    <a class="btn" href="${esc(whatsappUrl('', shareText))}" target="_blank" rel="noopener">${icon('messageCircle', { size: 18 })} ابعت الملخص لجروب المجموعة</a>
+                </div>
+                ${!cancelled && absents.length ? `<div class="absent-list">
+                    <p style="font-weight:700; margin:0 0 0.3rem;">بلّغ اللي غابوا</p>
+                    ${absents.map((a) => {
+                        const m = byId.get(String(a.student_id)) || { name: 'طالب' };
+                        return `<div class="member-row"><div class="member-avatar">${esc((m.name || '؟').charAt(0))}</div>
+                            <div class="member-main"><a href="student.html?id=${encodeURIComponent(a.student_id)}">${esc(m.name)}</a><div class="member-stats"><span>${a.attendance === 'absent_excused' ? 'غاب بعذر' : 'غاب'}</span></div></div>
+                            <div class="member-actions">${m.phone ? `<a class="btn btn-sm btn-outline" href="${esc(whatsappUrl(m.phone, absentMsg(m.name)))}" target="_blank" rel="noopener">${icon('messageCircle', { size: 15 })} واتساب</a>` : '<span class="muted" style="font-size:0.8rem;">مفيش رقم</span>'}</div></div>`;
+                    }).join('')}</div>` : ''}
+                <div class="gl-done-actions">
+                    <a class="btn btn-outline" href="group-lesson.html?group_id=${encodeURIComponent(groupId)}&session_id=${encodeURIComponent(sessionId)}">عدّل الحصة</a>
+                    <a class="btn btn-outline" href="group.html?id=${encodeURIComponent(groupId)}">صفحة المجموعة</a>
+                    <a class="btn btn-outline" href="dashboard.html">الرئيسية</a>
+                </div>`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        $('btn-delete').addEventListener('click', async () => {
+            if (!sessionId) return;
+            const pick = await askChoice(isLive ? {
+                title: 'إلغاء الحصة الشغالة؟',
+                message: 'الحصة هتتقفل من غير ما يتسجل حضور لحد. لو الحصة اتعملت فعلًا، اضغط "خلّصت الحصة، سجّلها" بدل كده.',
+                choices: [{ label: 'ألغي الحصة', value: 'yes', danger: true }]
+            } : {
+                title: 'حذف الحصة دي؟',
+                message: 'الحصة هتتمسح من المجموعة ومن ملف كل طالب، والحصص المتخصومة هترجع لرصيدهم.',
+                choices: [{ label: 'احذف الحصة', value: 'yes', danger: true }]
+            });
+            if (!pick) return;
+            try {
+                await api.deleteGroupSession(groupId, sessionId);
+                if (isLive) { clearInterval(liveTimer); LiveLesson.clear(liveKey()); notifyLiveLessonChanged(); clearDraft(); if (ai) ai.clear(); }
+                ErrorHandler.showSuccess(isLive ? 'اتلغت الحصة' : 'اتمسحت الحصة');
+                setTimeout(() => { location.href = `group.html?id=${encodeURIComponent(groupId)}#sessions`; }, 600);
+            } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
+        });
+    </script>
+    <script src="js/pwa-install.js?v=27" defer></script>
+</body>
+</html>

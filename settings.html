@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الإعدادات - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=24">
+    <link rel="stylesheet" href="css/style.css?v=27">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -29,15 +29,18 @@
         .settings-section h2 { color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; font-size: 1.2rem; }
         .form-group { margin-bottom: 1.5rem; }
         .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-primary); }
-        .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 1rem; }
+        .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--field-border); border-radius: 8px; font-family: inherit; font-size: 1rem; margin-bottom: 0; background-color: #fff; }
         .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); }
-        .info-text { color: #716A74; font-size: 0.9rem; margin-top: 0.5rem; }
-        .btn { padding: 0.75rem 1.5rem; margin-right: 0.5rem; }
-        .btn-danger { background: #B85C5C; color: white; }
-        .btn-danger:hover { background: #A24A4A; }
+        .info-text { color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem; }
+        /* v25: كان فيه margin-right: 0.5rem فالأزرار كانت بادئة 8px جوه عن حافة الخانات */
+        .btn { padding: 0.75rem 1.5rem; margin: 0; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #8E3F3F; }
+        .btn-outline-danger { background: var(--card-bg); color: var(--danger); border: 1px solid var(--danger-border); }
+        .btn-outline-danger:hover { background: #FBEAEA; }
         .action-row { display: flex; gap: 1rem; }
-        .success-message { background: #E8F5E9; color: #6F8F72; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; display: none; }
-        .error-message { background: #FFEBEE; color: #B85C5C; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; display: none; }
+        .success-message { background: #E8F5E9; color: var(--success-text); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; display: none; }
+        .error-message { background: #FFEBEE; color: var(--danger); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; display: none; }
     </style>
 </head>
 <body>
@@ -93,6 +96,8 @@
                         <option value="english">اللغة الإنجليزية</option>
                         <option value="math">الرياضيات</option>
                         <option value="science">العلوم</option>
+                        <option value="programming">البرمجة</option>
+                        <option value="other">أخرى</option>
                     </select>
                     <div class="info-text">بتظهر تلقائيًا لما تضيف طالب جديد، وبتغيّر أسماء التقييم (الحفظ والتلاوة للقرآن).</div>
                 </div>
@@ -139,19 +144,33 @@
             <button type="button" class="btn" id="btn-enable-push">تفعيل التنبيهات</button>
         </div>
 
+        <!-- v27: تثبيت التطبيق (بيشتغل على أي متصفح: لو مفيش تثبيت مباشر بيظهر الشرح خطوة بخطوة) -->
+        <div class="settings-section tm-install-entry" id="install-section" hidden>
+            <h2><span id="ic-install" class="icon"></span> تثبيت التطبيق</h2>
+            <p class="info-text" style="margin:0 0 1rem;">خلّي Teachers Manager على الشاشة الرئيسية للموبايل أو الكمبيوتر: يفتح بضغطة زي أي تطبيق، ويوصلك تنبيه بحصص كل يوم.</p>
+            <button type="button" class="btn" id="btn-install-app">ثبّت التطبيق</button>
+        </div>
+
+        <!-- v25: الخروج العادي (زرار الخروج اتشال من هيدر الموبايل) -->
+        <div class="settings-section">
+            <h2><span id="ic-account" class="icon"></span> الحساب</h2>
+            <p class="info-text" style="margin:0 0 1rem;">بياناتك وطلابك بيفضلوا محفوظين. تقدر تدخل تاني في أي وقت بنفس الإيميل.</p>
+            <button type="button" class="btn btn-outline-danger" id="btn-logout">تسجيل الخروج من الجهاز ده</button>
+        </div>
+
         <!-- Danger Zone -->
-        <div class="settings-section" style="border-color: #B85C5C;">
-            <h2 style="color: #B85C5C;">منطقة الخطر</h2>
+        <div class="settings-section" style="border-color: var(--danger);">
+            <h2 style="color: var(--danger);">منطقة الخطر</h2>
             
             <div style="margin-bottom: 1.5rem;">
                 <h4 style="color: var(--text-primary);">تسجيل الخروج من جميع الأجهزة</h4>
-                <p style="color: #716A74; font-size: 0.9rem;">سيتم تسجيل خروجك من جميع الأجهزة والمتصفحات</p>
+                <p style="color: var(--text-secondary); font-size: 0.9rem;">سيتم تسجيل خروجك من جميع الأجهزة والمتصفحات</p>
                 <button type="button" class="btn btn-danger" onclick="logoutAllDevices()">تسجيل الخروج من الجميع</button>
             </div>
 
             <div>
                 <h4 style="color: var(--text-primary);">طلب حذف الحساب</h4>
-                <p style="color: #716A74; font-size: 0.9rem; margin-bottom: 1rem;">هنحذف حسابك وكل بيانات طلابك نهائيًا خلال 48 ساعة من طلبك. الإجراء ده مالوش رجوع.</p>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">هنحذف حسابك وكل بيانات طلابك نهائيًا خلال 48 ساعة من طلبك. الإجراء ده مالوش رجوع.</p>
                 <button type="button" class="btn btn-danger" onclick="deleteAccount()">طلب حذف الحساب</button>
             </div>
         </div>
@@ -161,15 +180,15 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=24"></script>
+    <script type="module" src="js/config.js?v=27"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=24';
-        import { Storage, ErrorHandler, toLatinDigits } from './js/utils.js?v=24';
-        import { api } from './js/api.js?v=24';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=24';
-        import { icon } from './js/icons.js?v=24';
-        import { CONFIG } from './js/config.js?v=24';
-        import { requestPermission, unlinkOnSignOut } from './js/notifications.js?v=24';
+        import { Auth } from './js/auth.js?v=27';
+        import { Storage, ErrorHandler, toLatinDigits } from './js/utils.js?v=27';
+        import { api } from './js/api.js?v=27';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=27';
+        import { icon } from './js/icons.js?v=27';
+        import { CONFIG } from './js/config.js?v=27';
+        import { requestPermission, unlinkOnSignOut } from './js/notifications.js?v=27';
 
         function renderPushStatus() {
             const el = document.getElementById('push-status');
@@ -201,6 +220,17 @@
         document.getElementById('ic-profile').innerHTML = icon('userCheck', { size: 18 });
         document.getElementById('ic-security').innerHTML = icon('lock', { size: 18 });
         document.getElementById('ic-notif').innerHTML = icon('bell', { size: 18 });
+        document.getElementById('ic-account').innerHTML = icon('logout', { size: 18 });
+        document.getElementById('ic-install').innerHTML = icon('download', { size: 18 });
+        document.getElementById('btn-install-app').addEventListener('click', () => {
+            if (window.tmInstall) window.tmInstall.open();
+        });
+        const syncInstallSection = () => {
+            const installed = window.tmInstall ? window.tmInstall.isInstalled() : window.matchMedia('(display-mode: standalone)').matches;
+            document.getElementById('install-section').hidden = installed;
+        };
+        syncInstallSection();
+        window.addEventListener('tm:install-state', syncInstallSection);
         renderTopHeader({ title: 'الإعدادات', subtitle: 'إدارة ملفك الشخصي وأمان حسابك', showSearch: false });
 
         // Check auth
@@ -216,12 +246,14 @@
                 document.getElementById('name').value = profile.name || '';
                 document.getElementById('email').value = profile.email || (authInfo.session && authInfo.session.user && authInfo.session.user.email) || '';
                 document.getElementById('phone').value = profile.phone || '';
-                document.getElementById('teaching-type').value = profile.teaching_type || 'private';
+                // v25: أي قيمة مش موجودة في القايمة بتتضاف كخيار بدل ما الاختيار ينطّ لأول خيار ويتحفظ غلط
+                const keepValue = (sel, val, label) => {
+                    if (val && ![...sel.options].some((o) => o.value === val)) sel.add(new Option(label || val, val));
+                    if (val) sel.value = val;
+                };
+                keepValue(document.getElementById('teaching-type'), profile.teaching_type || 'private');
                 const subj = document.getElementById('subject');
-                if (profile.subject && ![...subj.options].some((o) => o.value === profile.subject)) {
-                    subj.add(new Option(profile.subject, profile.subject));   // مادة قديمة مكتوبة بإيدك: بتفضل زي ما هي
-                }
-                subj.value = profile.subject || 'quran';
+                keepValue(subj, profile.subject || 'quran', /[؀-ۿ]/.test(String(profile.subject || '')) ? profile.subject : 'أخرى');
             }
         });
 
@@ -309,6 +341,15 @@
         });
 
         // Logout all devices
+        document.getElementById('btn-logout').addEventListener('click', async () => {
+            const btn = document.getElementById('btn-logout');
+            btn.disabled = true;
+            btn.textContent = 'جاري الخروج...';
+            await unlinkOnSignOut();   // الجهاز ده مايستقبلش إشعارات الحساب بعد الخروج
+            await Auth.signOut();
+            window.location.href = 'login.html';
+        });
+
         window.logoutAllDevices = async () => {
             if (!confirm('هل أنت متأكد؟ سيتم تسجيل خروجك من جميع الأجهزة.')) return;
             // scope: 'global' = يقفل الجلسة على كل الأجهزة مش الجهاز ده بس
@@ -330,6 +371,6 @@
             }
         };
     </script>
-    <script src="js/pwa-install.js?v=24" defer></script>
+    <script src="js/pwa-install.js?v=27" defer></script>
 </body>
 </html>

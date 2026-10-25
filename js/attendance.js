@@ -6,10 +6,10 @@
  * لو فيه حصة جارية (lessonId) بتتحوّل هي نفسها لغياب بدل ما يتعمل صف جديد.
  */
 
-import { api } from './api.js?v=24';
-import { Formatters, ErrorHandler } from './utils.js?v=24';
-import { icon } from './icons.js?v=24';
-import { localDateISO } from './lesson-utils.js?v=24';
+import { api } from './api.js?v=27';
+import { Formatters, ErrorHandler } from './utils.js?v=27';
+import { icon } from './icons.js?v=27';
+import { localDateISO } from './lesson-utils.js?v=27';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 

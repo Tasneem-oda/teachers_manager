@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-NXC2WZMT');</script>
+    <!-- End Google Tag Manager -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>المجموعات - Teachers Manager</title>
+    <link rel="stylesheet" href="css/style.css?v=27">
+    <link rel="stylesheet" href="css/lessons.css?v=27">
+    <link rel="stylesheet" href="css/groups.css?v=27">
+    <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
+    <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4B3A5A">
+</head>
+<body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NXC2WZMT"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+    <div class="app-shell">
+        <div id="sidebar-root"></div>
+
+        <main class="main-content">
+            <div id="top-header-root"></div>
+
+            <div class="page-body">
+                <nav class="people-tabs" aria-label="الطلاب والمجموعات">
+                    <a href="students.html"><span id="ic-tab-students" class="icon" style="display:inline-flex"></span> الطلاب</a>
+                    <a href="groups.html" class="active" aria-current="page"><span id="ic-tab-groups" class="icon" style="display:inline-flex"></span> المجموعات</a>
+                </nav>
+
+                <div class="groups-head">
+                    <h1 class="page-title-dup">المجموعات</h1>
+                    <button type="button" class="btn" id="btn-new-group"><span id="ic-new" class="icon" style="display:inline-flex"></span> مجموعة جديدة</button>
+                </div>
+
+                <div class="groups-filter" role="group" aria-label="عرض">
+                    <button type="button" data-filter="active" class="active">الشغالة</button>
+                    <button type="button" data-filter="archived">المؤرشفة</button>
+                </div>
+
+                <div class="loader" id="loader">جاري تحميل المجموعات...</div>
+                <div class="groups-grid" id="groups-container"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- مجموعة جديدة -->
+    <div class="modal" id="new-group-modal">
+        <div class="modal-content" style="max-width:560px;">
+            <span class="close-modal" data-close="new-group-modal">&times;</span>
+            <h2>مجموعة جديدة</h2>
+            <p class="muted" style="margin:-0.4rem 0 1rem; font-size:0.88rem;">اسم المجموعة والطلاب والمواعيد. كل حاجة تقدر تعدّلها بعدين.</p>
+            <form id="new-group-form" novalidate>
+                <div class="form-group">
+                    <label for="g-name">اسم المجموعة *</label>
+                    <input type="text" id="g-name" maxlength="80" placeholder="مثلًا: تالتة إعدادي - السبت" autocomplete="off" required>
+                </div>
+                <div class="form-group">
+                    <label for="g-subject">المادة</label>
+                    <select id="g-subject"></select>
+                </div>
+                <div class="form-group">
+                    <label>الطلاب</label>
+                    <div id="g-picker"></div>
+                </div>
+                <div class="form-group">
+                    <label>المواعيد</label>
+                    <div id="g-schedules"></div>
+                </div>
+                <!-- v27: طريقة الحساب -->
+                <div class="form-group">
+                    <label>طريقة الحساب</label>
+                    <div class="bt-seg" role="radiogroup" aria-label="طريقة الحساب">
+                        <label><input type="radio" name="g-bt" value="per_lesson" checked> بالحصة <small>كل حصة بتتخصم من باقة/رصيد الطالب زي حصصه العادية</small></label>
+                        <label><input type="radio" name="g-bt" value="monthly"> اشتراك شهري <small>مبلغ ثابت لكل طالب في الشهر</small></label>
+                    </div>
+                    <div class="fee-row" id="g-fee-row" hidden><input type="number" id="g-fee" min="0" max="1000000" step="1" inputmode="decimal" placeholder="مثلًا 300"><span>جنيه لكل طالب في الشهر</span></div>
+                </div>
+                <details class="x-more">
+                    <summary>+ إعدادات إضافية</summary>
+                    <div class="form-group">
+                        <label for="g-link">رابط الحصة (لو أونلاين)</label>
+                        <input type="url" id="g-link" dir="ltr" placeholder="https://meet.google.com/...">
+                    </div>
+                    <div id="g-billable-wrap">
+                    <label class="gl-cancel" style="margin-top:0 !important;">
+                        <input type="checkbox" id="g-billable" checked>
+                        حصص المجموعة بتتخصم من رصيد كل طالب
+                    </label>
+                    <p class="muted" style="font-size:0.82rem; margin:0.2rem 0 0.6rem;">لو الطالب عنده متابعة دفع (باقة أو بالحصة)، حصة المجموعة بتتحسب زي حصته العادية. شيل العلامة لو بتحاسب على المجموعة لوحدها.</p>
+                    </div>
+                </details>
+                <div style="display:flex; gap:0.75rem; margin-top:1rem;">
+                    <button type="submit" class="btn" id="g-save">إنشاء المجموعة</button>
+                    <button type="button" class="btn btn-outline close-modal" data-close="new-group-modal">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="error-toast" style="display:none;"></div>
+    <div id="success-toast" style="display:none;"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+    <script type="module" src="js/config.js?v=27"></script>
+    <script type="module">
+        import { Auth } from './js/auth.js?v=27';
+        import { api } from './js/api.js?v=27';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=27';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=27';
+        import { icon } from './js/icons.js?v=27';
+        import { subjectLabel } from './js/lesson-utils.js?v=27';
+        import { groupTitle, groupColorClass, membersText, scheduleSummary, subjectOptionsHtml, mountScheduleEditor, mountStudentPicker, quickCreateStudent, saveWithConflictCheck, todayScheduleTime } from './js/groups-utils.js?v=27';
+        import { money } from './js/billing.js?v=27';
+        import { formatLessonDate } from './js/lesson-utils.js?v=27';
+
+        const $ = (id) => document.getElementById(id);
+        const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
+
+        renderSidebar('groups');
+        renderTopHeader({ title: 'المجموعات', subtitle: 'حصص جماعية: حضور وواجب لكل الطلاب مرة واحدة' });
+        $('ic-tab-students').innerHTML = icon('users', { size: 16 });
+        $('ic-tab-groups').innerHTML = icon('group', { size: 16 });
+        $('ic-new').innerHTML = icon('plus', { size: 16 });
+
+        let groups = [];
+        let students = [];
+        let filter = 'active';
+        let picker = null;
+        let schedEditor = null;
+
+        (async () => {
+            const authInfo = await Auth.requireAuth();
+            if (!authInfo) return;
+            await load();
+            if (new URLSearchParams(location.search).get('action') === 'new') openNew();
+        })();
+
+        async function load() {
+            try {
+                groups = await api.listGroups();
+                render();
+                $('loader').style.display = 'none';
+            } catch (error) {
+                $('loader').innerHTML = `${esc(ErrorHandler.getErrorMessage(error))} <button type="button" class="btn btn-sm" id="retry">حاول تاني</button>`;
+                $('retry').addEventListener('click', () => { $('loader').textContent = 'جاري تحميل المجموعات...'; load(); });
+            }
+        }
+
+        function render() {
+            const list = groups.filter((g) => (filter === 'archived' ? g.status === 'archived' : g.status !== 'archived'));
+            const archivedCount = groups.filter((g) => g.status === 'archived').length;
+            document.querySelector('[data-filter="archived"]').hidden = archivedCount === 0 && filter !== 'archived';
+            const box = $('groups-container');
+            if (!list.length) {
+                box.innerHTML = filter === 'archived'
+                    ? '<div class="empty-state">مفيش مجموعات مؤرشفة.</div>'
+                    : `<div class="empty-state">
+                          <p style="font-size:1.05rem; font-weight:700; color:var(--text-primary); margin:0 0 0.4rem;">عندك طلاب بيحضروا مع بعض؟</p>
+                          <p style="margin:0 0 1rem; line-height:1.8;">اعملهم مجموعة: تسجّل حضور الكل والواجب مرة واحدة،<br>وكل طالب حصته بتتسجل في ملفه ودفعه لوحده.</p>
+                          <button type="button" class="btn" data-empty-new>اعمل أول مجموعة</button>
+                       </div>`;
+                const b = box.querySelector('[data-empty-new]');
+                if (b) b.addEventListener('click', openNew);
+                return;
+            }
+            box.innerHTML = list.map((g) => {
+                const names = (g.members || []).map((m) => m.name.split(' ')[0]);
+                const namesText = names.length > 6 ? `${names.slice(0, 6).join('، ')} و${names.length - 6} كمان` : names.join('، ');
+                return `<div class="group-card ${groupColorClass(g.color)} ${g.status === 'archived' ? 'is-archived' : ''}">
+                    <div class="group-card-top">
+                        <div class="group-badge">${icon('group', { size: 22 })}</div>
+                        <div style="min-width:0; flex:1;">
+                            <h3>${esc(groupTitle(g.name))} ${g.status === 'archived' ? '<span class="tag-archived">مؤرشفة</span>' : ''}${g.live_session_id ? ' <span class="tag-live">● شغالة</span>' : ''}</h3>
+                            <div class="group-meta">${icon('users', { size: 14 })} ${esc(membersText(g.members_count))}${g.subject ? ` · ${esc(subjectLabel(g.subject))}` : ''}</div>
+                        </div>
+                    </div>
+                    <div class="group-meta">${icon('calendar', { size: 14 })} ${esc(scheduleSummary(g.schedules))}</div>
+                    ${g.last_session_date ? `<div class="group-meta">${icon('clipboard', { size: 14 })} آخر حصة: ${esc(formatLessonDate(g.last_session_date))} · ${g.sessions_count} حصة</div>` : ''}
+                    ${namesText ? `<div class="group-names">${esc(namesText)}</div>` : ''}
+                    ${g.billing_type === 'monthly' ? `<div class="group-meta">${icon('creditCard', { size: 14 })} اشتراك ${esc(money(Number(g.monthly_fee) || 0))} ج/شهر${g.unpaid_count ? ` · <b style="color:var(--danger-text)">${g.unpaid_count} لسه مادفعوش</b>` : ''}</div>` : ''}
+                    <div class="group-actions">
+                        ${g.status === 'archived' ? '' : (g.live_session_id
+                            ? `<a class="btn" href="group-lesson.html?group_id=${encodeURIComponent(g.id)}&session_id=${encodeURIComponent(g.live_session_id)}">${icon('play', { size: 15 })} كمّل الحصة</a>`
+                            : `<a class="btn" href="group-lesson.html?group_id=${encodeURIComponent(g.id)}&start=1${todayScheduleTime(g.schedules) ? `&time=${encodeURIComponent(todayScheduleTime(g.schedules))}` : ''}" ${g.members_count ? '' : 'aria-disabled="true" style="opacity:.6;pointer-events:none"'}>${icon('play', { size: 15 })} ابدأ الحصة</a>`)}
+                        <a class="btn btn-outline" href="group.html?id=${encodeURIComponent(g.id)}">عرض المجموعة</a>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        document.querySelectorAll('[data-filter]').forEach((b) => b.addEventListener('click', () => {
+            filter = b.dataset.filter;
+            document.querySelectorAll('[data-filter]').forEach((x) => x.classList.toggle('active', x === b));
+            render();
+        }));
+
+        // ------------------------------------------------------------ مجموعة جديدة
+        function syncBt() {
+            const monthly = (document.querySelector('input[name="g-bt"]:checked') || {}).value === 'monthly';
+            $('g-fee-row').hidden = !monthly;
+            $('g-billable-wrap').hidden = monthly;
+        }
+        document.querySelectorAll('input[name="g-bt"]').forEach((r) => r.addEventListener('change', syncBt));
+        async function openNew() {
+            $('new-group-form').reset();
+            $('g-billable').checked = true;
+            syncBt();
+            let teacherSubject = '';
+            try { teacherSubject = localStorage.getItem('tm_teacher_subject') || ''; } catch (e) { /* تجاهل */ }
+            $('g-subject').innerHTML = subjectOptionsHtml(teacherSubject);
+            $('g-picker').innerHTML = '<div class="pick-empty">جاري تحميل الطلاب...</div>';
+            schedEditor = mountScheduleEditor($('g-schedules'), []);
+            schedEditor.addDefault();
+            $('new-group-modal').classList.add('active');
+            setTimeout(() => $('g-name').focus(), 60);
+            try {
+                const data = await api.getAllStudents();
+                students = data.students || [];
+            } catch (e) { students = []; }
+            picker = mountStudentPicker($('g-picker'), {
+                students,
+                onCreateStudent: (name) => quickCreateStudent(api, name, $('g-subject').value)
+            });
+        }
+        $('btn-new-group').addEventListener('click', openNew);
+        document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => $(b.dataset.close).classList.remove('active')));
+
+        $('new-group-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = $('g-name').value.trim();
+            if (!name) { ErrorHandler.showError('اكتب اسم المجموعة'); $('g-name').focus(); return; }
+            const link = $('g-link').value.trim();
+            if (link && !/^https?:\/\//i.test(link)) { ErrorHandler.showError('رابط الحصة لازم يبدأ بـ https://'); return; }
+            let schedules;
+            try { schedules = schedEditor.get(); } catch (err) { ErrorHandler.showError(err.message); return; }
+            const billingType = (document.querySelector('input[name="g-bt"]:checked') || {}).value === 'monthly' ? 'monthly' : 'per_lesson';
+            const fee = $('g-fee').value === '' ? null : Number($('g-fee').value);
+            if (billingType === 'monthly' && !(fee > 0)) { ErrorHandler.showError('اكتب مبلغ الاشتراك الشهري للطالب'); $('g-fee').focus(); return; }
+            const btn = $('g-save');
+            btn.disabled = true;
+            btn.textContent = 'جاري الإنشاء...';
+            try {
+                // v27: لو المواعيد بتتعارض مع حصص تانية الخادم بيرجّع blocked ومابيعملش المجموعة، فبنسأل المدرس الأول
+                const res = await saveWithConflictCheck((force) => api.saveGroup({
+                    name, subject: $('g-subject').value, lesson_link: link,
+                    billable: $('g-billable').checked,
+                    billing_type: billingType, monthly_fee: billingType === 'monthly' ? fee : undefined,
+                    add: picker ? picker.getSelected() : [],
+                    schedules,
+                    force
+                }));
+                if (!res) return;
+                try { window.tmTrack && window.tmTrack('group_created', { members: picker ? picker.getSelected().length : 0, schedules: schedules.length }); } catch (er) { /* تجاهل */ }
+                try { window.dispatchEvent(new CustomEvent('tm:schedules-changed')); } catch (er) { /* تجاهل */ }
+                if (res && res.id) { location.href = `group.html?id=${encodeURIComponent(res.id)}&created=1`; return; }
+                $('new-group-modal').classList.remove('active');
+                await load();
+            } catch (error) {
+                ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'إنشاء المجموعة';
+            }
+        });
+    </script>
+    <script src="js/pwa-install.js?v=27" defer></script>
+</body>
+</html>

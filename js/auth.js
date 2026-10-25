@@ -7,8 +7,8 @@
  * في كل مكان (وليس window.supabase، لأن هذا الأخير هو مكتبة supabase-js
  * الخام القادمة من الـ CDN وليس عميلاً مهيّأً، وليس لديه خاصية .auth).
  */
-import { CONFIG } from './config.js?v=24';
-import { APIUtils, Storage, ErrorHandler, Validators, toLatinDigits } from './utils.js?v=24';
+import { CONFIG } from './config.js?v=27';
+import { APIUtils, Storage, ErrorHandler, Validators, toLatinDigits } from './utils.js?v=27';
 
 /** fetch بمهلة: على النت الضعيف الدخول/التسجيل مايفضلش يلف للأبد */
 async function fetchWithTimeout(url, options = {}, ms = 12000) {

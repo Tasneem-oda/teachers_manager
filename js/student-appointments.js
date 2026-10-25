@@ -11,11 +11,11 @@
  * من غير أي تعديل أو إضافة على أي workflow في n8n.
  */
 
-import { api } from './api.js?v=24';
-import { ErrorHandler, Formatters, uuidv4 } from './utils.js?v=24';
-import { icon } from './icons.js?v=24';
-import { mountTimePicker, refreshTimePicker, mountDayChips, weekIndex } from './form-widgets.js?v=24';
-import { parseDate, isoDate } from './calendar-utils.js?v=24';
+import { api } from './api.js?v=27';
+import { ErrorHandler, Formatters, uuidv4, askChoice } from './utils.js?v=27';
+import { icon } from './icons.js?v=27';
+import { mountTimePicker, refreshTimePicker, mountDayChips, weekIndex } from './form-widgets.js?v=27';
+import { parseDate, isoDate } from './calendar-utils.js?v=27';
 
 const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const RECURRENCE_LABELS = { weekly: 'أسبوعيًا', daily: 'يوميًا', monthly: 'شهريًا', none: 'مرة واحدة' };
@@ -106,7 +106,7 @@ function injectMarkup() {
 
                     <div style="display:flex; gap:0.5rem; margin-top:1rem; flex-wrap:wrap;">
                         <button type="submit" class="btn" id="sapp-save-btn">حفظ الموعد</button>
-                        <button type="button" class="btn close-modal" style="background: var(--bg-muted); color: var(--text-primary);">إلغاء</button>
+                        <button type="button" class="btn btn-outline close-modal">إلغاء</button>
                     </div>
                 </form>
             </div>
@@ -136,10 +136,22 @@ function injectMarkup() {
             // موعد "كل يوم" = 7 صفوف بنفس المجموعة: نسأل نحذف كل الأيام ولا اليوم ده بس
             const group = sch.recurrence_group_id ? studentSchedules.filter((x) => x.recurrence_group_id === sch.recurrence_group_id) : [sch];
             let targets = [sch];
+            // v25: أزرار بأسماء الفعل بدل confirm() اللي "إلغاء" فيه كان معناه "احذف اليوم ده بس"
             if (group.length > 1) {
-                if (confirm(`الموعد ده متكرر في ${group.length} أيام. تحذفه من كل الأيام؟\n(اضغط "إلغاء" لو عايز تحذف اليوم ده بس)`)) targets = group;
-                else if (!confirm('تحذف الموعد ده من اليوم ده بس؟')) return;
-            } else if (!confirm('هل تريد حذف هذا الموعد؟')) return;
+                const pick = await askChoice({
+                    title: 'حذف الموعد',
+                    message: `الموعد ده متكرر في ${group.length} أيام.`,
+                    choices: [
+                        { label: 'احذف اليوم ده بس', value: 'one', danger: true },
+                        { label: `احذف كل الأيام (${group.length})`, value: 'all', danger: true }
+                    ]
+                });
+                if (!pick) return;
+                if (pick === 'all') targets = group;
+            } else {
+                const pick = await askChoice({ title: 'حذف الموعد', message: 'الموعد ده هيتشال من الجدول. الحصص اللي اتسجلت قبل كده مش هتتمسح.', choices: [{ label: 'احذف الموعد', value: 'yes', danger: true }] });
+                if (!pick) return;
+            }
             try {
                 for (const t of targets) await api.deleteSchedule(t.id);
                 ErrorHandler.showSuccess('تم حذف الموعد');

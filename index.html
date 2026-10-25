@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Teachers Manager - برنامج المدرس الخصوصي والمحفّظ</title>
-    <link rel="stylesheet" href="css/style.css?v=24">
+    <link rel="stylesheet" href="css/style.css?v=27">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -26,8 +26,10 @@
         .navbar a { text-decoration: none; color: var(--primary); font-weight: 600; }
         .nav-right { display: flex; gap: 0.75rem; align-items: center; }
         .nav-right .btn { padding: 0.55rem 1rem; }
+        /* v25: ".navbar a" كان بيغطّي على لون .btn فالنص بقى بنفس لون الخلفية */
+        .navbar .btn, .navbar .btn:hover { color: #fff; }
         .brand { display: flex; align-items: center; gap: 0.6rem; color: var(--primary); font-weight: 700; font-size: 1.1rem; }
-        .brand .logo-icon { width: 34px; height: 34px; border-radius: 10px; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; }
+        .brand .logo-icon { width: 34px; height: 34px; border-radius: 10px; background: #FFFFFF; color: var(--primary); border: 1px solid var(--border); box-shadow: 0 1px 4px rgba(41, 37, 45, 0.08); display: flex; align-items: center; justify-content: center; }
         .wrap { max-width: 1080px; margin: 0 auto; padding: 0 1.25rem; }
         .hero { padding: 3rem 0 2.5rem; display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 2.5rem; align-items: center; }
         .free-pill { display: inline-block; background: rgba(111,143,114,0.15); color: #4F6F52; font-weight: 700; font-size: 0.88rem; padding: 0.35rem 0.85rem; border-radius: 999px; margin-bottom: 1rem; }
@@ -74,7 +76,9 @@
             .hero p.lead { font-size: 1rem; }
             .pains, .steps, .more { grid-template-columns: 1fr; }
             .cta-buttons .btn { width: 100%; text-align: center; box-sizing: border-box; }
-            .nav-right .login-link { display: none; }
+            /* v25: رابط "دخول" فضل ظاهر على الموبايل (المدرس المسجّل مالوش طريق تاني يدخل منه) */
+            .nav-right { gap: 0.6rem; }
+            .nav-right .login-link { font-size: 0.92rem; }
         }
     </style>
 </head>
@@ -124,13 +128,13 @@
                     <p class="after">إيه اللي اتعمل، التقييم، والواجب الجاي بالضغط على أزرار. وأول الحصة الجاية تلاقي كل حاجة قدامك.</p>
                 </div>
                 <div class="pain">
-                    <div class="icon-badge" id="p-icon-1" style="background:rgba(197,154,74,0.15); color:var(--secondary);"></div>
+                    <div class="icon-badge" id="p-icon-1" style="background:rgba(197,154,74,0.15); color: var(--secondary-strong);"></div>
                     <h3>فلوسك حقك، من غير إحراج</h3>
                     <p class="before">بدل الحساب اليدوي ونسيان مين دفع</p>
                     <p class="after">البرنامج بيعدّ الحصص ويقولك مين باقته خلصت، ويجهزلك رسالة تذكير لطيفة تبعتها على واتساب.</p>
                 </div>
                 <div class="pain">
-                    <div class="icon-badge" id="p-icon-2" style="background:rgba(111,143,114,0.15); color:var(--success);"></div>
+                    <div class="icon-badge" id="p-icon-2" style="background:rgba(111,143,114,0.15); color: var(--success-text);"></div>
                     <h3>تقرير لولي الأمر بضغطة</h3>
                     <p class="before">بدل ما تكتب لكل أب وأم لوحدهم</p>
                     <p class="after">تقرير الشهر جاهز: الحضور والمستوى والواجبات، يوصل على واتساب ويخلّي الأهل واثقين فيك.</p>
@@ -173,11 +177,11 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=24"></script>
+    <script type="module" src="js/config.js?v=27"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=24';
-        import { icon } from './js/icons.js?v=24';
-        import { CONFIG } from './js/config.js?v=24';
+        import { Auth } from './js/auth.js?v=27';
+        import { icon } from './js/icons.js?v=27';
+        import { CONFIG } from './js/config.js?v=27';
 
         document.getElementById('nav-logo-icon').innerHTML = icon('graduationCap', { size: 19 });
         ['clock', 'creditCard', 'messageCircle'].forEach((name, i) => {
@@ -208,6 +212,6 @@
             }
         });
     </script>
-    <script src="js/pwa-install.js?v=24" defer></script>
+    <script src="js/pwa-install.js?v=27" defer></script>
 </body>
 </html>

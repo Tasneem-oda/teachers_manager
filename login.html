@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>تسجيل الدخول - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=24">
+    <link rel="stylesheet" href="css/style.css?v=27">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -22,13 +22,13 @@
     <style>
         body { display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 1rem; }
         .login-container { background: var(--card-bg); padding: 2.5rem; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid var(--border); width: 100%; max-width: 400px; }
-        .login-logo { width: 56px; height: 56px; border-radius: 16px; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; }
+        .login-logo { width: 56px; height: 56px; border-radius: 16px; background: #FFFFFF; color: var(--primary); border: 1px solid var(--border); box-shadow: 0 4px 14px rgba(41, 37, 45, 0.08); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; }
         .login-container h2 { color: var(--primary); margin-bottom: 2rem; text-align: center; font-size: 1.6rem; }
         .form-group { margin-bottom: 1.5rem; }
         .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-primary); }
-        .form-group input { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 1rem; }
+        .form-group input { width: 100%; padding: 0.75rem; margin-bottom: 0; border: 1px solid var(--field-border); border-radius: 8px; font-family: inherit; font-size: 1rem; }
         .form-group input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(75, 58, 90, 0.1); }
-        .error { color: #B85C5C; font-size: 0.875rem; margin-top: 0.5rem; display: none; }
+        .error { color: var(--danger-text); font-size: 0.875rem; margin-top: 0.5rem; display: none; }
         .btn { width: 100%; padding: 0.75rem; background-color: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: 600; }
         .btn:hover { background-color: #3F304D; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -90,11 +90,11 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=24"></script>
+    <script type="module" src="js/config.js?v=27"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=24';
-        import { Validators, ErrorHandler } from './js/utils.js?v=24';
-        import { icon } from './js/icons.js?v=24';
+        import { Auth } from './js/auth.js?v=27';
+        import { Validators, ErrorHandler } from './js/utils.js?v=27';
+        import { icon } from './js/icons.js?v=27';
 
         document.getElementById('login-logo').innerHTML = icon('graduationCap', { size: 28 });
         if (new URLSearchParams(window.location.search).get('reset') === '1') document.getElementById('reset-notice').style.display = 'block';
@@ -157,6 +157,6 @@
             }
         });
     </script>
-    <script src="js/pwa-install.js?v=24" defer></script>
+    <script src="js/pwa-install.js?v=27" defer></script>
 </body>
 </html>

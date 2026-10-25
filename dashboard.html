@@ -11,8 +11,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الرئيسية - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=24">
-    <link rel="stylesheet" href="css/lessons.css?v=24">
+    <link rel="stylesheet" href="css/style.css?v=27">
+    <link rel="stylesheet" href="css/lessons.css?v=27">
+    <link rel="stylesheet" href="css/groups.css?v=27">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -83,32 +84,7 @@
                 <div id="content" style="display:none;">
                     <div id="trial-banner-root"></div>
                     <div id="onboarding-root"></div>
-                    <div id="due-root"></div>
-                    <div id="income-root"></div>
-
-                    <div class="stats-row" id="stats-row"></div>
-
-                    <!-- مجتمع واتساب الحصري لمشتركي البرنامج -->
-                    <section class="wa-community" aria-labelledby="wa-title">
-                        <div class="wa-community-body">
-                            <span class="wa-badge">⭐ حصري لمستخدمي Teachers Manager</span>
-                            <h3 id="wa-title">انضم لمجتمع المعلمين المشتركين على واتساب</h3>
-                            <p class="wa-sub">مجموعة خاصة بمستخدمي البرنامج فقط: تواصل مباشر مع فريق البرنامج لمساعدتك في أي مشكلة، وتقدر تطلب المزايا اللي محتاجها وتشارك أفكارك للتحديثات القادمة — رأيك بيفرق في تطوير البرنامج.</p>
-                            <ul class="wa-perks">
-                                <li>مساعدة سريعة لأي مشكلة</li>
-                                <li>اطلب المزايا اللي تحتاجها</li>
-                                <li>شارك أفكار التحديثات</li>
-                            </ul>
-                        </div>
-                        <div class="wa-cta-wrap">
-                            <a class="wa-cta" href="https://chat.whatsapp.com/LRWtf3mTrmBK6CA0FBwg3I?s=cl&amp;p=a&amp;mlu=4&amp;ilr=4" target="_blank" rel="noopener noreferrer" aria-label="انضم لمجموعة واتساب الحصرية لمستخدمي البرنامج (يفتح في نافذة جديدة)">
-                                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
-                                انضم للمجموعة الآن
-                            </a>
-                            <span class="wa-note">مجموعة خاصة بالمشتركين فقط</span>
-                        </div>
-                    </section>
-
+                    <!-- v25: حصص النهارده أول حاجة بعد البانر، والفلوس والإحصائيات تحتها، وواتساب في الآخر -->
                     <div class="dashboard-grid">
                         <!-- حصص اليوم -->
                         <div class="card">
@@ -145,10 +121,16 @@
                                     <h3 style="margin:0; font-size:0.95rem;"><span id="ic-library" class="icon"></span> مكتبتك</h3>
                                 </div>
                                 <p id="library-stats" style="font-size:0.85rem; color:var(--text-secondary); margin:0 0 0.8rem;"></p>
-                                <a href="books.html" class="btn" style="background:var(--bg-muted); color:var(--text-primary); width:100%; text-align:center; display:block;">فتح المكتبة</a>
+                                <a href="books.html" class="btn btn-outline" style="width:100%; text-align:center; display:flex; justify-content:center;">فتح المكتبة</a>
                             </div>
                         </div>
                     </div>
+
+                    <div id="due-root"></div>
+                    <div id="income-root"></div>
+
+                    <div class="stats-row" id="stats-row"></div>
+
 
                     <div class="card" style="margin-top:1.5rem;">
                         <h3 style="margin-bottom:1rem;">روابط سريعة</h3>
@@ -163,6 +145,28 @@
                             <a href="settings.html" class="quick-link-btn"><span class="icon" id="ic-ql-settings"></span> الإعدادات</a>
                         </div>
                     </div>
+
+                    <!-- مجتمع واتساب الحصري لمشتركي البرنامج -->
+                    <section class="wa-community" aria-labelledby="wa-title">
+                        <div class="wa-community-body">
+                            <span class="wa-badge">⭐ حصري لمستخدمي Teachers Manager</span>
+                            <h3 id="wa-title">انضم لمجتمع المعلمين المشتركين على واتساب</h3>
+                            <p class="wa-sub">مجموعة خاصة بمستخدمي البرنامج فقط: تواصل مباشر مع فريق البرنامج لمساعدتك في أي مشكلة، وتقدر تطلب المزايا اللي محتاجها وتشارك أفكارك للتحديثات القادمة — رأيك بيفرق في تطوير البرنامج.</p>
+                            <ul class="wa-perks">
+                                <li>مساعدة سريعة لأي مشكلة</li>
+                                <li>اطلب المزايا اللي تحتاجها</li>
+                                <li>شارك أفكار التحديثات</li>
+                            </ul>
+                        </div>
+                        <div class="wa-cta-wrap">
+                            <a class="wa-cta" href="https://chat.whatsapp.com/LRWtf3mTrmBK6CA0FBwg3I?s=cl&amp;p=a&amp;mlu=4&amp;ilr=4" target="_blank" rel="noopener noreferrer" aria-label="انضم لمجموعة واتساب الحصرية لمستخدمي البرنامج (يفتح في نافذة جديدة)">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                                انضم للمجموعة الآن
+                            </a>
+                            <span class="wa-note">مجموعة خاصة بالمشتركين فقط</span>
+                        </div>
+                    </section>
+
                 </div>
             </div>
         </main>
@@ -172,21 +176,23 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=24"></script>
+    <script type="module" src="js/config.js?v=27"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=24';
-        import { api } from './js/api.js?v=24';
-        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=24';
-        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=24';
-        import { icon } from './js/icons.js?v=24';
-        import { renderOnboarding } from './js/onboarding.js?v=24';
-        import { openAttendanceModal } from './js/attendance.js?v=24';
-        import { ATTENDANCE } from './js/lesson-utils.js?v=24';
-        import { computeBilling, openReminder, lessonsText } from './js/billing.js?v=24';
-        import { showTips } from './js/tips.js?v=24';
-        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=24';
-        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=24';
-        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=24';
+        import { Auth } from './js/auth.js?v=27';
+        import { api } from './js/api.js?v=27';
+        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=27';
+        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=27';
+        import { icon } from './js/icons.js?v=27';
+        import { renderOnboarding } from './js/onboarding.js?v=27';
+        import { openAttendanceModal } from './js/attendance.js?v=27';
+        import { ATTENDANCE } from './js/lesson-utils.js?v=27';
+        import { computeBilling, openReminder, lessonsText } from './js/billing.js?v=27';
+        import { showTips } from './js/tips.js?v=27';
+        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=27';
+        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=27';
+        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=27';
+        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=27';
+        import { whatsappUrl } from './js/billing.js?v=27';
 
         renderSidebar('dashboard');
 
@@ -216,7 +222,7 @@
         }
 
         function dateStr() {
-            return new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            return new Date().toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         }
 
         function renderStats(data) {
@@ -280,6 +286,13 @@
             let changed = false;
             LiveLesson.list().forEach((l) => {
                 if (Date.now() - l.startedAt < 3 * 60000) return;
+                // v27: حصة مجموعة شغالة: لو اتقفلت من جهاز تاني نشيلها
+                if (String(l.studentId).startsWith('group:')) {
+                    const gid = String(l.studentId).slice(6);
+                    const gs = ((dashboardData && dashboardData.todayGroups) || []).filter((g) => String(g.group_id) === gid);
+                    if (gs.length && !gs.some((g) => g.session_status === 'in_progress')) { LiveLesson.clear(l.studentId); changed = true; }
+                    return;
+                }
                 if (new Date(l.startedAt).toDateString() !== today) return;
                 const mine = rows.filter((r) => String(r.student_id) === String(l.studentId));
                 if (!mine.length) return;
@@ -288,9 +301,68 @@
             if (changed) notifyLiveLessonChanged();
         }
 
-        function renderTodayLessons(lessons) {
+        // حالة حصة مجموعة النهارده: من الجلسة المتسجلة، وإلا بالوقت
+        function groupState(g) {
+            if (g.session_status === 'completed') return 'completed';
+            if (g.session_status === 'cancelled') return 'cancelled';
+            if (g.session_status === 'in_progress') return 'in_progress';
+            const t = TimeUtils.getTimeFromString(g.start_time);
+            if (t) {
+                const now = new Date();
+                const st = t.hours * 60 + t.minutes;
+                const nm = now.getHours() * 60 + now.getMinutes();
+                const dur = Number(g.duration_minutes) || 60;
+                if (nm >= st && nm < st + dur) return 'now';
+                if (nm > st) return 'late';
+            }
+            return 'upcoming';
+        }
+        function groupLessonHtml(g) {
+            const state = groupState(g);
+            const name = groupTitle(g.group_name);
+            const time5 = String(g.start_time || '').substring(0, 5);
+            const url = `group-lesson.html?group_id=${encodeURIComponent(g.group_id)}&time=${encodeURIComponent(time5)}${g.session_id ? `&session_id=${encodeURIComponent(g.session_id)}` : ''}`;
+            const startUrl = `group-lesson.html?group_id=${encodeURIComponent(g.group_id)}&start=1&time=${encodeURIComponent(time5)}`;
+            let badge = '';
+            let actions = '';
+            if (state === 'completed') {
+                badge = `<span class="lesson-status-badge status-completed">${icon('checkCircle', { size: 11 })} اتسجلت</span>`;
+                actions = `<div class="lesson-actions"><a class="btn btn-outline btn-sm" href="${url}">عرض / تعديل</a></div>`;
+            } else if (state === 'cancelled') {
+                badge = `<span class="lesson-status-badge status-cancelled">${icon('x', { size: 11 })} اتلغت</span>`;
+            } else if (state === 'in_progress') {
+                // v27: الحصة بدأت من "ابدأ الحصة"
+                badge = `<span class="lesson-status-badge status-in-progress">${icon('clock', { size: 11 })} قيد التنفيذ الآن</span>`;
+                actions = `<div class="lesson-actions"><a class="btn btn-start" data-track="dash_group_resume" href="${url}">${icon('play', { size: 13 })} كمّل الحصة</a></div>`;
+            } else {
+                if (state === 'late') badge = `<span class="lesson-status-badge status-late">${icon('clock', { size: 11 })} فات ميعادها</span>`;
+                else if (state === 'now') badge = `<span class="lesson-status-badge status-in-progress">${icon('clock', { size: 11 })} وقتها دلوقتي</span>`;
+                actions = `<div class="lesson-actions">
+                    <a class="btn btn-start" data-track="dash_group_start" href="${startUrl}">${icon('play', { size: 13 })} ابدأ الحصة</a>
+                    <a class="btn-cancel-lesson" data-track="dash_group_session" href="${url}">${icon('checkCircle', { size: 13 })} سجّل</a>
+                    ${g.lesson_link ? `<a class="btn-cancel-lesson" href="${Formatters.escapeHtml(g.lesson_link)}" target="_blank" rel="noopener">${icon('link', { size: 13 })} الرابط</a>` : ''}
+                </div>`;
+            }
+            return `
+                <div class="lesson-item is-${state} is-group ${groupColorClass(g.color)}">
+                    <div class="lesson-main">
+                        <div class="lesson-avatar">${icon('group', { size: 18 })}</div>
+                        <div class="lesson-info">
+                            <p class="name"><a href="group.html?id=${encodeURIComponent(g.group_id)}" style="color:inherit;">${Formatters.escapeHtml(name)}</a></p>
+                            <p class="meta">حصة مجموعة · ${Formatters.escapeHtml(membersText(g.members_count || 0))}</p>
+                            ${badge}
+                        </div>
+                    </div>
+                    <div class="lesson-time">${Formatters.formatTime ? Formatters.formatTime(g.start_time) : g.start_time}</div>
+                    ${actions}
+                </div>`;
+        }
+
+        function renderTodayLessons(lessons, groups = []) {
             const container = document.getElementById('today-lessons-list');
-            if (!lessons || lessons.length === 0) {
+            lessons = lessons || [];
+            groups = groups || [];
+            if (lessons.length === 0 && groups.length === 0) {
                 const studentsCount = (dashboardData && dashboardData.studentsCount) || 0;
                 const schedCount = ((dashboardData && dashboardData.schedules) || []).length;
                 container.innerHTML = studentsCount === 0
@@ -300,7 +372,12 @@
                         : '<div class="empty-state">مفيش حصص مجدولة النهارده 🎉</div>';
                 return;
             }
-            container.innerHTML = lessons.map(l => {
+            const merged = [
+                ...lessons.map((l) => ({ kind: 'lesson', t: String(l.start_time || ''), l })),
+                ...groups.map((g) => ({ kind: 'group', t: String(g.start_time || ''), g }))
+            ].sort((a, b) => a.t.localeCompare(b.t));
+            container.innerHTML = merged.map(({ kind, l, g }) => {
+                if (kind === 'group') return groupLessonHtml(g);
                 const { state } = getLessonState(l);
 
                 let badge = '';
@@ -405,7 +482,7 @@
                 const isToday = lastUpdated && lastUpdated.toDateString() === new Date().toDateString();
 
                 document.getElementById('library-stats').textContent =
-                    `${books.length} مصدر · ${totalPages.toLocaleString('ar-EG')} صفحة${lastUpdated ? ` · آخر تحديث: ${isToday ? 'اليوم' : Formatters.formatDate(lastUpdated)}` : ''}`;
+                    `${books.length} مصدر · ${totalPages.toLocaleString('ar-EG-u-nu-latn')} صفحة${lastUpdated ? ` · آخر تحديث: ${isToday ? 'اليوم' : Formatters.formatDate(lastUpdated)}` : ''}`;
                 document.getElementById('library-card').style.display = 'block';
             } catch (e) {
                 // تجاهل - البطاقة تفضل مخفية وخلاص
@@ -435,6 +512,9 @@
                         }));
                         data.todayLessonsCount = data.todayLessons.length;
                     }
+                    // حصص المجموعات النهارده (v26): بتتعرض مع الحصص الخاصة وبتتحسب في العدد
+                    data.todayGroups = Array.isArray(todayStatus.groups) ? todayStatus.groups : [];
+                    if (data.todayGroups.length) data.todayLessonsCount = (data.todayLessons || []).length + data.todayGroups.length;
                     (todayStatus.lessons || []).forEach(item => {
                         const info = {
                             status: item.lesson_status || null,
@@ -455,7 +535,7 @@
                     subtitle: dateStr()
                 });
                 renderStats(data);
-                renderTodayLessons(data.todayLessons);
+                renderTodayLessons(data.todayLessons, data.todayGroups);
                 renderTrialBanner();
                 updateAiCardHint();
                 loadLibraryCard();
@@ -560,10 +640,16 @@
                     .map((s) => ({ student: { id: s.id, name: s.name, phone: s.phone }, view: computeBilling(s.billing) }))
                     .filter((r) => r.view.enabled && r.view.needsReminder)
                     .sort((a, b) => (a.view.status === b.view.status ? a.view.balance - b.view.balance : (a.view.status === 'due' ? -1 : 1)));
+                // v27: اشتراكات المجموعات الشهرية اللي لسه مادفعتش
+                ((data && data.group_due) || []).forEach((g) => {
+                    const left = Math.max(0, Number(g.due || 0) - Number(g.paid || 0));
+                    rows.push({ group: g, student: { id: g.student_id, name: g.name, phone: g.phone },
+                        headline: `اشتراك ${groupTitle(g.group_name)}: ${Number(g.paid) > 0 ? `باقي ${left}` : left} جنيه`, left });
+                });
                 if (!rows.length) { root.innerHTML = ''; return; }
                 const item = (r, i) => `<div class="due-item" ${i >= 3 ? 'data-extra hidden' : ''}>
-                        <div class="due-main"><a href="student.html?id=${encodeURIComponent(r.student.id)}#billing">${Formatters.escapeHtml(r.student.name || '')}</a>
-                            <small class="st-${r.view.status}">${Formatters.escapeHtml(r.view.headline)}</small></div>
+                        <div class="due-main"><a href="${r.group ? `group.html?id=${encodeURIComponent(r.group.group_id)}#billing` : `student.html?id=${encodeURIComponent(r.student.id)}#billing`}">${Formatters.escapeHtml(r.student.name || '')}</a>
+                            <small class="st-${r.group ? 'due' : r.view.status}">${Formatters.escapeHtml(r.group ? r.headline : r.view.headline)}</small></div>
                         <button type="button" class="btn btn-sm" data-due="${i}">${icon('messageCircle', { size: 14 })} رسالة تذكير</button>
                     </div>`;
                 root.innerHTML = `<div class="due-card">
@@ -573,6 +659,12 @@
                     </div>`;
                 root.querySelectorAll('[data-due]').forEach((b) => b.addEventListener('click', () => {
                     const r = rows[Number(b.dataset.due)];
+                    if (r && r.group) {
+                        const txt = `السلام عليكم، ده تذكير باشتراك ${groupTitle(r.group.group_name)} لشهر ${monthLabel(r.group.month)}: ${r.left} جنيه. شكرًا 🌸`;
+                        if (r.student.phone) window.open(whatsappUrl(r.student.phone, txt), '_blank', 'noopener');
+                        else ErrorHandler.showError('مفيش رقم موبايل للطالب ده');
+                        return;
+                    }
                     if (r) openReminder({ student: r.student, view: r.view });
                 }));
                 const more = document.getElementById('due-more');
@@ -592,6 +684,6 @@
             await loadDashboard();
         })();
     </script>
-    <script src="js/pwa-install.js?v=24" defer></script>
+    <script src="js/pwa-install.js?v=27" defer></script>
 </body>
 </html>

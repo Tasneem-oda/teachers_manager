@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الاشتراك - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=24">
+    <link rel="stylesheet" href="css/style.css?v=27">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -31,11 +31,11 @@
         .price-period { color: #716A74; font-size: 0.9rem; }
         .features-list { text-align: right; margin: 2rem 0; }
         .features-list li { list-style: none; padding: 0.5rem 0; color: #716A74; }
-        .features-list li:before { content: "✓ "; color: var(--success); font-weight: bold; margin-right: 0.5rem; }
+        .features-list li:before { content: "✓"; color: var(--success-text); font-weight: bold; margin-inline-end: 0.5rem; }
         .btn { width: 100%; padding: 0.75rem; margin-top: 1.5rem; }
-        .whatsapp-btn { background: #25D366; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; text-decoration: none; color: #fff; font-weight: 700; box-sizing: border-box; }
-        .whatsapp-btn:hover { background: #1ebe57; }
-        .status-banner { background: #E8F5E9; color: var(--success); padding: 1rem; border-radius: 8px; margin-bottom: 2rem; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 600; }
+        .whatsapp-btn { background: var(--whatsapp); display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; text-decoration: none; color: #fff; font-weight: 700; box-sizing: border-box; }
+        .whatsapp-btn:hover { background: var(--whatsapp-hover); }
+        .status-banner { background: #E8F5E9; color: var(--success-text); padding: 1rem; border-radius: 8px; margin-bottom: 2rem; text-align: center; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 600; }
         .subscribe-note { text-align: center; color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.75rem; }
         .early-card { max-width: 640px; margin: 0 auto 1rem; background: rgba(197,154,74,0.12); border: 1px solid rgba(197,154,74,0.4); border-radius: 12px; padding: 1rem 1.2rem; display: flex; flex-direction: column; gap: 0.35rem; }
         .early-card span { color: var(--text-secondary); font-size: 0.92rem; line-height: 1.7; }
@@ -57,7 +57,7 @@
     <div id="top-header-root"></div>
     <div class="page-body">
     <div class="container" style="max-width: 1100px; margin: 0; padding: 0;">
-        <h1 style="color: var(--primary); text-align: center;">اشتراكك في Teachers Manager</h1>
+        <h1 class="page-title-dup" style="color: var(--primary); text-align: center;">اشتراكك في Teachers Manager</h1>
         <p style="text-align: center; color: #716A74; margin-bottom: 1.5rem;" id="free-lead">البرنامج مجاني بالكامل لكل المدرسين لحد 31 ديسمبر 2026</p>
 
         <div class="status-banner" id="status-banner" style="display: none;"></div>
@@ -97,12 +97,12 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=24"></script>
+    <script type="module" src="js/config.js?v=27"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=24';
-        import { renderSidebar, renderTopHeader, computeSubscriptionState, daysLabel, getSubscriptionCached, trialEndLabel } from './js/sidebar.js?v=24';
-        import { icon } from './js/icons.js?v=24';
-        import { CONFIG } from './js/config.js?v=24';
+        import { Auth } from './js/auth.js?v=27';
+        import { renderSidebar, renderTopHeader, computeSubscriptionState, daysLabel, getSubscriptionCached, trialEndLabel } from './js/sidebar.js?v=27';
+        import { icon } from './js/icons.js?v=27';
+        import { CONFIG } from './js/config.js?v=27';
 
         renderSidebar('settings');
         renderTopHeader({ title: 'الاشتراك', subtitle: 'الخطة الشهرية لتطبيق Teachers Manager', showSearch: false });
@@ -126,7 +126,7 @@
                 <h3>${p.name}</h3>
                 <div class="price">${p.price} <small>جنيه / شهريًا</small></div>
                 <p class="price-period">${p.desc}</p>
-                <ul class="features-list">${(FEATURES[p.id] || []).map((f) => `<li>✓ ${f}</li>`).join('')}</ul>
+                <ul class="features-list">${(FEATURES[p.id] || []).map((f) => `<li>${f}</li>`).join('')}</ul>
                 <a class="btn whatsapp-btn" data-plan="${p.id}" href="#" target="_blank" rel="noopener">
                     <span class="wa-ic"></span> ${freeOver ? 'اشترك عبر واتساب' : 'احجز الباقة دي عبر واتساب'}
                 </a>
@@ -178,6 +178,6 @@
             }
         });
     </script>
-    <script src="js/pwa-install.js?v=24" defer></script>
+    <script src="js/pwa-install.js?v=27" defer></script>
 </body>
 </html>

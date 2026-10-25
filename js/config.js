@@ -110,6 +110,14 @@ export const CONFIG = {
             GET_ALL: '/get-personal-events',
             SAVE: '/save-personal-event'
         },
+        // v26/v27: المجموعات - n8n/groups.json + group-session.json + group-billing.json + group-ai-chat.json
+        GROUPS: {
+            API: '/groups',
+            SESSION: '/group-session',
+            // v27: الاشتراك الشهري للمجموعة + مساعد حصة المجموعة
+            BILLING: '/group-billing',
+            AI_CHAT: '/group-ai-chat'
+        },
         // مركز الإشعارات (نافذة زر الجرس 🔔) - مقروءة / غير مقروءة
         NOTIFICATIONS: {
             GET_ALL: '/get-notifications',

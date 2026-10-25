@@ -2,7 +2,7 @@
  * utils.js - دوال مساعدة موحدة للتطبيق
  */
 
-import { CONFIG } from './config.js?v=24';
+import { CONFIG } from './config.js?v=27';
 
 /** أرقام عربية/فارسية (٠١٢ / ۰۱۲) ← أرقام إنجليزية. كيبوردات كتير في مصر بتكتب الأرقام العربي افتراضيًا */
 export function toLatinDigits(value) {
@@ -98,7 +98,7 @@ export const Validators = {
  * تنسيق البيانات (Formatting)
  */
 export const Formatters = {
-    formatDate: (date, locale = 'ar-EG') => {
+    formatDate: (date, locale = 'ar-EG-u-nu-latn') => {
         if (!date) return '';
         const d = new Date(date);
         return d.toLocaleDateString(locale, { 
@@ -123,7 +123,7 @@ export const Formatters = {
         return `${hours}:${minutes} ${period}`;
     },
     
-    formatDateTime: (dateTime, locale = 'ar-EG') => {
+    formatDateTime: (dateTime, locale = 'ar-EG-u-nu-latn') => {
         if (!dateTime) return '';
         const d = new Date(dateTime);
         // نظام 12 ساعة دايمًا (ص / م)
@@ -220,7 +220,7 @@ export const ErrorHandler = {
     showError: (message, duration = 5000) => {
         const errorDiv = document.getElementById('error-toast') || createErrorToast();
         errorDiv.textContent = message;
-        errorDiv.style.display = 'block';
+        errorDiv.style.display = 'flex';
         clearTimeout(errorDiv._tmTimer);
         errorDiv._tmTimer = setTimeout(() => {
             errorDiv.style.display = 'none';
@@ -231,7 +231,7 @@ export const ErrorHandler = {
     showSuccess: (message, duration = 3000) => {
         const successDiv = document.getElementById('success-toast') || createSuccessToast();
         successDiv.textContent = message;
-        successDiv.style.display = 'block';
+        successDiv.style.display = 'flex';
         clearTimeout(successDiv._tmTimer);
         successDiv._tmTimer = setTimeout(() => {
             successDiv.style.display = 'none';
@@ -323,25 +323,48 @@ export const APIUtils = {
 };
 
 /**
+ * v25: نافذة اختيار بأزرار بأسماء الفعل نفسه (بدل confirm() اللي "موافق/إلغاء" فيه معناها مش واضح)
+ * askChoice({ title, message, choices: [{ label, value, danger? }], cancelLabel })
+ * بترجّع value الزرار المختار، أو null لو اتقفلت.
+ */
+export function askChoice({ title = '', message = '', choices = [], cancelLabel = 'رجوع' } = {}) {
+    return new Promise((resolve) => {
+        const esc = Formatters.escapeHtml;
+        const wrap = document.createElement('div');
+        wrap.className = 'modal active tm-choice';
+        wrap.setAttribute('role', 'dialog');
+        wrap.setAttribute('aria-modal', 'true');
+        wrap.innerHTML = `<div class="modal-content tm-choice-box">
+            ${title ? `<h3 class="tm-choice-title">${esc(title)}</h3>` : ''}
+            ${message ? `<p class="tm-choice-msg">${esc(message)}</p>` : ''}
+            <div class="tm-choice-actions">
+                ${choices.map((c, i) => `<button type="button" class="btn ${c.danger ? 'btn-danger' : (i === 0 ? '' : 'btn-outline')}" data-i="${i}">${esc(c.label)}</button>`).join('')}
+                <button type="button" class="btn btn-outline" data-cancel>${esc(cancelLabel)}</button>
+            </div>
+        </div>`;
+        const done = (v) => { document.removeEventListener('keydown', onKey); wrap.remove(); resolve(v); };
+        const onKey = (e) => { if (e.key === 'Escape') done(null); };
+        wrap.addEventListener('click', (e) => {
+            if (e.target === wrap || e.target.closest('[data-cancel]')) return done(null);
+            const b = e.target.closest('[data-i]');
+            if (b) done(choices[Number(b.dataset.i)].value);
+        });
+        document.addEventListener('keydown', onKey);
+        document.body.appendChild(wrap);
+        const first = wrap.querySelector('[data-i]');
+        if (first) first.focus();
+    });
+}
+
+/**
  * دالة مساعدة لإنشاء عنصر toast للأخطاء
  */
 function createErrorToast() {
+    // v25: المكان والشكل من style.css (#error-toast): فوق على الكمبيوتر، وتحت فوق شريط التنقل على الموبايل
     const div = document.createElement('div');
     div.id = 'error-toast';
-    div.style.cssText = `
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        background-color: #B85C5C;
-        color: white;
-        padding: 15px 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        display: none;
-        z-index: 9999;
-        max-width: 400px;
-        word-break: break-word;
-    `;
+    div.setAttribute('role', 'alert');
+    div.style.cssText = 'display: none; word-break: break-word;';
     document.body.appendChild(div);
     return div;
 }
@@ -352,20 +375,8 @@ function createErrorToast() {
 function createSuccessToast() {
     const div = document.createElement('div');
     div.id = 'success-toast';
-    div.style.cssText = `
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        background-color: #6F8F72;
-        color: white;
-        padding: 15px 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        display: none;
-        z-index: 9999;
-        max-width: 400px;
-        word-break: break-word;
-    `;
+    div.setAttribute('role', 'status');
+    div.style.cssText = 'display: none; word-break: break-word;';
     document.body.appendChild(div);
     return div;
 }

@@ -33,10 +33,10 @@
  * كل جزء بيفشل بصمت (من غير ما يكسر باقي الصفحة) لو لسه معمولش الإعداد بتاعه.
  * ============================================================================
  */
-import { CONFIG } from './config.js?v=24';
-import { Auth } from './auth.js?v=24';
-import { api } from './api.js?v=24';
-import { ErrorHandler } from './utils.js?v=24';
+import { CONFIG } from './config.js?v=27';
+import { Auth } from './auth.js?v=27';
+import { api } from './api.js?v=27';
+import { ErrorHandler } from './utils.js?v=27';
 
 const PROMPT_DISMISS_KEY = 'tm_notif_prompt_dismissed';
 const BADGE_CACHE_KEY = 'tm_notif_badge_cache_v1';
@@ -330,7 +330,7 @@ function relativeTimeAr(isoString) {
     }
 
     // احتياطي فقط (عمليًا المقروءة بتتمسح تلقائيًا قبل ما توصل هنا)
-    return new Date(isoString).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' });
+    return new Date(isoString).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short' });
 }
 
 function injectPanelStyles() {
