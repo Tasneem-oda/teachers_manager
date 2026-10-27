@@ -128,6 +128,10 @@ export const CONFIG = {
         ACCOUNT: {
             DELETE: '/delete-account'
         },
+        // v29: أدوات الحصة (رسم المدرس على الكتاب + السبورة + لينك تسجيل الحصة) - n8n/lesson-tools.json
+        LESSON_TOOLS: '/lesson-tools',
+        // v29: تصدير كل البيانات - n8n/export-data.json
+        EXPORT: '/export-data',
         // مركز الإشعارات (نافذة زر الجرس 🔔) - مقروءة / غير مقروءة
         NOTIFICATIONS: {
             GET_ALL: '/get-notifications',

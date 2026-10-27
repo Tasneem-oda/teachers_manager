@@ -4,9 +4,9 @@
  *  - mountReminderSetupCard: كارت في الرئيسية بيسأل المدرس مرة واحدة (3 أسئلة سريعة)
  *  - playReminderSound: جرس التذكير لما البرنامج يكون مفتوح
  */
-import { api } from './api.js?v=28';
-import { ErrorHandler } from './utils.js?v=28';
-import { icon } from './icons.js?v=28';
+import { api } from './api.js?v=29';
+import { ErrorHandler } from './utils.js?v=29';
+import { icon } from './icons.js?v=29';
 
 export const BEFORE_OPTIONS = [
     { value: null, label: 'لأ' },

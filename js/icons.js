@@ -64,7 +64,35 @@ const PATHS = {
     list: '<path d="M8 6h12"/><path d="M8 12h12"/><path d="M8 18h12"/><path d="M4 6h.01"/><path d="M4 12h.01"/><path d="M4 18h.01"/>',
     image: '<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4.5 3.5 3 3-2.5L20 16"/>',
     minus: '<path d="M5 12h14"/>',
-    rotateCcw: '<path d="M4 4v5h5"/><path d="M4.6 14a8 8 0 1 0 1.8-8.4L4 9"/>'
+    rotateCcw: '<path d="M4 4v5h5"/><path d="M4.6 14a8 8 0 1 0 1.8-8.4L4 9"/>',
+    // v29: السبورة وأدوات الشرح وتسجيل الحصة
+    video: '<rect x="3" y="6.5" width="12.5" height="11" rx="2.2"/><path d="M15.5 10.5 21 7.5v9l-5.5-3"/>',
+    record: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4" fill="currentColor"/>',
+    pen: '<path d="M4 20l1.2-4.6L16.4 4.2a2.1 2.1 0 0 1 3 3L8.2 18.4 4 20Z"/><path d="M14.5 6l3.5 3.5"/>',
+    highlighter: '<path d="M9 14.5 4.5 19.5h5l2-2"/><path d="M8.5 13.5l7.8-9.2a1.9 1.9 0 0 1 2.8-.1l1.2 1.2a1.9 1.9 0 0 1-.1 2.8L11 16Z"/>',
+    eraser: '<path d="M8.5 20h11"/><path d="M5.2 15.6 14.6 6.2a2 2 0 0 1 2.8 0l2.4 2.4a2 2 0 0 1 0 2.8L11 20H8.6l-3.4-3.4a.7.7 0 0 1 0-1Z"/><path d="M9.5 11.3l5.2 5.2"/>',
+    laser: '<circle cx="12" cy="12" r="2.6" fill="currentColor"/><path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M5.6 5.6l2 2"/><path d="M16.4 16.4l2 2"/>',
+    spotlight: '<circle cx="12" cy="12" r="4.5"/><path d="M3 3l3.5 3.5"/><path d="M21 3l-3.5 3.5"/><path d="M3 21l3.5-3.5"/><path d="M21 21l-3.5-3.5"/>',
+    ruler: '<rect x="2.5" y="8" width="19" height="8" rx="1.5"/><path d="M6.5 8v3"/><path d="M10.5 8v4"/><path d="M14.5 8v3"/><path d="M18.5 8v4"/>',
+    type: '<path d="M5 6.5V5h14v1.5"/><path d="M12 5v14"/><path d="M9 19h6"/>',
+    square: '<rect x="4.5" y="4.5" width="15" height="15" rx="1.5"/>',
+    circle: '<circle cx="12" cy="12" r="8"/>',
+    arrowUpRight: '<path d="M6 18 18 6"/><path d="M9 6h9v9"/>',
+    lineTool: '<path d="M5 19 19 5"/>',
+    undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+    redo: '<path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
+    board: '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4"/><path d="M8 20h8"/>',
+    maximize: '<path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/>',
+    minimize: '<path d="M9 4v5H4"/><path d="M15 4v5h5"/><path d="M9 20v-5H4"/><path d="M15 20v-5h5"/>',
+    hand: '<path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M11 10V4.5a1.5 1.5 0 0 1 3 0V11"/><path d="M14 10.5V6a1.5 1.5 0 0 1 3 0v7.5a7 7 0 0 1-7 7h-.3A6.7 6.7 0 0 1 4.3 18L3 15.6a1.5 1.5 0 0 1 2.5-1.6L8 16"/>',
+    pointer: '<path d="M5 3.5l13 6.2-5.6 1.9-2 5.9L5 3.5Z"/><path d="M12.6 11.8 18 17.5"/>',
+    scan: '<path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8"/><path d="M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8"/><path d="M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16"/><path d="M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><circle cx="11.5" cy="11.5" r="3.2"/><path d="M14 14l2.5 2.5"/>',
+    keyboard: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M6.5 13.8h.01M17 13.8h.01M9 14h6"/>',
+    scissors: '<circle cx="6" cy="7" r="2.5"/><circle cx="6" cy="17" r="2.5"/><path d="M8 8.5 20 17"/><path d="M8 15.5 20 7"/>',
+    share: '<circle cx="17.5" cy="5.5" r="2.5"/><circle cx="6.5" cy="12" r="2.5"/><circle cx="17.5" cy="18.5" r="2.5"/><path d="M8.7 10.8l6.6-3.9M8.7 13.2l6.6 3.9"/>',
+    filePlus: '<path d="M14 3.5H7.5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V8L14 3.5Z"/><path d="M14 3.5V8h4.5"/><path d="M12 11v6M9 14h6"/>',
+    moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/>',
+    stamp: '<path d="M9.5 12.5 6 5.5a3 3 0 0 1 2.7-2h6.6A3 3 0 0 1 18 5.5l-3.5 7"/><rect x="4" y="12.5" width="16" height="4" rx="1"/><path d="M5.5 20h13"/>'
 };
 
 /**

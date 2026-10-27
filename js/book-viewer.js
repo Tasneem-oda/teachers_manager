@@ -10,11 +10,12 @@
  * + زر شات صغير بيفتح نافذة أسئلة عن الكتاب ده بالذات، والاستشهادات فيها بتفتح مكانها هنا.
  */
 
-import { icon } from './icons.js?v=28';
-import { CONFIG } from './config.js?v=28';
-import { loadPdfJs, pdfDocumentParams, loadDocxPreview, loadPptxPreview, loadJsZip, loadStyle, CDN, repairPdfBytes } from './book-libs.js?v=28';
-import { detectDir } from './book-chunker.js?v=28';
-import { BookChat } from './book-chat.js?v=28';
+import { icon } from './icons.js?v=29';
+import { CONFIG } from './config.js?v=29';
+import { loadPdfJs, pdfDocumentParams, loadDocxPreview, loadPptxPreview, loadJsZip, loadStyle, CDN, repairPdfBytes } from './book-libs.js?v=29';
+import { detectDir } from './book-chunker.js?v=29';
+import { BookChat } from './book-chat.js?v=29';
+import { PresentTools } from './present-tools.js?v=29';
 
 const ZOOM_STEPS = [0.5, 0.67, 0.8, 1, 1.25, 1.5, 2, 2.5, 3];
 const TYPE_LABEL = { pdf: 'PDF', docx: 'Word', pptx: 'PowerPoint', txt: 'نص', image: 'صورة' };
@@ -128,10 +129,14 @@ export class BookViewer {
      * @param {() => void} [o.onClose]
      * @param {number} [o.startPage]  يفتح على الصفحة دي (مثلًا: آخر صفحة وصلها الطالب)
      * @param {(page:number) => void} [o.onPageChange]
+     * @param {{student_id?:string, group_id?:string}} [o.owner] v29: صاحب الرسم على الكتاب والسبورة (طالب/مجموعة)
+     * @param {string} [o.ownerName] v29: اسم الطالب/المجموعة (عنوان السبورة)
      */
-    constructor({ api, book, opener, onClose, startPage, onPageChange }) {
+    constructor({ api, book, opener, onClose, startPage, onPageChange, owner, ownerName }) {
         this.api = api;
         this.book = book;
+        this.owner = owner || {};
+        this.ownerName = ownerName || '';
         this.opener = opener || null;
         this.onClose = onClose || (() => {});
         this.onPageChange = onPageChange || null;
@@ -256,6 +261,8 @@ export class BookViewer {
             if (this.closed) return;
             const tag = (e.target && e.target.tagName) || '';
             const typing = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable);
+            // v29: أدوات الشرح الأول (Esc بيقفل الأداة/الزوم قبل ما يقفل الكتاب)
+            if (this.tools && !typing && this.tools.onKey(e)) return;
             if (e.key === 'Escape') {
                 e.preventDefault();
                 // لو الـ focus جوه الشات هو بيقفل نفسه ويوقّف الحدث، وهنا (خارجه) نقفله إحنا
@@ -265,13 +272,19 @@ export class BookViewer {
                 else if (e.key === 'ArrowRight' || e.key === 'PageUp') { if (this.pager.hidden) return; e.preventDefault(); this.goToPage(this.page - 1); }
                 else if (e.key === '+' || e.key === '=') { e.preventDefault(); this.stepZoom(1); }
                 else if (e.key === '-') { e.preventDefault(); this.stepZoom(-1); }
+                // v29: أزرار تنقل زيادة (Space / Home / End / G / 0)
+                else if (e.code === 'Digit0' || e.code === 'Numpad0') { e.preventDefault(); this.setZoom(1); }
+                else if (e.key === ' ' && !this.pager.hidden) { e.preventDefault(); this.goToPage(this.page + (e.shiftKey ? -1 : 1)); }
+                else if (e.key === 'Home' && !this.pager.hidden) { e.preventDefault(); this.goToPage(1); }
+                else if (e.key === 'End' && !this.pager.hidden) { e.preventDefault(); this.goToPage(this.pageCount || 1); }
+                else if (e.code === 'KeyG' && !this.pager.hidden) { e.preventDefault(); this.pageInput.focus(); this.pageInput.select(); }
             }
         };
         document.addEventListener('keydown', this._onKey);
 
         this._onResize = () => {
             clearTimeout(this._resizeTimer);
-            this._resizeTimer = setTimeout(() => { if (this.adapter && this.adapter.onResize) this.adapter.onResize(); }, 150);
+            this._resizeTimer = setTimeout(() => { if (this.adapter && this.adapter.onResize) this.adapter.onResize(); if (this.tools) this.tools.onResize(); }, 150);
         };
         window.addEventListener('resize', this._onResize);
 
@@ -395,6 +408,11 @@ export class BookViewer {
     }
 
     _afterRender() {
+        // v29: أدوات الشرح (قلم/ليزر/زوم/سبورة) — بتتعمل مرة واحدة وبتتحدّث مع كل عرض
+        try {
+            if (!this.tools) this.tools = new PresentTools(this);
+            else this.tools.onRender();
+        } catch (e) { console.warn('[PresentTools]', e); }
         const a = this.adapter;
         this.pageCount = a && a.pageCount ? a.pageCount : null;
         this.pager.hidden = !(this.pageCount && this.pageCount > 1);
@@ -672,6 +690,7 @@ export class BookViewer {
         const adapter = {
             pageCount: n,
             supportsPages: true,
+            pageEls: () => els,
             applyZoom: (z) => {
                 st.scale = fitScale() * z;
                 st.sized.clear();
@@ -744,6 +763,7 @@ export class BookViewer {
         const adapter = {
             get pageCount() { return pages().length || null; },
             supportsPages: true,
+            pageEls: () => pages(),
             applyZoom: (z) => apply(z),
             onResize: () => apply(this.zoom),
             onScroll: () => {
@@ -803,6 +823,7 @@ export class BookViewer {
         const adapter = {
             get pageCount() { return slideEls().length || count || null; },
             supportsPages: true,
+            pageEls: () => slideEls(),
             applyZoom: (z) => {
                 const avail = Math.max(240, this.stage.clientWidth - 24);
                 const fit = Math.min(1, avail / width);
@@ -848,11 +869,26 @@ export class BookViewer {
         img.draggable = false;
         const wrap = document.createElement('div');
         wrap.className = 'bv-img-wrap';
-        wrap.appendChild(img);
+        // v29: الصورة جوه "صفحة" بمقاسها بالظبط (عشان الرسم عليها يفضل في مكانه مع الزوم)
+        const box = document.createElement('div');
+        box.className = 'bv-img-box';
+        box.appendChild(img);
+        wrap.appendChild(box);
         this.content.appendChild(wrap);
+        let lastZ = 1;
+        const apply = (z) => {
+            lastZ = z;
+            const nat = img.naturalWidth || 1000;
+            const avail = Math.max(240, this.stage.clientWidth - 24);
+            img.style.width = `${Math.round(Math.min(nat, avail) * z)}px`;
+            img.style.maxWidth = 'none';
+        };
+        img.addEventListener('load', () => apply(lastZ));
         return {
             pageCount: 1, supportsPages: false,
-            applyZoom: (z) => { img.style.width = `${z * 100}%`; img.style.maxWidth = z <= 1 ? '100%' : 'none'; },
+            pageEls: () => [box],
+            applyZoom: (z) => apply(z),
+            onResize: () => apply(lastZ),
             destroy: () => URL.revokeObjectURL(url)
         };
     }
@@ -898,6 +934,7 @@ export class BookViewer {
         if (this.mode === 'text' && this.textState && this.textState.ready) return;
         this._destroyAdapter();
         this.mode = 'text';
+        if (this.tools) this.tools.onTextMode();
         this.modeBtn.querySelector('span').textContent = 'الأصل';
         this.modeBtn.setAttribute('aria-label', 'الملف الأصلي');
         this.modeBtn.setAttribute('aria-pressed', 'true');
@@ -1033,6 +1070,7 @@ export class BookViewer {
         clearTimeout(this._resizeTimer);
         clearTimeout(this._navTimer);
         if (this.chat) this.chat.destroy();
+        if (this.tools) { this.tools.destroy(); this.tools = null; }
         this._destroyAdapter();
         this.root.remove();
         document.body.style.overflow = this._prevOverflow;

@@ -3,8 +3,8 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=28';
-import { APIUtils, Storage } from './utils.js?v=28';
+import { CONFIG } from './config.js?v=29';
+import { APIUtils, Storage } from './utils.js?v=29';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -120,9 +120,9 @@ async function getSessionOrRedirect() {
 
 // الطلبات اللي مسموحة حتى في وضع القراءة فقط (الاشتراك، الاقتراحات، الإشعارات)
 // (get-book-content و ask مش "حفظ": قراءة الكتب مسموحة زي ما وعدنا المدرس في شريط القراءة فقط) + أحداث التتبع
-const READ_ONLY_ALLOWED = ['/check-subscription', '/submit-suggestion', '/mark-notifications-read', '/bootstrap-session', '/initialize-teacher', '/monthly-income', '/get-book-content', '/track-events', '/update-profile'];
+const READ_ONLY_ALLOWED = ['/check-subscription', '/submit-suggestion', '/mark-notifications-read', '/bootstrap-session', '/initialize-teacher', '/monthly-income', '/get-book-content', '/track-events', '/update-profile', '/export-data'];
 // v27: طلبات المجموعات كلها POST، فبنسمح بالقراءة بس (عرض المجموعات/الحصة/كشف الاشتراك) في وضع القراءة فقط
-const READ_ONLY_ACTIONS = { '/groups': ['list', 'get'], '/group-session': ['prepare'], '/group-billing': ['month'], '/teacher-settings': ['get', 'save', 'test'], '/delete-account': ['request', 'cancel', 'status'] };
+const READ_ONLY_ACTIONS = { '/groups': ['list', 'get'], '/group-session': ['prepare'], '/group-billing': ['month'], '/teacher-settings': ['get', 'save', 'test'], '/delete-account': ['request', 'cancel', 'status'], '/lesson-tools': ['board_list'] };
 function isBlockedByReadOnly(endpoint, method, body = null) {
     if (typeof window === 'undefined' || !window.__tmReadOnly) return false;
     if (String(method || 'GET').toUpperCase() === 'GET') return false;
@@ -287,6 +287,22 @@ async function streamAiChatOnce(studentId, message, onText, signal, extra = {}) 
 /**
  * كائن API الرئيسي
  */
+// v29: أدوات الحصة (lesson-tools)
+function ownerFields(owner) {
+    const o = owner || {};
+    if (o.student_id) return { student_id: o.student_id };
+    if (o.group_id) return { group_id: o.group_id };
+    return {};
+}
+async function lessonTools(body) {
+    try {
+        return await apiCall(CONFIG.API_ENDPOINTS.LESSON_TOOLS, 'POST', body);
+    } catch (error) {
+        if (isMissingWebhook(error)) throw { error: { code: 'NOT_READY', message: 'أدوات الحصة لسه ماتفعّلتش على الخادم (lesson-tools).' }, status: 404 };
+        throw error;
+    }
+}
+
 export const api = {
     // ==================== DASHBOARD ====================
     
@@ -527,6 +543,35 @@ export const api = {
     },
     async cancelAccountDeletion() {
         return await apiCall(CONFIG.API_ENDPOINTS.ACCOUNT.DELETE, 'POST', { action: 'cancel' });
+    },
+
+    // ------------------------------------------------------------------ v29: أدوات الحصة
+    /**
+     * رسم المدرس على الكتاب / صفحات السبورة
+     * owner: { student_id } أو { group_id } أو {} (المدرس لوحده)
+     */
+    async boardList(kind, owner = {}, bookId = null) {
+        const d = await lessonTools({ action: 'board_list', kind, ...ownerFields(owner), ...(bookId ? { book_id: bookId } : {}) });
+        return (d && d.pages) || [];
+    },
+    async boardSave(kind, owner, page, data, bookId = null) {
+        return await lessonTools({ action: 'board_save', kind, page, data, ...ownerFields(owner), ...(bookId ? { book_id: bookId } : {}) });
+    },
+    async boardDelete(kind, owner, page, bookId = null) {
+        return await lessonTools({ action: 'board_delete', kind, page, ...ownerFields(owner), ...(bookId ? { book_id: bookId } : {}) });
+    },
+    /** لينك تسجيل الحصة (فاضي = مسح) */
+    async setLessonRecording({ lessonId, groupSessionId, url }) {
+        return await lessonTools({ action: 'set_recording', url: url || '', ...(lessonId ? { lesson_id: lessonId } : {}), ...(groupSessionId ? { group_session_id: groupSessionId } : {}) });
+    },
+    /** v29: كل بيانات المدرس (للتصدير) */
+    async exportData() {
+        try {
+            return await apiCall(CONFIG.API_ENDPOINTS.EXPORT, 'POST', {});
+        } catch (error) {
+            if (isMissingWebhook(error)) throw { error: { code: 'NOT_READY', message: 'تصدير البيانات لسه ماتفعّلش على الخادم (export-data).' }, status: 404 };
+            throw error;
+        }
     },
 
     /** v27: مساعد حصة المجموعة (نفس شات الحصة الخاصة لكن بسياق المجموعة) */

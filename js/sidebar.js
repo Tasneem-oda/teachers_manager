@@ -1,14 +1,14 @@
 /**
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
-import { Auth } from './auth.js?v=28';
-import { icon } from './icons.js?v=28';
-import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=28';
-import { CONFIG } from './config.js?v=28';
-import { openSuggestionModal } from './suggestions.js?v=28';
-import { mountFloatingLesson } from './live-lesson.js?v=28';
-import { initTracking } from './track.js?v=28';
-import { askChoice } from './utils.js?v=28';
+import { Auth } from './auth.js?v=29';
+import { icon } from './icons.js?v=29';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=29';
+import { CONFIG } from './config.js?v=29';
+import { openSuggestionModal } from './suggestions.js?v=29';
+import { mountFloatingLesson } from './live-lesson.js?v=29';
+import { initTracking } from './track.js?v=29';
+import { askChoice } from './utils.js?v=29';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
@@ -47,7 +47,7 @@ export async function getSubscriptionCached() {
     if (subFetchPromise) return subFetchPromise;
 
     subFetchPromise = (async () => {
-        const { api } = await import('./api.js?v=28');
+        const { api } = await import('./api.js?v=29');
         const data = await api.checkSubscription();
         try {
             sessionStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
@@ -396,7 +396,7 @@ async function loadHeaderProfile() {
         const profile = Auth.cachedProfile(session.user && session.user.id) || await Auth.bootstrapSession();
         // v28: الحساب مجدول للحذف؟ نعرض "رجّع حسابي" قبل أي حاجة
         if (profile && profile.deletion_scheduled_for) {
-            try { const m = await import('./account-delete.js?v=28'); m.showDeletionScheduledGate(profile); } catch (e) { /* تجاهل */ }
+            try { const m = await import('./account-delete.js?v=29'); m.showDeletionScheduledGate(profile); } catch (e) { /* تجاهل */ }
         }
         const nameEl = document.getElementById('header-user-name');
         const avatarEl = document.getElementById('header-avatar-fallback');

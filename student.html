@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>ملف الطالب - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=28">
+    <link rel="stylesheet" href="css/style.css?v=29">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,8 +19,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=28">
-    <link rel="stylesheet" href="css/groups.css?v=28">
+    <link rel="stylesheet" href="css/lessons.css?v=29">
+    <link rel="stylesheet" href="css/groups.css?v=29">
     <style>
         .loading { text-align: center; padding: 2rem; color: var(--primary); }
         .empty-state { text-align: center; padding: 2rem; color: var(--text-secondary); }
@@ -30,7 +30,23 @@
         .bill-summary strong { display: block; font-size: 1.1rem; color: var(--primary); margin-top: 0.15rem; }
         .more-wrap { text-align: center; margin: 0.8rem 0 1.5rem; }
         @media (max-width: 480px) { .bill-summary { grid-template-columns: 1fr 1fr; } }
+        /* v29: حالة الطالب + ولي الأمر + تسجيل الحصة */
+        .st-seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.4rem; }
+        .st-seg button { border: 1px solid var(--border); background: var(--card-bg); border-radius: 12px; padding: 0.6rem 0.4rem; font: inherit; cursor: pointer; text-align: center; min-height: 64px; }
+        .st-seg button b { display: block; font-size: 0.92rem; }
+        .st-seg button small { display: block; font-size: 0.74rem; color: var(--text-secondary); margin-top: 0.15rem; line-height: 1.4; }
+        .st-seg button.active { border-color: var(--primary); background: #F4EEF8; box-shadow: inset 0 0 0 1px var(--primary); }
+        .st-seg button:disabled { opacity: 0.6; cursor: wait; }
+        .sp-status-note { margin: 0.6rem 0 0; font-size: 0.84rem; color: var(--text-secondary); }
+        .sp-name .st-badge { display: inline-block; font-size: 0.72rem; font-weight: 800; border-radius: 999px; padding: 0.15rem 0.6rem; margin-inline-start: 0.5rem; vertical-align: 4px; }
+        .st-badge.paused { background: #FFF4DC; color: #8A5A00; }
+        .st-badge.archived { background: #EEE; color: #555; }
+        .lh-rec { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 700; font-size: 0.84rem; }
+        .lh-recbtn { background: none; border: 1px dashed var(--border); border-radius: 8px; padding: 0.25rem 0.6rem; font: inherit; font-size: 0.8rem; color: var(--primary); cursor: pointer; }
+        .e-guard { background: #FAFAF7; border: 1px dashed #E2DCCB; border-radius: 12px; padding: 0.7rem 0.8rem 0.1rem; margin-bottom: 1rem; }
+        .e-guard > p { margin: 0 0 0.5rem; font-size: 0.82rem; color: var(--text-secondary); }
     </style>
+    <link rel="stylesheet" href="css/v29.css?v=29">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -118,6 +134,16 @@
                             <div class="x-card-title"><h3 id="info-title"></h3><button type="button" class="x-link" id="btn-edit-info">تعديل</button></div>
                             <dl class="sp-info" id="info-list"></dl>
                         </div>
+                        <!-- v29: حالة الطالب -->
+                        <div class="x-card" id="info-status">
+                            <div class="x-card-title"><h3>حالة الطالب</h3></div>
+                            <div class="st-seg" id="st-seg" role="radiogroup" aria-label="حالة الطالب">
+                                <button type="button" data-st="active" role="radio"><b>نشط</b><small>بيظهر في الجدول والتذكيرات</small></button>
+                                <button type="button" data-st="paused" role="radio"><b>متوقف مؤقتًا</b><small>إجازة/سفر: مواعيده بتستنى</small></button>
+                                <button type="button" data-st="archived" role="radio"><b>أرشيف</b><small>خلّص معاك: بياناته محفوظة</small></button>
+                            </div>
+                            <p class="sp-status-note" id="st-note"></p>
+                        </div>
                         <div class="x-card" id="info-groups" hidden>
                             <div class="x-card-title"><h3>المجموعات</h3></div>
                             <div id="info-groups-list"></div>
@@ -149,6 +175,19 @@
                                 <div class="bm-grid">
                                     <div class="form-group"><label for="e-phone">رقم الهاتف</label><input type="tel" id="e-phone" dir="ltr" maxlength="40" placeholder="01xxxxxxxxx"><small>يُستخدم لرسائل واتساب</small></div>
                                     <div class="form-group"><label for="e-email">البريد الإلكتروني</label><input type="email" id="e-email" dir="ltr" maxlength="200"></div>
+                                </div>
+                                <div class="e-guard">
+                                    <p><b>ولي الأمر</b> (اختياري): التقارير ورسايل الفلوس بتروح له.</p>
+                                    <div class="bm-grid">
+                                        <div class="form-group"><label for="e-gname">اسم ولي الأمر</label><input type="text" id="e-gname" maxlength="120" placeholder="مثلًا: أم يوسف"></div>
+                                        <div class="form-group"><label for="e-gphone">رقم واتساب ولي الأمر</label><input type="tel" id="e-gphone" dir="ltr" maxlength="40" placeholder="01xxxxxxxxx"></div>
+                                    </div>
+                                    <div class="form-group"><label for="e-reportto">التقارير ورسايل الفلوس تروح لـ</label>
+                                        <select id="e-reportto">
+                                            <option value="auto">ولي الأمر لو رقمه موجود، وإلا الطالب</option>
+                                            <option value="guardian">ولي الأمر دايمًا</option>
+                                            <option value="student">الطالب نفسه</option>
+                                        </select></div>
                                 </div>
                                 <div class="form-group"><label for="e-subject">المادة</label>
                                     <select id="e-subject">
@@ -197,21 +236,22 @@
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=28"></script>
+    <script type="module" src="js/config.js?v=29"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=28';
-        import { api } from './js/api.js?v=28';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=28';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=28';
-        import { icon } from './js/icons.js?v=28';
-        import { openStudentAppointments } from './js/student-appointments.js?v=28';
-        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=28';
-        import { openAttendanceModal } from './js/attendance.js?v=28';
-        import { openMonthlyReport } from './js/report.js?v=28';
-        import { showTips } from './js/tips.js?v=28';
-        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=28';
-        import { groupTitle, groupColorClass } from './js/groups-utils.js?v=28';
-        import { confirmDeleteStudent, confirmRemoveFromGroup } from './js/student-actions.js?v=28';
+        import { Auth } from './js/auth.js?v=29';
+        import { api } from './js/api.js?v=29';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=29';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=29';
+        import { icon } from './js/icons.js?v=29';
+        import { openStudentAppointments } from './js/student-appointments.js?v=29';
+        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=29';
+        import { openAttendanceModal } from './js/attendance.js?v=29';
+        import { openMonthlyReport } from './js/report.js?v=29';
+        import { showTips } from './js/tips.js?v=29';
+        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=29';
+        import { groupTitle, groupColorClass } from './js/groups-utils.js?v=29';
+        import { confirmDeleteStudent, confirmRemoveFromGroup, setStudentStatus } from './js/student-actions.js?v=29';
+        import { openRecordingLinkModal } from './js/recording.js?v=29';
 
         renderSidebar('students');
         renderTopHeader({ title: 'ملف الطالب', subtitle: 'كل ما يخص الطالب في مكان واحد' });
@@ -273,11 +313,15 @@
             renderLessons();
             renderInfo();
             renderGroupsCard();
+            renderStatus();
         }
 
         // ------------------------------------------------------------ الرأس
         function renderHeader() {
             $('sp-name').textContent = student.name || 'بدون اسم';
+            if (student.status === 'paused' || student.status === 'archived') {
+                $('sp-name').insertAdjacentHTML('beforeend', `<span class="st-badge ${student.status}">${student.status === 'paused' ? 'متوقف مؤقتًا' : 'أرشيف'}</span>`);
+            }
             const sub = [`<span>${icon('bookOpen', { size: 14 })} ${esc(subjectLabel(student.subject))}</span>`];
             if (student.current_topic) sub.push(`<span>${icon('target', { size: 14 })} ${esc(student.current_topic)}</span>`);
             $('sp-sub').innerHTML = sub.join('');
@@ -443,9 +487,11 @@
                     <div class="lh-body">${lessonDetailsHtml(l, student.subject, icon)}
                         ${l.id && isGroup ? `<div class="lh-actions">
                             ${groupUrl ? `<a class="lh-edit" href="${groupUrl}">${icon('edit', { size: 13 })} تعديل حصة المجموعة</a>` : '<span class="muted" style="font-size:0.82rem;">حصة مجموعة (اتمسحت المجموعة)</span>'}
+                            ${!absent && groupUrl ? `<button type="button" class="lh-recbtn" data-rec-gs="${esc(l.group_session_id)}" data-rec-url="${esc(l.recording_url || '')}">${icon('video', { size: 13 })} ${l.recording_url ? 'لينك التسجيل' : 'ضيف لينك التسجيل'}</button>` : ''}
                         </div>` : ''}
                         ${l.id && !isGroup ? `<div class="lh-actions">
                             ${!absent && l.status !== 'in_progress' ? `<a class="lh-edit" href="lesson.html?student_id=${encodeURIComponent(studentId)}&edit_lesson=${encodeURIComponent(l.id)}">${icon('edit', { size: 13 })} تعديل الحصة</a>` : ''}
+                            ${!absent && l.status === 'completed' ? `<button type="button" class="lh-recbtn" data-rec-lesson="${esc(l.id)}" data-rec-url="${esc(l.recording_url || '')}">${icon('video', { size: 13 })} ${l.recording_url ? 'لينك التسجيل' : 'ضيف لينك التسجيل'}</button>` : ''}
                             <button type="button" class="lh-del" data-del-lesson="${esc(l.id)}" data-absent="${absent ? '1' : ''}">${icon('trash', { size: 13 })} ${absent ? 'مسح الغياب ده' : 'مسح الحصة دي'}</button>
                         </div>` : ''}</div></details>`;
             }).join('');
@@ -458,6 +504,19 @@
             ErrorHandler.showSuccess('اتعدّلت الحصة');
             try { history.replaceState(null, '', location.pathname + '?id=' + encodeURIComponent(studentId) + location.hash); } catch (e) { /* تجاهل */ }
         }
+
+        // v29: لينك تسجيل الحصة من سجل الحصص
+        $('lessons-list').addEventListener('click', (e) => {
+            const b = e.target.closest('[data-rec-lesson], [data-rec-gs]');
+            if (!b) return;
+            openRecordingLinkModal({
+                lessonId: b.dataset.recLesson || null,
+                groupSessionId: b.dataset.recGs || null,
+                current: b.dataset.recUrl || '',
+                student,
+                onSaved: () => { loadOverview().catch(() => {}); }
+            });
+        });
 
         // مسح حصة أو غياب اتسجل بالغلط (save-lesson: action = delete)
         $('lessons-list').addEventListener('click', async (e) => {
@@ -577,6 +636,8 @@
                 row('المادة', esc(subjectLabel(student.subject))),
                 row('الموضوع الحالي', esc(student.current_topic || '')),
                 row('رقم الهاتف', phone),
+                row('ولي الأمر', [student.guardian_name ? esc(student.guardian_name) : '', student.guardian_phone ? `<a href="tel:${esc(String(student.guardian_phone).replace(/[^\d+]/g, ''))}" dir="ltr">${esc(student.guardian_phone)}</a>` : ''].filter(Boolean).join(' · ')),
+                row('التقارير بتروح لـ', esc(({ guardian: 'ولي الأمر', student: 'الطالب' })[student.report_to] || (student.guardian_phone ? 'ولي الأمر' : 'الطالب'))),
                 row('البريد الإلكتروني', email),
                 row('رابط الحصة', link),
                 row('تاريخ الإضافة', student.created_at ? esc(Formatters.formatDate(student.created_at)) : '')
@@ -592,6 +653,9 @@
             sel.value = student.subject || '';
             $('e-link').value = student.lesson_link || '';
             $('e-topic').value = student.current_topic || '';
+            $('e-gname').value = student.guardian_name || '';
+            $('e-gphone').value = student.guardian_phone || '';
+            $('e-reportto').value = ['auto', 'guardian', 'student'].includes(student.report_to) ? student.report_to : 'auto';
             $('edit-error').style.display = 'none';
             $('edit-modal').classList.add('active');
             setTimeout(() => $('e-name').focus(), 50);
@@ -602,7 +666,8 @@
             const err = $('edit-error');
             const data = {
                 name: $('e-name').value.trim(), phone: $('e-phone').value.trim(), email: $('e-email').value.trim(),
-                subject: $('e-subject').value, lesson_link: $('e-link').value.trim(), current_topic: $('e-topic').value.trim()
+                subject: $('e-subject').value, lesson_link: $('e-link').value.trim(), current_topic: $('e-topic').value.trim(),
+                guardian_name: $('e-gname').value.trim(), guardian_phone: $('e-gphone').value.trim(), report_to: $('e-reportto').value
             };
             if (!data.name) { err.textContent = 'اسم الطالب مطلوب'; err.style.display = 'block'; return; }
             if (data.lesson_link && !/^https?:\/\//i.test(data.lesson_link) && /^[\w-]+(\.[\w-]+)+/.test(data.lesson_link)) data.lesson_link = 'https://' + data.lesson_link;
@@ -621,7 +686,8 @@
         });
 
         async function deleteThisStudent() {
-            const ok = await confirmDeleteStudent({ id: studentId, name: student.name, groups: (ov && ov.groups) || [] });
+            const ok = await confirmDeleteStudent({ id: studentId, name: student.name, status: student.status, groups: (ov && ov.groups) || [] });
+            if (ok === 'archived') { await loadOverview(); switchTab('info'); return; }
             if (ok) setTimeout(() => { window.location.href = 'students.html'; }, 700);
         }
         $('btn-delete-student').addEventListener('click', deleteThisStudent);
@@ -711,8 +777,29 @@
             setTimeout(() => clearInterval(waitReady), 15000);
         }
 
+        // ------------------------------------------------------------ v29: حالة الطالب
+        const ST_NOTE = {
+            active: 'الطالب بيظهر في جدولك وحصص اليوم والتذكيرات.',
+            paused: 'مواعيده محفوظة بس مش بتظهر في الجدول ولا بتوصلك تذكيرات بيها لحد ما ترجّعه "نشط".',
+            archived: 'مش بيظهر في القوائم ولا الجدول ولا تذكيرات الفلوس. كل حصصه وتقاريره محفوظة، وتقدر ترجّعه في أي وقت.'
+        };
+        function renderStatus() {
+            const cur = student.status === 'paused' || student.status === 'archived' ? student.status : 'active';
+            $('st-seg').querySelectorAll('[data-st]').forEach((b) => { const on = b.dataset.st === cur; b.classList.toggle('active', on); b.setAttribute('aria-checked', String(on)); });
+            $('st-note').textContent = ST_NOTE[cur];
+        }
+        $('st-seg').addEventListener('click', async (e) => {
+            const b = e.target.closest('[data-st]');
+            if (!b || b.classList.contains('active')) return;
+            const btns = $('st-seg').querySelectorAll('button');
+            btns.forEach((x) => { x.disabled = true; });
+            const ok = await setStudentStatus(student, b.dataset.st);
+            btns.forEach((x) => { x.disabled = false; });
+            if (ok) { student.status = b.dataset.st; renderHeader(); renderStatus(); }
+        });
+
         window.openBillingSetup = () => openBillingSetup({ student, view: billView }, billingCtx.onChange);
     </script>
-    <script src="js/pwa-install.js?v=28" defer></script>
+    <script src="js/pwa-install.js?v=29" defer></script>
 </body>
 </html>

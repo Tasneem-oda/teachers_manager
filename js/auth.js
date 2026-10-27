@@ -7,8 +7,8 @@
  * في كل مكان (وليس window.supabase، لأن هذا الأخير هو مكتبة supabase-js
  * الخام القادمة من الـ CDN وليس عميلاً مهيّأً، وليس لديه خاصية .auth).
  */
-import { CONFIG } from './config.js?v=28';
-import { APIUtils, Storage, ErrorHandler, Validators, toLatinDigits } from './utils.js?v=28';
+import { CONFIG } from './config.js?v=29';
+import { APIUtils, Storage, ErrorHandler, Validators, toLatinDigits } from './utils.js?v=29';
 
 /** fetch بمهلة: على النت الضعيف الدخول/التسجيل مايفضلش يلف للأبد */
 async function fetchWithTimeout(url, options = {}, ms = 12000) {
@@ -258,6 +258,85 @@ export const Auth = {
         return res.ok;
     },
 
+    /** v29: المدرس عنده كلمة سر؟ (اللي داخل بجوجل بس مالوش كلمة سر لحد ما يعمل واحدة) */
+    hasPassword(user) {
+        if (!user) return true;
+        const ids = Array.isArray(user.identities) ? user.identities : [];
+        if (!ids.length) return true;
+        return ids.some((i) => i && i.provider === 'email') || !!(user.user_metadata && user.user_metadata.tm_has_password);
+    },
+
+    /**
+     * v29: الدخول بحساب جوجل (بيرجع على صفحة الدخول ومنها للرئيسية)
+     */
+    async signInWithGoogle() {
+        try {
+            const redirectTo = new URL('login.html?oauth=google', window.location.href).href;
+            const { error } = await window.supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo, queryParams: { prompt: 'select_account' } }
+            });
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('Google Sign-In Error:', error);
+            const msg = String((error && error.message) || '');
+            return {
+                success: false,
+                error: /provider is not enabled|unsupported provider/i.test(msg)
+                    ? 'الدخول بجوجل لسه مش متفعّل. ادخل بالإيميل وكلمة السر دلوقتي.'
+                    : authErrorMessage(error, 'مقدرناش نفتح تسجيل الدخول بجوجل. جرّب تاني.')
+            };
+        }
+    },
+
+    /**
+     * v29: بعد الرجوع من جوجل: لو المدرس جديد ومالوش ملف لسه، بنعمله ملف (نفس التسجيل العادي)
+     * بيرجّع { profile, isNew }
+     */
+    async finishOAuth(session) {
+        const user = session && session.user;
+        if (!user) return { profile: null, isNew: false };
+        Storage.set('auth_session', { user_id: user.id });
+        let res = await this.fetchProfileStatus(session);
+        if (res.profile) {
+            Storage.set('user_profile', res.profile);
+            const created = user.created_at && (Date.now() - Date.parse(user.created_at)) < 10 * 60 * 1000;
+            return { profile: res.profile, isNew: !!created && !res.profile.phone };
+        }
+        if (!res.notFound) return { profile: null, isNew: false };
+        const m = user.user_metadata || {};
+        const name = String(m.full_name || m.name || (user.email || '').split('@')[0] || 'معلم').trim().slice(0, 100);
+        const payload = {
+            id: user.id, email: user.email, name, phone: '',
+            username: 'teacher_' + String(user.id).replace(/-/g, '').slice(0, 12),
+            teaching_type: 'private', subject: '',
+            signup_source: Object.assign({ method: 'google' }, Storage.get('tm_signup_source') || {})
+        };
+        const init = await this.initializeProfile(payload, session.access_token);
+        if (init.ok) Storage.remove('tm_signup_source');
+        res = await this.fetchProfileStatus(session);
+        if (res.profile) Storage.set('user_profile', res.profile);
+        try { (window.dataLayer = window.dataLayer || []).push({ event: 'sign_up', method: 'google' }); } catch (e) { /* تجاهل */ }
+        return { profile: res.profile, isNew: true };
+    },
+
+    /** bootstrap-session مع التفرقة بين "مالوش ملف" و"الخادم ماردّش" */
+    async fetchProfileStatus(session) {
+        try {
+            const response = await fetchWithTimeout(APIUtils.buildUrl(CONFIG.API_ENDPOINTS.AUTH.BOOTSTRAP_SESSION),
+                { method: 'GET', headers: APIUtils.buildHeaders(session.access_token) }, 12000);
+            const text = await response.text();
+            let data = null;
+            try { data = text ? JSON.parse(text) : null; } catch (e) { data = null; }
+            if (data && data.success && data.data) return { profile: data.data };
+            const code = data && data.error && data.error.code;
+            return { profile: null, notFound: code === 'PROFILE_NOT_FOUND' };
+        } catch (e) {
+            return { profile: null, notFound: false };
+        }
+    },
+
     /**
      * دالة تسجيل الدخول (Login)
      */
@@ -473,8 +552,10 @@ export const Auth = {
                 throw new Error('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
             }
 
+            // v29: tm_has_password = المدرس اللي داخل بجوجل عمل كلمة سر (عشان نطلبها منه بعد كده)
             const { error } = await window.supabaseClient.auth.updateUser({
-                password: newPassword
+                password: newPassword,
+                data: { tm_has_password: true }
             });
 
             if (error) throw error;

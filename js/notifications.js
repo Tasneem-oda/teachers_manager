@@ -33,10 +33,10 @@
  * كل جزء بيفشل بصمت (من غير ما يكسر باقي الصفحة) لو لسه معمولش الإعداد بتاعه.
  * ============================================================================
  */
-import { CONFIG } from './config.js?v=28';
-import { Auth } from './auth.js?v=28';
-import { api } from './api.js?v=28';
-import { ErrorHandler } from './utils.js?v=28';
+import { CONFIG } from './config.js?v=29';
+import { Auth } from './auth.js?v=29';
+import { api } from './api.js?v=29';
+import { ErrorHandler } from './utils.js?v=29';
 
 const PROMPT_DISMISS_KEY = 'tm_notif_prompt_dismissed';
 const BADGE_CACHE_KEY = 'tm_notif_badge_cache_v1';
@@ -134,7 +134,7 @@ async function initAndLinkTeacher() {
                     const n = event && event.notification;
                     const data = (n && (n.additionalData || n.data)) || {};
                     if (data.tm_sound === true || data.tm_sound === 'true') {
-                        import('./reminder-settings.js?v=28').then((m) => m.playReminderSound()).catch(() => { /* تجاهل */ });
+                        import('./reminder-settings.js?v=29').then((m) => m.playReminderSound()).catch(() => { /* تجاهل */ });
                     }
                 } catch (e) { /* تجاهل */ }
             });

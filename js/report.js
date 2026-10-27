@@ -5,11 +5,11 @@
  * الحضور والغياب، مستوى الحفظ/التلاوة/المراجعة، الواجبات، اللي خلصناه، والخطة الجاية.
  */
 
-import { ErrorHandler } from './utils.js?v=28';
-import { icon } from './icons.js?v=28';
-import { lessonDay, ratingFieldLabels, ratingLabel, normalizeLesson } from './lesson-utils.js?v=28';
-import { whatsappUrl } from './billing.js?v=28';
-import { CONFIG } from './config.js?v=28';
+import { ErrorHandler } from './utils.js?v=29';
+import { icon } from './icons.js?v=29';
+import { lessonDay, ratingFieldLabels, ratingLabel, normalizeLesson } from './lesson-utils.js?v=29';
+import { whatsappUrl, recipientChooser } from './billing.js?v=29';
+import { CONFIG } from './config.js?v=29';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -107,11 +107,14 @@ export function openMonthlyReport({ student, loadLessons }) {
             try { if (lessons.length) rebuild(); } catch (e) { /* لسه مااتحملش */ }
         }).catch(() => {});
     }
+    const to = recipientChooser(student);
+    let toPhone = to.initial;
     const modal = document.createElement('div');
     modal.className = 'modal active bill-modal rp-modal';
     modal.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-label="تقرير الشهر لولي الأمر">
         <button type="button" class="bm-close" aria-label="إغلاق">${icon('x', { size: 18 })}</button>
         <h2 class="bm-title">تقرير الشهر لولي الأمر</h2>
+        ${to.html}
         <div class="bm-tones" role="tablist">
             <button type="button" class="bm-tone active" data-month="0">الشهر ده</button>
             <button type="button" class="bm-tone" data-month="-1">الشهر اللي فات</button>
@@ -139,14 +142,15 @@ export function openMonthlyReport({ student, loadLessons }) {
     let edited = false;
     const msg = $('#rp-msg');
     const wa = $('#rp-wa');
-    const refreshLink = () => { wa.href = whatsappUrl(student && student.phone, msg.value); };
+    const refreshLink = () => { wa.href = whatsappUrl(toPhone, msg.value); };
+    to.bind(modal, (ph) => { toPhone = ph; refreshLink(); });
 
     const rebuild = () => {
         const r = buildMonthlyReport(lessons, student, monthStart(offset), { note: $('#rp-note').value, signature: $('#rp-sign').checked, refCode });
         msg.value = r.text;
         edited = false;
         $('#rp-hint').textContent = r.stats.scheduled
-            ? (student && student.phone ? 'تقدر تعدّل النص قبل الإرسال.' : 'لا يوجد رقم هاتف للطالب: واتساب هيفتح وتختار جهة الاتصال بنفسك.')
+            ? (toPhone ? 'تقدر تعدّل النص قبل الإرسال.' : 'مفيش رقم لولي الأمر ولا للطالب: واتساب هيفتح وتختار جهة الاتصال بنفسك. (ضيف رقم ولي الأمر من بيانات الطالب)')
             : 'مفيش حصص متسجلة في الشهر ده.';
         refreshLink();
     };
@@ -201,7 +205,7 @@ function getRefCode() {
  * @param {object} student {name, subject}
  * @param {object} f الحقول: lesson_content, memorization, recitation, revision, homework_status, performance, homework, next_assignment
  */
-export function buildLessonReport(student, f, { date = new Date(), note = '', signature = true, refCode = '' } = {}) {
+export function buildLessonReport(student, f, { date = new Date(), note = '', signature = true, refCode = '', recordingUrl = '' } = {}) {
     const fields = f || {};
     const labels = ratingFieldLabels(student && student.subject);
     const name = String((student && student.name) || '').trim().split(/\s+/)[0] || 'الطالب';
@@ -218,6 +222,7 @@ export function buildLessonReport(student, f, { date = new Date(), note = '', si
     if (fields.homework) lines.push(`📚 الواجب الجاي: ${fields.homework.trim()}`);
     if (fields.next_assignment) lines.push(`🎯 الحصة الجاية: ${fields.next_assignment.trim()}`);
     if (note && note.trim()) lines.push(`✍️ ${note.trim()}`);
+    if (recordingUrl) lines.push(`🎥 تسجيل الحصة: ${recordingUrl}`);
     if (lines.length === 2) lines.push('✅ الحصة اتعملت النهارده.');
     lines.push('مع تحياتي 🌷');
     if (signature) lines.push(`— من خلال Teachers Manager\n${CONFIG.SITE_URL.replace(/^https?:\/\//, '')}${refCode ? `/?ref=${refCode}` : ''}`);
@@ -225,18 +230,21 @@ export function buildLessonReport(student, f, { date = new Date(), note = '', si
 }
 
 /** نافذة التقرير: نص جاهز يتعدّل + إرسال واتساب لرقم الطالب/ولي الأمر */
-export function openLessonReport({ student, fields, date }) {
+export function openLessonReport({ student, fields, date, recordingUrl }) {
     const refCode = getRefCode();
+    const to = recipientChooser(student);
+    let toPhone = to.initial;
     const modal = document.createElement('div');
     modal.className = 'modal active bill-modal rp-modal';
     modal.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-label="تقرير الحصة لولي الأمر">
         <button type="button" class="bm-close" aria-label="إغلاق">${icon('x', { size: 18 })}</button>
         <h2 class="bm-title">تقرير الحصة لولي الأمر</h2>
+        ${to.html}
         <div class="bm-field"><label for="lr-note">كلمة منك <small>(اختياري)</small></label>
             <input type="text" id="lr-note" maxlength="200" placeholder="مثلًا: ما شاء الله كان مركز جدًا النهارده"></div>
         <textarea id="lr-msg" class="bm-msg" rows="10" dir="rtl" aria-label="نص التقرير"></textarea>
         <label class="ls-check" style="margin-top:0.5rem"><input type="checkbox" id="lr-sign" checked> إضافة سطر "من خلال Teachers Manager"</label>
-        <p class="bm-hint" id="lr-hint">${student && student.phone ? 'تقدر تعدّل النص قبل الإرسال.' : 'مفيش رقم واتساب للطالب: واتساب هيفتح وتختار جهة الاتصال بنفسك.'}</p>
+        <p class="bm-hint" id="lr-hint">${toPhone ? 'تقدر تعدّل النص قبل الإرسال.' : 'مفيش رقم لولي الأمر ولا للطالب: واتساب هيفتح وتختار جهة الاتصال بنفسك.'}</p>
         <div class="bm-buttons">
             <a class="btn bm-wa" id="lr-wa" target="_blank" rel="noopener">${icon('messageCircle', { size: 16 })} إرسال واتساب</a>
             <button type="button" class="btn btn-ghost" id="lr-copy">${icon('copy', { size: 15 })} نسخ</button>
@@ -252,9 +260,10 @@ export function openLessonReport({ student, fields, date }) {
     const msg = $('#lr-msg');
     const wa = $('#lr-wa');
     let edited = false;
-    const refreshLink = () => { wa.href = whatsappUrl(student && student.phone, msg.value); };
+    const refreshLink = () => { wa.href = whatsappUrl(toPhone, msg.value); };
+    to.bind(modal, (ph) => { toPhone = ph; refreshLink(); });
     const rebuild = () => {
-        msg.value = buildLessonReport(student, fields, { date, note: $('#lr-note').value, signature: $('#lr-sign').checked, refCode });
+        msg.value = buildLessonReport(student, fields, { date, note: $('#lr-note').value, signature: $('#lr-sign').checked, refCode, recordingUrl });
         edited = false;
         refreshLink();
     };
