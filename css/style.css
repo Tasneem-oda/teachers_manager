@@ -618,3 +618,6 @@ button { font-family: inherit; }
 .bell-btn.header-install[hidden] { display: none !important; }
 .sidebar-footer a[hidden] { display: none !important; }
 @media (min-width: 901px) { .bell-btn.header-install { display: none !important; } }
+/* v28: زرار خطر بإطار (كان في الإعدادات بس) */
+.btn-outline-danger { background: var(--card-bg); color: var(--danger); border: 1px solid var(--danger-border, #E7C9C9); }
+.btn-outline-danger:hover { background: #FBEAEA; }

@@ -11,9 +11,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>حصة المجموعة - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=27">
-    <link rel="stylesheet" href="css/lessons.css?v=27">
-    <link rel="stylesheet" href="css/groups.css?v=27">
+    <link rel="stylesheet" href="css/style.css?v=28">
+    <link rel="stylesheet" href="css/lessons.css?v=28">
+    <link rel="stylesheet" href="css/groups.css?v=28">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -51,6 +51,8 @@
                         <button type="button" class="btn btn-sm gl-live-ai" id="btn-ai-live"></button>
                         <div class="gl-live-bar"><span id="live-progress"></span></div>
                     </div>
+                    <!-- v28: ابعت لينك الحصة لجروب المجموعة -->
+                    <div class="ls-send-link" id="g-send-link" hidden></div>
                     <div id="same-day" class="gl-same-day" hidden></div>
                     <!-- v27: ابدأ الحصة بدل التسجيل بعدها -->
                     <div id="start-card" class="x-card gl-start" hidden>
@@ -121,19 +123,20 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=27"></script>
+    <script type="module" src="js/config.js?v=28"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=27';
-        import { api } from './js/api.js?v=27';
-        import { ErrorHandler, Formatters, askChoice, uuidv4 } from './js/utils.js?v=27';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=27';
-        import { icon } from './js/icons.js?v=27';
-        import { RATINGS, HOMEWORK_STATUS, ratingFieldLabels, formatLessonDate, localDateISO } from './js/lesson-utils.js?v=27';
-        import { whatsappUrl } from './js/billing.js?v=27';
-        import { formatClock12, timeToMinutes } from './js/calendar-utils.js?v=27';
-        import { groupTitle, membersText, sessionShareText } from './js/groups-utils.js?v=27';
-        import { mountGroupAi } from './js/group-ai.js?v=27';
-        import { LiveLesson, clockText, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=27';
+        import { Auth } from './js/auth.js?v=28';
+        import { api } from './js/api.js?v=28';
+        import { ErrorHandler, Formatters, askChoice, uuidv4 } from './js/utils.js?v=28';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=28';
+        import { icon } from './js/icons.js?v=28';
+        import { RATINGS, HOMEWORK_STATUS, ratingFieldLabels, formatLessonDate, localDateISO } from './js/lesson-utils.js?v=28';
+        import { whatsappUrl } from './js/billing.js?v=28';
+        import { formatClock12, timeToMinutes } from './js/calendar-utils.js?v=28';
+        import { groupTitle, membersText, sessionShareText } from './js/groups-utils.js?v=28';
+        import { mountGroupAi } from './js/group-ai.js?v=28';
+        import { buildLessonReport } from './js/report.js?v=28';
+        import { LiveLesson, clockText, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=28';
 
         const $ = (id) => document.getElementById(id);
         const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
@@ -155,6 +158,9 @@
         let livePlannedMin = null;
         let liveTimer = null;
         let ai = null;
+        // v28: إعدادات المدرس (زرار اللينك + تقارير أولياء الأمور)
+        let tSettings = { send_link_on_start: true, report_after_lesson: true };
+        api.getTeacherSettings().then((st) => { if (st) tSettings = st; if (prep) renderGroupLink(); }).catch(() => { /* افتراضي */ });
         const draftKey = () => `tm_gsession_draft_${groupId}_${sessionId || 'new'}`;
         const liveKey = () => `group:${groupId}`;
         $('btn-ai-top').innerHTML = `${icon('sparkles', { size: 15 })} المساعد`;
@@ -327,6 +333,24 @@
             };
             tick();
             liveTimer = setInterval(tick, 1000);
+            renderGroupLink();
+        }
+        function renderGroupLink() {
+            const box = $('g-send-link');
+            const g = prep && prep.group;
+            const key = `tm_glink_sent_${prep && prep.session ? prep.session.id : ''}`;
+            let sent = false;
+            try { sent = localStorage.getItem(key) === '1'; } catch (e) { /* تجاهل */ }
+            const show = isLive && g && g.lesson_link && tSettings.send_link_on_start !== false && !sent;
+            box.hidden = !show;
+            if (!show) { box.innerHTML = ''; return; }
+            const msg = `السلام عليكم 🌸\nحصة ${groupTitle(g.name)} بدأت، اتفضلوا ادخلوا من اللينك ده:\n${g.lesson_link}`;
+            box.innerHTML = `<span>${icon('link', { size: 16 })} ابعت لينك الحصة لجروب المجموعة</span>
+                <a class="btn btn-sm ls-sl-go" href="${esc(whatsappUrl('', msg))}" target="_blank" rel="noopener">${icon('messageCircle', { size: 15 })} ابعت</a>
+                <button type="button" class="ls-sl-x" aria-label="إخفاء">✕</button>`;
+            const done = () => { try { localStorage.setItem(key, '1'); } catch (e) { /* تجاهل */ } box.hidden = true; };
+            box.querySelector('.ls-sl-go').addEventListener('click', () => setTimeout(done, 300));
+            box.querySelector('.ls-sl-x').addEventListener('click', done);
         }
         $('btn-start-live').addEventListener('click', () => {
             const t = $('f-time').value;
@@ -566,6 +590,7 @@
             const cancelled = payload.status === 'cancelled';
             const present = payload.attendance.filter((a) => a.attendance === 'present').length;
             const absents = payload.attendance.filter((a) => a.attendance !== 'present');
+            const presents = payload.attendance.filter((a) => a.attendance === 'present');
             const byId = new Map((prep.members || []).map((m) => [String(m.student_id), m]));
             const shareText = sessionShareText(g.name, { session_date: payload.date, status: payload.status, lesson_content: payload.lesson_content, homework: payload.homework, next_assignment: payload.next_assignment });
             const absentMsg = (name) => `السلام عليكم، ${name} ماحضرش حصة ${groupTitle(g.name)} النهارده.${payload.lesson_content ? `\nاللي أخدناه: ${payload.lesson_content}` : ''}${payload.homework ? `\nالواجب: ${payload.homework}` : ''}`;
@@ -588,6 +613,19 @@
                         return `<div class="member-row"><div class="member-avatar">${esc((m.name || '؟').charAt(0))}</div>
                             <div class="member-main"><a href="student.html?id=${encodeURIComponent(a.student_id)}">${esc(m.name)}</a><div class="member-stats"><span>${a.attendance === 'absent_excused' ? 'غاب بعذر' : 'غاب'}</span></div></div>
                             <div class="member-actions">${m.phone ? `<a class="btn btn-sm btn-outline" href="${esc(whatsappUrl(m.phone, absentMsg(m.name)))}" target="_blank" rel="noopener">${icon('messageCircle', { size: 15 })} واتساب</a>` : '<span class="muted" style="font-size:0.8rem;">مفيش رقم</span>'}</div></div>`;
+                    }).join('')}</div>` : ''}
+                ${!cancelled && presents.length && tSettings.report_after_lesson !== false ? `<div class="absent-list">
+                    <p style="font-weight:700; margin:0 0 0.1rem;">📩 تقرير الحصة لولي أمر كل طالب</p>
+                    <p class="muted" style="font-size:0.82rem; margin:0 0 0.3rem;">فيه المحتوى والواجب وتقييم الطالب نفسه.</p>
+                    ${presents.map((a) => {
+                        const m = byId.get(String(a.student_id)) || { name: 'طالب' };
+                        const txt = buildLessonReport({ name: m.name, subject: g.subject }, {
+                            lesson_content: payload.lesson_content, memorization: a.rating, homework_status: a.homework_status,
+                            performance: a.note, homework: payload.homework, next_assignment: payload.next_assignment
+                        }, { date: new Date(payload.date + 'T12:00:00'), signature: false });
+                        return `<div class="member-row"><div class="member-avatar">${esc((m.name || '؟').charAt(0))}</div>
+                            <div class="member-main"><a href="student.html?id=${encodeURIComponent(a.student_id)}">${esc(m.name)}</a><div class="member-stats"><span>حضر</span></div></div>
+                            <div class="member-actions">${m.phone ? `<a class="btn btn-sm btn-outline" data-report href="${esc(whatsappUrl(m.phone, txt))}" target="_blank" rel="noopener">${icon('messageCircle', { size: 15 })} ابعت التقرير</a>` : '<span class="muted" style="font-size:0.8rem;">مفيش رقم</span>'}</div></div>`;
                     }).join('')}</div>` : ''}
                 <div class="gl-done-actions">
                     <a class="btn btn-outline" href="group-lesson.html?group_id=${encodeURIComponent(groupId)}&session_id=${encodeURIComponent(sessionId)}">عدّل الحصة</a>
@@ -617,6 +655,6 @@
             } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
         });
     </script>
-    <script src="js/pwa-install.js?v=27" defer></script>
+    <script src="js/pwa-install.js?v=28" defer></script>
 </body>
 </html>

@@ -5,11 +5,11 @@
  * الحضور والغياب، مستوى الحفظ/التلاوة/المراجعة، الواجبات، اللي خلصناه، والخطة الجاية.
  */
 
-import { ErrorHandler } from './utils.js?v=27';
-import { icon } from './icons.js?v=27';
-import { lessonDay, ratingFieldLabels, ratingLabel, normalizeLesson } from './lesson-utils.js?v=27';
-import { whatsappUrl } from './billing.js?v=27';
-import { CONFIG } from './config.js?v=27';
+import { ErrorHandler } from './utils.js?v=28';
+import { icon } from './icons.js?v=28';
+import { lessonDay, ratingFieldLabels, ratingLabel, normalizeLesson } from './lesson-utils.js?v=28';
+import { whatsappUrl } from './billing.js?v=28';
+import { CONFIG } from './config.js?v=28';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -182,4 +182,92 @@ export function openMonthlyReport({ student, loadLessons }) {
         try { (window.dataLayer = window.dataLayer || []).push({ event: 'parent_report_sent' }); } catch (e) { /* تجاهل */ }
     });
     load();
+}
+
+// ============================================================ v28: تقرير الحصة الواحدة لولي الأمر
+const HW_TEXT = { done: 'عمله ✅', partial: 'عمل جزء منه', not_done: 'ماعملهوش ❌' };
+
+/** كود الترشيح (أول 8 حروف من معرّف المدرس) — نفس تقرير الشهر */
+function getRefCode() {
+    try {
+        const raw = localStorage.getItem('auth_session');
+        const uid = raw ? (JSON.parse(raw) || {}).user_id : '';
+        return String(uid || '').replace(/-/g, '').slice(0, 8);
+    } catch (e) { return ''; }
+}
+
+/**
+ * رسالة تقرير الحصة من اللي المدرس سجّله
+ * @param {object} student {name, subject}
+ * @param {object} f الحقول: lesson_content, memorization, recitation, revision, homework_status, performance, homework, next_assignment
+ */
+export function buildLessonReport(student, f, { date = new Date(), note = '', signature = true, refCode = '' } = {}) {
+    const fields = f || {};
+    const labels = ratingFieldLabels(student && student.subject);
+    const name = String((student && student.name) || '').trim().split(/\s+/)[0] || 'الطالب';
+    let day = '';
+    try { day = new Date(date).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long' }); } catch (e) { /* تجاهل */ }
+    const lines = ['السلام عليكم 🌸', `📋 تقرير حصة ${name}${day ? ` — ${day}` : ''}`];
+    if (fields.lesson_content) lines.push(`📖 اللي أخدناه: ${fields.lesson_content.trim()}`);
+    const levels = ['memorization', 'recitation', 'revision']
+        .filter((k) => fields[k])
+        .map((k) => `${labels[k]}: ${ratingLabel(fields[k])}`);
+    if (levels.length) lines.push(`⭐ المستوى: ${levels.join(' · ')}`);
+    if (fields.homework_status) lines.push(`📝 الواجب اللي فات: ${HW_TEXT[fields.homework_status] || fields.homework_status}`);
+    if (fields.performance) lines.push(`💬 ملاحظات: ${fields.performance.trim()}`);
+    if (fields.homework) lines.push(`📚 الواجب الجاي: ${fields.homework.trim()}`);
+    if (fields.next_assignment) lines.push(`🎯 الحصة الجاية: ${fields.next_assignment.trim()}`);
+    if (note && note.trim()) lines.push(`✍️ ${note.trim()}`);
+    if (lines.length === 2) lines.push('✅ الحصة اتعملت النهارده.');
+    lines.push('مع تحياتي 🌷');
+    if (signature) lines.push(`— من خلال Teachers Manager\n${CONFIG.SITE_URL.replace(/^https?:\/\//, '')}${refCode ? `/?ref=${refCode}` : ''}`);
+    return lines.join('\n');
+}
+
+/** نافذة التقرير: نص جاهز يتعدّل + إرسال واتساب لرقم الطالب/ولي الأمر */
+export function openLessonReport({ student, fields, date }) {
+    const refCode = getRefCode();
+    const modal = document.createElement('div');
+    modal.className = 'modal active bill-modal rp-modal';
+    modal.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-label="تقرير الحصة لولي الأمر">
+        <button type="button" class="bm-close" aria-label="إغلاق">${icon('x', { size: 18 })}</button>
+        <h2 class="bm-title">تقرير الحصة لولي الأمر</h2>
+        <div class="bm-field"><label for="lr-note">كلمة منك <small>(اختياري)</small></label>
+            <input type="text" id="lr-note" maxlength="200" placeholder="مثلًا: ما شاء الله كان مركز جدًا النهارده"></div>
+        <textarea id="lr-msg" class="bm-msg" rows="10" dir="rtl" aria-label="نص التقرير"></textarea>
+        <label class="ls-check" style="margin-top:0.5rem"><input type="checkbox" id="lr-sign" checked> إضافة سطر "من خلال Teachers Manager"</label>
+        <p class="bm-hint" id="lr-hint">${student && student.phone ? 'تقدر تعدّل النص قبل الإرسال.' : 'مفيش رقم واتساب للطالب: واتساب هيفتح وتختار جهة الاتصال بنفسك.'}</p>
+        <div class="bm-buttons">
+            <a class="btn bm-wa" id="lr-wa" target="_blank" rel="noopener">${icon('messageCircle', { size: 16 })} إرسال واتساب</a>
+            <button type="button" class="btn btn-ghost" id="lr-copy">${icon('copy', { size: 15 })} نسخ</button>
+        </div>
+    </div>`;
+    const $ = (s) => modal.querySelector(s);
+    const closeModal = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = (e) => { if (e.key === 'Escape') closeModal(); };
+    modal.addEventListener('mousedown', (e) => { if (e.target === modal) closeModal(); });
+    $('.bm-close').addEventListener('click', closeModal);
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(modal);
+    const msg = $('#lr-msg');
+    const wa = $('#lr-wa');
+    let edited = false;
+    const refreshLink = () => { wa.href = whatsappUrl(student && student.phone, msg.value); };
+    const rebuild = () => {
+        msg.value = buildLessonReport(student, fields, { date, note: $('#lr-note').value, signature: $('#lr-sign').checked, refCode });
+        edited = false;
+        refreshLink();
+    };
+    $('#lr-note').addEventListener('input', () => { if (!edited) rebuild(); });
+    $('#lr-sign').addEventListener('change', () => { if (!edited) rebuild(); });
+    msg.addEventListener('input', () => { edited = true; refreshLink(); });
+    $('#lr-copy').addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(msg.value); } catch (e) { msg.select(); try { document.execCommand('copy'); } catch (x) { /* تجاهل */ } }
+        ErrorHandler.showSuccess('تم نسخ التقرير');
+    });
+    wa.addEventListener('click', () => {
+        try { window.tmTrack && window.tmTrack('lesson_report_sent', {}); } catch (e) { /* تجاهل */ }
+        setTimeout(closeModal, 400);
+    });
+    rebuild();
 }

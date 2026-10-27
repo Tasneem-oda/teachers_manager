@@ -118,6 +118,16 @@ export const CONFIG = {
             BILLING: '/group-billing',
             AI_CHAT: '/group-ai-chat'
         },
+        // v28: إعدادات المدرس (التذكيرات + رسايل الواتساب) - n8n/teacher-settings.json
+        SETTINGS: {
+            API: '/teacher-settings'
+        },
+        // v28: تأجيل حصة ليوم/ساعة تانية - n8n/postpone-lesson.json
+        POSTPONE: '/postpone-lesson',
+        // v28: حذف حساب المدرس بنفسه (مع مهلة رجوع) - n8n/delete-account.json
+        ACCOUNT: {
+            DELETE: '/delete-account'
+        },
         // مركز الإشعارات (نافذة زر الجرس 🔔) - مقروءة / غير مقروءة
         NOTIFICATIONS: {
             GET_ALL: '/get-notifications',

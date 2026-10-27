@@ -6,10 +6,13 @@
  * لو فيه حصة جارية (lessonId) بتتحوّل هي نفسها لغياب بدل ما يتعمل صف جديد.
  */
 
-import { api } from './api.js?v=27';
-import { Formatters, ErrorHandler } from './utils.js?v=27';
-import { icon } from './icons.js?v=27';
-import { localDateISO } from './lesson-utils.js?v=27';
+import { api } from './api.js?v=28';
+import { Formatters, ErrorHandler } from './utils.js?v=28';
+import { icon } from './icons.js?v=28';
+import { localDateISO } from './lesson-utils.js?v=28';
+import { whatsappUrl } from './billing.js?v=28';
+import { saveWithConflictCheck } from './groups-utils.js?v=28';
+import { DAY_NAMES, formatClock12, timeToMinutes } from './calendar-utils.js?v=28';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 
@@ -58,6 +61,19 @@ function showUndo(text, onUndo) {
     });
 }
 
+/** "الخميس 29 أكتوبر" */
+function dayLabel(iso) {
+    try {
+        const d = new Date(iso + 'T12:00:00');
+        return `${DAY_NAMES[d.getDay()]} ${d.toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long' })}`;
+    } catch (e) { return iso; }
+}
+function addDaysISO(n) {
+    const d = new Date();
+    d.setDate(d.getDate() + n);
+    return localDateISO(d);
+}
+
 export function openAttendanceModal(opts) {
     const { studentId, studentName = '', lessonId = null, onSaved } = opts || {};
     if (!studentId) return;
@@ -81,7 +97,33 @@ export function openAttendanceModal(opts) {
                 <span class="att-emoji" aria-hidden="true">${o.emoji}</span>
                 <span><strong>${o.title}</strong><small>${o.sub}</small></span>
             </button>`).join('')}
+            <!-- v28: تأجيل الحصة ليوم/ساعة تانية -->
+            <button type="button" class="att-option att-postpone" data-postpone>
+                <span class="att-emoji" aria-hidden="true">📅</span>
+                <span><strong>أجّل الحصة ليوم تاني</strong><small>اختار اليوم والساعة: للمرة دي بس أو على طول</small></span>
+            </button>
         </div>
+        <div class="att-pp" hidden>
+            <p class="att-pp-q">الحصة تتأجل لإمتى؟</p>
+            <div class="att-pp-days" role="group" aria-label="اليوم">
+                <button type="button" data-day="0">النهارده</button>
+                <button type="button" data-day="1">بكرة</button>
+                <button type="button" data-day="2">بعد بكرة</button>
+            </div>
+            <div class="att-pp-grid">
+                <div class="bm-field"><label for="pp-date">اليوم</label><input type="date" id="pp-date"></div>
+                <div class="bm-field"><label for="pp-time">الساعة</label><input type="time" id="pp-time"></div>
+            </div>
+            <div class="att-pp-mode" role="radiogroup" aria-label="التأجيل">
+                <label><input type="radio" name="pp-mode" value="once" checked> <span><b>المرة دي بس</b><small>الميعاد الثابت يفضل زي ما هو</small></span></label>
+                <label><input type="radio" name="pp-mode" value="always"> <span><b>على طول</b><small>الميعاد الثابت نفسه يتغير لليوم والساعة دول</small></span></label>
+            </div>
+            <div class="att-pp-btns">
+                <button type="button" class="btn btn-outline" data-pp-back>رجوع</button>
+                <button type="button" class="btn" data-pp-save>📅 أجّل الحصة</button>
+            </div>
+        </div>
+        <div class="att-pp-done" hidden></div>
     </div>`;
     const $ = (sel) => modal.querySelector(sel);
     let busy = false;
@@ -93,7 +135,103 @@ export function openAttendanceModal(opts) {
     document.addEventListener('keydown', onKey);
     if (lessonId) $('#att-date').closest('.bm-field').style.display = 'none';   // الحصة الجارية ليها تاريخها
 
-    modal.querySelectorAll('.att-option').forEach((btn) => btn.addEventListener('click', async () => {
+    // ------------------------------------------------------------ v28: تأجيل الحصة
+    const pp = $('.att-pp');
+    const ppDate = $('#pp-date');
+    const ppTime = $('#pp-time');
+    ppDate.min = localDateISO();
+    const setDay = (n) => {
+        ppDate.value = addDaysISO(n);
+        modal.querySelectorAll('.att-pp-days button').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.day) === n)));
+    };
+    $('[data-postpone]').addEventListener('click', () => {
+        modal.querySelector('.att-options').hidden = true;
+        modal.querySelector('.bm-hint').hidden = true;
+        $('#att-note').closest('.bm-field').hidden = true;
+        $('#att-date').closest('.bm-field').hidden = true;
+        pp.hidden = false;
+        setDay(1);
+        ppTime.value = opts.startTime ? String(opts.startTime).slice(0, 5) : '';
+        $('.bm-title').textContent = studentName ? `تأجيل حصة ${studentName}` : 'تأجيل الحصة';
+        setTimeout(() => ppTime.focus(), 50);
+    });
+    modal.querySelectorAll('.att-pp-days button').forEach((b) => b.addEventListener('click', () => setDay(Number(b.dataset.day))));
+    ppDate.addEventListener('change', () => modal.querySelectorAll('.att-pp-days button').forEach((b) => b.setAttribute('aria-pressed', String(addDaysISO(Number(b.dataset.day)) === ppDate.value))));
+    $('[data-pp-back]').addEventListener('click', () => {
+        pp.hidden = true;
+        modal.querySelector('.att-options').hidden = false;
+        modal.querySelector('.bm-hint').hidden = false;
+        $('#att-note').closest('.bm-field').hidden = false;
+        if (!lessonId) $('#att-date').closest('.bm-field').hidden = false;
+        $('.bm-title').textContent = studentName ? `حصة ${studentName}` : 'تسجيل غياب';
+    });
+    $('[data-pp-save]').addEventListener('click', async (ev) => {
+        const err = $('.bm-error');
+        err.style.display = 'none';
+        const newDate = ppDate.value;
+        const newTime = ppTime.value;
+        if (!newDate || !newTime) { err.textContent = 'اختار اليوم والساعة.'; err.style.display = 'block'; return; }
+        if (newDate === localDateISO()) {
+            const now = new Date();
+            if (timeToMinutes(newTime) <= now.getHours() * 60 + now.getMinutes()) { err.textContent = 'الساعة دي عدّت. اختار ساعة جاية.'; err.style.display = 'block'; return; }
+        }
+        const mode = (modal.querySelector('input[name="pp-mode"]:checked') || {}).value || 'once';
+        const btn = ev.currentTarget;
+        busy = true;
+        btn.disabled = true;
+        try {
+            const res = await saveWithConflictCheck((force) => api.postponeLesson({
+                student_id: studentId,
+                schedule_id: opts.scheduleId || undefined,
+                lesson_id: lessonId || undefined,
+                occ_date: $('#att-date').value || localDateISO(),
+                occ_time: opts.startTime || undefined,
+                new_date: newDate,
+                new_time: newTime,
+                mode,
+                note: $('#att-note').value.trim(),
+                force
+            }));
+            busy = false;
+            btn.disabled = false;
+            if (!res) return;   // المدرس اختار يغيّر الميعاد
+            if (res.invalid) {
+                err.textContent = mode === 'always'
+                    ? 'مفيش ميعاد ثابت للطالب ده في اليوم ده عشان يتغير. اختار "المرة دي بس".'
+                    : 'مقدرناش نأجّل الحصة. اتأكد من اليوم والساعة.';
+                err.style.display = 'block';
+                return;
+            }
+            clearMoneyCaches();
+            try { window.dispatchEvent(new CustomEvent('tm:schedules-changed')); } catch (e) { /* تجاهل */ }
+            try { window.tmTrack && window.tmTrack('lesson_postponed', { mode }); } catch (e) { /* تجاهل */ }
+            showPostponed(res, newDate, newTime, mode);
+        } catch (e) {
+            busy = false;
+            btn.disabled = false;
+            err.textContent = ErrorHandler.getErrorMessage(e);
+            err.style.display = 'block';
+        }
+    });
+    function showPostponed(res, newDate, newTime, mode) {
+        const st = res.student || {};
+        const first = String(st.name || studentName || '').split(' ')[0];
+        const when = `${dayLabel(newDate)} الساعة ${formatClock12(timeToMinutes(newTime))}`;
+        const msg = `السلام عليكم 🌸\n${mode === 'always' ? `ميعاد حصة ${first} اتغير وبقى كل ${DAY_NAMES[new Date(newDate + 'T12:00:00').getDay()]} الساعة ${formatClock12(timeToMinutes(newTime))}، أول مرة ${dayLabel(newDate)}.` : `حصة ${first} اتأجلت لـ ${when}.`}${st.lesson_link ? `\nلينك الحصة: ${st.lesson_link}` : ''}\nشكرًا 🌷`;
+        pp.hidden = true;
+        const box = $('.att-pp-done');
+        box.hidden = false;
+        box.innerHTML = `<div class="att-pp-ok">✅ <b>اتأجلت لـ ${esc(when)}</b>${mode === 'always' ? '<br><small>والميعاد الثابت اتغير من هنا ورايح.</small>' : '<br><small>الميعاد الثابت زي ما هو.</small>'}</div>
+            ${st.phone
+                ? `<a class="btn att-pp-wa" href="${esc(whatsappUrl(st.phone, msg))}" target="_blank" rel="noopener">${icon('messageCircle', { size: 16 })} ابعت الميعاد الجديد لـ ${esc(first)} على واتساب</a>`
+                : `<p class="bm-hint">مفيش رقم واتساب للطالب ده عشان نبعتله الميعاد.</p>`}
+            <button type="button" class="btn btn-outline" data-pp-close>تمام</button>`;
+        box.querySelector('[data-pp-close]').addEventListener('click', () => { close(true); if (onSaved) onSaved('postponed'); });
+        const wa = box.querySelector('.att-pp-wa');
+        if (wa) wa.addEventListener('click', () => { try { window.tmTrack && window.tmTrack('postpone_whatsapp', {}); } catch (e) { /* تجاهل */ } });
+    }
+
+    modal.querySelectorAll('.att-option:not([data-postpone])').forEach((btn) => btn.addEventListener('click', async () => {
         const err = $('.bm-error');
         err.style.display = 'none';
         // غياب بدون عذر بيتخصم من الباقة: تأكيد سريع عشان الضغطة الغلط
