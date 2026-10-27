@@ -11,9 +11,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الطلاب - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=28">
-    <link rel="stylesheet" href="css/lessons.css?v=28">
-    <link rel="stylesheet" href="css/groups.css?v=28">
+    <link rel="stylesheet" href="css/style.css?v=30">
+    <link rel="stylesheet" href="css/lessons.css?v=30">
+    <link rel="stylesheet" href="css/groups.css?v=30">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -46,10 +46,25 @@
         .form-group label { display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.88rem; }
         .filters-row { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
         .filters-row select { max-width: 220px; margin: 0; }
+        /* v29: حالة الطالب */
+        .st-tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: -0.6rem 0 1.2rem; }
+        .st-tab { border: 1px solid var(--border); background: var(--card-bg); color: var(--text-secondary); border-radius: 999px; padding: 0.4rem 0.9rem; font: inherit; font-size: 0.86rem; font-weight: 700; cursor: pointer; min-height: 38px; }
+        .st-tab b { font-weight: 800; margin-inline-start: 0.2rem; }
+        .st-tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+        .st-badge { display: inline-block; font-size: 0.72rem; font-weight: 800; border-radius: 999px; padding: 0.1rem 0.55rem; margin-inline-start: 0.4rem; vertical-align: 2px; }
+        .st-badge.paused { background: #FFF4DC; color: #8A5A00; }
+        .st-badge.archived { background: #EEE; color: #555; }
+        .student-card.is-archived { opacity: 0.75; }
+        .guardian-box { background: #FAFAF7; border: 1px dashed #E2DCCB; border-radius: 12px; padding: 0.7rem 0.8rem 0.1rem; margin-bottom: 1.25rem; }
+        .guardian-box > p { margin: 0 0 0.6rem; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6; }
+        .guardian-box .g-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+        .guardian-box .form-group { margin-bottom: 0.7rem; }
+        @media (max-width: 480px) { .guardian-box .g-grid { grid-template-columns: 1fr; } }
         @media (max-width: 480px) {
             .filters-row select { max-width: 100%; flex: 1; }
         }
     </style>
+    <link rel="stylesheet" href="css/v29.css?v=30">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -89,6 +104,11 @@
                     </select>
                 </div>
 
+                <div class="st-tabs" id="st-tabs" role="tablist" aria-label="حالة الطالب" hidden>
+                    <button type="button" class="st-tab active" data-st="active" role="tab">النشطين <b id="cnt-active">0</b></button>
+                    <button type="button" class="st-tab" data-st="paused" role="tab">متوقفين مؤقتًا <b id="cnt-paused">0</b></button>
+                    <button type="button" class="st-tab" data-st="archived" role="tab">الأرشيف <b id="cnt-archived">0</b></button>
+                </div>
                 <div class="loader" id="loader">جاري تحميل الطلاب...</div>
                 <div class="students-grid" id="students-container"></div>
             </div>
@@ -109,6 +129,14 @@
                 <div class="form-group">
                     <label for="student-phone">رقم واتساب <small class="muted">(اختياري — لرسائل التذكير)</small></label>
                     <input type="tel" id="student-phone" dir="ltr" maxlength="40" placeholder="01xxxxxxxxx">
+                </div>
+                <!-- v29: ولي الأمر (للأطفال): التقارير ورسايل الفلوس بتروح له -->
+                <div class="guardian-box">
+                    <p><b>ولي الأمر</b> (اختياري): لو الطالب طفل، التقارير ورسايل الفلوس هتروح لرقم ولي الأمر.</p>
+                    <div class="g-grid">
+                        <div class="form-group"><label for="guardian-name">اسم ولي الأمر</label><input type="text" id="guardian-name" maxlength="120" placeholder="مثلًا: أم يوسف" autocomplete="off"></div>
+                        <div class="form-group"><label for="guardian-phone">رقم واتساب ولي الأمر</label><input type="tel" id="guardian-phone" dir="ltr" maxlength="40" placeholder="01xxxxxxxxx"></div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="student-subject">المادة *</label>
@@ -191,16 +219,16 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=28"></script>
+    <script type="module" src="js/config.js?v=30"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=28';
-        import { api } from './js/api.js?v=28';
-        import { ErrorHandler, Formatters, toLatinDigits } from './js/utils.js?v=28';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=28';
-        import { icon } from './js/icons.js?v=28';
-        import { openStudentAppointments } from './js/student-appointments.js?v=28';
-        import { subjectLabel } from './js/lesson-utils.js?v=28';
-        import { confirmDeleteStudent } from './js/student-actions.js?v=28';
+        import { Auth } from './js/auth.js?v=30';
+        import { api } from './js/api.js?v=30';
+        import { ErrorHandler, Formatters, toLatinDigits } from './js/utils.js?v=30';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=30';
+        import { icon } from './js/icons.js?v=30';
+        import { openStudentAppointments } from './js/student-appointments.js?v=30';
+        import { subjectLabel } from './js/lesson-utils.js?v=30';
+        import { confirmDeleteStudent } from './js/student-actions.js?v=30';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الطلاب', subtitle: 'إدارة كل طلابك من مكان واحد' });
@@ -212,6 +240,9 @@
         const container = document.getElementById('students-container');
         const modal = document.getElementById('add-student-modal');
         let allStudents = [];
+        let statusFilter = 'active';
+        const stOf = (s) => (s && (s.status === 'paused' || s.status === 'archived')) ? s.status : 'active';
+        const STATUS_LABEL = { paused: 'متوقف مؤقتًا', archived: 'أرشيف' };
 
         const urlParams = new URLSearchParams(window.location.search);
         const onboardingFlow = urlParams.get('onboarding') === '1';
@@ -281,7 +312,9 @@
                            <button type="button" class="btn" data-empty-add>أضف أول طالب</button>
                            <button type="button" class="btn btn-outline" data-empty-bulk>إضافة أكثر من طالب</button>
                        </div>`
-                    : '<div class="empty-state">مفيش طلاب بالبحث أو المادة دي.</div>';
+                    : (statusFilter !== 'active' && !allStudents.some((s) => stOf(s) === statusFilter)
+                        ? `<div class="empty-state">${statusFilter === 'paused' ? 'مفيش طلاب متوقفين. الطالب اللي بياخد إجازة: افتح ملفه ← البيانات ← "حالة الطالب".' : 'الأرشيف فاضي. الطالب اللي خلّص معاك أرشفه بدل ما تحذفه، وحصصه بتفضل محفوظة.'}</div>`
+                        : '<div class="empty-state">مفيش طلاب بالبحث أو المادة دي.</div>');
                 const a = container.querySelector('[data-empty-add]');
                 const b = container.querySelector('[data-empty-bulk]');
                 if (a) a.addEventListener('click', openAdd);
@@ -289,8 +322,8 @@
                 return;
             }
             container.innerHTML = students.map(student => `
-                <div class="student-card" data-open="${Formatters.escapeHtml(String(student.id))}" tabindex="0" role="link" aria-label="ملف ${Formatters.escapeHtml(student.name || '')}">
-                    <div class="student-name">${Formatters.escapeHtml(student.name || '')}</div>
+                <div class="student-card${stOf(student) === 'archived' ? ' is-archived' : ''}" data-open="${Formatters.escapeHtml(String(student.id))}" tabindex="0" role="link" aria-label="ملف ${Formatters.escapeHtml(student.name || '')}">
+                    <div class="student-name">${Formatters.escapeHtml(student.name || '')}${stOf(student) !== 'active' ? `<span class="st-badge ${stOf(student)}">${STATUS_LABEL[stOf(student)]}</span>` : ''}</div>
                     <div class="student-info">${icon('bookOpen', { size: 14 })} ${Formatters.escapeHtml(subjectLabel(student.subject))}</div>
                     <div class="student-info">${icon('target', { size: 14 })} ${Formatters.escapeHtml(student.current_topic || 'بدون موضوع')}</div>
                     <div class="student-info">${icon('phone', { size: 14 })} ${Formatters.escapeHtml(student.phone || 'بدون رقم')}</div>
@@ -327,9 +360,24 @@
         function applyFilter() {
             const subject = document.getElementById('filter-subject').value;
             const q = toLatinDigits(document.getElementById('student-search').value).trim().toLowerCase();
-            renderStudents(allStudents.filter(s => (!subject || s.subject === subject)
-                && (!q || String(s.name || '').toLowerCase().includes(q) || toLatinDigits(s.phone || '').includes(q))));
+            // v29: عدّاد كل حالة + التبويبات بتظهر بس لو فيه طالب متوقف أو مؤرشف
+            const counts = { active: 0, paused: 0, archived: 0 };
+            allStudents.forEach((s) => { counts[stOf(s)]++; });
+            ['active', 'paused', 'archived'].forEach((k) => { document.getElementById('cnt-' + k).textContent = counts[k]; });
+            const tabs = document.getElementById('st-tabs');
+            tabs.hidden = !(counts.paused || counts.archived);
+            if (tabs.hidden) statusFilter = 'active';
+            tabs.querySelectorAll('.st-tab').forEach((b) => b.classList.toggle('active', b.dataset.st === statusFilter));
+            // البحث بيدوّر في كل الطلاب (حتى المؤرشفين) عشان مايضيعش طالب
+            renderStudents(allStudents.filter(s => (q ? true : stOf(s) === statusFilter) && (!subject || s.subject === subject)
+                && (!q || String(s.name || '').toLowerCase().includes(q) || toLatinDigits(s.phone || '').includes(q) || toLatinDigits(s.guardian_phone || '').includes(q))));
         }
+        document.getElementById('st-tabs').addEventListener('click', (e) => {
+            const b = e.target.closest('.st-tab');
+            if (!b) return;
+            statusFilter = b.dataset.st;
+            applyFilter();
+        });
         document.getElementById('filter-subject').addEventListener('change', applyFilter);
         document.getElementById('student-search').addEventListener('input', applyFilter);
 
@@ -373,7 +421,9 @@
                 phone: document.getElementById('student-phone').value.trim() || null,
                 subject,
                 lesson_link: link || null,
-                current_topic: document.getElementById('student-topic').value.trim() || null
+                current_topic: document.getElementById('student-topic').value.trim() || null,
+                guardian_name: document.getElementById('guardian-name').value.trim() || null,
+                guardian_phone: document.getElementById('guardian-phone').value.trim() || null
             };
             const saveBtn = document.getElementById('add-save');
             saveBtn.disabled = true;
@@ -464,7 +514,9 @@
             const st = allStudents.find((x) => String(x.id) === String(id)) || { id };
             if (await confirmDeleteStudent(st)) loadStudents();
         };
+        // v29: الطالب اتأرشف من رسالة الحذف
+        window.addEventListener('tm:student-status', () => loadStudents());
     </script>
-    <script src="js/pwa-install.js?v=28" defer></script>
+    <script src="js/pwa-install.js?v=30" defer></script>
 </body>
 </html>

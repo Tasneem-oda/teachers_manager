@@ -3,7 +3,7 @@
  * (أسماء المواد، التقييمات بالعربي، التواريخ النسبية، أقرب موعد قادم، مسودة الحصة)
  */
 
-import { Formatters } from './utils.js?v=28';
+import { Formatters } from './utils.js?v=30';
 
 export const SUBJECTS = {
     quran: 'القرآن الكريم',
@@ -266,6 +266,11 @@ export function lessonDetailsHtml(rawLesson, subject, icon, opts = {}) {
     row('arrowNext', 'للحصة القادمة', lesson.next_assignment, opts.highlightNext ? 'lh-next' : '');
     row('star', 'ملاحظات الأداء', lesson.performance);
     row('messageSquare', 'ملاحظات', lesson.notes);
+    // v29: لينك تسجيل الحصة
+    const rec = rawLesson && rawLesson.recording_url;
+    if (rec && /^https?:\/\//i.test(rec)) {
+        rows.push(`<div class="lh-row"><span class="lh-ic">${icon('video', { size: 14 })}</span><div><span class="lh-label">تسجيل الحصة</span><a class="lh-val lh-rec" href="${esc(rec)}" target="_blank" rel="noopener" dir="ltr">${esc(rec.replace(/^https?:\/\//, '').slice(0, 48))}${rec.length > 56 ? '…' : ''}</a></div></div>`);
+    }
     if (!rows.length) return '<div class="lh-empty">لم تُسجَّل تفاصيل لهذه الحصة.</div>';
     return rows.join('');
 }

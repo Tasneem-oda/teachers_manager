@@ -10,9 +10,9 @@
  *   postpaid : الدفع بعد عدد حصص (مثلًا كل 4 حصص) → التذكير لما المستحق يوصل للعدد ده
  */
 
-import { api } from './api.js?v=28';
-import { Formatters, ErrorHandler, toLatinDigits } from './utils.js?v=28';
-import { icon } from './icons.js?v=28';
+import { api } from './api.js?v=30';
+import { Formatters, ErrorHandler, toLatinDigits } from './utils.js?v=30';
+import { icon } from './icons.js?v=30';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 
@@ -206,6 +206,44 @@ export function normalizePhone(phone) {
     else if (d.startsWith('0')) return null;   // رقم محلي لبلد غير معروف
     d = d.replace(/\D/g, '');
     return d.length >= 8 ? d : null;
+}
+
+/**
+ * v29: رقم ولي الأمر للتقارير ورسايل الفلوس.
+ * report_to: auto = ولي الأمر لو رقمه موجود وإلا الطالب | guardian | student
+ */
+export function parentPhone(st) {
+    if (!st) return '';
+    const g = normalizePhone(st.guardian_phone) ? st.guardian_phone : '';
+    const s = normalizePhone(st.phone) ? st.phone : '';
+    if (st.report_to === 'student') return s || g;
+    return g || s;
+}
+/** كل الأرقام المتاحة للطالب (للاختيار في نافذة الإرسال) */
+export function contactOptions(st) {
+    const out = [];
+    if (!st) return out;
+    if (normalizePhone(st.guardian_phone)) out.push({ key: 'guardian', label: st.guardian_name ? `ولي الأمر (${String(st.guardian_name).split(' ')[0]})` : 'ولي الأمر', phone: st.guardian_phone });
+    if (normalizePhone(st.phone)) out.push({ key: 'student', label: 'الطالب', phone: st.phone });
+    return out;
+}
+/**
+ * v29: "ابعت لـ: ولي الأمر | الطالب" جوه نوافذ الإرسال (بيظهر بس لو فيه رقمين)
+ * @returns {{ html: string, bind: (root: HTMLElement, onChange: (phone: string) => void) => void, initial: string }}
+ */
+export function recipientChooser(st) {
+    const opts = contactOptions(st);
+    const initial = parentPhone(st);
+    if (opts.length < 2) return { html: '', bind: () => {}, initial };
+    const html = `<div class="bm-to" role="radiogroup" aria-label="ابعت لـ"><span>ابعت لـ:</span>${opts.map((o) =>
+        `<button type="button" class="bm-to-opt${o.phone === initial ? ' active' : ''}" data-to="${esc(o.phone)}" role="radio" aria-checked="${o.phone === initial}">${esc(o.label)}</button>`).join('')}</div>`;
+    const bind = (root, onChange) => {
+        root.querySelectorAll('.bm-to-opt').forEach((b) => b.addEventListener('click', () => {
+            root.querySelectorAll('.bm-to-opt').forEach((x) => { const on = x === b; x.classList.toggle('active', on); x.setAttribute('aria-checked', String(on)); });
+            onChange(b.dataset.to);
+        }));
+    };
+    return { html, bind, initial };
 }
 
 export function whatsappUrl(phone, text) {
@@ -499,10 +537,13 @@ export function openAdjustModal(state, onChange) {
 
 export function openReminder(state) {
     const { student, view } = state;
+    const to = recipientChooser(student);
+    let toPhone = to.initial;
     const m = openModal('رسالة للطالب', `
+        ${to.html}
         <div class="bm-tones" role="tablist">${REMINDER_TONES.map((t, i) => `<button type="button" class="bm-tone ${i === 0 ? 'active' : ''}" data-tone="${t.value}">${t.label}</button>`).join('')}</div>
         <textarea id="bm-msg" class="bm-msg" rows="7" dir="rtl"></textarea>
-        <p class="bm-hint">${student.phone ? 'تقدر تعدّل الرسالة قبل الإرسال.' : 'لا يوجد رقم هاتف للطالب: واتساب هيفتح وتختار جهة الاتصال بنفسك.'}</p>
+        <p class="bm-hint">${toPhone ? 'تقدر تعدّل الرسالة قبل الإرسال.' : 'لا يوجد رقم هاتف للطالب: واتساب هيفتح وتختار جهة الاتصال بنفسك.'}</p>
         <div class="bm-buttons">
             <a class="btn bm-wa" id="bm-wa" target="_blank" rel="noopener">${icon('messageCircle', { size: 16 })} إرسال واتساب</a>
             <button type="button" class="btn btn-ghost" id="bm-copy">${icon('copy', { size: 15 })} نسخ</button>
@@ -510,7 +551,8 @@ export function openReminder(state) {
     `);
     const msg = m.$('#bm-msg');
     const wa = m.$('#bm-wa');
-    const refreshLink = () => { wa.href = whatsappUrl(student.phone, msg.value); };
+    const refreshLink = () => { wa.href = whatsappUrl(toPhone, msg.value); };
+    to.bind(m.el, (ph) => { toPhone = ph; refreshLink(); });
     wa.addEventListener('click', () => { try { (window.dataLayer = window.dataLayer || []).push({ event: 'payment_reminder_sent' }); } catch (e) { /* تجاهل */ } });
     const setTone = (tone) => {
         m.el.querySelectorAll('.bm-tone').forEach((b) => b.classList.toggle('active', b.dataset.tone === tone));
@@ -524,4 +566,54 @@ export function openReminder(state) {
         catch (e) { msg.select(); document.execCommand && document.execCommand('copy'); ErrorHandler.showSuccess('تم نسخ الرسالة'); }
     });
     setTone('friendly');
+}
+
+
+/**
+ * v29: تذكير جماعي بالفلوس — رسالة جاهزة لكل واحد ورا التاني (كل ضغطة بتفتح واتساب للي عليه الدور)
+ * items: [{ name, phone, text }]
+ */
+export function openBulkReminders(items) {
+    const list = (items || []).filter((x) => x && x.text);
+    if (!list.length) return;
+    let i = 0;
+    const sent = new Set();
+    const m = openModal('تذكير الكل بالفلوس', `
+        <p class="bm-hint" style="margin-top:0">كل ضغطة على "ابعت" بتفتح واتساب برسالة جاهزة للي عليه الدور، وبعدها ارجع هنا للي بعده.</p>
+        <div class="bulk-prog"><div class="bulk-bar"><i></i></div><span class="bulk-count"></span></div>
+        <div class="bulk-who"></div>
+        <textarea class="bm-msg bulk-msg" rows="6" dir="rtl" aria-label="نص الرسالة"></textarea>
+        <div class="bm-buttons">
+            <a class="btn bm-wa bulk-send" target="_blank" rel="noopener">${icon('messageCircle', { size: 16 })} ابعت</a>
+            <button type="button" class="btn btn-ghost bulk-skip">تخطّي</button>
+        </div>
+        <div class="bulk-done" hidden><p>✅ خلصت كل الرسايل (${list.length}).</p><button type="button" class="btn" data-close>تمام</button></div>
+    `);
+    const $ = (sel) => m.el.querySelector(sel);
+    const render = () => {
+        if (i >= list.length) {
+            $('.bulk-who').hidden = true; $('.bulk-msg').hidden = true;
+            m.el.querySelector('.bm-buttons').hidden = true;
+            $('.bulk-done').hidden = false;
+            $('.bulk-done [data-close]').onclick = () => m.close();
+            $('.bulk-bar i').style.width = '100%';
+            $('.bulk-count').textContent = `${sent.size} اتبعت من ${list.length}`;
+            return;
+        }
+        const it = list[i];
+        $('.bulk-count').textContent = `${i + 1} من ${list.length}`;
+        $('.bulk-bar i').style.width = `${Math.round((i / list.length) * 100)}%`;
+        $('.bulk-who').innerHTML = `<b>${esc(it.name || '')}</b>${it.phone ? '' : ' <small class="bulk-nophone">— مفيش رقم: واتساب هيفتح وتختار جهة الاتصال</small>'}${it.sub ? `<small>${esc(it.sub)}</small>` : ''}`;
+        $('.bulk-msg').value = it.text;
+        $('.bulk-send').href = whatsappUrl(it.phone, it.text);
+    };
+    $('.bulk-msg').addEventListener('input', () => { list[i].text = $('.bulk-msg').value; $('.bulk-send').href = whatsappUrl(list[i].phone, list[i].text); });
+    $('.bulk-send').addEventListener('click', () => {
+        sent.add(i);
+        try { (window.dataLayer = window.dataLayer || []).push({ event: 'payment_reminder_sent', bulk: true }); } catch (e) { /* تجاهل */ }
+        // ننتقل للي بعده بعد ما واتساب يفتح
+        setTimeout(() => { i++; render(); }, 350);
+    });
+    $('.bulk-skip').addEventListener('click', () => { i++; render(); });
+    render();
 }

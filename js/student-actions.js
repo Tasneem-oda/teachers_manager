@@ -1,9 +1,9 @@
 /**
  * student-actions.js — v28: حذف الطالب وشيله من مجموعة (مشترك بين صفحة الطلاب وملف الطالب)
  */
-import { api } from './api.js?v=28';
-import { ErrorHandler, askChoice } from './utils.js?v=28';
-import { groupTitle } from './groups-utils.js?v=28';
+import { api } from './api.js?v=30';
+import { ErrorHandler, askChoice } from './utils.js?v=30';
+import { groupTitle } from './groups-utils.js?v=30';
 
 /**
  * تأكيد واضح قبل الحذف (بيقول هيتمسح إيه بالظبط) وبعدين الحذف.
@@ -17,13 +17,19 @@ export async function confirmDeleteStudent(student) {
     const groupLine = groups.length
         ? `\n• هيتشال من ${groups.length === 1 ? groupTitle(groups[0].name || groups[0].group_name || '') : `${groups.length} مجموعات`}.`
         : '';
+    // v29: الأرشفة بديل آمن: الطالب بيختفي من القوائم والجدول وحصصه بتفضل محفوظة
+    const canArchive = student.status !== 'archived';
     const pick = await askChoice({
         title: `حذف ${name} نهائيًا؟`,
-        message: `هيتمسح معاه:\n• كل حصصه وغيابه وملاحظاته.\n• مواعيده الثابتة.\n• مدفوعاته ورصيد الباقة.${groupLine}\n\nالحذف مالوش رجوع.`,
-        choices: [{ label: `احذف ${name.split(' ')[0]}`, value: 'yes', danger: true }],
+        message: `هيتمسح معاه:\n• كل حصصه وغيابه وملاحظاته.\n• مواعيده الثابتة.\n• مدفوعاته ورصيد الباقة.${groupLine}\n\nالحذف مالوش رجوع.${canArchive ? '\n\n💡 الطالب خلّص معاك؟ أرشفه بدل الحذف: بيختفي من القوائم والجدول، وحصصه وتقاريره بتفضل محفوظة لو رجع.' : ''}`,
+        choices: [
+            ...(canArchive ? [{ label: 'أرشفه بدل الحذف', value: 'archive' }] : []),
+            { label: `احذف ${name.split(' ')[0]} نهائيًا`, value: 'yes', danger: true }
+        ],
         cancelLabel: 'رجوع'
     });
     if (!pick) return false;
+    if (pick === 'archive') return (await setStudentStatus(student, 'archived')) ? 'archived' : false;
     try {
         await api.deleteStudent(student.id);
         try { api.clearBillingDueCache && api.clearBillingDueCache(); } catch (e) { /* تجاهل */ }
@@ -52,6 +58,30 @@ export async function confirmRemoveFromGroup(student, group) {
     try {
         await api.setGroupMembers(group.id || group.group_id, [], [student.id]);
         ErrorHandler.showSuccess(`${sName} اتشال من ${gName}`);
+        return true;
+    } catch (error) {
+        ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
+        return false;
+    }
+}
+
+const STATUS_DONE = {
+    active: (n) => `${n} رجع للطلاب النشطين`,
+    paused: (n) => `${n} اتوقف مؤقتًا: مش هيظهر في جدولك وتذكيراتك لحد ما ترجّعه`,
+    archived: (n) => `${n} اتأرشف. تلاقيه في تبويب "الأرشيف" في صفحة الطلاب`
+};
+/**
+ * v29: تغيير حالة الطالب (نشط / متوقف مؤقتًا / أرشيف)
+ * @returns {Promise<boolean>}
+ */
+export async function setStudentStatus(student, status) {
+    const name = String((student && student.name) || 'الطالب').split(' ')[0];
+    try {
+        await api.updateStudentInfo(student.id, { status });
+        try { api.clearBillingDueCache && api.clearBillingDueCache(); } catch (e) { /* تجاهل */ }
+        try { window.tmTrack && window.tmTrack('student_status', { status }); } catch (e) { /* تجاهل */ }
+        try { window.dispatchEvent(new CustomEvent('tm:student-status', { detail: { id: student.id, status } })); } catch (e) { /* تجاهل */ }
+        ErrorHandler.showSuccess((STATUS_DONE[status] || STATUS_DONE.active)(name));
         return true;
     } catch (error) {
         ErrorHandler.showError(ErrorHandler.getErrorMessage(error));

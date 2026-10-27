@@ -11,9 +11,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>حصة المجموعة - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=28">
-    <link rel="stylesheet" href="css/lessons.css?v=28">
-    <link rel="stylesheet" href="css/groups.css?v=28">
+    <link rel="stylesheet" href="css/style.css?v=30">
+    <link rel="stylesheet" href="css/lessons.css?v=30">
+    <link rel="stylesheet" href="css/groups.css?v=30">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -21,6 +21,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
+    <link rel="stylesheet" href="css/books.css?v=30">
+    <link rel="stylesheet" href="css/v29.css?v=30">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -53,6 +55,12 @@
                     </div>
                     <!-- v28: ابعت لينك الحصة لجروب المجموعة -->
                     <div class="ls-send-link" id="g-send-link" hidden></div>
+                    <!-- v29: السبورة (صفحة بيضا) + تسجيل الحصة -->
+                    <div class="ls-teach" id="g-teach">
+                        <button type="button" class="btn btn-sm btn-outline" id="btn-board"></button>
+                        <button type="button" class="btn btn-sm btn-outline ls-rec" id="btn-rec" hidden></button>
+                        <p class="ls-rec-warn" id="rec-warn" hidden></p>
+                    </div>
                     <div id="same-day" class="gl-same-day" hidden></div>
                     <!-- v27: ابدأ الحصة بدل التسجيل بعدها -->
                     <div id="start-card" class="x-card gl-start" hidden>
@@ -123,20 +131,22 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=28"></script>
+    <script type="module" src="js/config.js?v=30"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=28';
-        import { api } from './js/api.js?v=28';
-        import { ErrorHandler, Formatters, askChoice, uuidv4 } from './js/utils.js?v=28';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=28';
-        import { icon } from './js/icons.js?v=28';
-        import { RATINGS, HOMEWORK_STATUS, ratingFieldLabels, formatLessonDate, localDateISO } from './js/lesson-utils.js?v=28';
-        import { whatsappUrl } from './js/billing.js?v=28';
-        import { formatClock12, timeToMinutes } from './js/calendar-utils.js?v=28';
-        import { groupTitle, membersText, sessionShareText } from './js/groups-utils.js?v=28';
-        import { mountGroupAi } from './js/group-ai.js?v=28';
-        import { buildLessonReport } from './js/report.js?v=28';
-        import { LiveLesson, clockText, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=28';
+        import { Auth } from './js/auth.js?v=30';
+        import { api } from './js/api.js?v=30';
+        import { ErrorHandler, Formatters, askChoice, uuidv4 } from './js/utils.js?v=30';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=30';
+        import { icon } from './js/icons.js?v=30';
+        import { RATINGS, HOMEWORK_STATUS, ratingFieldLabels, formatLessonDate, localDateISO } from './js/lesson-utils.js?v=30';
+        import { whatsappUrl, parentPhone } from './js/billing.js?v=30';
+        import { formatClock12, timeToMinutes } from './js/calendar-utils.js?v=30';
+        import { groupTitle, membersText, sessionShareText } from './js/groups-utils.js?v=30';
+        import { mountGroupAi } from './js/group-ai.js?v=30';
+        import { buildLessonReport } from './js/report.js?v=30';
+        import { LiveLesson, clockText, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=30';
+        import { openWhiteboard } from './js/whiteboard.js?v=30';
+        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=30';
 
         const $ = (id) => document.getElementById(id);
         const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
@@ -307,6 +317,7 @@
             const s = prep.session;
             const g = prep.group;
             clearInterval(liveTimer);
+            renderTeachTools();
             $('live-bar').hidden = !isLive;
             $('btn-ai-top').hidden = isLive;   // في الحصة الشغالة الزرار جوه شريط العدّاد
             // حصة جديدة النهارده ومفيش حصة شغالة: نعرض "ابدأ الحصة"
@@ -334,6 +345,49 @@
             tick();
             liveTimer = setInterval(tick, 1000);
             renderGroupLink();
+            renderTeachTools();
+        }
+
+        // ------------------------------------------------------------ v29: السبورة + تسجيل الحصة
+        let recorder = null;
+        function renderTeachTools() {
+            $('btn-board').innerHTML = `${icon('board', { size: 15 })} السبورة (صفحة بيضا)`;
+            const rec = $('btn-rec');
+            rec.hidden = !(isLive && recordingSupported());
+            if (!recorder || !recorder.recording) rec.innerHTML = `${icon('record', { size: 15 })} سجّل الحصة`;
+        }
+        $('btn-board').addEventListener('click', () => {
+            const g = prep && prep.group;
+            openWhiteboard({ owner: { group_id: groupId }, title: `سبورة ${groupTitle((g && g.name) || '')}`, blank: true });
+        });
+        $('btn-rec').addEventListener('click', async () => {
+            const btn = $('btn-rec');
+            if (recorder && recorder.recording) { await stopRecording(sessionId); return; }
+            if (!(await explainRecordingOnce())) return;
+            recorder = new LessonRecorder({
+                title: groupTitle((prep && prep.group && prep.group.name) || ''),
+                onState: (st) => {
+                    if (st.state === 'recording') {
+                        btn.classList.add('is-rec');
+                        btn.innerHTML = `<i class="rec-dot"></i> بيسجّل ${recDuration(st.elapsed)} · إيقاف`;
+                        if (st.warning) { $('rec-warn').textContent = st.warning; $('rec-warn').hidden = false; }
+                    } else {
+                        btn.classList.remove('is-rec');
+                        btn.innerHTML = `${icon('record', { size: 15 })} سجّل الحصة`;
+                        $('rec-warn').hidden = true;
+                    }
+                }
+            });
+            try { if (!(await recorder.start())) recorder = null; }
+            catch (e) { recorder = null; ErrorHandler.showError(ErrorHandler.getErrorMessage(e)); }
+        });
+        async function stopRecording(gsId) {
+            if (!recorder || !recorder.recording) return null;
+            const r = recorder;
+            const result = await r.stop();
+            recorder = null;
+            if (result && result.size > 1000) showRecordingReady({ result, groupSessionId: gsId || null });
+            return result;
         }
         function renderGroupLink() {
             const box = $('g-send-link');
@@ -587,6 +641,7 @@
             isLive = false;
             $('live-bar').hidden = true;
             sessionId = res.session_id || sessionId;
+            if (recorder && recorder.recording) stopRecording(sessionId);
             const cancelled = payload.status === 'cancelled';
             const present = payload.attendance.filter((a) => a.attendance === 'present').length;
             const absents = payload.attendance.filter((a) => a.attendance !== 'present');
@@ -605,6 +660,7 @@
                 <p class="muted" style="margin:0;">${cancelled ? `اتسجلت "ملغية من المدرس" لـ ${esc(membersText(payload.attendance.length))} ومش هتتخصم من حد.` : `حضر ${present} من ${payload.attendance.length}${absents.length ? ` · غاب ${absents.length}` : ''}. كل طالب اتسجلت حصته في ملفه.`}</p>
                 <div class="gl-done-actions">
                     <a class="btn" href="${esc(whatsappUrl('', shareText))}" target="_blank" rel="noopener">${icon('messageCircle', { size: 18 })} ابعت الملخص لجروب المجموعة</a>
+                    ${!cancelled && sessionId ? `<button type="button" class="btn btn-outline" id="btn-group-rec">${icon('video', { size: 17 })} لينك تسجيل الحصة</button>` : ''}
                 </div>
                 ${!cancelled && absents.length ? `<div class="absent-list">
                     <p style="font-weight:700; margin:0 0 0.3rem;">بلّغ اللي غابوا</p>
@@ -612,7 +668,7 @@
                         const m = byId.get(String(a.student_id)) || { name: 'طالب' };
                         return `<div class="member-row"><div class="member-avatar">${esc((m.name || '؟').charAt(0))}</div>
                             <div class="member-main"><a href="student.html?id=${encodeURIComponent(a.student_id)}">${esc(m.name)}</a><div class="member-stats"><span>${a.attendance === 'absent_excused' ? 'غاب بعذر' : 'غاب'}</span></div></div>
-                            <div class="member-actions">${m.phone ? `<a class="btn btn-sm btn-outline" href="${esc(whatsappUrl(m.phone, absentMsg(m.name)))}" target="_blank" rel="noopener">${icon('messageCircle', { size: 15 })} واتساب</a>` : '<span class="muted" style="font-size:0.8rem;">مفيش رقم</span>'}</div></div>`;
+                            <div class="member-actions">${parentPhone(m) ? `<a class="btn btn-sm btn-outline" href="${esc(whatsappUrl(parentPhone(m), absentMsg(m.name)))}" target="_blank" rel="noopener">${icon('messageCircle', { size: 15 })} واتساب</a>` : '<span class="muted" style="font-size:0.8rem;">مفيش رقم</span>'}</div></div>`;
                     }).join('')}</div>` : ''}
                 ${!cancelled && presents.length && tSettings.report_after_lesson !== false ? `<div class="absent-list">
                     <p style="font-weight:700; margin:0 0 0.1rem;">📩 تقرير الحصة لولي أمر كل طالب</p>
@@ -625,13 +681,17 @@
                         }, { date: new Date(payload.date + 'T12:00:00'), signature: false });
                         return `<div class="member-row"><div class="member-avatar">${esc((m.name || '؟').charAt(0))}</div>
                             <div class="member-main"><a href="student.html?id=${encodeURIComponent(a.student_id)}">${esc(m.name)}</a><div class="member-stats"><span>حضر</span></div></div>
-                            <div class="member-actions">${m.phone ? `<a class="btn btn-sm btn-outline" data-report href="${esc(whatsappUrl(m.phone, txt))}" target="_blank" rel="noopener">${icon('messageCircle', { size: 15 })} ابعت التقرير</a>` : '<span class="muted" style="font-size:0.8rem;">مفيش رقم</span>'}</div></div>`;
+                            <div class="member-actions">${parentPhone(m) ? `<a class="btn btn-sm btn-outline" data-report href="${esc(whatsappUrl(parentPhone(m), txt))}" target="_blank" rel="noopener">${icon('messageCircle', { size: 15 })} ابعت التقرير</a>` : '<span class="muted" style="font-size:0.8rem;">مفيش رقم</span>'}</div></div>`;
                     }).join('')}</div>` : ''}
                 <div class="gl-done-actions">
                     <a class="btn btn-outline" href="group-lesson.html?group_id=${encodeURIComponent(groupId)}&session_id=${encodeURIComponent(sessionId)}">عدّل الحصة</a>
                     <a class="btn btn-outline" href="group.html?id=${encodeURIComponent(groupId)}">صفحة المجموعة</a>
                     <a class="btn btn-outline" href="dashboard.html">الرئيسية</a>
                 </div>`;
+            const grBtn = $('btn-group-rec');
+            if (grBtn) grBtn.addEventListener('click', () => openRecordingLinkModal({
+                groupSessionId: sessionId, groupName: groupTitle(g.name), current: (prep.session && prep.session.recording_url) || ''
+            }));
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -655,6 +715,6 @@
             } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
         });
     </script>
-    <script src="js/pwa-install.js?v=28" defer></script>
+    <script src="js/pwa-install.js?v=30" defer></script>
 </body>
 </html>

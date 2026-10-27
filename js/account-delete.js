@@ -4,11 +4,11 @@
  *  - مهلة 14 يوم: لو دخل تاني قبلها يقدر يرجّع حسابه (showDeletionScheduledGate)
  *  - بعد المهلة n8n (purge-deleted-accounts) بيمسح كل حاجة تلقائي
  */
-import { api } from './api.js?v=28';
-import { Auth } from './auth.js?v=28';
-import { ErrorHandler } from './utils.js?v=28';
-import { icon } from './icons.js?v=28';
-import { CONFIG } from './config.js?v=28';
+import { api } from './api.js?v=30';
+import { Auth } from './auth.js?v=30';
+import { ErrorHandler } from './utils.js?v=30';
+import { icon } from './icons.js?v=30';
+import { CONFIG } from './config.js?v=30';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -119,7 +119,8 @@ export function openDeleteAccount({ unlinkOnSignOut } = {}) {
     // ---------------- 2) التأكيد
     const step2 = async () => {
         let email = '';
-        try { const u = await Auth.getCurrentUser(); email = (u && u.email) || ''; } catch (e) { /* تجاهل */ }
+        let hasPass = true;
+        try { const u = await Auth.getCurrentUser(); email = (u && u.email) || ''; hasPass = Auth.hasPassword(u); } catch (e) { /* تجاهل */ }
         const until = new Date(Date.now() + 14 * 86400000).toISOString();
         body.innerHTML = `${steps(2)}
             <h2 style="margin-top:0">${icon('warning', { size: 20 })} هيتمسح إيه؟</h2>
@@ -129,8 +130,12 @@ export function openDeleteAccount({ unlinkOnSignOut } = {}) {
                 <li>المدفوعات والملاحظات والكتب المرفوعة ومحادثات المساعد.</li>
             </ul>
             <div class="ad-time">⏳ الحساب هيتقفل دلوقتي، والمسح النهائي يوم <b>${esc(fmtDate(until))}</b>.<br>لو غيّرت رأيك قبل كده، ادخل بنفس الإيميل واضغط "رجّع حسابي".</div>
-            <div class="form-group"><label for="ad-pass">اكتب كلمة السر عشان نتأكد إنه انت</label>
-                <input type="password" id="ad-pass" autocomplete="current-password" style="width:100%"></div>
+            <p class="ad-export">💾 عايز نسخة من بياناتك الأول؟ <button type="button" class="ad-link" data-export>نزّل كل بياناتك (Excel)</button></p>
+            ${hasPass
+                ? `<div class="form-group"><label for="ad-pass">اكتب كلمة السر عشان نتأكد إنه انت</label>
+                <input type="password" id="ad-pass" autocomplete="current-password" style="width:100%"></div>`
+                : `<div class="form-group"><label for="ad-pass">انت داخل بحساب جوجل: اكتب كلمة <b>احذف</b> عشان نتأكد</label>
+                <input type="text" id="ad-pass" autocomplete="off" style="width:100%" placeholder="احذف"></div>`}
             <label class="ad-check"><input type="checkbox" id="ad-ok"> فاهم إن بعد 14 يوم كل بياناتي هتتمسح نهائيًا ومش هقدر أرجّعها.</label>
             <div class="ad-err" role="alert"></div>
             <div class="ad-btns">
@@ -139,17 +144,22 @@ export function openDeleteAccount({ unlinkOnSignOut } = {}) {
             </div>`;
         const err = body.querySelector('.ad-err');
         body.querySelector('[data-back]').addEventListener('click', step1);
+        body.querySelector('[data-export]').addEventListener('click', async (e) => {
+            const { downloadAllData } = await import('./export-data.js?v=30');
+            downloadAllData(e.currentTarget);
+        });
         body.querySelector('[data-go]').addEventListener('click', async (e) => {
             const btn = e.currentTarget;
             const pass = body.querySelector('#ad-pass').value;
             err.textContent = '';
             if (!body.querySelector('#ad-ok').checked) { err.textContent = 'علّم على "فاهم" الأول.'; return; }
-            if (!pass) { err.textContent = 'اكتب كلمة السر.'; body.querySelector('#ad-pass').focus(); return; }
+            if (!pass) { err.textContent = hasPass ? 'اكتب كلمة السر.' : 'اكتب كلمة "احذف".'; body.querySelector('#ad-pass').focus(); return; }
+            if (!hasPass && pass.trim() !== 'احذف') { err.textContent = 'اكتب كلمة "احذف" بالظبط.'; return; }
             btn.disabled = true;
             btn.textContent = 'جاري التأكد...';
             try {
                 // التأكد من كلمة السر (نفس اللي بيحصل في تسجيل الدخول)
-                if (email && window.supabaseClient) {
+                if (hasPass && email && window.supabaseClient) {
                     const { error } = await window.supabaseClient.auth.signInWithPassword({ email, password: pass });
                     if (error) throw { error: { message: 'كلمة السر مش صح.' } };
                 }

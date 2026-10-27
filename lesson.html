@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الحصة - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=28">
+    <link rel="stylesheet" href="css/style.css?v=30">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,9 +19,10 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=28">
-    <link rel="stylesheet" href="css/books.css?v=28">
+    <link rel="stylesheet" href="css/lessons.css?v=30">
+    <link rel="stylesheet" href="css/books.css?v=30">
     <style>body { margin: 0; }</style>
+    <link rel="stylesheet" href="css/v29.css?v=30">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -84,6 +85,12 @@
                             <div class="ls-info" id="ls-info" aria-label="معلومات الحصة"></div>
                             <!-- v28: ابعت لينك الحصة للطالب على واتساب (لما الحصة تبدأ) -->
                             <div class="ls-send-link" id="ls-send-link" hidden></div>
+                            <!-- v29: السبورة (صفحة بيضا) + تسجيل الحصة فيديو -->
+                            <div class="ls-teach" id="ls-teach" hidden>
+                                <button type="button" class="btn btn-sm btn-outline" id="btn-board"></button>
+                                <button type="button" class="btn btn-sm btn-outline ls-rec" id="btn-rec" hidden></button>
+                                <p class="ls-rec-warn" id="rec-warn" hidden></p>
+                            </div>
                             <div id="ls-bill-alert"></div>
                             <!-- كتب الحصة: الكتب الخاصة بالطالب + آخر صفحة وصلها، تتفتح فوق الحصة من غير ما تسيبها -->
                             <div class="lb-host" id="ls-books"></div>
@@ -296,25 +303,27 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=28"></script>
+    <script type="module" src="js/config.js?v=30"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=28';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=28';
-        import { api } from './js/api.js?v=28';
-        import { ErrorHandler, Formatters, uuidv4 } from './js/utils.js?v=28';
-        import { icon } from './js/icons.js?v=28';
+        import { Auth } from './js/auth.js?v=30';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=30';
+        import { api } from './js/api.js?v=30';
+        import { ErrorHandler, Formatters, uuidv4 } from './js/utils.js?v=30';
+        import { icon } from './js/icons.js?v=30';
         import {
             subjectLabel, ratingFieldLabels, RATINGS, HOMEWORK_STATUS, relativeDay, localDateISO, localTimeISO,
             formatDuration, minutesText, LessonDraft, lessonHasContent, lessonDetailsHtml, nextOccurrence, formatNextOccurrence,
             normalizeLesson, isAbsenceRow, attendanceInfo, lessonDay
-        } from './js/lesson-utils.js?v=28';
-        import { openAttendanceModal } from './js/attendance.js?v=28';
-        import { showTips, dismissTip } from './js/tips.js?v=28';
-        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=28';
-        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=28';
-        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=28';
-        import { openBookViewer } from './js/book-viewer.js?v=28';
-        import { openLessonReport } from './js/report.js?v=28';
+        } from './js/lesson-utils.js?v=30';
+        import { openAttendanceModal } from './js/attendance.js?v=30';
+        import { showTips, dismissTip } from './js/tips.js?v=30';
+        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=30';
+        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=30';
+        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=30';
+        import { openBookViewer } from './js/book-viewer.js?v=30';
+        import { openLessonReport } from './js/report.js?v=30';
+        import { openWhiteboard } from './js/whiteboard.js?v=30';
+        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=30';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'ابدأ الحصة وتابعها وسجّلها في مكان واحد', showSearch: false });
@@ -822,6 +831,7 @@
             renderLiveInfo();
             renderLessonBooks();
             renderSendLink();
+            renderTeachTools();
             publishLive();
             showState('live');
             dismissTip();
@@ -831,6 +841,58 @@
                 { id: 'lesson_history_m', target: '#ls-seg', title: 'الحصص اللي فاتت', text: 'من تبويب "الحصص السابقة" تشوف سجل الطالب من غير ما تسيب الحصة.' },
                 { id: 'lesson_same', target: '#btn-same-rating', text: 'لو مستوى الطالب زي الحصة اللي فاتت، الزرار ده بيملأ التقييم كله بضغطة.' }
             ]);
+        }
+
+        // ------------------------------------------------------------ v29: السبورة + تسجيل الحصة
+        let recorder = null;
+        function firstName() { return String((student && student.name) || 'الطالب').split(' ')[0]; }
+        function renderTeachTools() {
+            const box = $('ls-teach');
+            box.hidden = mode !== 'live';
+            $('btn-board').innerHTML = `${icon('board', { size: 15 })} السبورة (صفحة بيضا)`;
+            const rec = $('btn-rec');
+            rec.hidden = !recordingSupported();
+            if (!recorder || !recorder.recording) rec.innerHTML = `${icon('record', { size: 15 })} سجّل الحصة`;
+        }
+        $('btn-board').addEventListener('click', () => {
+            openWhiteboard({ owner: { student_id: studentIdParam }, title: `سبورة ${firstName()}`, blank: true });
+        });
+        $('btn-rec').addEventListener('click', async () => {
+            const btn = $('btn-rec');
+            if (recorder && recorder.recording) { await stopRecording(lesson && lesson.id); return; }
+            if (!(await explainRecordingOnce())) return;
+            recorder = new LessonRecorder({
+                title: student && student.name,
+                onState: (st) => {
+                    if (st.state === 'recording') {
+                        btn.classList.add('is-rec');
+                        btn.innerHTML = `<i class="rec-dot"></i> بيسجّل ${recDuration(st.elapsed)} · إيقاف`;
+                        if (st.warning) { $('rec-warn').textContent = st.warning; $('rec-warn').hidden = false; }
+                    } else {
+                        btn.classList.remove('is-rec');
+                        btn.innerHTML = `${icon('record', { size: 15 })} سجّل الحصة`;
+                        $('rec-warn').hidden = true;
+                    }
+                }
+            });
+            try {
+                const ok = await recorder.start();
+                if (!ok) recorder = null;
+            } catch (e) {
+                recorder = null;
+                ErrorHandler.showError(ErrorHandler.getErrorMessage(e));
+            }
+        });
+        /** بيوقف التسجيل وينزّل الفيديو ويفتح خانة لينك التسجيل */
+        async function stopRecording(lessonId) {
+            if (!recorder || !recorder.recording) return null;
+            const r = recorder;
+            const result = await r.stop();
+            recorder = null;
+            if (result && result.size > 1000) {
+                showRecordingReady({ result, lessonId, student, onSaved: (url) => { if (lastSaved && lastSaved.lessonId === lessonId) lastSaved.recordingUrl = url; } });
+            }
+            return result;
         }
 
         // ------------------------------------------------------------ v28: ابعت لينك الحصة على واتساب
@@ -1020,6 +1082,7 @@
                 return;
             }
             // الحذف نجح: نرجع لشاشة البداية حتى لو تحديث البيانات بعده فشل
+            if (recorder && recorder.recording) stopRecording(null);
             LessonDraft.clear(studentIdParam);
             clearForm();
             try { await loadOverview(); } catch (e) { /* تجاهل */ }
@@ -1080,7 +1143,9 @@
                     });
                 } catch (e) { /* تجاهل */ }
                 const duration = mode === 'live' && lesson.startedAt ? Date.now() - lesson.startedAt : null;
-                lastSaved = { fields: { ...fields }, date: payload.local_date ? new Date(payload.local_date + 'T12:00:00') : new Date() };
+                lastSaved = { fields: { ...fields }, date: payload.local_date ? new Date(payload.local_date + 'T12:00:00') : new Date(), lessonId: payload.lesson_id || null, recordingUrl: '' };
+                // v29: الحصة خلصت والتسجيل شغال: نوقفه وننزّل الفيديو
+                if (recorder && recorder.recording) stopRecording(payload.lesson_id || null);
                 LessonDraft.clear(studentIdParam);
                 unpublishLive();
                 stopTimer();
@@ -1165,12 +1230,19 @@
             const box = $('done-report');
             if (absenceValue || !lastSaved || tSettings.report_after_lesson === false) { box.hidden = true; box.innerHTML = ''; return; }
             const first = String(student.name || 'الطالب').split(' ')[0];
+            const saved0 = lastSaved;
             box.hidden = false;
             box.innerHTML = `<strong>📩 ابعت تقرير الحصة لولي أمر ${esc(first)}</strong>
                 <span>جاهز من اللي سجّلته: اللي أخدتوه والمستوى والواجب. تقدر تعدّله قبل ما تبعته.</span>
-                <button type="button" class="btn" id="btn-lesson-report">${icon('messageCircle', { size: 16 })} ابعت التقرير على واتساب</button>`;
+                <button type="button" class="btn" id="btn-lesson-report">${icon('messageCircle', { size: 16 })} ابعت التقرير على واتساب</button>
+                ${saved0.lessonId ? `<button type="button" class="btn btn-sm btn-ghost lh-recbtn" id="btn-lesson-rec">${icon('video', { size: 15 })} ضيف لينك تسجيل الحصة</button>` : ''}`;
             const saved = lastSaved;
-            $('btn-lesson-report').addEventListener('click', () => openLessonReport({ student, fields: saved.fields, date: saved.date }));
+            $('btn-lesson-report').addEventListener('click', () => openLessonReport({ student, fields: saved.fields, date: saved.date, recordingUrl: saved.recordingUrl || '' }));
+            const recBtn = $('btn-lesson-rec');
+            if (recBtn) recBtn.addEventListener('click', () => openRecordingLinkModal({
+                lessonId: saved.lessonId, student, current: saved.recordingUrl || '',
+                onSaved: (url) => { saved.recordingUrl = url; recBtn.innerHTML = `${icon('video', { size: 15 })} ${url ? 'لينك التسجيل اتحفظ ✓' : 'ضيف لينك تسجيل الحصة'}`; }
+            }));
         }
 
         // الخطوة الجاية بعد الحفظ: نوجّه المدرس لأقوى ميزة لسه ماجربهاش
@@ -1338,6 +1410,8 @@
             const last = bookPos.get(book.id);
             bookViewer = openBookViewer({
                 api, book, opener,
+                // v29: الرسم على الكتاب والسبورة بيتحفظ للطالب ده
+                owner: { student_id: studentIdParam }, ownerName: firstName(),
                 startPage: last ? last.page : 1,
                 onPageChange: (p) => bookPos.set(book.id, p),
                 onClose: () => {
@@ -1941,6 +2015,6 @@
             }
         });
         </script>
-    <script src="js/pwa-install.js?v=28" defer></script>
+    <script src="js/pwa-install.js?v=30" defer></script>
 </body>
 </html>

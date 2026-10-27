@@ -11,9 +11,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الرئيسية - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=28">
-    <link rel="stylesheet" href="css/lessons.css?v=28">
-    <link rel="stylesheet" href="css/groups.css?v=28">
+    <link rel="stylesheet" href="css/style.css?v=30">
+    <link rel="stylesheet" href="css/lessons.css?v=30">
+    <link rel="stylesheet" href="css/groups.css?v=30">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -66,6 +66,7 @@
         }
         @media (prefers-reduced-motion: reduce) { .wa-cta { transition: none; } .wa-cta:hover { transform: none; } }
     </style>
+    <link rel="stylesheet" href="css/v29.css?v=30">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -178,25 +179,25 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=28"></script>
+    <script type="module" src="js/config.js?v=30"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=28';
-        import { api } from './js/api.js?v=28';
-        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=28';
-        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=28';
-        import { icon } from './js/icons.js?v=28';
-        import { renderOnboarding } from './js/onboarding.js?v=28';
-        import { openAttendanceModal } from './js/attendance.js?v=28';
-        import { ATTENDANCE } from './js/lesson-utils.js?v=28';
-        import { computeBilling, openReminder, lessonsText } from './js/billing.js?v=28';
-        import { showTips } from './js/tips.js?v=28';
-        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=28';
-        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=28';
-        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=28';
-        import { mountReminderSetupCard } from './js/reminder-settings.js?v=28';
-        import { requestPermission } from './js/notifications.js?v=28';
-        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=28';
-        import { whatsappUrl } from './js/billing.js?v=28';
+        import { Auth } from './js/auth.js?v=30';
+        import { api } from './js/api.js?v=30';
+        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=30';
+        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=30';
+        import { icon } from './js/icons.js?v=30';
+        import { renderOnboarding } from './js/onboarding.js?v=30';
+        import { openAttendanceModal } from './js/attendance.js?v=30';
+        import { ATTENDANCE } from './js/lesson-utils.js?v=30';
+        import { computeBilling, openReminder, lessonsText, buildReminder, parentPhone, openBulkReminders } from './js/billing.js?v=30';
+        import { showTips } from './js/tips.js?v=30';
+        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=30';
+        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=30';
+        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=30';
+        import { mountReminderSetupCard } from './js/reminder-settings.js?v=30';
+        import { requestPermission } from './js/notifications.js?v=30';
+        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=30';
+        import { whatsappUrl } from './js/billing.js?v=30';
 
         renderSidebar('dashboard');
 
@@ -641,19 +642,22 @@
             }
         }
 
+        function groupDueText(r) {
+            return `السلام عليكم، ده تذكير باشتراك ${groupTitle(r.group.group_name)} لشهر ${monthLabel(r.group.month)}: ${r.left} جنيه. شكرًا 🌸`;
+        }
         // الطلاب اللي محتاجين تذكير دفع (باقتهم خلصت/قربت، أو وصلوا لموعد الدفع)
         async function loadBillingDue() {
             const root = document.getElementById('due-root');
             try {
                 const data = await api.getBillingDue();
                 const rows = ((data && data.students) || [])
-                    .map((s) => ({ student: { id: s.id, name: s.name, phone: s.phone }, view: computeBilling(s.billing) }))
+                    .map((s) => ({ student: { id: s.id, name: s.name, phone: s.phone, guardian_name: s.guardian_name, guardian_phone: s.guardian_phone, report_to: s.report_to }, view: computeBilling(s.billing) }))
                     .filter((r) => r.view.enabled && r.view.needsReminder)
                     .sort((a, b) => (a.view.status === b.view.status ? a.view.balance - b.view.balance : (a.view.status === 'due' ? -1 : 1)));
                 // v27: اشتراكات المجموعات الشهرية اللي لسه مادفعتش
                 ((data && data.group_due) || []).forEach((g) => {
                     const left = Math.max(0, Number(g.due || 0) - Number(g.paid || 0));
-                    rows.push({ group: g, student: { id: g.student_id, name: g.name, phone: g.phone },
+                    rows.push({ group: g, student: { id: g.student_id, name: g.name, phone: g.phone, guardian_name: g.guardian_name, guardian_phone: g.guardian_phone, report_to: g.report_to },
                         headline: `اشتراك ${groupTitle(g.group_name)}: ${Number(g.paid) > 0 ? `باقي ${left}` : left} جنيه`, left });
                 });
                 if (!rows.length) { root.innerHTML = ''; return; }
@@ -664,19 +668,28 @@
                     </div>`;
                 root.innerHTML = `<div class="due-card">
                         <div class="due-head"><h3>💳 محتاجين تذكير دفع</h3><span class="due-count">${rows.length}</span></div>
+                        ${rows.length > 1 ? `<button type="button" class="btn btn-sm due-all" id="due-all">${icon('messageCircle', { size: 14 })} ذكّرهم كلهم (${rows.length}) — رسالة ورا التانية</button>` : ''}
                         ${rows.map(item).join('')}
                         ${rows.length > 3 ? `<button type="button" class="due-more" id="due-more">عرض الكل (${rows.length})</button>` : ''}
                     </div>`;
                 root.querySelectorAll('[data-due]').forEach((b) => b.addEventListener('click', () => {
                     const r = rows[Number(b.dataset.due)];
                     if (r && r.group) {
-                        const txt = `السلام عليكم، ده تذكير باشتراك ${groupTitle(r.group.group_name)} لشهر ${monthLabel(r.group.month)}: ${r.left} جنيه. شكرًا 🌸`;
-                        if (r.student.phone) window.open(whatsappUrl(r.student.phone, txt), '_blank', 'noopener');
-                        else ErrorHandler.showError('مفيش رقم موبايل للطالب ده');
+                        const ph = parentPhone(r.student);
+                        if (ph) window.open(whatsappUrl(ph, groupDueText(r)), '_blank', 'noopener');
+                        else ErrorHandler.showError('مفيش رقم موبايل للطالب ده ولا لولي أمره');
                         return;
                     }
                     if (r) openReminder({ student: r.student, view: r.view });
                 }));
+                // v29: تذكير الكل مرة واحدة (رسالة جاهزة لكل واحد ورا التاني)
+                const all = document.getElementById('due-all');
+                if (all) all.addEventListener('click', () => openBulkReminders(rows.map((r) => ({
+                    name: r.student.name,
+                    phone: parentPhone(r.student),
+                    sub: r.group ? r.headline : (r.view && r.view.headline),
+                    text: r.group ? groupDueText(r) : buildReminder(r.view, r.student, 'friendly')
+                }))));
                 const more = document.getElementById('due-more');
                 if (more) more.addEventListener('click', () => {
                     root.querySelectorAll('[data-extra]').forEach((el) => { el.hidden = false; });
@@ -691,9 +704,11 @@
         (async () => {
             const authInfo = await Auth.requireAuth();
             if (!authInfo) return;
+            // v29: أول دخول بحساب جوجل: سؤال المادة + الموبايل
+            try { const { maybeCompleteProfile } = await import('./js/complete-profile.js?v=30'); maybeCompleteProfile(authInfo.profile, authInfo.session); } catch (e) { /* تجاهل */ }
             await loadDashboard();
         })();
     </script>
-    <script src="js/pwa-install.js?v=28" defer></script>
+    <script src="js/pwa-install.js?v=30" defer></script>
 </body>
 </html>
