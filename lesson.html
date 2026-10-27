@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الحصة - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=27">
+    <link rel="stylesheet" href="css/style.css?v=28">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,8 +19,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=27">
-    <link rel="stylesheet" href="css/books.css?v=27">
+    <link rel="stylesheet" href="css/lessons.css?v=28">
+    <link rel="stylesheet" href="css/books.css?v=28">
     <style>body { margin: 0; }</style>
 </head>
 <body>
@@ -48,7 +48,7 @@
                                 <div class="muted" id="r-start-hint" style="font-size: 0.82rem;"></div>
                                 <div class="ls-start-links">
                                     <a id="r-link" target="_blank" rel="noopener" hidden>فتح رابط الحصة فقط</a>
-                                    <button type="button" id="btn-absent-ready">الطالب غاب؟</button>
+                                    <button type="button" id="btn-absent-ready">الطالب غاب؟ أو عايز تأجّل الحصة؟</button>
                                     <button type="button" id="btn-manual">تسجيل حصة تمت بدون مؤقت</button>
                                     <button type="button" id="btn-ai-ready">المساعد الذكي</button>
                                 </div>
@@ -82,6 +82,8 @@
 
                             <!-- معلومات المدرس محتاجها وهو في الحصة: رقم الحصة، الشهر، الوقت، الدفع، التواصل -->
                             <div class="ls-info" id="ls-info" aria-label="معلومات الحصة"></div>
+                            <!-- v28: ابعت لينك الحصة للطالب على واتساب (لما الحصة تبدأ) -->
+                            <div class="ls-send-link" id="ls-send-link" hidden></div>
                             <div id="ls-bill-alert"></div>
                             <!-- كتب الحصة: الكتب الخاصة بالطالب + آخر صفحة وصلها، تتفتح فوق الحصة من غير ما تسيبها -->
                             <div class="lb-host" id="ls-books"></div>
@@ -154,7 +156,7 @@
                                     <div class="ls-footer">
                                         <span class="ls-saved" id="saved-ind"></span>
                                         <span class="ls-footer-actions">
-                                            <button type="button" class="ls-absent-link" id="btn-absent-live">الطالب ما حضرش؟ سجّل غياب</button>
+                                            <button type="button" class="ls-absent-link" id="btn-absent-live">الطالب ما حضرش؟ سجّل غياب أو أجّل الحصة</button>
                                             <button type="button" class="ls-discard" id="btn-discard"></button>
                                         </span>
                                     </div>
@@ -173,6 +175,8 @@
                                 <div class="ls-done-icon" id="done-icon"></div>
                                 <h2 id="done-title">تم حفظ الحصة</h2>
                                 <p id="done-sub"></p>
+                                <!-- v28: تقرير الحصة لولي الأمر -->
+                                <div class="ls-done-report" id="done-report" hidden></div>
                                 <div class="ls-done-next" id="done-next" hidden></div>
 <div class="ls-done-bill" id="done-bill"></div>
                                 <div class="ls-done-actions">
@@ -292,24 +296,25 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=27"></script>
+    <script type="module" src="js/config.js?v=28"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=27';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=27';
-        import { api } from './js/api.js?v=27';
-        import { ErrorHandler, Formatters, uuidv4 } from './js/utils.js?v=27';
-        import { icon } from './js/icons.js?v=27';
+        import { Auth } from './js/auth.js?v=28';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=28';
+        import { api } from './js/api.js?v=28';
+        import { ErrorHandler, Formatters, uuidv4 } from './js/utils.js?v=28';
+        import { icon } from './js/icons.js?v=28';
         import {
             subjectLabel, ratingFieldLabels, RATINGS, HOMEWORK_STATUS, relativeDay, localDateISO, localTimeISO,
             formatDuration, minutesText, LessonDraft, lessonHasContent, lessonDetailsHtml, nextOccurrence, formatNextOccurrence,
             normalizeLesson, isAbsenceRow, attendanceInfo, lessonDay
-        } from './js/lesson-utils.js?v=27';
-        import { openAttendanceModal } from './js/attendance.js?v=27';
-        import { showTips, dismissTip } from './js/tips.js?v=27';
-        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=27';
-        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=27';
-        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=27';
-        import { openBookViewer } from './js/book-viewer.js?v=27';
+        } from './js/lesson-utils.js?v=28';
+        import { openAttendanceModal } from './js/attendance.js?v=28';
+        import { showTips, dismissTip } from './js/tips.js?v=28';
+        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=28';
+        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=28';
+        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=28';
+        import { openBookViewer } from './js/book-viewer.js?v=28';
+        import { openLessonReport } from './js/report.js?v=28';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'ابدأ الحصة وتابعها وسجّلها في مكان واحد', showSearch: false });
@@ -324,6 +329,10 @@
         // v25: تعديل حصة اتسجلت قبل كده (save-lesson بيحدّث الحصة لو اتبعت lesson_id بتاعها)
         const editLessonParam = urlSearchParams.get('edit_lesson');
         let editingLesson = null;   // { id, date } لما الصفحة مفتوحة لتعديل حصة قديمة
+        // v28: إعدادات المدرس (زرار لينك الحصة + تقرير ولي الأمر). القيم الافتراضية: الاتنين شغالين
+        let tSettings = { send_link_on_start: true, report_after_lesson: true };
+        api.getTeacherSettings().then((st) => { if (st) tSettings = st; renderSendLink(); }).catch(() => { /* القيم الافتراضية */ });
+        let lastSaved = null;       // { fields, date } آخر حصة اتحفظت (لتقرير ولي الأمر)
 
         $('ic-ai-chat-btn').innerHTML = icon('sparkles', { size: 18 });
         $('ic-ai-chat-header').innerHTML = icon('sparkles', { size: 18 });
@@ -812,6 +821,7 @@
             startTimer();
             renderLiveInfo();
             renderLessonBooks();
+            renderSendLink();
             publishLive();
             showState('live');
             dismissTip();
@@ -821,6 +831,29 @@
                 { id: 'lesson_history_m', target: '#ls-seg', title: 'الحصص اللي فاتت', text: 'من تبويب "الحصص السابقة" تشوف سجل الطالب من غير ما تسيب الحصة.' },
                 { id: 'lesson_same', target: '#btn-same-rating', text: 'لو مستوى الطالب زي الحصة اللي فاتت، الزرار ده بيملأ التقييم كله بضغطة.' }
             ]);
+        }
+
+        // ------------------------------------------------------------ v28: ابعت لينك الحصة على واتساب
+        function sendLinkKey() { return `tm_link_sent_${studentIdParam}_${(lesson && lesson.id) || localDateISO()}`; }
+        function renderSendLink() {
+            const box = $('ls-send-link');
+            if (!box) return;
+            let sent = false;
+            try { sent = localStorage.getItem(sendLinkKey()) === '1'; } catch (e) { /* تجاهل */ }
+            const show = mode === 'live' && student && student.lesson_link && student.phone && tSettings.send_link_on_start !== false && !sent;
+            box.hidden = !show;
+            if (!show) { box.innerHTML = ''; return; }
+            const first = String(student.name || '').split(' ')[0];
+            const msg = `السلام عليكم 🌸\nالحصة بدأت، اتفضل ادخل من اللينك ده:\n${student.lesson_link}`;
+            box.innerHTML = `<span>${icon('link', { size: 16 })} ابعت لينك الحصة لـ ${esc(first)} على واتساب</span>
+                <a class="btn btn-sm ls-sl-go" href="${esc(whatsappUrl(student.phone, msg))}" target="_blank" rel="noopener">${icon('messageCircle', { size: 15 })} ابعت</a>
+                <button type="button" class="ls-sl-x" aria-label="إخفاء">✕</button>`;
+            const done = () => { try { localStorage.setItem(sendLinkKey(), '1'); } catch (e) { /* تجاهل */ } box.hidden = true; };
+            box.querySelector('.ls-sl-go').addEventListener('click', () => {
+                try { window.tmTrack && window.tmTrack('lesson_link_sent', {}); } catch (e) { /* تجاهل */ }
+                setTimeout(done, 300);
+            });
+            box.querySelector('.ls-sl-x').addEventListener('click', done);
         }
 
         function enterManual(date) {
@@ -1047,6 +1080,7 @@
                     });
                 } catch (e) { /* تجاهل */ }
                 const duration = mode === 'live' && lesson.startedAt ? Date.now() - lesson.startedAt : null;
+                lastSaved = { fields: { ...fields }, date: payload.local_date ? new Date(payload.local_date + 'T12:00:00') : new Date() };
                 LessonDraft.clear(studentIdParam);
                 unpublishLive();
                 stopTimer();
@@ -1095,7 +1129,11 @@
         }
 
         function showDone(duration, absenceValue, pendingRefresh = false) {
-            if (absenceValue) {
+            renderDoneReport(absenceValue);
+            if (absenceValue === 'postponed') {
+                $('done-title').textContent = 'اتأجلت الحصة';
+                $('done-icon').innerHTML = '<span style="font-size:1.9rem">📅</span>';
+            } else if (absenceValue) {
                 const info = attendanceInfo({ status: 'cancelled', attendance: absenceValue });
                 $('done-title').textContent = `تم التسجيل: ${info.label}`;
                 $('done-icon').innerHTML = `<span style="font-size:1.9rem">${info.icon}</span>`;
@@ -1120,6 +1158,19 @@
             if (!absenceValue) {
                 try { window.dispatchEvent(new CustomEvent('tm:value-moment', { detail: { kind: 'lesson_saved' } })); } catch (e) { /* تجاهل */ }
             }
+        }
+
+        // v28: تقرير الحصة لولي الأمر (بعد كل حصة اتحفظت)
+        function renderDoneReport(absenceValue) {
+            const box = $('done-report');
+            if (absenceValue || !lastSaved || tSettings.report_after_lesson === false) { box.hidden = true; box.innerHTML = ''; return; }
+            const first = String(student.name || 'الطالب').split(' ')[0];
+            box.hidden = false;
+            box.innerHTML = `<strong>📩 ابعت تقرير الحصة لولي أمر ${esc(first)}</strong>
+                <span>جاهز من اللي سجّلته: اللي أخدتوه والمستوى والواجب. تقدر تعدّله قبل ما تبعته.</span>
+                <button type="button" class="btn" id="btn-lesson-report">${icon('messageCircle', { size: 16 })} ابعت التقرير على واتساب</button>`;
+            const saved = lastSaved;
+            $('btn-lesson-report').addEventListener('click', () => openLessonReport({ student, fields: saved.fields, date: saved.date }));
         }
 
         // الخطوة الجاية بعد الحفظ: نوجّه المدرس لأقوى ميزة لسه ماجربهاش
@@ -1890,6 +1941,6 @@
             }
         });
         </script>
-    <script src="js/pwa-install.js?v=27" defer></script>
+    <script src="js/pwa-install.js?v=28" defer></script>
 </body>
 </html>

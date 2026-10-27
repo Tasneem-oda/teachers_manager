@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>ملف الطالب - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=27">
+    <link rel="stylesheet" href="css/style.css?v=28">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,8 +19,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=27">
-    <link rel="stylesheet" href="css/groups.css?v=27">
+    <link rel="stylesheet" href="css/lessons.css?v=28">
+    <link rel="stylesheet" href="css/groups.css?v=28">
     <style>
         .loading { text-align: center; padding: 2rem; color: var(--primary); }
         .empty-state { text-align: center; padding: 2rem; color: var(--text-secondary); }
@@ -118,6 +118,10 @@
                             <div class="x-card-title"><h3 id="info-title"></h3><button type="button" class="x-link" id="btn-edit-info">تعديل</button></div>
                             <dl class="sp-info" id="info-list"></dl>
                         </div>
+                        <div class="x-card" id="info-groups" hidden>
+                            <div class="x-card-title"><h3>المجموعات</h3></div>
+                            <div id="info-groups-list"></div>
+                        </div>
                         <div class="x-card sp-danger">
                             <div class="x-card-title"><h3>حذف الطالب</h3></div>
                             <p>سيتم حذف كل حصص الطالب وملاحظاته ومواعيده ودفعاته نهائيًا.</p>
@@ -157,7 +161,7 @@
                                         <option value="programming">البرمجة</option>
                                         <option value="other">أخرى</option>
                                     </select></div>
-                                <div class="form-group"><label for="e-link">رابط الحصة</label><input type="url" id="e-link" dir="ltr" maxlength="500" placeholder="https://zoom.us/..."></div>
+                                <div class="form-group"><label for="e-link">🔗 لينك الحصة أونلاين <small class="muted">(Zoom / Google Meet)</small></label><input type="url" id="e-link" dir="ltr" maxlength="500" placeholder="الصق اللينك هنا: https://meet.google.com/..."><small class="muted" style="display:block;margin-top:0.3rem;line-height:1.6">بيفتح لما تبدأ الحصة، وتقدر تبعته للطالب على واتساب بضغطة. مافيش لينك؟ <a href="https://meet.new" target="_blank" rel="noopener">اعمل لينك Google Meet</a></small></div>
                                 <div class="form-group"><label for="e-topic">الموضوع الحالي</label><input type="text" id="e-topic" maxlength="300"></div>
                                 <div class="bm-buttons">
                                     <button type="submit" class="btn" id="edit-save">حفظ</button>
@@ -193,20 +197,21 @@
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=27"></script>
+    <script type="module" src="js/config.js?v=28"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=27';
-        import { api } from './js/api.js?v=27';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=27';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=27';
-        import { icon } from './js/icons.js?v=27';
-        import { openStudentAppointments } from './js/student-appointments.js?v=27';
-        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=27';
-        import { openAttendanceModal } from './js/attendance.js?v=27';
-        import { openMonthlyReport } from './js/report.js?v=27';
-        import { showTips } from './js/tips.js?v=27';
-        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=27';
-        import { groupTitle, groupColorClass } from './js/groups-utils.js?v=27';
+        import { Auth } from './js/auth.js?v=28';
+        import { api } from './js/api.js?v=28';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=28';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=28';
+        import { icon } from './js/icons.js?v=28';
+        import { openStudentAppointments } from './js/student-appointments.js?v=28';
+        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=28';
+        import { openAttendanceModal } from './js/attendance.js?v=28';
+        import { openMonthlyReport } from './js/report.js?v=28';
+        import { showTips } from './js/tips.js?v=28';
+        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=28';
+        import { groupTitle, groupColorClass } from './js/groups-utils.js?v=28';
+        import { confirmDeleteStudent, confirmRemoveFromGroup } from './js/student-actions.js?v=28';
 
         renderSidebar('students');
         renderTopHeader({ title: 'ملف الطالب', subtitle: 'كل ما يخص الطالب في مكان واحد' });
@@ -267,6 +272,7 @@
             renderBillingAreas();
             renderLessons();
             renderInfo();
+            renderGroupsCard();
         }
 
         // ------------------------------------------------------------ الرأس
@@ -296,8 +302,11 @@
             btns.push(`<a class="sp-icon-btn" ${student.phone ? `href="tel:${esc(String(student.phone).replace(/[^\d+]/g, ''))}"` : 'aria-disabled="true"'} title="اتصال" aria-label="اتصال">${icon('phone', { size: 18 })}</a>`);
             btns.push(`<a class="sp-icon-btn" ${student.lesson_link ? `href="${esc(student.lesson_link)}" target="_blank" rel="noopener"` : 'aria-disabled="true"'} title="رابط الحصة" aria-label="رابط الحصة">${icon('link', { size: 18 })}</a>`);
             btns.push(`<button type="button" class="sp-icon-btn" id="hdr-edit" title="تعديل البيانات" aria-label="تعديل البيانات">${icon('edit', { size: 18 })}</button>`);
+            // v28: حذف الطالب ظاهر في رأس الملف
+            btns.push(`<button type="button" class="sp-icon-btn sp-del" id="hdr-delete" title="حذف الطالب" aria-label="حذف الطالب">${icon('trash', { size: 18 })}</button>`);
             $('sp-contact').innerHTML = btns.join('');
             $('hdr-edit').addEventListener('click', openEdit);
+            $('hdr-delete').addEventListener('click', deleteThisStudent);
 
             const btn = $('btn-lesson');
             btn.href = `lesson.html?student_id=${encodeURIComponent(studentId)}`;
@@ -596,6 +605,7 @@
                 subject: $('e-subject').value, lesson_link: $('e-link').value.trim(), current_topic: $('e-topic').value.trim()
             };
             if (!data.name) { err.textContent = 'اسم الطالب مطلوب'; err.style.display = 'block'; return; }
+            if (data.lesson_link && !/^https?:\/\//i.test(data.lesson_link) && /^[\w-]+(\.[\w-]+)+/.test(data.lesson_link)) data.lesson_link = 'https://' + data.lesson_link;
             if (data.lesson_link && !/^https?:\/\//i.test(data.lesson_link)) { err.textContent = 'رابط الحصة لازم يبدأ بـ https://'; err.style.display = 'block'; return; }
             const btn = $('edit-save');
             btn.disabled = true; btn.textContent = 'جاري الحفظ...';
@@ -610,13 +620,31 @@
             } finally { btn.disabled = false; btn.textContent = 'حفظ'; }
         });
 
-        $('btn-delete-student').addEventListener('click', async () => {
-            if (!confirm('هل أنت متأكد من حذف هذا الطالب؟ سيتم حذف كل حصصه وملاحظاته ومواعيده أيضًا.')) return;
-            try {
-                await api.deleteStudent(studentId);
-                ErrorHandler.showSuccess('تم حذف الطالب');
-                setTimeout(() => window.location.href = 'students.html', 800);
-            } catch (error) { ErrorHandler.showError(ErrorHandler.getErrorMessage(error)); }
+        async function deleteThisStudent() {
+            const ok = await confirmDeleteStudent({ id: studentId, name: student.name, groups: (ov && ov.groups) || [] });
+            if (ok) setTimeout(() => { window.location.href = 'students.html'; }, 700);
+        }
+        $('btn-delete-student').addEventListener('click', deleteThisStudent);
+
+        // v28: مجموعات الطالب في تاب البيانات (مع "شيله من المجموعة")
+        function renderGroupsCard() {
+            const box = $('info-groups');
+            if (!box) return;
+            const list = ((ov && ov.groups) || []).filter((g) => !g.left_at);
+            box.hidden = !list.length;
+            $('info-groups-list').innerHTML = list.map((g) => `<div class="ig-row">
+                    <a class="${groupColorClass(g.color)}" href="group.html?id=${encodeURIComponent(g.id)}">${icon('group', { size: 15 })} ${esc(groupTitle(g.name))}</a>
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-leave="${esc(g.id)}">${icon('userX', { size: 14 })} شيله من المجموعة</button>
+                </div>`).join('');
+        }
+        $('info-groups-list').addEventListener('click', async (e) => {
+            const b = e.target.closest('[data-leave]');
+            if (!b) return;
+            const g = ((ov && ov.groups) || []).find((x) => String(x.id) === b.dataset.leave);
+            if (!g) return;
+            b.disabled = true;
+            if (await confirmRemoveFromGroup({ id: studentId, name: student.name }, g)) await loadOverview();
+            else b.disabled = false;
         });
 
         // ------------------------------------------------------------ التبويبات
@@ -685,6 +713,6 @@
 
         window.openBillingSetup = () => openBillingSetup({ student, view: billView }, billingCtx.onChange);
     </script>
-    <script src="js/pwa-install.js?v=27" defer></script>
+    <script src="js/pwa-install.js?v=28" defer></script>
 </body>
 </html>

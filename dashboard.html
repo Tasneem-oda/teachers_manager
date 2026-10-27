@@ -11,9 +11,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الرئيسية - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=27">
-    <link rel="stylesheet" href="css/lessons.css?v=27">
-    <link rel="stylesheet" href="css/groups.css?v=27">
+    <link rel="stylesheet" href="css/style.css?v=28">
+    <link rel="stylesheet" href="css/lessons.css?v=28">
+    <link rel="stylesheet" href="css/groups.css?v=28">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -84,6 +84,8 @@
                 <div id="content" style="display:none;">
                     <div id="trial-banner-root"></div>
                     <div id="onboarding-root"></div>
+                    <!-- v28: سؤال التذكيرات (مرة واحدة) -->
+                    <div id="reminder-setup"></div>
                     <!-- v25: حصص النهارده أول حاجة بعد البانر، والفلوس والإحصائيات تحتها، وواتساب في الآخر -->
                     <div class="dashboard-grid">
                         <!-- حصص اليوم -->
@@ -176,23 +178,25 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=27"></script>
+    <script type="module" src="js/config.js?v=28"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=27';
-        import { api } from './js/api.js?v=27';
-        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=27';
-        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=27';
-        import { icon } from './js/icons.js?v=27';
-        import { renderOnboarding } from './js/onboarding.js?v=27';
-        import { openAttendanceModal } from './js/attendance.js?v=27';
-        import { ATTENDANCE } from './js/lesson-utils.js?v=27';
-        import { computeBilling, openReminder, lessonsText } from './js/billing.js?v=27';
-        import { showTips } from './js/tips.js?v=27';
-        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=27';
-        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=27';
-        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=27';
-        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=27';
-        import { whatsappUrl } from './js/billing.js?v=27';
+        import { Auth } from './js/auth.js?v=28';
+        import { api } from './js/api.js?v=28';
+        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=28';
+        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=28';
+        import { icon } from './js/icons.js?v=28';
+        import { renderOnboarding } from './js/onboarding.js?v=28';
+        import { openAttendanceModal } from './js/attendance.js?v=28';
+        import { ATTENDANCE } from './js/lesson-utils.js?v=28';
+        import { computeBilling, openReminder, lessonsText } from './js/billing.js?v=28';
+        import { showTips } from './js/tips.js?v=28';
+        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=28';
+        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=28';
+        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=28';
+        import { mountReminderSetupCard } from './js/reminder-settings.js?v=28';
+        import { requestPermission } from './js/notifications.js?v=28';
+        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=28';
+        import { whatsappUrl } from './js/billing.js?v=28';
 
         renderSidebar('dashboard');
 
@@ -405,7 +409,7 @@
                     actionsHtml = `
                         <div class="lesson-actions">
                             <button class="btn btn-start" data-track="dash_start_lesson" onclick="location.href='lesson.html?student_id=${l.student_id}'">${icon('play', { size: 13 })} ابدأ الحصة</button>
-                            <button type="button" class="btn-cancel-lesson" data-track="dash_absent" data-student-id="${l.student_id}" data-student-name="${Formatters.escapeHtml(l.student_name || '')}">${icon('userX', { size: 13 })} غاب؟</button>
+                            <button type="button" class="btn-cancel-lesson" data-track="dash_absent" data-student-id="${l.student_id}" data-student-name="${Formatters.escapeHtml(l.student_name || '')}" data-schedule-id="${Formatters.escapeHtml(l.schedule_id || '')}" data-start-time="${Formatters.escapeHtml(String(l.start_time || '').slice(0, 5))}">${icon('userX', { size: 13 })} غاب؟ / أجّل</button>
                         </div>
                     `;
                 }
@@ -436,6 +440,9 @@
             openAttendanceModal({
                 studentId: btn.dataset.studentId,
                 studentName: btn.dataset.studentName || '',
+                // v28: عشان "أجّل الحصة" يعرف الموعد الثابت وساعته
+                scheduleId: btn.dataset.scheduleId || null,
+                startTime: btn.dataset.startTime || null,
                 onSaved: () => loadDashboard()
             });
         });
@@ -489,6 +496,7 @@
             }
         }
 
+        let reminderCardShown = false;
         async function loadDashboard() {
             try {
                 // السرعة: الطلبين بيتبعتوا مع بعض بدل ما واحد يستنى التاني
@@ -544,6 +552,8 @@
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('content').style.display = 'block';
                 await Promise.all([loadBillingDue(), refreshOnboarding(), loadIncomeCard(), loadTodayEvents()]);
+                // v28: لو المدرس لسه ماختارش مواعيد التذكير (مرة واحدة)
+                if (!reminderCardShown) { reminderCardShown = true; mountReminderSetupCard(document.getElementById('reminder-setup'), { onEnablePush: requestPermission }); }
                 // جاي من إشعار "فاضل حصص متسجلتش": نوديه على حصص النهارده على طول
                 if (new URLSearchParams(location.search).get('pending') === '1') {
                     const list = document.getElementById('today-lessons-list');
@@ -684,6 +694,6 @@
             await loadDashboard();
         })();
     </script>
-    <script src="js/pwa-install.js?v=27" defer></script>
+    <script src="js/pwa-install.js?v=28" defer></script>
 </body>
 </html>

@@ -3,8 +3,8 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=27';
-import { APIUtils, Storage } from './utils.js?v=27';
+import { CONFIG } from './config.js?v=28';
+import { APIUtils, Storage } from './utils.js?v=28';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -122,7 +122,7 @@ async function getSessionOrRedirect() {
 // (get-book-content و ask مش "حفظ": قراءة الكتب مسموحة زي ما وعدنا المدرس في شريط القراءة فقط) + أحداث التتبع
 const READ_ONLY_ALLOWED = ['/check-subscription', '/submit-suggestion', '/mark-notifications-read', '/bootstrap-session', '/initialize-teacher', '/monthly-income', '/get-book-content', '/track-events', '/update-profile'];
 // v27: طلبات المجموعات كلها POST، فبنسمح بالقراءة بس (عرض المجموعات/الحصة/كشف الاشتراك) في وضع القراءة فقط
-const READ_ONLY_ACTIONS = { '/groups': ['list', 'get'], '/group-session': ['prepare'], '/group-billing': ['month'] };
+const READ_ONLY_ACTIONS = { '/groups': ['list', 'get'], '/group-session': ['prepare'], '/group-billing': ['month'], '/teacher-settings': ['get', 'save', 'test'], '/delete-account': ['request', 'cancel', 'status'] };
 function isBlockedByReadOnly(endpoint, method, body = null) {
     if (typeof window === 'undefined' || !window.__tmReadOnly) return false;
     if (String(method || 'GET').toUpperCase() === 'GET') return false;
@@ -479,6 +479,55 @@ export const api = {
     async removeGroupPayment(groupId, paymentId) { return await this.groupBillingCall({ action: 'unpay', group_id: groupId, payment_id: paymentId }); },
     /** fee = null يرجع لمبلغ المجموعة، 0 = معفي */
     async setGroupMemberFee(groupId, studentId, fee) { return await this.groupBillingCall({ action: 'set_fee', group_id: groupId, student_id: studentId, fee: fee == null ? '' : fee }); },
+
+    // ------------------------------------------------------------------ v28: إعدادات المدرس
+    /** بيرجّع الإعدادات (التذكيرات + الواتساب). بيتحفظ على الجهاز عشان الصفحات تقراه من غير انتظار */
+    async getTeacherSettings({ fresh = false } = {}) {
+        if (!fresh) {
+            try {
+                const c = JSON.parse(localStorage.getItem('tm_settings_v1') || 'null');
+                if (c && c.at && Date.now() - c.at < 10 * 60 * 1000) return c.settings;
+            } catch (e) { /* تجاهل */ }
+        }
+        try {
+            const d = await apiCall(CONFIG.API_ENDPOINTS.SETTINGS.API, 'POST', { action: 'get' });
+            const st = (d && d.settings) || null;
+            if (st) { try { localStorage.setItem('tm_settings_v1', JSON.stringify({ at: Date.now(), settings: st })); } catch (e) { /* تجاهل */ } }
+            return st;
+        } catch (error) {
+            if (isMissingWebhook(error)) return null;   // الـ workflow لسه متستوردش: الصفحات تشتغل بالقيم الافتراضية
+            throw error;
+        }
+    },
+    /** بيحفظ الحقول اللي اتبعتت بس */
+    async saveTeacherSettings(patch) {
+        const d = await apiCall(CONFIG.API_ENDPOINTS.SETTINGS.API, 'POST', { action: 'save', ...patch });
+        const st = (d && d.settings) || null;
+        if (st) { try { localStorage.setItem('tm_settings_v1', JSON.stringify({ at: Date.now(), settings: st })); } catch (e) { /* تجاهل */ } }
+        try { window.dispatchEvent(new CustomEvent('tm:settings-changed', { detail: st })); } catch (e) { /* تجاهل */ }
+        return st;
+    },
+    /** "جرّب التنبيه": الخادم بيبعت إشعار تجربة دلوقتي */
+    async testReminder() { return await apiCall(CONFIG.API_ENDPOINTS.SETTINGS.API, 'POST', { action: 'test' }); },
+
+    // ------------------------------------------------------------------ v28: تأجيل الحصة
+    /** payload: student_id, new_date, new_time, mode (once|always), occ_date, occ_time, schedule_id, lesson_id, note, force */
+    async postponeLesson(payload) {
+        try {
+            return await apiCall(CONFIG.API_ENDPOINTS.POSTPONE, 'POST', payload);
+        } catch (error) {
+            if (isMissingWebhook(error)) throw { error: { code: 'NOT_READY', message: 'تأجيل الحصة لسه ماتفعّلش على الخادم (postpone-lesson).' }, status: 404 };
+            throw error;
+        }
+    },
+
+    // ------------------------------------------------------------------ v28: حذف الحساب
+    async requestAccountDeletion(reason, details) {
+        return await apiCall(CONFIG.API_ENDPOINTS.ACCOUNT.DELETE, 'POST', { action: 'request', reason, details, confirm: true });
+    },
+    async cancelAccountDeletion() {
+        return await apiCall(CONFIG.API_ENDPOINTS.ACCOUNT.DELETE, 'POST', { action: 'cancel' });
+    },
 
     /** v27: مساعد حصة المجموعة (نفس شات الحصة الخاصة لكن بسياق المجموعة) */
     async groupAiChatStream(groupId, message, { onText, onRetry, signal, lessonContext, sessionSince } = {}) {

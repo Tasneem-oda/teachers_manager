@@ -518,3 +518,39 @@ button.sp-stat:hover { border-color: var(--primary); }
 .lh-edit:hover { background: var(--bg-secondary); }
 .lh-del { background: none; border: 1px solid transparent; color: var(--danger); }
 .lh-del:hover { border-color: var(--danger-border); background: #FBEAEA; }
+
+/* v28: تأجيل الحصة (جوه نافذة "غاب؟") */
+.att-options[hidden], .att-pp[hidden], .att-pp-done[hidden], .att-modal .bm-field[hidden], .att-modal .bm-hint[hidden] { display: none !important; }
+.att-option.att-postpone { border-style: dashed; border-color: #CDBFDA; background: #FBF9FD; }
+.att-pp-q { font-weight: 700; margin: 0 0 0.5rem; }
+.att-pp-days { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+.att-pp-days button { border: 1.5px solid var(--border); background: var(--card-bg); border-radius: 999px; padding: 0.45rem 0.9rem; font: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer; min-height: 40px; color: var(--text-primary); }
+.att-pp-days button[aria-pressed="true"] { border-color: var(--primary); background: #F2ECF7; color: var(--primary); }
+.att-pp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.att-pp-grid input { width: 100%; min-height: 44px; }
+.att-pp-mode { display: grid; gap: 0.4rem; margin: 0.4rem 0 0.8rem; }
+.att-pp-mode label { display: flex !important; align-items: flex-start; gap: 0.55rem; border: 1.5px solid var(--border); border-radius: 12px; padding: 0.6rem 0.75rem; cursor: pointer; margin: 0 !important; }
+.att-pp-mode label:has(input:checked) { border-color: var(--primary); background: #F7F3FA; }
+.att-pp-mode input { width: 18px; height: 18px; margin: 0.15rem 0 0; accent-color: var(--primary); flex-shrink: 0; }
+.att-pp-mode span { display: flex; flex-direction: column; gap: 0.1rem; }
+.att-pp-mode small { color: var(--text-secondary); font-size: 0.8rem; }
+.att-pp-btns { display: flex; gap: 0.5rem; }
+.att-pp-btns .btn { flex: 1; margin: 0; min-height: 46px; }
+.att-pp-done { display: flex; flex-direction: column; gap: 0.6rem; }
+.att-pp-ok { background: #E8F5E9; border-radius: 12px; padding: 0.75rem 0.9rem; line-height: 1.7; color: #1F5A2A; }
+.att-pp-ok small { color: #3B6E44; }
+.att-pp-done .btn { margin: 0; min-height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; }
+.att-pp-wa { background: var(--whatsapp, #25D366) !important; border-color: var(--whatsapp, #25D366) !important; color: #fff !important; }
+@media (max-width: 380px) { .att-pp-grid { grid-template-columns: 1fr; } }
+
+/* v28: ابعت لينك الحصة + تقرير الحصة لولي الأمر */
+.ls-send-link { display: flex; align-items: center; gap: 0.6rem; background: #E9F8EF; border: 1px solid #BFE6CD; border-radius: 12px; padding: 0.55rem 0.7rem; margin: 0 0 0.8rem; flex-wrap: wrap; }
+.ls-send-link[hidden] { display: none; }
+.ls-send-link > span { flex: 1 1 180px; display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 700; color: #1E5E37; font-size: 0.9rem; }
+.ls-send-link .ls-sl-go { margin: 0; min-height: 40px; background: var(--whatsapp, #25D366); border-color: var(--whatsapp, #25D366); color: #fff; display: inline-flex; align-items: center; gap: 0.3rem; }
+.ls-send-link .ls-sl-x { background: none; border: 0; color: #3D7A55; font-size: 1rem; cursor: pointer; min-width: 36px; min-height: 36px; }
+.ls-done-report { display: flex; flex-direction: column; gap: 0.35rem; text-align: start; background: #E9F8EF; border: 1px solid #BFE6CD; border-radius: 14px; padding: 0.85rem 0.95rem; margin: 1rem auto 0; max-width: 480px; }
+.ls-done-report[hidden] { display: none; }
+.ls-done-report strong { color: #1E5E37; }
+.ls-done-report span { font-size: 0.86rem; color: var(--text-secondary); line-height: 1.6; }
+.ls-done-report .btn { margin: 0.3rem 0 0; min-height: 46px; background: var(--whatsapp, #25D366); border-color: var(--whatsapp, #25D366); color: #fff; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; }

@@ -11,9 +11,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الطلاب - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=27">
-    <link rel="stylesheet" href="css/lessons.css?v=27">
-    <link rel="stylesheet" href="css/groups.css?v=27">
+    <link rel="stylesheet" href="css/style.css?v=28">
+    <link rel="stylesheet" href="css/lessons.css?v=28">
+    <link rel="stylesheet" href="css/groups.css?v=28">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -24,11 +24,23 @@
     <style>
         .students-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 1.5rem; }
         .students-grid .empty-state { grid-column: 1 / -1; }
+        .link-field { background: #F7F3FA; border: 1px solid #E3D9EC; border-radius: 12px; padding: 0.75rem 0.8rem; }
+        .link-field label { display: flex; align-items: center; gap: 0.35rem; font-weight: 700; color: var(--primary); }
+        .link-field .lf-icon { display: inline-flex; }
+        .lf-row { display: flex; gap: 0.5rem; align-items: center; }
+        .lf-row input { flex: 1; margin: 0 !important; min-width: 0; background: #fff; }
+        .lf-row .btn { margin: 0; min-height: 44px; flex-shrink: 0; }
+        .lf-hint { margin: 0.45rem 0 0; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6; }
+        .lf-make { margin: 0.3rem 0 0; font-size: 0.8rem; color: var(--text-secondary); }
+        .lf-make a { font-weight: 700; }
+        .lf-error { margin: 0.35rem 0 0; font-size: 0.82rem; color: var(--danger); font-weight: 600; }
         .student-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem; cursor: pointer; transition: 0.2s; }
         .student-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.08); transform: translateY(-2px); }
         .student-name { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.4rem; }
         .student-info { color: var(--text-secondary); font-size: 0.86rem; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 0.35rem; }
         .student-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+        .btn-del-student { flex: 0 0 42px; height: 42px; border-radius: 10px; border: 1px solid #E7C9C9; background: #FFF7F7; color: var(--danger); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+        .btn-del-student:hover { background: #FBEAEA; border-color: var(--danger); }
         .student-actions .btn { flex: 1; padding: 0.5rem; font-size: 0.85rem; margin: 0; display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; white-space: nowrap; min-height: 42px; }
         .form-group { margin-bottom: 1.25rem; }
         .form-group label { display: block; margin-bottom: 0.4rem; font-weight: 600; font-size: 0.88rem; }
@@ -111,12 +123,19 @@
                         <option value="other">أخرى</option>
                     </select>
                 </div>
+                <!-- v28: لينك الحصة أونلاين ظاهر وواضح (كان مستخبّي في "بيانات إضافية") -->
+                <div class="form-group link-field">
+                    <label for="student-link"><span class="lf-icon" id="ic-link-field"></span> لينك الحصة أونلاين <small class="muted">(Zoom / Google Meet / Teams)</small></label>
+                    <div class="lf-row">
+                        <input type="url" id="student-link" dir="ltr" inputmode="url" placeholder="الصق اللينك هنا: https://meet.google.com/..." autocomplete="off">
+                        <button type="button" class="btn btn-outline btn-sm" id="btn-paste-link">لصق</button>
+                    </div>
+                    <p class="lf-hint">بيفتحلك على طول لما تبدأ الحصة، وتقدر تبعته للطالب على واتساب بضغطة. <b>الحصة حضوري؟</b> سيبه فاضي.</p>
+                    <p class="lf-make">مافيش لينك؟ <a href="https://meet.new" target="_blank" rel="noopener">اعمل لينك Google Meet</a> · <a href="https://zoom.us/start/videomeeting" target="_blank" rel="noopener">Zoom</a> وانسخه هنا.</p>
+                    <p class="lf-error" id="link-error" hidden>اللينك لازم يبدأ بـ https:// (انسخه كامل من البرنامج).</p>
+                </div>
                 <details class="x-more">
                     <summary>+ بيانات إضافية (اختياري)</summary>
-                    <div class="form-group">
-                        <label for="student-link">رابط الحصة</label>
-                        <input type="url" id="student-link" dir="ltr" placeholder="https://zoom.us/...">
-                    </div>
                     <div class="form-group">
                         <label for="student-topic">الموضوع الحالي</label>
                         <input type="text" id="student-topic" maxlength="300" placeholder="مثلًا: سورة الملك">
@@ -172,15 +191,16 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=27"></script>
+    <script type="module" src="js/config.js?v=28"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=27';
-        import { api } from './js/api.js?v=27';
-        import { ErrorHandler, Formatters, toLatinDigits } from './js/utils.js?v=27';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=27';
-        import { icon } from './js/icons.js?v=27';
-        import { openStudentAppointments } from './js/student-appointments.js?v=27';
-        import { subjectLabel } from './js/lesson-utils.js?v=27';
+        import { Auth } from './js/auth.js?v=28';
+        import { api } from './js/api.js?v=28';
+        import { ErrorHandler, Formatters, toLatinDigits } from './js/utils.js?v=28';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=28';
+        import { icon } from './js/icons.js?v=28';
+        import { openStudentAppointments } from './js/student-appointments.js?v=28';
+        import { subjectLabel } from './js/lesson-utils.js?v=28';
+        import { confirmDeleteStudent } from './js/student-actions.js?v=28';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الطلاب', subtitle: 'إدارة كل طلابك من مكان واحد' });
@@ -212,6 +232,7 @@
         }
         function openAdd() {
             document.getElementById('add-student-form').reset();
+            document.getElementById('link-error').hidden = true;
             presetSubject(document.getElementById('student-subject'));
             modal.classList.add('active');
             setTimeout(() => document.getElementById('student-name').focus(), 60);
@@ -276,7 +297,8 @@
                     <div class="student-actions">
                         <a href="student.html?id=${encodeURIComponent(student.id)}" class="btn">عرض الملف</a>
                         <button class="btn btn-outline btn-open-appts" data-id="${Formatters.escapeHtml(String(student.id))}">${icon('calendar', { size: 14 })} المواعيد</button>
-                        <!-- v25: زرار "حذف" اتشال من الكارت (كان أكبر زرار فيه). الحذف من ملف الطالب ← البيانات -->
+                        <!-- v28: زرار حذف ظاهر (أيقونة صغيرة) + تأكيد بيوضح هيتمسح إيه -->
+                        <button type="button" class="btn-del-student" data-id="${Formatters.escapeHtml(String(student.id))}" title="حذف الطالب" aria-label="حذف ${Formatters.escapeHtml(student.name || '')}">${icon('trash', { size: 17 })}</button>
                     </div>
                 </div>
             `).join('');
@@ -311,6 +333,22 @@
         document.getElementById('filter-subject').addEventListener('change', applyFilter);
         document.getElementById('student-search').addEventListener('input', applyFilter);
 
+        // v28: لينك الحصة: لو اتلصق من غير https بنكمّله، وزرار "لصق" من الحافظة
+        function normalizeLink(v) {
+            let t = String(v || '').trim().replace(/\s+/g, '');
+            if (t && !/^https?:\/\//i.test(t) && /^[\w-]+(\.[\w-]+)+/.test(t)) t = 'https://' + t;
+            return t;
+        }
+        document.getElementById('ic-link-field').innerHTML = icon('link', { size: 16 });
+        const linkInput = document.getElementById('student-link');
+        linkInput.addEventListener('input', () => { document.getElementById('link-error').hidden = true; });
+        linkInput.addEventListener('blur', () => { linkInput.value = normalizeLink(linkInput.value); });
+        document.getElementById('btn-paste-link').addEventListener('click', async () => {
+            try {
+                const t = await navigator.clipboard.readText();
+                if (t) { linkInput.value = normalizeLink(t); linkInput.dispatchEvent(new Event('input')); ErrorHandler.showSuccess('اتلصق اللينك'); }
+            } catch (e) { linkInput.focus(); ErrorHandler.showError('اضغط جوه الخانة واختار "لصق"'); }
+        });
         document.getElementById('btn-add-new').addEventListener('click', openAdd);
         document.getElementById('btn-add-bulk').addEventListener('click', openBulk);
         document.getElementById('open-bulk').addEventListener('click', openBulk);
@@ -325,10 +363,10 @@
             e.preventDefault();
             const name = document.getElementById('student-name').value.trim();
             const subject = document.getElementById('student-subject').value;
-            const link = document.getElementById('student-link').value.trim();
+            const link = normalizeLink(document.getElementById('student-link').value);
             if (!name) { ErrorHandler.showError('اكتب اسم الطالب'); document.getElementById('student-name').focus(); return; }
             if (!subject) { ErrorHandler.showError('اختر المادة'); return; }
-            if (link && !/^https?:\/\//i.test(link)) { ErrorHandler.showError('رابط الحصة لازم يبدأ بـ https://'); return; }
+            if (link && !/^https?:\/\/[^\s.]+\.[^\s]+/i.test(link)) { document.getElementById('link-error').hidden = false; document.getElementById('student-link').focus(); return; }
             const studentData = {
                 name,
                 email: document.getElementById('student-email').value.trim() || null,
@@ -423,19 +461,10 @@
         });
 
         window.deleteStudent = async (id) => {
-            const st = allStudents.find((x) => String(x.id) === String(id));
-            const nm = st && st.name ? st.name : 'الطالب ده';
-            if (confirm(`حذف ${nm} نهائيًا؟\nهيتمسح معاه كل حصصه ومواعيده ومدفوعاته وملاحظاته، ومش هتقدر ترجّعهم.`)) {
-                try {
-                    await api.deleteStudent(id);
-                    ErrorHandler.showSuccess('تم حذف الطالب');
-                    loadStudents();
-                } catch (error) {
-                    ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
-                }
-            }
+            const st = allStudents.find((x) => String(x.id) === String(id)) || { id };
+            if (await confirmDeleteStudent(st)) loadStudents();
         };
     </script>
-    <script src="js/pwa-install.js?v=27" defer></script>
+    <script src="js/pwa-install.js?v=28" defer></script>
 </body>
 </html>

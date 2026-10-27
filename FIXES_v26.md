@@ -18,7 +18,7 @@
    - `cancel-lesson.json`
    - `send-evening-lesson-reminders.json`
    - `send-daily-lesson-notifications.json`
-4. **الموقع:** ارفع محتوى `teachers_manager_v26.zip` كله. رقم النسخة بقى `?v=27`.
+4. **الموقع:** ارفع محتوى `teachers_manager_v26.zip` كله. رقم النسخة بقى `?v=28`.
 
 لو رفعت الموقع قبل الـ workflows، صفحة المجموعات هتقول "الميزة لسه ماتفعّلتش على الخادم" وباقي الموقع شغال عادي. والـ workflows المعدّلة شغالة كمان مع الموقع القديم، لأنها بتضيف حقول بس.
 
