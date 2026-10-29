@@ -106,7 +106,7 @@
         import { CONFIG } from './js/config.js?v=30';
 
         renderSidebar('settings');
-        renderTopHeader({ title: 'الاشتراك', subtitle: 'الخطة الشهرية لتطبيق Teachers Manager', showSearch: false });
+        renderTopHeader({ title: 'الاشتراك', subtitle: 'باقات تطبيق Teachers Manager', showSearch: false });
 
         const FREE_LABEL = CONFIG.PRICING.FREE_UNTIL_LABEL;
         document.getElementById('free-lead').textContent = `البرنامج مجاني بالكامل لكل المدرسين لحد ${FREE_LABEL}`;
@@ -154,9 +154,14 @@
                 const statusBanner = document.getElementById('status-banner');
 
                 if (state.kind === 'active' && !state.locked) {
+                    // v29.2: اسم الباقة اللي المدرس مشترك فيها (البداية / الاحترافية)
+                    const myPlan = CONFIG.PRICING.PLANS.find((p) => p.id === (sub && sub.plan));
+                    const planLabel = myPlan ? `باقة "${myPlan.name}"` : 'الباقة';
+                    const endLabel = sub && sub.paid_until ? new Date(sub.paid_until).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
                     statusBanner.innerHTML = state.daysLeft !== null
-                        ? icon('checkCircle', { size: 16 }) + ` أنت مشترك في الخطة الشهرية — متبقٍ ${daysLabel(state.daysLeft)} على نهايتها`
-                        : icon('checkCircle', { size: 16 }) + ' أنت مشترك في الخطة الشهرية';
+                        ? icon('checkCircle', { size: 16 }) + ` أنت مشترك في ${planLabel} لحد ${endLabel} (متبقٍ ${daysLabel(state.daysLeft)})`
+                        : icon('checkCircle', { size: 16 }) + ` أنت مشترك في ${planLabel}`;
+                    document.querySelectorAll('.pricing-card').forEach((c, i) => c.classList.toggle('active', !!myPlan && CONFIG.PRICING.PLANS[i] && CONFIG.PRICING.PLANS[i].id === myPlan.id));
                 } else if (state.kind === 'trial' && !state.locked) {
                     // من غير تاريخ نهاية: كانت بتكتب "فاضل 0 يوم" لمدرس حسابه شغال عادي
                     statusBanner.innerHTML = icon('clock', { size: 16 }) + (state.daysLeft == null
