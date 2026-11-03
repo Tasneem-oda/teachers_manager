@@ -9,9 +9,14 @@
     })(window,document,'script','dataLayer','GTM-NXC2WZMT');</script>
     <!-- End Google Tag Manager -->
     <meta charset="UTF-8">
+    <script>/* v29.5: الانتقال الناعم بين الصفحات لو اتلغى (تحويل سريع) مايتسجلش كخطأ */(function(){function q(t){if(!t)return;["ready","finished","updateCallbackDone"].forEach(function(k){try{t[k]&&t[k].catch(function(){})}catch(e){}})}addEventListener("pagereveal",function(e){q(e.viewTransition)});addEventListener("pageswap",function(e){var t=e.viewTransition;q(t);try{var to=e.activation&&e.activation.entry&&e.activation.entry.url;if(t&&(!to||new URL(to).origin!==location.origin))t.skipTransition()}catch(x){}})})();</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الاشتراك - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=32">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
+    <link rel="stylesheet" href="css/style.css?v=34">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -74,7 +79,7 @@
             .pricing-card { padding: 1.5rem; }
         }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=32">
+    <link rel="stylesheet" href="css/v29.css?v=34">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -85,6 +90,7 @@
     <div id="sidebar-root"></div>
     <main class="main-content">
     <div id="top-header-root"></div>
+            <script>/* v29.5: الشريط الجانبي/السفلي والهيدر بيظهروا فورًا من آخر نسخة محفوظة (قبل ما ملفات الصفحة تتحمّل) */(function(){try{var c=JSON.parse(localStorage.getItem('tm_shell_v1')||'null');if(!c||!c.nav)return;var p=(location.pathname.split('/').pop()||'dashboard').replace(/\.html$/,'')||'dashboard';var s=document.getElementById('sidebar-root');if(s&&!s.firstChild){s.innerHTML=c.nav;var k=(c.active&&c.active[p])||p,a=s.querySelectorAll('.sidebar-nav a[data-key]');for(var i=0;i<a.length;i++){if(a[i].getAttribute('data-key')===k)a[i].classList.add('active');if(k==='groups'&&a[i].getAttribute('data-key')==='students')a[i].classList.add('active-mobile');}s.setAttribute('data-shell','1');}var h=document.getElementById('top-header-root');if(h&&!h.firstChild&&c.header&&c.header[p]){h.innerHTML=c.header[p];h.setAttribute('data-shell','1');}}catch(e){}})();</script>
     <div class="page-body">
     <div class="container" style="max-width: 1100px; margin: 0; padding: 0;">
         <h1 class="page-title-dup" style="color: var(--primary); text-align: center;">اشتراكك في Teachers Manager</h1>
@@ -133,13 +139,13 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=32"></script>
+    <script type="module" src="js/config.js?v=34"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=32';
-        import { renderSidebar, renderTopHeader, computeSubscriptionState, daysLabel, getSubscriptionCached, trialEndLabel } from './js/sidebar.js?v=32';
-        import { icon } from './js/icons.js?v=32';
-        import { CONFIG } from './js/config.js?v=32';
-        import { offerActive, offerDaysLeft, annualAvailable, priceFor, planById, money, subscribeMessage, waUrl, currentUserInfo } from './js/pricing.js?v=32';
+        import { Auth } from './js/auth.js?v=34';
+        import { renderSidebar, renderTopHeader, computeSubscriptionState, daysLabel, getSubscriptionCached, trialEndLabel } from './js/sidebar.js?v=34';
+        import { icon } from './js/icons.js?v=34';
+        import { CONFIG } from './js/config.js?v=34';
+        import { offerActive, offerDaysLeft, annualAvailable, priceFor, planById, money, subscribeMessage, waUrl, currentUserInfo } from './js/pricing.js?v=34';
 
         renderSidebar('settings');
         renderTopHeader({ title: 'الاشتراك', subtitle: 'باقات تطبيق Teachers Manager', showSearch: false });
@@ -291,6 +297,6 @@
             }
         });
     </script>
-    <script src="js/pwa-install.js?v=32" defer></script>
+    <script src="js/pwa-install.js?v=34" defer></script>
 </body>
 </html>

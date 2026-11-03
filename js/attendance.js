@@ -6,13 +6,13 @@
  * لو فيه حصة جارية (lessonId) بتتحوّل هي نفسها لغياب بدل ما يتعمل صف جديد.
  */
 
-import { api } from './api.js?v=32';
-import { Formatters, ErrorHandler } from './utils.js?v=32';
-import { icon } from './icons.js?v=32';
-import { localDateISO } from './lesson-utils.js?v=32';
-import { whatsappUrl } from './billing.js?v=32';
-import { saveWithConflictCheck } from './groups-utils.js?v=32';
-import { DAY_NAMES, formatClock12, timeToMinutes } from './calendar-utils.js?v=32';
+import { api } from './api.js?v=34';
+import { Formatters, ErrorHandler } from './utils.js?v=34';
+import { icon } from './icons.js?v=34';
+import { localDateISO } from './lesson-utils.js?v=34';
+import { whatsappUrl } from './billing.js?v=34';
+import { saveWithConflictCheck } from './groups-utils.js?v=34';
+import { DAY_NAMES, formatClock12, timeToMinutes } from './calendar-utils.js?v=34';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 
@@ -127,6 +127,7 @@ export function openAttendanceModal(opts) {
     </div>`;
     const $ = (sel) => modal.querySelector(sel);
     let busy = false;
+    let reqId = null;   // v29.5: نفس الرقم لو المدرس ضغط تاني بعد خطأ (مايتسجلش مرتين)
     // وقت الحفظ مانقفلش النافذة (وإلا لو الحفظ فشل الرسالة تضيع والمدرس يفتكر إنه اتسجّل)
     const close = (force) => { if (busy && force !== true) return; modal.remove(); document.removeEventListener('keydown', onKey); };
     const onKey = (e) => { if (e.key === 'Escape') close(); };
@@ -240,14 +241,17 @@ export function openAttendanceModal(opts) {
         modal.querySelectorAll('.att-option').forEach((b) => { b.disabled = true; });
         btn.classList.add('is-busy');
         try {
+            // v29.5: رقم ثابت لكل تسجيل: لو النت قطع بيتحفظ على الجهاز ويتبعت أول ما يرجع من غير ما يتكرر
+            reqId = reqId || ((window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
             const res = await api.saveLesson({
                 action: 'absence',
                 attendance: btn.dataset.value,
                 student_id: studentId,
                 lesson_id: lessonId || null,
                 local_date: $('#att-date').value || localDateISO(),
-                notes: $('#att-note').value.trim() || null
-            });
+                notes: $('#att-note').value.trim() || null,
+                client_request_id: reqId
+            }, { queueOffline: true, label: `غياب ${studentName || ''}`.trim() });
             try { (window.dataLayer = window.dataLayer || []).push({ event: 'absence_saved', attendance: btn.dataset.value }); } catch (e) { /* تجاهل */ }
             clearMoneyCaches();
             busy = false;
@@ -256,6 +260,10 @@ export function openAttendanceModal(opts) {
             if (onSaved) onSaved(btn.dataset.value);
             // "تراجع" لـ 8 ثواني: بس لو الغياب ده اتعمل كسطر جديد (created).
             // لو الخادم حدّث سطر موجود (حصة شغالة أو غياب قديم) المسح هيمسح حاجة تانية، فمانعرضش تراجع
+            if (res && res.queued) {
+                ErrorHandler.showSuccess(`مفيش نت: ${opt ? opt.title : 'الغياب'} اتسجل على جهازك وهيتبعت لوحده أول ما النت يرجع ✓`, 6000);
+                return;
+            }
             const savedId = res && res.lesson_id;
             if (savedId && !lessonId && res.created === true) showUndo(`تم التسجيل: ${opt ? opt.title : 'غياب'}`, async () => {
                 await api.saveLesson({ action: 'delete', student_id: studentId, lesson_id: savedId });

@@ -91,6 +91,23 @@
     function registerServiceWorker() {
         if (!('serviceWorker' in navigator)) return;
         navigator.serviceWorker.register('sw.js').catch((err) => console.warn('تعذّر تسجيل Service Worker:', err));
+        // v29.5: بعد ما الصفحة تخلص، نخلّي الـ Service Worker يجهّز باقي صفحات البرنامج على الجهاز
+        // (التنقل بينها يبقى فوري، وتفتح حتى لو النت قطع). مرة كل 6 ساعات بس، ومش على نت ضعيف/موفّر بيانات
+        const warm = () => {
+            try {
+                const cn = navigator.connection;
+                if (cn && (cn.saveData || /2g/.test(cn.effectiveType || ''))) return;
+                const last = Number(localStorage.getItem('tm_sw_warm_at') || 0);
+                if (Date.now() - last < 6 * 3600 * 1000) return;
+                navigator.serviceWorker.ready.then((reg) => {
+                    if (!reg.active) return;
+                    reg.active.postMessage({ type: 'tm:warm', pages: ['dashboard.html', 'students.html', 'student.html', 'schedule.html', 'lesson.html', 'books.html', 'settings.html', 'groups.html', 'group.html', 'group-lesson.html', 'subscription.html'] });
+                    localStorage.setItem('tm_sw_warm_at', String(Date.now()));
+                }).catch(() => { /* تجاهل */ });
+            } catch (e) { /* تجاهل */ }
+        };
+        const later = () => setTimeout(() => ('requestIdleCallback' in window ? requestIdleCallback(warm, { timeout: 5000 }) : warm()), 4000);
+        if (document.readyState === 'complete') later(); else window.addEventListener('load', later, { once: true });
     }
 
     // ------------------------------------------------------------------ الحالة

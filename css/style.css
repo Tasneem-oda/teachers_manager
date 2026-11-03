@@ -3,7 +3,7 @@
  * نظام تصميمي موحد مع دعم RTL العربية
  */
 
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap');
+/* v29.4: الخط بيتحمّل من <link> في كل صفحة من غير ما يوقف عرض الصفحة (كان @import هنا بيأخّر أول ظهور على الموبايل) */
 
 :root {
     /* الألوان */
@@ -621,3 +621,20 @@ button { font-family: inherit; }
 /* v28: زرار خطر بإطار (كان في الإعدادات بس) */
 .btn-outline-danger { background: var(--card-bg); color: var(--danger); border: 1px solid var(--danger-border, #E7C9C9); }
 .btn-outline-danger:hover { background: #FBEAEA; }
+
+/* ------------------------------------------------------------------
+ * v29.5: التنقل بين الصفحات من غير "وميض"
+ * المتصفح بيسيب الصفحة القديمة ظاهرة لحد ما الجديدة تبقى جاهزة، والشريط الجانبي/السفلي والهيدر
+ * بيفضلوا ثابتين مكانهم والمحتوى بس اللي بيتبدّل (Chrome/Edge/Samsung Internet الحديثة؛ الباقي بيتنقل عادي)
+ * ------------------------------------------------------------------ */
+@view-transition { navigation: auto; }
+.sidebar { view-transition-name: tm-nav; }
+.top-header { view-transition-name: tm-header; }
+::view-transition-group(tm-nav), ::view-transition-group(tm-header) { animation-duration: 0s; }
+::view-transition-old(root) { animation: tm-vt-out 0.12s ease both; }
+::view-transition-new(root) { animation: tm-vt-in 0.16s ease both; }
+@keyframes tm-vt-out { to { opacity: 0; } }
+@keyframes tm-vt-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+}

@@ -9,11 +9,16 @@
     })(window,document,'script','dataLayer','GTM-NXC2WZMT');</script>
     <!-- End Google Tag Manager -->
     <meta charset="UTF-8">
+    <script>/* v29.5: الانتقال الناعم بين الصفحات لو اتلغى (تحويل سريع) مايتسجلش كخطأ */(function(){function q(t){if(!t)return;["ready","finished","updateCallbackDone"].forEach(function(k){try{t[k]&&t[k].catch(function(){})}catch(e){}})}addEventListener("pagereveal",function(e){q(e.viewTransition)});addEventListener("pageswap",function(e){var t=e.viewTransition;q(t);try{var to=e.activation&&e.activation.entry&&e.activation.entry.url;if(t&&(!to||new URL(to).origin!==location.origin))t.skipTransition()}catch(x){}})})();</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الرئيسية - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=32">
-    <link rel="stylesheet" href="css/lessons.css?v=32">
-    <link rel="stylesheet" href="css/groups.css?v=32">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
+    <link rel="stylesheet" href="css/style.css?v=34">
+    <link rel="stylesheet" href="css/lessons.css?v=34">
+    <link rel="stylesheet" href="css/groups.css?v=34">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -66,7 +71,7 @@
         }
         @media (prefers-reduced-motion: reduce) { .wa-cta { transition: none; } .wa-cta:hover { transform: none; } }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=32">
+    <link rel="stylesheet" href="css/v29.css?v=34">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -78,6 +83,7 @@
 
         <main class="main-content">
             <div id="top-header-root"></div>
+            <script>/* v29.5: الشريط الجانبي/السفلي والهيدر بيظهروا فورًا من آخر نسخة محفوظة (قبل ما ملفات الصفحة تتحمّل) */(function(){try{var c=JSON.parse(localStorage.getItem('tm_shell_v1')||'null');if(!c||!c.nav)return;var p=(location.pathname.split('/').pop()||'dashboard').replace(/\.html$/,'')||'dashboard';var s=document.getElementById('sidebar-root');if(s&&!s.firstChild){s.innerHTML=c.nav;var k=(c.active&&c.active[p])||p,a=s.querySelectorAll('.sidebar-nav a[data-key]');for(var i=0;i<a.length;i++){if(a[i].getAttribute('data-key')===k)a[i].classList.add('active');if(k==='groups'&&a[i].getAttribute('data-key')==='students')a[i].classList.add('active-mobile');}s.setAttribute('data-shell','1');}var h=document.getElementById('top-header-root');if(h&&!h.firstChild&&c.header&&c.header[p]){h.innerHTML=c.header[p];h.setAttribute('data-shell','1');}}catch(e){}})();</script>
 
             <div class="page-body">
                 <div id="loading" class="loading">جاري تحميل البيانات...</div>
@@ -179,25 +185,25 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=32"></script>
+    <script type="module" src="js/config.js?v=34"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=32';
-        import { api } from './js/api.js?v=32';
-        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=32';
-        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=32';
-        import { icon } from './js/icons.js?v=32';
-        import { renderOnboarding } from './js/onboarding.js?v=32';
-        import { openAttendanceModal } from './js/attendance.js?v=32';
-        import { ATTENDANCE } from './js/lesson-utils.js?v=32';
-        import { computeBilling, openReminder, lessonsText, buildReminder, parentPhone, openBulkReminders } from './js/billing.js?v=32';
-        import { showTips } from './js/tips.js?v=32';
-        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=32';
-        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=32';
-        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=32';
-        import { mountReminderSetupCard } from './js/reminder-settings.js?v=32';
-        import { requestPermission } from './js/notifications.js?v=32';
-        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=32';
-        import { whatsappUrl } from './js/billing.js?v=32';
+        import { Auth } from './js/auth.js?v=34';
+        import { api } from './js/api.js?v=34';
+        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=34';
+        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=34';
+        import { icon } from './js/icons.js?v=34';
+        import { renderOnboarding } from './js/onboarding.js?v=34';
+        import { openAttendanceModal } from './js/attendance.js?v=34';
+        import { ATTENDANCE } from './js/lesson-utils.js?v=34';
+        import { computeBilling, openReminder, lessonsText, buildReminder, parentPhone, openBulkReminders } from './js/billing.js?v=34';
+        import { showTips } from './js/tips.js?v=34';
+        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=34';
+        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=34';
+        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=34';
+        import { mountReminderSetupCard } from './js/reminder-settings.js?v=34';
+        import { requestPermission } from './js/notifications.js?v=34';
+        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=34';
+        import { whatsappUrl } from './js/billing.js?v=34';
 
         renderSidebar('dashboard');
 
@@ -502,6 +508,9 @@
             try {
                 // السرعة: الطلبين بيتبعتوا مع بعض بدل ما واحد يستنى التاني
                 const todayPromise = api.getTodayLessons().catch(() => null);
+                // v29.4: الكروت اللي مش محتاجة بيانات الرئيسية بتتطلب من أول لحظة
+                // (كانت بتستنى get-dashboard يخلص الأول، وده كان بيزوّد 3 ثواني على الموبايل)
+                const sideLoads = [loadBillingDue(), loadIncomeCard(), loadTodayEvents(), loadLibraryCard()];
                 const data = await api.getDashboard();
                 dashboardData = data;
 
@@ -547,12 +556,11 @@
                 renderTodayLessons(data.todayLessons, data.todayGroups);
                 renderTrialBanner();
                 updateAiCardHint();
-                loadLibraryCard();
                 try { if (data.teacher && data.teacher.subject) localStorage.setItem('tm_teacher_subject', data.teacher.subject); } catch (e) { /* تجاهل */ }
 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('content').style.display = 'block';
-                await Promise.all([loadBillingDue(), refreshOnboarding(), loadIncomeCard(), loadTodayEvents()]);
+                await Promise.all([refreshOnboarding(), ...sideLoads]);
                 // v28: لو المدرس لسه ماختارش مواعيد التذكير (مرة واحدة)
                 if (!reminderCardShown) { reminderCardShown = true; mountReminderSetupCard(document.getElementById('reminder-setup'), { onEnablePush: requestPermission }); }
                 // جاي من إشعار "فاضل حصص متسجلتش": نوديه على حصص النهارده على طول
@@ -705,10 +713,10 @@
             const authInfo = await Auth.requireAuth();
             if (!authInfo) return;
             // v29: أول دخول بحساب جوجل: سؤال المادة + الموبايل
-            try { const { maybeCompleteProfile } = await import('./js/complete-profile.js?v=32'); maybeCompleteProfile(authInfo.profile, authInfo.session); } catch (e) { /* تجاهل */ }
+            try { const { maybeCompleteProfile } = await import('./js/complete-profile.js?v=34'); maybeCompleteProfile(authInfo.profile, authInfo.session); } catch (e) { /* تجاهل */ }
             await loadDashboard();
         })();
     </script>
-    <script src="js/pwa-install.js?v=32" defer></script>
+    <script src="js/pwa-install.js?v=34" defer></script>
 </body>
 </html>

@@ -9,9 +9,14 @@
     })(window,document,'script','dataLayer','GTM-NXC2WZMT');</script>
     <!-- End Google Tag Manager -->
     <meta charset="UTF-8">
+    <script>/* v29.5: الانتقال الناعم بين الصفحات لو اتلغى (تحويل سريع) مايتسجلش كخطأ */(function(){function q(t){if(!t)return;["ready","finished","updateCallbackDone"].forEach(function(k){try{t[k]&&t[k].catch(function(){})}catch(e){}})}addEventListener("pagereveal",function(e){q(e.viewTransition)});addEventListener("pageswap",function(e){var t=e.viewTransition;q(t);try{var to=e.activation&&e.activation.entry&&e.activation.entry.url;if(t&&(!to||new URL(to).origin!==location.origin))t.skipTransition()}catch(x){}})})();</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الحصة - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=32">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
+    <link rel="stylesheet" href="css/style.css?v=34">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,10 +24,10 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=32">
-    <link rel="stylesheet" href="css/books.css?v=32">
+    <link rel="stylesheet" href="css/lessons.css?v=34">
+    <link rel="stylesheet" href="css/books.css?v=34">
     <style>body { margin: 0; }</style>
-    <link rel="stylesheet" href="css/v29.css?v=32">
+    <link rel="stylesheet" href="css/v29.css?v=34">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -33,6 +38,7 @@
         <div id="sidebar-root"></div>
         <main class="main-content">
             <div id="top-header-root"></div>
+            <script>/* v29.5: الشريط الجانبي/السفلي والهيدر بيظهروا فورًا من آخر نسخة محفوظة (قبل ما ملفات الصفحة تتحمّل) */(function(){try{var c=JSON.parse(localStorage.getItem('tm_shell_v1')||'null');if(!c||!c.nav)return;var p=(location.pathname.split('/').pop()||'dashboard').replace(/\.html$/,'')||'dashboard';var s=document.getElementById('sidebar-root');if(s&&!s.firstChild){s.innerHTML=c.nav;var k=(c.active&&c.active[p])||p,a=s.querySelectorAll('.sidebar-nav a[data-key]');for(var i=0;i<a.length;i++){if(a[i].getAttribute('data-key')===k)a[i].classList.add('active');if(k==='groups'&&a[i].getAttribute('data-key')==='students')a[i].classList.add('active-mobile');}s.setAttribute('data-shell','1');}var h=document.getElementById('top-header-root');if(h&&!h.firstChild&&c.header&&c.header[p]){h.innerHTML=c.header[p];h.setAttribute('data-shell','1');}}catch(e){}})();</script>
             <div class="page-body">
                 <div class="container" style="max-width: 1100px; margin: 0; padding: 0;">
                     <div class="ls-loader" id="loader">جاري تحميل بيانات الحصة...</div>
@@ -303,27 +309,27 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=32"></script>
+    <script type="module" src="js/config.js?v=34"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=32';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=32';
-        import { api } from './js/api.js?v=32';
-        import { ErrorHandler, Formatters, uuidv4 } from './js/utils.js?v=32';
-        import { icon } from './js/icons.js?v=32';
+        import { Auth } from './js/auth.js?v=34';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=34';
+        import { api } from './js/api.js?v=34';
+        import { ErrorHandler, Formatters, uuidv4 } from './js/utils.js?v=34';
+        import { icon } from './js/icons.js?v=34';
         import {
             subjectLabel, ratingFieldLabels, RATINGS, HOMEWORK_STATUS, relativeDay, localDateISO, localTimeISO,
             formatDuration, minutesText, LessonDraft, lessonHasContent, lessonDetailsHtml, nextOccurrence, formatNextOccurrence,
             normalizeLesson, isAbsenceRow, attendanceInfo, lessonDay
-        } from './js/lesson-utils.js?v=32';
-        import { openAttendanceModal } from './js/attendance.js?v=32';
-        import { showTips, dismissTip } from './js/tips.js?v=32';
-        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=32';
-        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=32';
-        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=32';
-        import { openBookViewer } from './js/book-viewer.js?v=32';
-        import { openLessonReport } from './js/report.js?v=32';
-        import { openWhiteboard } from './js/whiteboard.js?v=32';
-        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=32';
+        } from './js/lesson-utils.js?v=34';
+        import { openAttendanceModal } from './js/attendance.js?v=34';
+        import { showTips, dismissTip } from './js/tips.js?v=34';
+        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=34';
+        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=34';
+        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=34';
+        import { openBookViewer } from './js/book-viewer.js?v=34';
+        import { openLessonReport } from './js/report.js?v=34';
+        import { openWhiteboard } from './js/whiteboard.js?v=34';
+        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=34';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'ابدأ الحصة وتابعها وسجّلها في مكان واحد', showSearch: false });
@@ -1115,8 +1121,10 @@
             const label = btn.innerHTML;
             btn.innerHTML = icon('clock', { size: 17 }) + ' <span class="ls-finish-text">جاري الحفظ...</span>';
             try {
+                let saveRes = null;
                 try {
-                    await api.saveLesson(payload);
+                    // v29.5: من غير نت الحصة بتتحفظ على الجهاز وبتتبعت لوحدها أول ما النت يرجع (مش للتعديل على حصة قديمة)
+                    saveRes = await api.saveLesson(payload, { queueOffline: !editingLesson, label: `حصة ${(student && student.name) || ''}`.trim() });
                 } catch (saveErr) {
                     // الطلب اتأخر: ممكن يكون اتحفظ فعلًا على الخادم. نتأكد قبل ما نقول للمدرس يحفظ تاني (عشان مايتسجلش مرتين)
                     const code = saveErr && saveErr.error && saveErr.error.code;
@@ -1152,6 +1160,9 @@
                 mode = null;
                 // شاشة "تم الحفظ" تظهر فورًا، والملخص (العدد والدفع) يتحدّث لما البيانات توصل
                 showDone(duration, null, true);
+                if (saveRes && saveRes.queued) {
+                    ErrorHandler.showSuccess('مفيش نت دلوقتي: الحصة اتحفظت على جهازك وهتتبعت لوحدها أول ما النت يرجع ✓', 7000);
+                }
                 loadOverview().then(() => refreshDoneInfo(duration)).catch(() => { /* الحصة اتحفظت، الملخص بس اللي ماتحمّلش */ });
             } catch (error) {
                 ErrorHandler.showError(ErrorHandler.getErrorMessage(error) + ' — المكتوب محفوظ على الجهاز، حاول مرة أخرى.');
@@ -2015,6 +2026,6 @@
             }
         });
         </script>
-    <script src="js/pwa-install.js?v=32" defer></script>
+    <script src="js/pwa-install.js?v=34" defer></script>
 </body>
 </html>
