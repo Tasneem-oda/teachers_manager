@@ -6,7 +6,7 @@
  * • InkController: الأداة الحالية + اللون + السُمك + رجوع/إعادة لكل الطبقات + الحفظ التلقائي.
  * • ToolDock: شريط الأدوات (قلم، هايلايتر، ممحاة، أشكال، نص، علامات، قلم مؤقت، ألوان، سُمك، رجوع/إعادة، مسح).
  */
-import { icon } from './icons.js?v=29';
+import { icon } from './icons.js?v=32';
 
 const NS = 'http://www.w3.org/2000/svg';
 export const W = 1000;
@@ -567,7 +567,10 @@ export class ToolDock {
     }
     closePops() { this.root.querySelectorAll('[data-popbox]').forEach((p) => { p.hidden = true; }); }
     _click(e) {
-        const pop = e.target.closest('[data-pop]');
+        // v29.1: البحث جوه الشريط بس (قبل كده "[data-tool]" كان بيلقط عنصر برّه الشريط زي نافذة الكتاب نفسها،
+        // فزرار السلة والألوان والوضع الأسود والمساعدة ماكانوش بيشتغلوا)
+        const q = (sel) => { const el = e.target.closest(sel); return el && this.root.contains(el) ? el : null; };
+        const pop = q('[data-pop]');
         if (pop) {
             const box = this.root.querySelector(`[data-popbox="${pop.dataset.pop}"]`);
             const willOpen = box.hidden;
@@ -575,27 +578,27 @@ export class ToolDock {
             box.hidden = !willOpen;
             return;
         }
-        const t = e.target.closest('[data-tool]');
+        const t = q('[data-tool]');
         if (t) {
             const tool = t.dataset.tool;
             this.ctrl.setTool(this.ctrl.tool === tool || tool === 'hand' ? null : tool);
             this.closePops();
             return;
         }
-        const c = e.target.closest('[data-color]');
+        const c = q('[data-color]');
         if (c) { this.ctrl.setColor(c.dataset.color); if (!this.ctrl.tool || ['hand', 'eraser', 'move'].includes(this.ctrl.tool)) this.ctrl.setTool('pen'); return; }
-        const s = e.target.closest('[data-size]');
+        const s = q('[data-size]');
         if (s) { this.ctrl.setSize(Number(s.dataset.size)); return; }
-        const st = e.target.closest('[data-stamp]');
+        const st = q('[data-stamp]');
         if (st) { this.ctrl.setStamp(st.dataset.stamp); this.ctrl.setTool('stamp'); this.closePops(); return; }
-        const a = e.target.closest('[data-act]');
+        const a = q('[data-act]');
         if (a) {
             if (a.dataset.act === 'undo') this.ctrl.undo();
             else if (a.dataset.act === 'redo') this.ctrl.redo();
             else if (a.dataset.act === 'clear' && this.onClear) this.onClear();
             return;
         }
-        const x = e.target.closest('[data-extra]');
+        const x = q('[data-extra]');
         if (x) { const def = this.extra.find((d) => d.id === x.dataset.extra); if (def) def.onClick(x); }
     }
     refresh() {
@@ -684,12 +687,13 @@ export const isDarkBg = (id) => id === 'green' || id === 'black';
  * الطالب بيشوفه في مشاركة الشاشة بدل سهم الماوس الصغير.
  */
 export class LaserPointer {
-    constructor(container) {
+    /** host: العنصر اللي الليزر بيتحط جواه (لازم يكون نفس العنصر اللي بيتعمله ملء الشاشة عشان يظهر فيه) */
+    constructor(container, host = document.body) {
         this.container = container;
         this.canvas = document.createElement('canvas');
         this.canvas.className = 'ink-laser';
         this.canvas.hidden = true;
-        document.body.appendChild(this.canvas);
+        host.appendChild(this.canvas);
         this.pts = [];
         this.active = false;
         this._move = (e) => {
@@ -764,4 +768,41 @@ export class LaserPointer {
         }
     }
     destroy() { this.setActive(false); this.canvas.remove(); }
+}
+
+
+/**
+ * v29.1: رسالة تأكيد جوه نافذة الكتاب/السبورة نفسها
+ * (رسايل الصفحة العادية كانت بتظهر ورا الكتاب والسبورة، ومش بتظهر خالص في ملء الشاشة)
+ * @returns {Promise<boolean>}
+ */
+export function confirmIn(host, { title = '', message = '', okLabel = 'تمام', danger = true } = {}) {
+    return new Promise((resolve) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'ink-confirm';
+        wrap.setAttribute('role', 'alertdialog');
+        wrap.setAttribute('aria-modal', 'true');
+        wrap.innerHTML = `<div class="ink-confirm-box">
+            ${title ? '<h3></h3>' : ''}${message ? '<p></p>' : ''}
+            <div class="ink-confirm-btns"><button type="button" class="btn ${danger ? 'btn-danger' : ''}" data-ok></button><button type="button" class="btn btn-outline" data-no>رجوع</button></div>
+        </div>`;
+        if (title) wrap.querySelector('h3').textContent = title;
+        if (message) wrap.querySelector('p').textContent = message;
+        wrap.querySelector('[data-ok]').textContent = okLabel;
+        const done = (v) => { window.removeEventListener('keydown', onKey, true); wrap.remove(); resolve(v); };
+        const onKey = (e) => {
+            if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); done(false); }
+            else if (e.key === 'Enter') { e.preventDefault(); e.stopImmediatePropagation(); done(true); }
+            else e.stopImmediatePropagation();
+        };
+        wrap.addEventListener('pointerdown', (e) => e.stopPropagation());
+        wrap.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (e.target === wrap || e.target.closest('[data-no]')) done(false);
+            else if (e.target.closest('[data-ok]')) done(true);
+        });
+        window.addEventListener('keydown', onKey, true);
+        (host || document.body).appendChild(wrap);
+        setTimeout(() => wrap.querySelector('[data-ok]').focus(), 30);
+    });
 }

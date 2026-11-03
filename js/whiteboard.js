@@ -5,10 +5,10 @@
  * • كل صفحة بتتحفظ تلقائيًا لكل طالب/مجموعة (lesson-tools)، وترجع زي ما هي الحصة الجاية.
  * • تقدر تصدّر الصفحة صورة وتبعتها للطالب.
  */
-import { api } from './api.js?v=29';
-import { ErrorHandler, askChoice } from './utils.js?v=29';
-import { icon } from './icons.js?v=29';
-import { W, InkLayer, InkController, ToolDock, handleInkKey, BOARD_BGS, boardBgSvg, isDarkBg, renderItem, LaserPointer } from './annotate.js?v=29';
+import { api } from './api.js?v=32';
+import { ErrorHandler } from './utils.js?v=32';
+import { icon } from './icons.js?v=32';
+import { W, InkLayer, InkController, ToolDock, handleInkKey, BOARD_BGS, boardBgSvg, isDarkBg, renderItem, LaserPointer, confirmIn } from './annotate.js?v=32';
 
 const RATIO = 0.625;   // 16:10
 const H = W * RATIO;
@@ -59,7 +59,7 @@ class Whiteboard {
             onClear: () => this.clearPage(),
             className: 'wb-dock'
         });
-        this.laser = new LaserPointer(this.stage);
+        this.laser = new LaserPointer(this.stage, this.root);
         this._bind();
         this._load(blank, image);
         try { window.tmTrack && window.tmTrack('whiteboard_opened', { owner: ownerKey(owner)[0] }); } catch (e) { /* تجاهل */ }
@@ -92,7 +92,8 @@ class Whiteboard {
             <div class="wb-stage"><div class="wb-page"><div class="wb-loading">جاري تحميل السبورة...</div></div></div>
             <div class="wb-dockwrap"></div>`;
         root.querySelector('.wb-title span').textContent = this.title;
-        document.body.appendChild(root);
+        // v29.1: لو الكتاب مفتوح ملء الشاشة، السبورة لازم تتفتح جواه (وإلا مش هتظهر)
+        (document.fullscreenElement || document.body).appendChild(root);
         this.root = root;
         this.stage = root.querySelector('.wb-stage');
         this.pageEl = root.querySelector('.wb-page');
@@ -132,6 +133,7 @@ class Whiteboard {
             if (this.closed) return;
             const tag = (e.target && e.target.tagName) || '';
             if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable)) return;
+            if (document.querySelector('.ink-confirm')) return;   // رسالة تأكيد مفتوحة: هي اللي بترد على الكيبورد
             e.stopImmediatePropagation();
             if (e.key === 'Escape') { e.preventDefault(); if (this.ctrl.tool && this.ctrl.tool !== 'pen') this.ctrl.setTool('pen'); else this.close(); return; }
             if (handleInkKey(e, this.ctrl, { tools: BOARD_TOOLS, onClear: () => this.clearPage() })) return;
@@ -210,7 +212,7 @@ class Whiteboard {
     blankPage(explicit = false) {
         this._stash();
         const last = this.pages[this.pages.length - 1];
-        if (!last.items.length) { this.idx = this.pages.length - 1; this._show(); if (explicit) ErrorHandler.showSuccess('صفحة بيضا'); return; }
+        if (!last.items.length) { this.idx = this.pages.length - 1; this._show(); if (explicit) this._toast('دي صفحة بيضا فاضية بالفعل'); return; }
         this.pages.push({ page: last.page + 1, bg: (this.pages[this.idx] || last).bg || 'white', items: [], saved: false });
         this.idx = this.pages.length - 1;
         this._show();
@@ -234,22 +236,22 @@ class Whiteboard {
         const w2 = Math.round((w || maxW) * s); const h2 = Math.round((h || maxH) * s);
         this.layer.add({ t: 'img', src, x: Math.round((W - w2) / 2), y: Math.round((H - h2) / 2), w2, h2 });
         this.ctrl.setTool('pen');
-        ErrorHandler.showSuccess('الجزء اتحط على السبورة: اشرح عليه براحتك');
+        this._toast('الجزء اتحط على السبورة: اشرح عليه براحتك');
     }
 
     async clearPage() {
         if (!this.layer || this.layer.empty) return;
-        const ok = await askChoice({ title: 'تمسح كل اللي على الصفحة دي؟', message: 'تقدر ترجّعه بزرار "رجوع" (Ctrl+Z).', choices: [{ label: 'امسح', value: 'yes', danger: true }] });
-        if (ok) this.layer.clear();
+        const ok = await confirmIn(this.root, { title: 'تمسح كل اللي على الصفحة دي؟', message: 'تقدر ترجّعه بزرار "رجوع" (Ctrl+Z).', okLabel: 'امسح' });
+        if (ok) { this.layer.clear(); this._status('اتمسحت الصفحة. Ctrl+Z بيرجّعها', 'ok'); }
     }
 
     async deletePage() {
         const pg = this.pages[this.idx];
-        if (this.pages.length === 1 && !pg.items.length) return;
-        const ok = await askChoice({ title: `تحذف صفحة ${this.idx + 1}؟`, message: 'الصفحة هتتمسح نهائيًا.', choices: [{ label: 'احذف الصفحة', value: 'yes', danger: true }] });
+        if (this.pages.length === 1 && !pg.items.length) { this._toast('الصفحة فاضية ومفيش غيرها: مفيش حاجة تتحذف'); return; }
+        const ok = await confirmIn(this.root, { title: `تحذف صفحة ${this.idx + 1}؟`, message: 'الصفحة هتتمسح نهائيًا.', okLabel: 'احذف الصفحة' });
         if (!ok) return;
         if (pg.saved && !this.local) {
-            try { await api.boardDelete('board', this.owner, pg.page); } catch (e) { ErrorHandler.showError(ErrorHandler.getErrorMessage(e)); return; }
+            try { await api.boardDelete('board', this.owner, pg.page); } catch (e) { this._toast(ErrorHandler.getErrorMessage(e), 'warn'); return; }
         }
         this.pages.splice(this.idx, 1);
         if (!this.pages.length) this.pages.push({ page: pg.page + 1, bg: 'white', items: [], saved: false });
@@ -281,6 +283,13 @@ class Whiteboard {
         if (!this.local) return;
         try { localStorage.setItem(lsKey(this.owner), JSON.stringify(this.pages.filter((p) => p.items.length))); } catch (e) { /* المساحة خلصت */ }
     }
+    /** رسالة جوه السبورة (بتظهر كمان في ملء الشاشة) */
+    _toast(text, kind = 'ok') {
+        if (!this._toastEl) { this._toastEl = document.createElement('div'); this._toastEl.className = 'pt-status pt-toastmsg wb-toast'; this.root.appendChild(this._toastEl); }
+        const t = this._toastEl;
+        t.textContent = text; t.dataset.kind = kind; t.hidden = false;
+        clearTimeout(this._tt); this._tt = setTimeout(() => { t.hidden = true; }, 3500);
+    }
     _status(text, kind) {
         this.saveEl.textContent = text;
         this.saveEl.dataset.kind = kind || '';
@@ -311,7 +320,7 @@ class Whiteboard {
 
     async sharePage() {
         let blob;
-        try { blob = await this.pageBlob(); } catch (e) { ErrorHandler.showError('مقدرناش نعمل صورة للصفحة دي.'); return; }
+        try { blob = await this.pageBlob(); } catch (e) { this._toast('مقدرناش نعمل صورة للصفحة دي.', 'warn'); return; }
         if (!blob) return;
         const name = `${this.title.replace(/\s+/g, '-')}-صفحة-${this.idx + 1}.png`;
         const file = new File([blob], name, { type: 'image/png' });
@@ -326,7 +335,7 @@ class Whiteboard {
         a.href = url; a.download = name;
         document.body.appendChild(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 30000);
-        ErrorHandler.showSuccess('اتنزّلت صورة الصفحة: ابعتها للطالب على واتساب', 5000);
+        this._toast('اتنزّلت صورة الصفحة: ابعتها للطالب على واتساب');
     }
 
     toggleFullscreen() {

@@ -31,7 +31,19 @@ export const CONFIG = {
         PLANS: [
             { id: 'starter', name: 'البداية', price: 99, students: 10, desc: 'لحد 10 طلاب' },
             { id: 'pro', name: 'الاحترافية', price: 150, students: null, desc: 'طلاب بلا حد وكل المزايا' }
-        ]
+        ],
+        // سعر السنة العادي للاحترافية (بيظهر مشطوب جنب سعر العرض). بعد العرض الدفع السنوي بيختفي لو null
+        PRO_ANNUAL_REGULAR: 1800,
+        PRO_ANNUAL_AFTER_OFFER: null,
+        // عرض نوفمبر وديسمبر 2026: بيختفي لوحده بعد UNTIL والأسعار بترجع عادية
+        OFFER: {
+            UNTIL: '2026-12-31',
+            UNTIL_LABEL: '31 ديسمبر 2026',
+            TITLE: 'عرض نوفمبر وديسمبر',
+            PRO_MONTHLY: 99,          // الاحترافية بسعر البداية…
+            PRO_MONTHLY_MONTHS: 12,   // …لمدة 12 شهر
+            PRO_ANNUAL: 799           // أو سنة كاملة مرة واحدة
+        }
     },
     SUPPORT_WHATSAPP: '201037728764',
     SITE_URL: 'https://teachers-manager.online',

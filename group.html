@@ -11,9 +11,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>المجموعة - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=29">
-    <link rel="stylesheet" href="css/lessons.css?v=29">
-    <link rel="stylesheet" href="css/groups.css?v=29">
+    <link rel="stylesheet" href="css/style.css?v=32">
+    <link rel="stylesheet" href="css/lessons.css?v=32">
+    <link rel="stylesheet" href="css/groups.css?v=32">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -21,7 +21,7 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/v29.css?v=29">
+    <link rel="stylesheet" href="css/v29.css?v=32">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -204,18 +204,18 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=29"></script>
+    <script type="module" src="js/config.js?v=32"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=29';
-        import { api } from './js/api.js?v=29';
-        import { ErrorHandler, Formatters, askChoice } from './js/utils.js?v=29';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=29';
-        import { icon } from './js/icons.js?v=29';
-        import { subjectLabel, formatLessonDate } from './js/lesson-utils.js?v=29';
-        import { computeBilling, billingBadge, whatsappUrl, parentPhone } from './js/billing.js?v=29';
-        import { parseDate, formatClock12, timeToMinutes, lessonItem, findConflicts } from './js/calendar-utils.js?v=29';
-        import { groupTitle, groupColorClass, membersText, scheduleSummary, subjectOptionsHtml, mountScheduleEditor, mountStudentPicker, quickCreateStudent, sessionShareText, GROUP_COLORS, GROUP_COLOR_LABELS, saveWithConflictCheck, todayScheduleTime, monthLabel, shiftMonth, currentMonthKey } from './js/groups-utils.js?v=29';
-        import { money } from './js/billing.js?v=29';
+        import { Auth } from './js/auth.js?v=32';
+        import { api } from './js/api.js?v=32';
+        import { ErrorHandler, Formatters, askChoice } from './js/utils.js?v=32';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=32';
+        import { icon } from './js/icons.js?v=32';
+        import { subjectLabel, formatLessonDate } from './js/lesson-utils.js?v=32';
+        import { computeBilling, billingBadge, whatsappUrl, parentPhone } from './js/billing.js?v=32';
+        import { parseDate, formatClock12, timeToMinutes, lessonItem, findConflicts } from './js/calendar-utils.js?v=32';
+        import { groupTitle, groupColorClass, membersText, scheduleSummary, subjectOptionsHtml, mountScheduleEditor, mountStudentPicker, quickCreateStudent, sessionShareText, GROUP_COLORS, GROUP_COLOR_LABELS, saveWithConflictCheck, todayScheduleTime, monthLabel, shiftMonth, currentMonthKey } from './js/groups-utils.js?v=32';
+        import { money } from './js/billing.js?v=32';
 
         const $ = (id) => document.getElementById(id);
         const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
@@ -680,6 +680,6 @@
         }));
         document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => $(b.dataset.close).classList.remove('active')));
     </script>
-    <script src="js/pwa-install.js?v=29" defer></script>
+    <script src="js/pwa-install.js?v=32" defer></script>
 </body>
 </html>

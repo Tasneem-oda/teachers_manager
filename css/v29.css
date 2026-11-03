@@ -74,7 +74,7 @@
 .pt-focus { top: 120px; background: #F2C14E; color: #2B2433; }
 .bv.bv-present .pt-back { top: 16px; }
 .bv.bv-present .pt-focus { top: 60px; }
-.bv[data-tool="hand"] .bv-stage { cursor: grab; }
+.bv[data-ptool="hand"] .bv-stage { cursor: grab; }
 
 .pt-fx { position: fixed; z-index: 6; pointer-events: none; }
 .pt-fx.pt-select { pointer-events: auto; cursor: crosshair; touch-action: none; background: rgba(43, 36, 51, .08); }
@@ -87,7 +87,7 @@
 .pt-lens[hidden] { display: none; }
 .pt-lens canvas { width: 100%; height: 100%; display: block; }
 .pt-lens small { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: #2B2433; color: #fff; border-radius: 99px; padding: 1px 8px; font-size: .72rem; font-weight: 700; }
-.bv[data-tool="magnifier"] .bv-stage { cursor: zoom-in; }
+.bv[data-ptool="magnifier"] .bv-stage { cursor: zoom-in; }
 .pt-black { position: absolute; inset: 0; z-index: 20; background: #000; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 20px; cursor: pointer; }
 .pt-black span { color: #333; font-size: .8rem; }
 .pt-help { position: absolute; inset: 0; z-index: 21; background: rgba(20, 14, 26, .55); display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -220,3 +220,16 @@ body.tm-has-float .pt-dockwrap, body.tm-has-float .wb-dockwrap { bottom: calc(92
     .pt-dockwrap { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
     body.tm-has-float .pt-dockwrap { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
 }
+
+/* v29.1: رسايل وتأكيدات جوه الكتاب والسبورة (بتظهر في ملء الشاشة كمان) */
+.pt-toastmsg { position: absolute; top: 78px; left: 50%; transform: translateX(-50%); z-index: 30; max-width: calc(100% - 32px); text-align: center; box-shadow: 0 8px 24px rgba(20, 14, 26, .3); padding: 7px 16px; font-size: .86rem; }
+.bv.bv-present .pt-toastmsg, .wb:fullscreen .pt-toastmsg { top: 16px; }
+.pt-status[data-kind="ok"] { background: #2E7D32; }
+.ink-confirm { position: fixed; inset: 0; z-index: 9900; background: rgba(20, 14, 26, .5); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.ink-confirm-box { background: #fff; color: var(--text-primary); border-radius: 16px; padding: 18px 20px; width: min(380px, 100%); box-shadow: 0 20px 60px rgba(0,0,0,.35); text-align: center; }
+.ink-confirm-box h3 { margin: 0 0 6px; font-size: 1.05rem; color: var(--primary); }
+.ink-confirm-box p { margin: 0 0 14px; color: var(--text-secondary); font-size: .9rem; line-height: 1.7; }
+.ink-confirm-btns { display: flex; gap: 8px; justify-content: center; }
+.ink-confirm-btns .btn { margin: 0; min-width: 110px; }
+/* رسايل الصفحة العادية (لو اتفتحت وقت الكتاب أو السبورة) تظهر فوقهم */
+.tm-choice { z-index: 9700; }

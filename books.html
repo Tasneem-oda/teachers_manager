@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>مكتبتي - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=29">
+    <link rel="stylesheet" href="css/style.css?v=32">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -19,8 +19,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/books.css?v=29">
-    <link rel="stylesheet" href="css/v29.css?v=29">
+    <link rel="stylesheet" href="css/books.css?v=32">
+    <link rel="stylesheet" href="css/v29.css?v=32">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -76,8 +76,11 @@
                 <p class="upload-hint">المدعوم: PDF · Word (.docx) · PowerPoint (.pptx) · نص (.txt) · صور (JPG / PNG).<br>الكتب المصوّرة والممسوحة ضوئيًا بتتقرأ بالذكاء الاصطناعي تلقائيًا (ممكن ياخد دقائق حسب عدد الصفحات).</p>
                 <div class="form-group">
                     <label for="upload-file-input">اختار الملف *</label>
-                    <input type="file" id="upload-file-input" accept=".pdf,.docx,.pptx,.txt,.md,image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" required>
+                    <input type="file" id="upload-file-input" accept="application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,text/plain,.txt,text/markdown,.md,image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" required>
+                    <!-- v29.2: بعض موبايلات سامسونج بتفتح معرض الصور بس. الزرار ده بيفتح مدير الملفات بكل الأنواع -->
+                    <input type="file" id="upload-file-any" accept="*/*" hidden>
                     <small id="upload-detected" style="display:block; margin-top:0.35rem; font-size:0.78rem;"></small>
+                    <button type="button" class="upload-any-btn" id="upload-any-btn">📄 ملف الـ PDF مش ظاهر؟ اختاره من الملفات</button>
                 </div>
                 <div class="form-group">
                     <label for="upload-title-input">اسم الكتاب/المصدر *</label>
@@ -128,11 +131,11 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=29"></script>
+    <script type="module" src="js/config.js?v=32"></script>
     <script type="module">
-        import { initBooksPage } from './js/books-page.js?v=29';
+        import { initBooksPage } from './js/books-page.js?v=32';
         window.booksPage = initBooksPage();
     </script>
-    <script src="js/pwa-install.js?v=29" defer></script>
+    <script src="js/pwa-install.js?v=32" defer></script>
 </body>
 </html>

@@ -6,10 +6,9 @@
  * • "صفحة بيضا" (السبورة) في أي وقت، وقص جزء من الكتاب للسبورة
  * • أزرار الكيبورد لكل ده (بتشتغل والكيبورد عربي برضه)
  */
-import { icon } from './icons.js?v=29';
-import { ErrorHandler, askChoice } from './utils.js?v=29';
-import { W, InkLayer, InkController, ToolDock, handleInkKey, LaserPointer } from './annotate.js?v=29';
-import { openWhiteboard, isWhiteboardOpen } from './whiteboard.js?v=29';
+import { icon } from './icons.js?v=32';
+import { W, InkLayer, InkController, ToolDock, handleInkKey, LaserPointer, confirmIn } from './annotate.js?v=32';
+import { openWhiteboard, isWhiteboardOpen } from './whiteboard.js?v=32';
 
 const DRAW_TYPES = ['pdf', 'docx', 'pptx', 'image'];
 const BOOK_TOOLS = ['hand', 'pen', 'hl', 'temp', 'eraser', 'line', 'arrow', 'rect', 'ellipse', 'text', 'stamp', 'move', 'laser', 'magnifier', 'zoomarea', 'spotlight', 'ruler', 'snip'];
@@ -33,7 +32,7 @@ export class PresentTools {
         this.local = false;
         this.ownerName = viewer.ownerName || '';
         this.ctrl = new InkController({ onSave: (l) => this._save(l), onToolChange: (t) => this._onTool(t) });
-        this.laser = new LaserPointer(viewer.stage);
+        this.laser = new LaserPointer(viewer.stage, viewer.root);
         this._buildUi();
         this._bind();
         this._loadInk();
@@ -70,10 +69,10 @@ export class PresentTools {
             ]
         });
         this.statusEl = document.createElement('div');
-        this.statusEl.className = 'pt-status';
+        this.statusEl.className = 'pt-status pt-toastmsg';
         this.statusEl.setAttribute('aria-live', 'polite');
         this.statusEl.hidden = true;
-        this.wrap.appendChild(this.statusEl);
+        v.root.appendChild(this.statusEl);
 
         // رجوع من الزوم
         this.backChip = document.createElement('button');
@@ -138,11 +137,14 @@ export class PresentTools {
             this.presenting = document.fullscreenElement === v.root;
             v.root.classList.toggle('bv-present', this.presenting);
             this.dock.refresh();
-            setTimeout(() => v._onResize && v._onResize(), 50);
+            setTimeout(() => { if (v._onResize) v._onResize(); if (this.ctrl.tool) this._fxSetup(this.ctrl.tool); }, 120);
         };
         document.addEventListener('fullscreenchange', this._fsChange);
         this._stageMove = (e) => this._fxMove(e);
         v.stage.addEventListener('pointermove', this._stageMove);
+        // على الموبايل: الكشاف والمسطرة والعدسة بيمشوا مع الصباع
+        v.stage.addEventListener('pointerdown', this._stageMove);
+        v.stage.addEventListener('touchmove', this._stageMove, { passive: true });
     }
 
     // ------------------------------------------------------------------ الرسم على الصفحات
@@ -224,6 +226,8 @@ export class PresentTools {
             localStorage.setItem(this._lsKey(), JSON.stringify(o));
         } catch (e) { /* تجاهل */ }
     }
+    /** رسالة جوه نافذة الكتاب (بتظهر كمان في ملء الشاشة) */
+    _msg(text, kind = 'warn') { this._status(text, kind, 3500); }
     _status(text, kind, ms = 2500) {
         this.statusEl.textContent = text;
         this.statusEl.dataset.kind = kind || '';
@@ -234,9 +238,9 @@ export class PresentTools {
 
     async clearPage() {
         const layer = this.layers.get(this.v.page);
-        if (!layer || layer.empty) { ErrorHandler.showError('مفيش رسم على الصفحة دي'); return; }
-        const ok = await askChoice({ title: `تمسح الرسم من صفحة ${this.v.page}؟`, message: 'تقدر ترجّعه بزرار رجوع (Ctrl+Z).', choices: [{ label: 'امسح', value: 'yes', danger: true }] });
-        if (ok) layer.clear();
+        if (!layer || layer.empty) { this._msg(`مفيش رسم على صفحة ${this.v.page}`); return; }
+        const ok = await confirmIn(this.v.root, { title: `تمسح الرسم من صفحة ${this.v.page}؟`, message: 'تقدر ترجّعه بزرار رجوع (Ctrl+Z).', okLabel: 'امسح' });
+        if (ok) { layer.clear(); this._msg('اتمسح الرسم. Ctrl+Z بيرجّعه', 'ok'); }
     }
 
     // ------------------------------------------------------------------ الأدوات
@@ -244,30 +248,32 @@ export class PresentTools {
         const v = this.v;
         if (tool && !VIEW_TOOLS.includes(tool) && tool !== 'hand') {
             if (!this.canDraw) {
-                ErrorHandler.showError(this.v.mode === 'text' ? 'الكتابة على الكتاب بتشتغل على الملف الأصلي مش النص المستخرج.' : 'الكتابة على الصفحة مش متاحة لملفات النص. استخدم "صفحة بيضا".');
+                this._msg(this.v.mode === 'text' ? 'الكتابة على الكتاب بتشتغل على الملف الأصلي مش النص المستخرج.' : 'الكتابة على الصفحة مش متاحة لملفات النص. استخدم "صفحة بيضا".');
                 this.ctrl.tool = null; this.dock.refresh(); return;
             }
             if (!this.dockOpen) this.setDock(true);
             this._ensureAll();
         }
         if (tool === 'magnifier' && !['pdf', 'image'].includes(this.type)) {
-            ErrorHandler.showError('العدسة شغالة مع كتب الـ PDF والصور. استخدم "زوم على جزء" (Z) بدلها.');
+            this._msg('العدسة شغالة مع كتب الـ PDF والصور. استخدم "زوم على جزء" (Z) بدلها.');
             this.ctrl.tool = 'zoomarea';
             tool = 'zoomarea';
             this.dock.refresh();
         }
         if (tool === 'snip' && !['pdf', 'image'].includes(this.type)) {
-            ErrorHandler.showError('القص للسبورة شغال مع كتب الـ PDF والصور.');
+            this._msg('القص للسبورة شغال مع كتب الـ PDF والصور.');
             this.ctrl.tool = null; tool = null; this.dock.refresh();
         }
         this.laser.setActive(tool === 'laser');
-        v.root.dataset.tool = tool || '';
+        v.root.dataset.ptool = tool || '';
         this._fxSetup(tool);
     }
 
     _fxSetup(tool) {
         this.fx.innerHTML = '';
         this.fx.className = 'pt-fx';
+        this.fx.style.background = '';
+        this._stageBox();   // لازم مقاس الطبقة يتحدد قبل ما نرسم الدايرة/الشريط (قبل كده كانت بتظهر في مكان غلط أول مرة)
         this._lens = null;
         if (tool === 'spotlight') {
             this.fx.classList.add('pt-spot');
@@ -300,7 +306,8 @@ export class PresentTools {
         const r = this.fx.getBoundingClientRect();
         const x = p.x - r.left; const y = p.y - r.top;
         if (this.fx.classList.contains('pt-spot')) {
-            this.fx.style.background = `radial-gradient(circle ${this._fxR}px at ${x}px ${y}px, transparent 0, transparent ${this._fxR - 2}px, rgba(10, 8, 14, 0.78) ${this._fxR}px)`;
+            const R = this._fxR;
+            this.fx.style.background = `radial-gradient(circle ${R + 14}px at ${x}px ${y}px, rgba(0,0,0,0) 0, rgba(0,0,0,0) ${R - 6}px, rgba(10, 8, 14, 0.8) ${R + 14}px)`;
         } else if (this.fx.classList.contains('pt-ruler')) {
             const band = this.fx.querySelector('.pt-band');
             band.style.height = `${this._bandH}px`;
@@ -314,8 +321,13 @@ export class PresentTools {
     }
     _fxMove(e) {
         const t = this.ctrl.tool;
-        if (t === 'spotlight' || t === 'ruler') { this._fxPt = { x: e.clientX, y: e.clientY }; this._placeFx(); }
-        else if (t === 'magnifier') this._lensDraw(e.clientX, e.clientY);
+        const p = e.touches ? e.touches[0] : e;
+        if (!p) return;
+        if (t === 'spotlight' || t === 'ruler') {
+            this._stageBox();   // مكان الكتاب بيتغيّر (ملء الشاشة / الشات / تدوير الموبايل)
+            this._fxPt = { x: p.clientX, y: p.clientY };
+            this._placeFx();
+        } else if (t === 'magnifier') this._lensDraw(p.clientX, p.clientY);
     }
 
     // ------------------------------------------------------------------ العدسة المكبرة
@@ -425,7 +437,7 @@ export class PresentTools {
         if (box.width < 24 || box.height < 24) f = 2;          // ضغطة: تكبير ×2 مكانها
         else f = Math.min(sr.width / box.width, sr.height / box.height) * 0.92;
         const z = Math.max(v.zoom, Math.min(6, v.zoom * f));
-        if (z <= v.zoom * 1.05) { ErrorHandler.showError('الجزء ده كبير بالفعل. ارسم مستطيل أصغر.'); return; }
+        if (z <= v.zoom * 1.05) { this._msg('الجزء ده كبير بالفعل. ارسم مستطيل أصغر.'); return; }
         this.zoomAround(z, cx, cy, { center: true, push: true });
         this.ctrl.setTool(null);
     }
@@ -474,7 +486,7 @@ export class PresentTools {
         const cx = box.left + box.width / 2; const cy = box.top + box.height / 2;
         const hit = this._pageAt(cx, cy);
         const src = hit && this._sourceOf(hit.el);
-        if (!src) { ErrorHandler.showError('اختار جزء جوه صفحة من الكتاب.'); return; }
+        if (!src) { this._msg('اختار جزء جوه صفحة من الكتاب.'); return; }
         const r = hit.r;
         const x1 = Math.max(box.left, r.left); const y1 = Math.max(box.top, r.top);
         const x2 = Math.min(box.left + box.width, r.right); const y2 = Math.min(box.top + box.height, r.bottom);
@@ -488,7 +500,7 @@ export class PresentTools {
         const ctx = c.getContext('2d');
         ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, outW, outH);
         try { ctx.drawImage(src, (x1 - r.left) * kx, (y1 - r.top) * ky, (x2 - x1) * kx, (y2 - y1) * ky, 0, 0, outW, outH); }
-        catch (e) { ErrorHandler.showError('الصفحة لسه بتتحمّل. استنى ثانية وجرّب تاني.'); return; }
+        catch (e) { this._msg('الصفحة لسه بتتحمّل. استنى ثانية وجرّب تاني.'); return; }
         const layer = this.layers.get(hit.page);
         if (layer && !layer.empty) {
             const img = await this._rasterInk(layer, 2000);

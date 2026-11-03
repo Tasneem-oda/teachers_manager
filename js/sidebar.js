@@ -1,14 +1,15 @@
 /**
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
-import { Auth } from './auth.js?v=29';
-import { icon } from './icons.js?v=29';
-import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=29';
-import { CONFIG } from './config.js?v=29';
-import { openSuggestionModal } from './suggestions.js?v=29';
-import { mountFloatingLesson } from './live-lesson.js?v=29';
-import { initTracking } from './track.js?v=29';
-import { askChoice } from './utils.js?v=29';
+import { Auth } from './auth.js?v=32';
+import { icon } from './icons.js?v=32';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=32';
+import { CONFIG } from './config.js?v=32';
+import { openSuggestionModal } from './suggestions.js?v=32';
+import { mountFloatingLesson } from './live-lesson.js?v=32';
+import { initTracking } from './track.js?v=32';
+import { askChoice } from './utils.js?v=32';
+import { priceFor, subscribeMessage, waUrl, currentUserInfo, offerActive, annualAvailable } from './pricing.js?v=32';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
@@ -47,7 +48,7 @@ export async function getSubscriptionCached() {
     if (subFetchPromise) return subFetchPromise;
 
     subFetchPromise = (async () => {
-        const { api } = await import('./api.js?v=29');
+        const { api } = await import('./api.js?v=32');
         const data = await api.checkSubscription();
         try {
             sessionStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
@@ -226,10 +227,14 @@ function showReadOnlyBar(state) {
 export function openSubscribePrompt(reason) {
     if (document.getElementById('sub-lock-overlay')) return;
     const heading = reason === 'trial_expired' ? 'الفترة المجانية خلصت' : 'اشتراكك خلص';
-    const plans = CONFIG.PRICING.PLANS.map((p) => {
-        const msg = `مرحباً، أرغب في الاشتراك في باقة "${p.name}" (${p.price} جنيه شهريًا) في تطبيق Teachers Manager.`;
-        return `<a href="https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener" class="btn sub-lock-whatsapp">
-            <span>${icon('messageCircle', { size: 16 })} ${p.name} · ${p.price} جنيه في الشهر</span><small>${p.desc}</small></a>`;
+    // v29.3: نفس أسعار صفحة الاشتراك (بالعرض لو شغال) + إيميل الحساب في الرسالة
+    const options = [];
+    CONFIG.PRICING.PLANS.forEach((p) => options.push({ planId: p.id, period: 'monthly', name: p.name, desc: p.desc }));
+    if (annualAvailable()) { const pro = CONFIG.PRICING.PLANS.find((p) => p.id === 'pro'); if (pro) options.push({ planId: 'pro', period: 'annual', name: pro.name, desc: 'بتدفع مرة واحدة للسنة' }); }
+    const plans = options.map((o) => {
+        const pr = priceFor(o.planId, o.period);
+        return `<a href="${waUrl(subscribeMessage({ planId: o.planId, period: o.period }))}" data-sub-plan="${o.planId}" data-sub-period="${o.period}" target="_blank" rel="noopener" class="btn sub-lock-whatsapp">
+            <span>${icon('messageCircle', { size: 16 })} ${o.name}${o.period === 'annual' ? ' سنوي' : ''} · ${pr.price} جنيه ${o.period === 'annual' ? 'للسنة' : 'في الشهر'}${pr.offer ? ' 🎁' : ''}</span><small>${pr.offer && pr.note ? pr.note : o.desc}</small></a>`;
     }).join('');
     const overlay = document.createElement('div');
     overlay.id = 'sub-lock-overlay';
@@ -243,6 +248,9 @@ export function openSubscribePrompt(reason) {
             <button type="button" class="sub-lock-link" id="sub-lock-view">أتفرج على بياناتي الأول</button>
         </div>`;
     document.body.appendChild(overlay);
+    currentUserInfo().then((u) => {
+        overlay.querySelectorAll('[data-sub-plan]').forEach((a) => { a.href = waUrl(subscribeMessage({ planId: a.dataset.subPlan, period: a.dataset.subPeriod, email: u.email, name: u.name })); });
+    }).catch(() => { /* تجاهل */ });
     const close = () => { overlay.remove(); document.body.style.overflow = ''; };
     document.getElementById('sub-lock-view').addEventListener('click', close);
     overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) close(); });
@@ -396,7 +404,7 @@ async function loadHeaderProfile() {
         const profile = Auth.cachedProfile(session.user && session.user.id) || await Auth.bootstrapSession();
         // v28: الحساب مجدول للحذف؟ نعرض "رجّع حسابي" قبل أي حاجة
         if (profile && profile.deletion_scheduled_for) {
-            try { const m = await import('./account-delete.js?v=29'); m.showDeletionScheduledGate(profile); } catch (e) { /* تجاهل */ }
+            try { const m = await import('./account-delete.js?v=32'); m.showDeletionScheduledGate(profile); } catch (e) { /* تجاهل */ }
         }
         const nameEl = document.getElementById('header-user-name');
         const avatarEl = document.getElementById('header-avatar-fallback');

@@ -11,9 +11,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الرئيسية - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=29">
-    <link rel="stylesheet" href="css/lessons.css?v=29">
-    <link rel="stylesheet" href="css/groups.css?v=29">
+    <link rel="stylesheet" href="css/style.css?v=32">
+    <link rel="stylesheet" href="css/lessons.css?v=32">
+    <link rel="stylesheet" href="css/groups.css?v=32">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -66,7 +66,7 @@
         }
         @media (prefers-reduced-motion: reduce) { .wa-cta { transition: none; } .wa-cta:hover { transform: none; } }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=29">
+    <link rel="stylesheet" href="css/v29.css?v=32">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -179,25 +179,25 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=29"></script>
+    <script type="module" src="js/config.js?v=32"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=29';
-        import { api } from './js/api.js?v=29';
-        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=29';
-        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=29';
-        import { icon } from './js/icons.js?v=29';
-        import { renderOnboarding } from './js/onboarding.js?v=29';
-        import { openAttendanceModal } from './js/attendance.js?v=29';
-        import { ATTENDANCE } from './js/lesson-utils.js?v=29';
-        import { computeBilling, openReminder, lessonsText, buildReminder, parentPhone, openBulkReminders } from './js/billing.js?v=29';
-        import { showTips } from './js/tips.js?v=29';
-        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=29';
-        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=29';
-        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=29';
-        import { mountReminderSetupCard } from './js/reminder-settings.js?v=29';
-        import { requestPermission } from './js/notifications.js?v=29';
-        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=29';
-        import { whatsappUrl } from './js/billing.js?v=29';
+        import { Auth } from './js/auth.js?v=32';
+        import { api } from './js/api.js?v=32';
+        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=32';
+        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=32';
+        import { icon } from './js/icons.js?v=32';
+        import { renderOnboarding } from './js/onboarding.js?v=32';
+        import { openAttendanceModal } from './js/attendance.js?v=32';
+        import { ATTENDANCE } from './js/lesson-utils.js?v=32';
+        import { computeBilling, openReminder, lessonsText, buildReminder, parentPhone, openBulkReminders } from './js/billing.js?v=32';
+        import { showTips } from './js/tips.js?v=32';
+        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=32';
+        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=32';
+        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=32';
+        import { mountReminderSetupCard } from './js/reminder-settings.js?v=32';
+        import { requestPermission } from './js/notifications.js?v=32';
+        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=32';
+        import { whatsappUrl } from './js/billing.js?v=32';
 
         renderSidebar('dashboard');
 
@@ -705,10 +705,10 @@
             const authInfo = await Auth.requireAuth();
             if (!authInfo) return;
             // v29: أول دخول بحساب جوجل: سؤال المادة + الموبايل
-            try { const { maybeCompleteProfile } = await import('./js/complete-profile.js?v=29'); maybeCompleteProfile(authInfo.profile, authInfo.session); } catch (e) { /* تجاهل */ }
+            try { const { maybeCompleteProfile } = await import('./js/complete-profile.js?v=32'); maybeCompleteProfile(authInfo.profile, authInfo.session); } catch (e) { /* تجاهل */ }
             await loadDashboard();
         })();
     </script>
-    <script src="js/pwa-install.js?v=29" defer></script>
+    <script src="js/pwa-install.js?v=32" defer></script>
 </body>
 </html>
