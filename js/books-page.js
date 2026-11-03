@@ -5,15 +5,15 @@
  *   - إعادة معالجة الكتب المتعثّرة، إدارة الوصول، و"اسأل مصادرك" العام
  */
 
-import { CONFIG } from './config.js?v=30';
-import { Auth } from './auth.js?v=30';
-import { renderSidebar, renderTopHeader } from './sidebar.js?v=30';
-import { icon } from './icons.js?v=30';
-import { api } from './api.js?v=30';
-import { ErrorHandler, Formatters } from './utils.js?v=30';
-import { detectFileType, processBook } from './book-processor.js?v=30';
-import { openBookViewer } from './book-viewer.js?v=30';
-import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=30';
+import { CONFIG } from './config.js?v=32';
+import { Auth } from './auth.js?v=32';
+import { renderSidebar, renderTopHeader } from './sidebar.js?v=32';
+import { icon } from './icons.js?v=32';
+import { api } from './api.js?v=32';
+import { ErrorHandler, Formatters } from './utils.js?v=32';
+import { detectFileType, processBook } from './book-processor.js?v=32';
+import { openBookViewer } from './book-viewer.js?v=32';
+import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=32';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => Formatters.escapeHtml(String(s == null ? '' : s));
@@ -267,24 +267,40 @@ export function initBooksPage() {
 
     $('btn-add-source').addEventListener('click', () => {
         $('upload-form').reset();
+        pickedAny = null; $('upload-file-input').required = true;
         $('upload-detected').textContent = '';
         $('upload-progress').classList.remove('is-on');
         $('upload-submit-btn').disabled = false;
         $('upload-modal').classList.add('active');
     });
 
+    // v29.2: الملف ممكن ييجي من الاختيار العادي أو من زرار "اختاره من الملفات" (لموبايلات سامسونج)
+    let pickedAny = null;
+    const pickedFile = () => pickedAny || $('upload-file-input').files[0];
+    $('upload-any-btn').addEventListener('click', () => { $('upload-file-any').value = ''; $('upload-file-any').click(); });
+    $('upload-file-any').addEventListener('change', (e) => {
+        const f = e.target.files[0]; if (!f) return;
+        pickedAny = f;
+        try { const dt = new DataTransfer(); dt.items.add(f); $('upload-file-input').files = dt.files; } catch (er) { /* متصفح قديم: pickedAny كفاية */ }
+        $('upload-file-input').required = false;
+        showPicked(f);
+    });
     $('upload-file-input').addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
+        pickedAny = null;
+        showPicked(file);
+    });
+    function showPicked(file) {
         const type = detectFileType(file);
         $('upload-detected').textContent = type ? `النوع: ${TYPE_LABEL[type]} · ${(file.size / 1048576).toFixed(1)} MB` : 'نوع الملف غير مدعوم';
         $('upload-detected').style.color = type ? 'var(--text-secondary)' : 'var(--danger)';
         if (!$('upload-title-input').value) $('upload-title-input').value = file.name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ');
-    });
+    }
 
     $('upload-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const file = $('upload-file-input').files[0];
+        const file = pickedFile();
         const title = $('upload-title-input').value.trim();
         const submitBtn = $('upload-submit-btn');
         const progress = $('upload-progress');

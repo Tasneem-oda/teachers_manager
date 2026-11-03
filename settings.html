@@ -11,7 +11,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>الإعدادات - Teachers Manager</title>
-    <link rel="stylesheet" href="css/style.css?v=30">
+    <link rel="stylesheet" href="css/style.css?v=32">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -48,7 +48,7 @@
         .success-message { background: #E8F5E9; color: var(--success-text); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; display: none; }
         .error-message { background: #FFEBEE; color: var(--danger); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; display: none; }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=30">
+    <link rel="stylesheet" href="css/v29.css?v=32">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -204,17 +204,17 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=30"></script>
+    <script type="module" src="js/config.js?v=32"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=30';
-        import { Storage, ErrorHandler, toLatinDigits } from './js/utils.js?v=30';
-        import { api } from './js/api.js?v=30';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=30';
-        import { icon } from './js/icons.js?v=30';
-        import { CONFIG } from './js/config.js?v=30';
-        import { requestPermission, unlinkOnSignOut } from './js/notifications.js?v=30';
-        import { mountReminderControls } from './js/reminder-settings.js?v=30';
-        import { openDeleteAccount } from './js/account-delete.js?v=30';
+        import { Auth } from './js/auth.js?v=32';
+        import { Storage, ErrorHandler, toLatinDigits } from './js/utils.js?v=32';
+        import { api } from './js/api.js?v=32';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=32';
+        import { icon } from './js/icons.js?v=32';
+        import { CONFIG } from './js/config.js?v=32';
+        import { requestPermission, unlinkOnSignOut } from './js/notifications.js?v=32';
+        import { mountReminderControls } from './js/reminder-settings.js?v=32';
+        import { openDeleteAccount } from './js/account-delete.js?v=32';
 
         function renderPushStatus() {
             const el = document.getElementById('push-status');
@@ -249,7 +249,7 @@
         document.getElementById('ic-account').innerHTML = icon('logout', { size: 18 });
         document.getElementById('ic-export').innerHTML = icon('download', { size: 18 });
         document.getElementById('btn-export').addEventListener('click', async (e) => {
-            const { downloadAllData } = await import('./js/export-data.js?v=30');
+            const { downloadAllData } = await import('./js/export-data.js?v=32');
             downloadAllData(e.currentTarget);
         });
         document.getElementById('ic-install').innerHTML = icon('download', { size: 18 });
@@ -433,6 +433,6 @@
             rep.addEventListener('change', () => save({ report_after_lesson: rep.checked }));
         })();
     </script>
-    <script src="js/pwa-install.js?v=30" defer></script>
+    <script src="js/pwa-install.js?v=32" defer></script>
 </body>
 </html>

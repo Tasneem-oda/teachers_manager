@@ -343,3 +343,6 @@ mark.bv-mark { background: rgba(197, 154, 74, 0.45); color: inherit; border-radi
 @media (prefers-reduced-motion: reduce) {
     .bc-panel, .bc-fab, .bv-spinner, .bc-dots i, .bv-progress.is-indeterminate i { animation: none !important; transition: none !important; }
 }
+
+/* v29.2: زرار اختيار الملف من مدير الملفات (موبايلات سامسونج بتفتح المعرض بس) */
+.form-group .upload-any-btn { display: block; width: auto; min-height: 0; margin-top: 0.5rem; background: none; border: 0; padding: 0.2rem 0; color: var(--primary); text-decoration: underline; font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; text-align: start; box-shadow: none; }

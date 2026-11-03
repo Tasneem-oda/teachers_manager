@@ -6,7 +6,7 @@
  * • InkController: الأداة الحالية + اللون + السُمك + رجوع/إعادة لكل الطبقات + الحفظ التلقائي.
  * • ToolDock: شريط الأدوات (قلم، هايلايتر، ممحاة، أشكال، نص، علامات، قلم مؤقت، ألوان، سُمك، رجوع/إعادة، مسح).
  */
-import { icon } from './icons.js?v=30';
+import { icon } from './icons.js?v=32';
 
 const NS = 'http://www.w3.org/2000/svg';
 export const W = 1000;
