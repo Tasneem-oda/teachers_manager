@@ -33,10 +33,10 @@
  * كل جزء بيفشل بصمت (من غير ما يكسر باقي الصفحة) لو لسه معمولش الإعداد بتاعه.
  * ============================================================================
  */
-import { CONFIG } from './config.js?v=32';
-import { Auth } from './auth.js?v=32';
-import { api } from './api.js?v=32';
-import { ErrorHandler } from './utils.js?v=32';
+import { CONFIG } from './config.js?v=34';
+import { Auth } from './auth.js?v=34';
+import { api } from './api.js?v=34';
+import { ErrorHandler } from './utils.js?v=34';
 
 const PROMPT_DISMISS_KEY = 'tm_notif_prompt_dismissed';
 const BADGE_CACHE_KEY = 'tm_notif_badge_cache_v1';
@@ -133,8 +133,14 @@ async function initAndLinkTeacher() {
                 try {
                     const n = event && event.notification;
                     const data = (n && (n.additionalData || n.data)) || {};
+                    // v29.5: البرنامج مفتوح والتذكير ظهر على الشاشة من الجهاز نفسه (js/local-reminders.js): مانكررهوش كإشعار
+                    if (data.kind === 'lesson_reminder' && window.__tmLocalReminders && window.__tmLocalReminders.active()) {
+                        try { event.preventDefault(); } catch (e) { /* تجاهل */ }
+                        try { window.__tmLocalReminders.check(); } catch (e) { /* تجاهل */ }
+                        return;
+                    }
                     if (data.tm_sound === true || data.tm_sound === 'true') {
-                        import('./reminder-settings.js?v=32').then((m) => m.playReminderSound()).catch(() => { /* تجاهل */ });
+                        import('./reminder-settings.js?v=34').then((m) => m.playReminderSound()).catch(() => { /* تجاهل */ });
                     }
                 } catch (e) { /* تجاهل */ }
             });
@@ -256,7 +262,25 @@ function dismissPrompt() {
  * يفك الحظر يدويًا من إعدادات الموقع في المتصفح - مفيش أي بديل برمجي،
  * ومفيش فرق هنا بين OneSignal وأي خدمة إشعارات تانية.
  */
+// v29.4: تشغيل OneSignal مرة واحدة بس (من التحميل المتأخر أو من زرار "فعّل الإشعارات" لو المدرس ضغطه بدري)
+let pushStarted = null;
+function startPush() {
+    if (!pushStarted) pushStarted = initAndLinkTeacher().catch((e) => { pushStarted = null; throw e; });
+    return pushStarted;
+}
+function afterPageSettles() {
+    return new Promise((resolve) => {
+        const go = () => {
+            if ('requestIdleCallback' in window) window.requestIdleCallback(() => resolve(), { timeout: 4000 });
+            else setTimeout(resolve, 1500);
+        };
+        if (document.readyState === 'complete') setTimeout(go, 800);
+        else window.addEventListener('load', () => setTimeout(go, 800), { once: true });
+    });
+}
+
 export async function requestPermission() {
+    try { startPush().catch(() => { /* fallback تحت بيتعامل */ }); } catch (e) { /* تجاهل */ }
     if ('Notification' in window && Notification.permission === 'denied') {
         ErrorHandler.showError(
             'إذن الإشعارات محظور لهذا الموقع من إعدادات المتصفح. افتح إعدادات الموقع (أيقونة القفل 🔒 بجانب رابط الموقع) ← الإشعارات ← اختر "سماح"، ثم أعد تحميل الصفحة.'
@@ -693,6 +717,8 @@ async function refreshUnreadBadge() {
                 applyBadge(parsed.count);
                 return;
             }
+            // v29.5: العدد القديم يظهر على طول لحد ما الجديد يوصل (بدل ما الجرس يفضل فاضي)
+            if (parsed && typeof parsed.count === 'number') applyBadge(parsed.count);
         }
     } catch (e) { /* تجاهل كاش تالف */ }
 
@@ -721,7 +747,10 @@ export async function initPushNotifications() {
 
     // إشعارات Push الفعلية عبر OneSignal
     try {
-        const teacherId = await initAndLinkTeacher();
+        // v29.4: مكتبة OneSignal كبيرة وجاية من دومين تاني: بنحمّلها بعد ما الصفحة تخلص تحميل
+        // (كانت بتتحمّل مع أول الصفحة وبتزاحم بيانات المدرس على نت الموبايل)
+        await afterPageSettles();
+        const teacherId = await startPush();
         if (!teacherId) return; // مفيش App ID متضبط أو مفيش جلسة دخول
 
         // بانر التفعيل بيظهر بتأخير بسيط عشان ميزاحمش تحميل باقي الصفحة،

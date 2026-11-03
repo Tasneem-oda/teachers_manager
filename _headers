@@ -1,0 +1,25 @@
+# v29.4 — كاش الملفات على Cloudflare (Workers Static Assets بيقرا الملف ده لوحده)
+# ملفات js و css كلها بتتنادى برقم نسخة (?v=34)، فالمتصفح يقدر يحتفظ بيها سنة:
+# أي تحديث بيغيّر رقم النسخة فالمتصفح بيحمّل الجديد على طول.
+# ⚠️ مهم: أي ملف js أو css جديد لازم يتنادى بـ ?v=رقم زي الباقي.
+
+/js/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/css/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/*
+  Cache-Control: public, max-age=604800
+
+# الصفحات (html) بتفضل على الإعداد الافتراضي لـ Cloudflare: بيتشيك عليها كل مرة، فأي تحديث بيوصل على طول
+
+# الـ Service Worker لازم يتشيك عليه كل مرة عشان التحديثات توصل
+/sw.js
+  Cache-Control: no-cache
+
+/OneSignalSDKWorker.js
+  Cache-Control: no-cache
+
+/manifest.json
+  Cache-Control: public, max-age=86400

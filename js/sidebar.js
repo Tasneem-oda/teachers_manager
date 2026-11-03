@@ -1,15 +1,15 @@
 /**
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
-import { Auth } from './auth.js?v=32';
-import { icon } from './icons.js?v=32';
-import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=32';
-import { CONFIG } from './config.js?v=32';
-import { openSuggestionModal } from './suggestions.js?v=32';
-import { mountFloatingLesson } from './live-lesson.js?v=32';
-import { initTracking } from './track.js?v=32';
-import { askChoice } from './utils.js?v=32';
-import { priceFor, subscribeMessage, waUrl, currentUserInfo, offerActive, annualAvailable } from './pricing.js?v=32';
+import { Auth } from './auth.js?v=34';
+import { icon } from './icons.js?v=34';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=34';
+import { CONFIG } from './config.js?v=34';
+import { openSuggestionModal } from './suggestions.js?v=34';
+import { mountFloatingLesson } from './live-lesson.js?v=34';
+import { initTracking } from './track.js?v=34';
+import { askChoice } from './utils.js?v=34';
+import { priceFor, subscribeMessage, waUrl, currentUserInfo, offerActive, annualAvailable } from './pricing.js?v=34';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
@@ -30,38 +30,66 @@ const NAV_ITEMS = [
  */
 const SUB_CACHE_KEY = 'tm_sub_cache_v1';
 const SUB_CACHE_TTL_MS = 3 * 60 * 1000;
+// v29.4: لحد 30 دقيقة بنعرض آخر حالة محفوظة على طول ونحدّثها في الخلفية (بدل ما الصفحة تستنى n8n)
+const SUB_CACHE_STALE_MS = 30 * 60 * 1000;
 let subFetchPromise = null;
 
-export async function getSubscriptionCached() {
-    try {
-        const raw = sessionStorage.getItem(SUB_CACHE_KEY);
-        if (raw) {
-            const cached = JSON.parse(raw);
-            if (cached && (Date.now() - cached.ts) < SUB_CACHE_TTL_MS) {
-                return cached.data;
-            }
-        }
-    } catch (e) { /* تجاهل تخزين تالف */ }
-
-    // لو فيه طلب شبكة قيد التنفيذ بالفعل في نفس اللحظة (مثلاً استدعاءان في نفس تحميل الصفحة)
-    // نشترك في نفس الطلب بدل ما نبعت طلب مكرر لـ n8n
+function fetchSubscriptionNow() {
     if (subFetchPromise) return subFetchPromise;
-
     subFetchPromise = (async () => {
-        const { api } = await import('./api.js?v=32');
+        const { api } = await import('./api.js?v=34');
         const data = await api.checkSubscription();
         try {
             sessionStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
         } catch (e) { /* تجاهل لو التخزين ممتلئ */ }
         return data;
     })();
-
-    try {
-        return await subFetchPromise;
-    } finally {
-        subFetchPromise = null;
-    }
+    subFetchPromise.then(() => { subFetchPromise = null; }, () => { subFetchPromise = null; });
+    return subFetchPromise;
 }
+
+export async function getSubscriptionCached() {
+    try {
+        const raw = sessionStorage.getItem(SUB_CACHE_KEY);
+        if (raw) {
+            const cached = JSON.parse(raw);
+            const age = cached ? Date.now() - cached.ts : Infinity;
+            if (age < SUB_CACHE_TTL_MS) return cached.data;
+            if (age < SUB_CACHE_STALE_MS) { fetchSubscriptionNow().catch(() => { /* تجاهل */ }); return cached.data; }
+        }
+    } catch (e) { /* تجاهل تخزين تالف */ }
+    return fetchSubscriptionNow();
+}
+
+// ------------------------------------------------------------------ v29.5: الشريط والهيدر يظهروا فورًا
+// آخر شكل للشريط (ولهيدر كل صفحة) بيتحفظ على الجهاز، وسطر صغير جوه كل صفحة بيرسمه قبل ما ملفات البرنامج تتحمّل
+const SHELL_KEY = 'tm_shell_v1';
+const pageKey = () => (location.pathname.split('/').pop() || 'dashboard').replace(/\.html$/, '') || 'dashboard';
+function readShell() { try { return JSON.parse(localStorage.getItem(SHELL_KEY) || 'null') || {}; } catch (e) { return {}; } }
+function writeShell(c) { try { localStorage.setItem(SHELL_KEY, JSON.stringify(c)); } catch (e) { /* التخزين مليان: تجاهل */ } }
+function saveShellNav(root, activeKey) {
+    try {
+        const clone = root.cloneNode(true);
+        clone.querySelectorAll('.active, .active-mobile').forEach((el) => el.classList.remove('active', 'active-mobile'));
+        clone.querySelectorAll('[hidden]').forEach((el) => { if (el.id !== 'sidebar-install') el.removeAttribute('hidden'); });
+        const c = readShell();
+        c.nav = clone.innerHTML;
+        c.active = c.active || {};
+        if (activeKey) c.active[pageKey()] = activeKey;
+        writeShell(c);
+    } catch (e) { /* تجاهل */ }
+}
+export function saveShellHeader() {
+    try {
+        const root = document.getElementById('top-header-root');
+        if (!root || !root.firstElementChild) return;
+        const c = readShell();
+        c.header = c.header || {};
+        c.header[pageKey()] = root.innerHTML;
+        writeShell(c);
+    } catch (e) { /* تجاهل */ }
+}
+export function clearShell() { try { localStorage.removeItem(SHELL_KEY); } catch (e) { /* تجاهل */ } }
 
 export function renderSidebar(activeKey) {
     try { initTracking(); } catch (e) { /* التتبع إضافي: لو فشل الصفحة تكمّل عادي */ }
@@ -69,7 +97,7 @@ export function renderSidebar(activeKey) {
     if (!root) return;
 
     const navHtml = NAV_ITEMS.map(item => `
-        <a href="${item.href}" class="${[item.key === activeKey ? 'active' : '', item.desktopOnly ? 'nav-desktop-only' : '', item.key === 'students' && activeKey === 'groups' ? 'active-mobile' : ''].filter(Boolean).join(' ')}">
+        <a href="${item.href}" data-key="${item.key}" class="${[item.key === activeKey ? 'active' : '', item.desktopOnly ? 'nav-desktop-only' : '', item.key === 'students' && activeKey === 'groups' ? 'active-mobile' : ''].filter(Boolean).join(' ')}">
             <span class="icon">${icon(item.icon, { size: 19 })}</span>
             <span class="label">${item.label}</span>
         </a>
@@ -101,6 +129,8 @@ export function renderSidebar(activeKey) {
             </div>
         </aside>
     `;
+
+    saveShellNav(root, activeKey);
 
     document.getElementById('sidebar-install').addEventListener('click', (e) => {
         e.preventDefault();
@@ -391,6 +421,11 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
 
     loadHeaderProfile();
 
+    // v29.5: حالة النت + تذكير الحصص من على الجهاز (بيشتغل من غير نت)
+    import('./net-status.js?v=34').then((m) => m.initNetStatus()).catch(() => { /* تجاهل */ });
+    const startReminders = () => import('./local-reminders.js?v=34').then((m) => m.initLocalReminders()).catch(() => { /* تجاهل */ });
+    if ('requestIdleCallback' in window) requestIdleCallback(startReminders, { timeout: 3000 }); else setTimeout(startReminders, 1200);
+
     // تفعيل إشعارات Push (تذكير الحصص اليومي) - مرة واحدة بعد رسم الهيدر
     // عشان زرار الجرس (header-bell) يكون موجود في الصفحة قبل ما نربطه بالحدث
     initPushNotifications();
@@ -404,7 +439,7 @@ async function loadHeaderProfile() {
         const profile = Auth.cachedProfile(session.user && session.user.id) || await Auth.bootstrapSession();
         // v28: الحساب مجدول للحذف؟ نعرض "رجّع حسابي" قبل أي حاجة
         if (profile && profile.deletion_scheduled_for) {
-            try { const m = await import('./account-delete.js?v=32'); m.showDeletionScheduledGate(profile); } catch (e) { /* تجاهل */ }
+            try { const m = await import('./account-delete.js?v=34'); m.showDeletionScheduledGate(profile); } catch (e) { /* تجاهل */ }
         }
         const nameEl = document.getElementById('header-user-name');
         const avatarEl = document.getElementById('header-avatar-fallback');
@@ -412,6 +447,7 @@ async function loadHeaderProfile() {
             nameEl.textContent = profile.name || 'معلم';
             avatarEl.textContent = (profile.name || '؟').trim().charAt(0);
         }
+        saveShellHeader();
     } catch (e) {
         // تجاهل بصمت - الهيدر يظل بقيمة افتراضية
     }

@@ -1,7 +1,7 @@
 /**
  * pricing.js — v29.3: الأسعار والعرض ورسالة الاشتراك على واتساب (مكان واحد لكل الصفحات)
  */
-import { CONFIG } from './config.js?v=32';
+import { CONFIG } from './config.js?v=34';
 
 const P = CONFIG.PRICING;
 const fmt = (n) => Number(n).toLocaleString('en-US');

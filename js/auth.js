@@ -7,8 +7,8 @@
  * في كل مكان (وليس window.supabase، لأن هذا الأخير هو مكتبة supabase-js
  * الخام القادمة من الـ CDN وليس عميلاً مهيّأً، وليس لديه خاصية .auth).
  */
-import { CONFIG } from './config.js?v=32';
-import { APIUtils, Storage, ErrorHandler, Validators, toLatinDigits } from './utils.js?v=32';
+import { CONFIG } from './config.js?v=34';
+import { APIUtils, Storage, ErrorHandler, Validators, toLatinDigits } from './utils.js?v=34';
 
 /** fetch بمهلة: على النت الضعيف الدخول/التسجيل مايفضلش يلف للأبد */
 async function fetchWithTimeout(url, options = {}, ms = 12000) {
@@ -29,6 +29,16 @@ function showOfflineRetry() {
         el.querySelector('button').addEventListener('click', () => location.reload());
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', show); else show();
+}
+
+/** v29.5: آخر جلسة محفوظة على الجهاز (حتى لو التوكن خلص) — للفتح من غير نت بس */
+function offlineSession() {
+    try {
+        const ref = new URL(CONFIG.SUPABASE_URL).hostname.split('.')[0];
+        const raw = JSON.parse(localStorage.getItem(`sb-${ref}-auth-token`) || 'null');
+        const sess = raw && (raw.currentSession || raw);
+        return sess && sess.user && sess.user.id ? sess : null;
+    } catch (e) { return null; }
 }
 
 const isNetworkError = (err) => !!err && /fetch|network|retryable|timeout|load failed/i.test(`${err.name || ''} ${err.message || ''}`);
@@ -382,6 +392,13 @@ export const Auth = {
      * يتم استدعاؤها عند تسجيل الدخول أو تحديث الصفحة
      */
     async bootstrapSession() {
+        // v29.4: طلب واحد بس في نفس الوقت (السايدبار و requireAuth كانوا بيبعتوا طلبين مع بعض)
+        if (this._bootPromise) return this._bootPromise;
+        this._bootPromise = this._bootstrapSessionNow();
+        try { return await this._bootPromise; } finally { this._bootPromise = null; }
+    },
+
+    async _bootstrapSessionNow() {
         try {
             const { data: { session }, error } = await window.supabaseClient.auth.getSession();
 
@@ -421,6 +438,10 @@ export const Auth = {
     },
 
     /** بيانات الجلسة من الذاكرة المؤقتة (5 دقايق) بدل طلب n8n في كل صفحة */
+    profileCacheAge() {
+        try { const c = JSON.parse(sessionStorage.getItem(PROFILE_CACHE_KEY) || 'null'); return c ? Date.now() - c.ts : Infinity; } catch (e) { return Infinity; }
+    },
+
     cachedProfile(userId) {
         try {
             const raw = sessionStorage.getItem(PROFILE_CACHE_KEY);
@@ -435,6 +456,15 @@ export const Auth = {
      * دالة تسجيل الخروج (Logout)
      */
     async signOut() {
+        // v29.5: الشريط والهيدر المحفوظين فيهم اسم المدرس: نمسحهم عشان الحساب اللي بعده مايشوفهوش
+        try { localStorage.removeItem('tm_shell_v1'); } catch (e) { /* تجاهل */ }
+        // v29.5: اللي مستني يتبعت يتبعت الأول (بحد أقصى 4 ثواني)، وبعدين نمسح بيانات المدرس المحفوظة للعرض من غير نت
+        try {
+            const m = await import('./api.js?v=34');
+            if (m.Outbox && m.Outbox.count()) await Promise.race([m.Outbox.flush(), new Promise((r) => setTimeout(r, 4000))]);
+            if (m.OfflineCache) m.OfflineCache.clear();
+            ['tm_outbox_v1', 'tm_rem_sched_v1', 'tm_rem_shown_v1'].forEach((k) => localStorage.removeItem(k));
+        } catch (e) { /* تجاهل */ }
         // من غير نت: الخروج من الخادم بيفشل، فبنخرج من الجهاز ده على الأقل (وإلا صفحة الدخول ترجّعه للرئيسية)
         try {
             const { error } = await window.supabaseClient.auth.signOut();
@@ -483,6 +513,19 @@ export const Auth = {
             sessErr = res.error || null;
         } catch (e) { sessErr = e; }
         if (!session) {
+            // v29.5: مفيش نت والجلسة محتاجة تجديد: البرنامج يفتح بآخر بيانات للمدرس نفسه (قراءة + تسجيل على الجهاز)
+            // والجلسة بتتجدد لوحدها أول ما النت يرجع
+            if (isNetworkError(sessErr) || (typeof navigator !== 'undefined' && navigator.onLine === false)) {
+                const off = offlineSession();
+                if (off) {
+                    const stored = Storage.get('user_profile');
+                    const profile = stored && (!stored.id || stored.id === off.user.id) ? stored : null;
+                    if (profile) {
+                        window.addEventListener('online', () => { try { window.supabaseClient.auth.getSession(); } catch (e) { /* تجاهل */ } }, { once: true });
+                        return { session: off, profile, offline: true };
+                    }
+                }
+            }
             // النت ضعيف وتجديد الجلسة فشل: مانطلّعش المدرس برّه، نقوله يجرّب تاني
             if (isNetworkError(sessErr)) {
                 ErrorHandler.showError('النت ضعيف ومقدرناش نتأكد من حسابك. اتأكد من النت وحمّل الصفحة تاني.', 8000);
@@ -497,8 +540,17 @@ export const Auth = {
         // السرعة: لو بيانات الجلسة متخزنة من أقل من 5 دقايق نستخدمها فورًا ونحدّثها في الخلفية
         const cached = this.cachedProfile(session.user && session.user.id);
         if (cached) {
-            this.bootstrapSession();
+            // v29.4: التحديث في الخلفية مرة كل دقيقتين بس، مش مع كل فتحة صفحة
+            if (this.profileCacheAge() > 2 * 60 * 1000) this.bootstrapSession();
             return { session, profile: cached };
+        }
+        // v29.5: أول فتحة للتطبيق (الكاش اللي فوق بيتمسح لما التطبيق يتقفل): لو عندنا آخر ملف للمدرس نفسه
+        // نفتح بيه على طول ونحدّثه في الخلفية، بدل ما الصفحة كلها تستنى bootstrap-session (حوالي ثانية ونص على الموبايل)
+        const known = Storage.get('user_profile');
+        const uidNow = session.user && session.user.id;
+        if (known && known.id && known.id === uidNow && known.subject && !known.deletion_scheduled_for) {
+            this.bootstrapSession();
+            return { session, profile: known };
         }
         let profile = await this.bootstrapSession();
         // الخادم ماردّش (نت ضعيف): نستخدم آخر بيانات محفوظة لنفس المدرس بدل صفحة فاضية

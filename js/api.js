@@ -3,8 +3,8 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=32';
-import { APIUtils, Storage } from './utils.js?v=32';
+import { CONFIG } from './config.js?v=34';
+import { APIUtils, Storage } from './utils.js?v=34';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -72,6 +72,8 @@ async function apiCall(endpoint, method = 'GET', body = null, options = {}) {
 
         // 5. معالجة الاستجابة
         const data = await APIUtils.handleResponse(response);
+        if ((method === 'GET' || options.offlineCache) && !options.noOfflineCache) OfflineCache.put(cacheKeyOf(endpoint, method, body), data, session.user && session.user.id);
+        markOnline();
 
         return data;
 
@@ -86,6 +88,13 @@ async function apiCall(endpoint, method = 'GET', body = null, options = {}) {
             window.location.href = 'login.html';
         }
 
+        // v29.5: مفيش نت: صفحات القراءة بتعرض آخر بيانات اتحمّلت بدل رسالة خطأ
+        if ((method === 'GET' || options.offlineCache) && isNetworkFailure(error) && !options.noOfflineCache) {
+            const cached = OfflineCache.get(cacheKeyOf(endpoint, method, body));
+            if (cached !== undefined) { markOffline(true); return cached; }
+        }
+        if (isNetworkFailure(error)) markOffline(false);
+
         failure = error;
         throw error;
     } finally {
@@ -94,6 +103,112 @@ async function apiCall(endpoint, method = 'GET', body = null, options = {}) {
         // تتبع: الطلبات البطيئة/الفاشلة (js/track.js)
         try { if (window.__tmTrackApi) window.__tmTrackApi(endpoint, Date.now() - t0, failure); } catch (e) { /* تجاهل */ }
     }
+}
+
+// ============================================================ v29.5: من غير نت
+// طلبات القراءة اللي بتتبعت POST (المجموعات مثلًا) مفتاحها فيه نوع الطلب
+const cacheKeyOf = (endpoint, method, body) => (method === 'GET' || !body ? endpoint : `${endpoint}#${JSON.stringify(body)}`);
+
+/** الطلب فشل بسبب النت (مش رفض من الخادم) */
+export function isNetworkFailure(err) {
+    const code = err && err.error && err.error.code;
+    return code === 'NETWORK' || code === 'TIMEOUT' || (typeof navigator !== 'undefined' && navigator.onLine === false && !(err && err.status));
+}
+function emitNet(detail) { try { window.dispatchEvent(new CustomEvent('tm:net', { detail })); } catch (e) { /* تجاهل */ } }
+function markOffline(fromCache) { emitNet({ online: false, fromCache: !!fromCache }); }
+function markOnline() { if (window.__tmNetDown) emitNet({ online: true }); }
+
+/** آخر رد لكل طلب قراءة (GET) محفوظ على الجهاز: بيتعرض لو النت قطع */
+const OfflineCache = (() => {
+    const PREFIX = 'tm_oc_';
+    const INDEX = 'tm_oc_index_v1';
+    const MAX_ITEMS = 30;
+    const MAX_BYTES = 350 * 1024;
+    const uid = () => { try { const p = JSON.parse(localStorage.getItem('user_profile') || 'null'); return (p && p.id) || ''; } catch (e) { return ''; } };
+    const keyOf = (endpoint, u) => PREFIX + (u || uid()) + ':' + endpoint;
+    const readIndex = () => { try { return JSON.parse(localStorage.getItem(INDEX) || '[]'); } catch (e) { return []; } };
+    return {
+        put(endpoint, data, u) {
+            try {
+                const txt = JSON.stringify({ at: Date.now(), data });
+                if (txt.length > MAX_BYTES) return;
+                const k = keyOf(endpoint, u);
+                localStorage.setItem(k, txt);
+                let idx = readIndex().filter((x) => x !== k); idx.push(k);
+                while (idx.length > MAX_ITEMS) { const old = idx.shift(); try { localStorage.removeItem(old); } catch (e) { /* تجاهل */ } }
+                localStorage.setItem(INDEX, JSON.stringify(idx));
+            } catch (e) {
+                // التخزين اتملى: نمسح الأقدم ونكمّل من غير كاش
+                try { const idx = readIndex(); const old = idx.shift(); if (old) localStorage.removeItem(old); localStorage.setItem(INDEX, JSON.stringify(idx)); } catch (er) { /* تجاهل */ }
+            }
+        },
+        get(endpoint) {
+            try { const c = JSON.parse(localStorage.getItem(keyOf(endpoint)) || 'null'); return c ? c.data : undefined; } catch (e) { return undefined; }
+        },
+        getEntry(endpoint) {
+            try { return JSON.parse(localStorage.getItem(keyOf(endpoint)) || 'null'); } catch (e) { return null; }
+        },
+        clear() { try { readIndex().forEach((k) => localStorage.removeItem(k)); localStorage.removeItem(INDEX); } catch (e) { /* تجاهل */ } }
+    };
+})();
+export { OfflineCache };
+
+/**
+ * طابور "هيتبعت لما النت يرجع": للعمليات اللي الخادم بيعرف يمنع تكرارها (client_request_id)
+ * زي تسجيل الحصة والغياب. بيتحفظ على الجهاز، فحتى لو المدرس قفل البرنامج بيتبعت أول ما يفتحه والنت شغال.
+ */
+export const Outbox = (() => {
+    const KEY = 'tm_outbox_v1';
+    let flushing = null;
+    const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
+    const write = (list) => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { /* تجاهل */ } emit(); };
+    const emit = () => { try { window.dispatchEvent(new CustomEvent('tm:outbox', { detail: { count: read().length } })); } catch (e) { /* تجاهل */ } };
+    const toast = (msg, ok = true) => import('./utils.js?v=34').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
+    return {
+        list: read,
+        count: () => read().length,
+        add(item) {
+            const list = read();
+            const id = item.id || (item.body && item.body.client_request_id) || String(Date.now()) + Math.random().toString(36).slice(2);
+            const next = list.filter((x) => x.id !== id);
+            next.push({ id, endpoint: item.endpoint, method: item.method || 'POST', body: item.body, label: item.label || 'التسجيل', at: Date.now(), tries: 0 });
+            write(next);
+            return id;
+        },
+        async flush() {
+            if (flushing) return flushing;
+            if (typeof navigator !== 'undefined' && navigator.onLine === false) return 0;
+            flushing = (async () => {
+                let sent = 0;
+                for (const it of read()) {
+                    try {
+                        await apiCall(it.endpoint, it.method, it.body, { timeoutMs: 25000 });
+                        write(read().filter((x) => x.id !== it.id));
+                        sent++;
+                        try { window.dispatchEvent(new CustomEvent('tm:outbox-sent', { detail: it })); } catch (e) { /* تجاهل */ }
+                    } catch (err) {
+                        if (isNetworkFailure(err)) break;   // النت لسه مش ثابت: نكمّل بعدين
+                        const tries = (it.tries || 0) + 1;
+                        const server5xx = err && err.status >= 500;
+                        if (server5xx && tries < 5) { write(read().map((x) => (x.id === it.id ? { ...x, tries } : x))); break; }
+                        write(read().filter((x) => x.id !== it.id));
+                        toast(`مقدرناش نحفظ "${it.label}": ${(err && err.error && err.error.message) || 'حصل خطأ'}. سجّلها تاني من فضلك.`, false);
+                    }
+                }
+                if (sent) toast(sent === 1 ? 'رجع النت واتبعت اللي كان مستني ✓' : `رجع النت واتبعت ${sent} حاجات كانت مستنية ✓`);
+                return sent;
+            })();
+            try { return await flushing; } finally { flushing = null; }
+        }
+    };
+})();
+
+if (typeof window !== 'undefined' && !window.__tmOutboxWired) {
+    window.__tmOutboxWired = true;
+    window.addEventListener('online', () => { setTimeout(() => Outbox.flush(), 1500); });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && Outbox.count()) Outbox.flush(); });
+    setTimeout(() => { if (Outbox.count()) Outbox.flush(); }, 2500);
+    setInterval(() => { if (Outbox.count()) Outbox.flush(); }, 60000);
 }
 
 let billingDueCache = null;
@@ -111,7 +226,7 @@ async function getSessionOrRedirect() {
     const session = res && res.data ? res.data.session : null;
     const err = res ? res.error : null;
     if (session) return session;
-    if (err && /fetch|network|retryable|timeout/i.test(`${err.name || ''} ${err.message || ''}`)) {
+    if ((err && /fetch|network|retryable|timeout/i.test(`${err.name || ''} ${err.message || ''}`)) || (typeof navigator !== 'undefined' && navigator.onLine === false)) {
         throw { error: { code: 'NETWORK', message: 'تعذّر الاتصال بالخادم. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.' } };
     }
     window.location.href = 'login.html';
@@ -443,7 +558,7 @@ export const api = {
     /** كل طلبات المجموعات بتروح لنفس الـ workflow (action). 404 = الـ workflow لسه متستوردش */
     async groupsCall(payload) {
         try {
-            return await apiCall(CONFIG.API_ENDPOINTS.GROUPS.API, 'POST', payload);
+            return await apiCall(CONFIG.API_ENDPOINTS.GROUPS.API, 'POST', payload, { offlineCache: ['list', 'get'].includes(payload && payload.action) });
         } catch (error) {
             if (isMissingWebhook(error)) throw { error: { code: 'GROUPS_NOT_READY', message: 'ميزة المجموعات لسه ماتفعّلتش على الخادم. كلّم الدعم.' }, status: 404 };
             throw error;
@@ -460,7 +575,7 @@ export const api = {
     async deleteGroup(groupId) { return await this.groupsCall({ action: 'delete', group_id: groupId }); },
     async groupSession(payload) {
         try {
-            return await apiCall(CONFIG.API_ENDPOINTS.GROUPS.SESSION, 'POST', payload);
+            return await apiCall(CONFIG.API_ENDPOINTS.GROUPS.SESSION, 'POST', payload, { offlineCache: payload && payload.action === 'prepare' });
         } catch (error) {
             if (isMissingWebhook(error)) throw { error: { code: 'GROUPS_NOT_READY', message: 'ميزة المجموعات لسه ماتفعّلتش على الخادم. كلّم الدعم.' }, status: 404 };
             throw error;
@@ -480,7 +595,7 @@ export const api = {
     // ------------------------------------------------------------------ v27: الاشتراك الشهري للمجموعة
     async groupBillingCall(payload) {
         try {
-            return await apiCall(CONFIG.API_ENDPOINTS.GROUPS.BILLING, 'POST', payload);
+            return await apiCall(CONFIG.API_ENDPOINTS.GROUPS.BILLING, 'POST', payload, { offlineCache: payload && payload.action === 'month' });
         } catch (error) {
             if (isMissingWebhook(error)) throw { error: { code: 'GROUPS_NOT_READY', message: 'الاشتراك الشهري للمجموعات لسه ماتفعّلش على الخادم (group-billing). كلّم الدعم.' }, status: 404 };
             throw error;
@@ -685,10 +800,16 @@ export const api = {
      * لو مفيش حصة جارية. action: 'discard' بيحذف حصة جارية بدأت بالغلط.
      * لو workflow الجديد لسه متستوردش في n8n بنرجع للطريقة القديمة (finalize-lesson).
      */
-    async saveLesson(data) {
+    async saveLesson(data, { queueOffline = false, label = '' } = {}) {
         try {
             return await apiCall(CONFIG.API_ENDPOINTS.LESSONS.SAVE, 'POST', data);
         } catch (error) {
+            // v29.5: من غير نت: الحصة/الغياب بيتحفظوا على الجهاز ويتبعتوا لوحدهم أول ما النت يرجع
+            // (آمن: الخادم بيعرف نفس الطلب من client_request_id فمابيتسجلش مرتين)
+            if (queueOffline && data && data.client_request_id && isNetworkFailure(error)) {
+                Outbox.add({ endpoint: CONFIG.API_ENDPOINTS.LESSONS.SAVE, body: data, label: label || 'الحصة' });
+                return { queued: true, lesson_id: data.lesson_id || null };
+            }
             if (!isMissingWebhook(error) || data.action === 'discard' || data.action === 'delete') throw error;
             // الخادم القديم: الغياب بيتسجل كإلغاء حصة النهارده بس
             if (data.action === 'absence') return await apiCall(CONFIG.API_ENDPOINTS.LESSONS.CANCEL, 'POST', { student_id: data.student_id });
