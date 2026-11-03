@@ -188,7 +188,8 @@
     <script type="module" src="js/config.js?v=34"></script>
     <script type="module">
         import { Auth } from './js/auth.js?v=34';
-        import { api } from './js/api.js?v=34';
+        import { api, OfflineCache } from './js/api.js?v=34';
+        import { CONFIG } from './js/config.js?v=34';
         import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=34';
         import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=34';
         import { icon } from './js/icons.js?v=34';
@@ -504,62 +505,99 @@
         }
 
         let reminderCardShown = false;
-        async function loadDashboard() {
+
+        // v29.6: آخر نسخة من الرئيسية محفوظة على الجهاز (api.js بيحفظ كل طلب GET) - بنستخدمها بس لو من النهارده
+        function todayCached(endpoint) {
             try {
-                // السرعة: الطلبين بيتبعتوا مع بعض بدل ما واحد يستنى التاني
-                const todayPromise = api.getTodayLessons().catch(() => null);
-                // v29.4: الكروت اللي مش محتاجة بيانات الرئيسية بتتطلب من أول لحظة
-                // (كانت بتستنى get-dashboard يخلص الأول، وده كان بيزوّد 3 ثواني على الموبايل)
-                const sideLoads = [loadBillingDue(), loadIncomeCard(), loadTodayEvents(), loadLibraryCard()];
-                const data = await api.getDashboard();
-                dashboardData = data;
+                const entry = OfflineCache.getEntry(endpoint);
+                if (!entry || !entry.at || entry.data == null) return null;
+                if (new Date(entry.at).toDateString() !== new Date().toDateString()) return null;
+                return JSON.parse(JSON.stringify(entry.data));
+            } catch (e) { return null; }
+        }
 
-                // نجيب حالة حصص اليوم الفعلية (فات ميعادها/قيد التنفيذ/تمت/اتلغت)
-                // من endpoint منفصل. لو فشل (مثلاً لسه ملهوش استيراد في n8n)
-                // بنكمل عادي من غير تمييز حالات بدل ما نكسر الداشبورد كله.
-                todayStatusMap = {};
-                try {
-                    const todayStatus = (await todayPromise) || {};
-                    // قايمة "حصص اليوم" من get-today-lessons (بتوقيت القاهرة وبتحترم التكرار وتاريخ البداية)
-                    // بدل قايمة get-dashboard القديمة اللي كانت بتعرض حصة "مرة واحدة" من أسبوع فات أو موعد لسه مابدأش
-                    if (Array.isArray(todayStatus.lessons)) {
-                        const topicOf = new Map((data.todayLessons || []).map((l) => [String(l.student_id), l.current_topic]));
-                        data.todayLessons = todayStatus.lessons.map((r) => ({
-                            ...r,
-                            current_topic: r.current_topic != null ? r.current_topic : (topicOf.get(String(r.student_id)) || null)
-                        }));
-                        data.todayLessonsCount = data.todayLessons.length;
-                    }
-                    // حصص المجموعات النهارده (v26): بتتعرض مع الحصص الخاصة وبتتحسب في العدد
-                    data.todayGroups = Array.isArray(todayStatus.groups) ? todayStatus.groups : [];
-                    if (data.todayGroups.length) data.todayLessonsCount = (data.todayLessons || []).length + data.todayGroups.length;
-                    (todayStatus.lessons || []).forEach(item => {
-                        const info = {
-                            status: item.lesson_status || null,
-                            lessonId: item.lesson_id || null,
-                            attendance: item.attendance || null
-                        };
-                        todayStatusMap[slotKey(item.student_id, item.start_time)] = info;
-                        // احتياطي للنسخة القديمة من الخادم: آخر حالة للطالب
-                        if (!todayStatusMap[item.student_id] || info.status) todayStatusMap[item.student_id] = info;
-                    });
-                    reconcileLiveLessons(todayStatus.lessons);
-                } catch (statusError) {
-                    todayStatusMap = {};
+        // دمج بيانات الرئيسية مع حالة حصص اليوم ورسمها (بتتنادى للنسخة المحفوظة وللنسخة الجديدة)
+        function applyDashboard(data, todayStatusRaw, { fromCache = false } = {}) {
+            dashboardData = data;
+
+            // نجيب حالة حصص اليوم الفعلية (فات ميعادها/قيد التنفيذ/تمت/اتلغت)
+            // من endpoint منفصل. لو فشل (مثلاً لسه ملهوش استيراد في n8n)
+            // بنكمل عادي من غير تمييز حالات بدل ما نكسر الداشبورد كله.
+            todayStatusMap = {};
+            try {
+                const todayStatus = todayStatusRaw || {};
+                // قايمة "حصص اليوم" من get-today-lessons (بتوقيت القاهرة وبتحترم التكرار وتاريخ البداية)
+                // بدل قايمة get-dashboard القديمة اللي كانت بتعرض حصة "مرة واحدة" من أسبوع فات أو موعد لسه مابدأش
+                if (Array.isArray(todayStatus.lessons)) {
+                    const topicOf = new Map((data.todayLessons || []).map((l) => [String(l.student_id), l.current_topic]));
+                    data.todayLessons = todayStatus.lessons.map((r) => ({
+                        ...r,
+                        current_topic: r.current_topic != null ? r.current_topic : (topicOf.get(String(r.student_id)) || null)
+                    }));
+                    data.todayLessonsCount = data.todayLessons.length;
                 }
-
-                renderTopHeader({
-                    title: `${greeting()} يا ${Formatters.escapeHtml((data.teacher?.name || '').split(' ')[0] || '')} 🌸`,
-                    subtitle: dateStr()
+                // حصص المجموعات النهارده (v26): بتتعرض مع الحصص الخاصة وبتتحسب في العدد
+                data.todayGroups = Array.isArray(todayStatus.groups) ? todayStatus.groups : [];
+                if (data.todayGroups.length) data.todayLessonsCount = (data.todayLessons || []).length + data.todayGroups.length;
+                (todayStatus.lessons || []).forEach(item => {
+                    const info = {
+                        status: item.lesson_status || null,
+                        lessonId: item.lesson_id || null,
+                        attendance: item.attendance || null
+                    };
+                    todayStatusMap[slotKey(item.student_id, item.start_time)] = info;
+                    // احتياطي للنسخة القديمة من الخادم: آخر حالة للطالب
+                    if (!todayStatusMap[item.student_id] || info.status) todayStatusMap[item.student_id] = info;
                 });
-                renderStats(data);
-                renderTodayLessons(data.todayLessons, data.todayGroups);
-                renderTrialBanner();
-                updateAiCardHint();
-                try { if (data.teacher && data.teacher.subject) localStorage.setItem('tm_teacher_subject', data.teacher.subject); } catch (e) { /* تجاهل */ }
+                // النسخة المحفوظة ممكن تكون قديمة بدقايق: مانشيلش حصة شغالة بناءً عليها
+                if (!fromCache) reconcileLiveLessons(todayStatus.lessons);
+            } catch (statusError) {
+                todayStatusMap = {};
+            }
 
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('content').style.display = 'block';
+            renderTopHeader({
+                title: `${greeting()} يا ${Formatters.escapeHtml((data.teacher?.name || '').split(' ')[0] || '')} 🌸`,
+                subtitle: dateStr()
+            });
+            renderStats(data);
+            renderTodayLessons(data.todayLessons, data.todayGroups);
+            // لحد ما البيانات الجديدة توصل: أزرار حصص اليوم مقفولة (عشان محدش يبدأ حصة اتسجلت من جهاز تاني)
+            const list = document.getElementById('today-lessons-list');
+            if (list) {
+                list.style.opacity = fromCache ? '0.75' : '';
+                list.style.pointerEvents = fromCache ? 'none' : '';
+                list.setAttribute('aria-busy', fromCache ? 'true' : 'false');
+            }
+            renderTrialBanner();
+            updateAiCardHint();
+            try { if (data.teacher && data.teacher.subject) localStorage.setItem('tm_teacher_subject', data.teacher.subject); } catch (e) { /* تجاهل */ }
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+        }
+
+        let firstLoad = true;
+        async function loadDashboard() {
+            // v29.6: أول فتحة للصفحة: نعرض آخر نسخة محفوظة من النهارده فورًا، والجديدة بتستبدلها أول ما توصل
+            let shownFromCache = false;
+            if (firstLoad) {
+                firstLoad = false;
+                const cachedDash = todayCached(CONFIG.API_ENDPOINTS.DASHBOARD.GET);
+                if (cachedDash) {
+                    try {
+                        applyDashboard(cachedDash, todayCached(CONFIG.API_ENDPOINTS.LESSONS.GET_TODAY), { fromCache: true });
+                        shownFromCache = true;
+                    } catch (e) { shownFromCache = false; }
+                }
+            }
+            try {
+                // السرعة: الطلبين المهمين بيتبعتوا مع بعض بدل ما واحد يستنى التاني
+                const todayPromise = api.getTodayLessons().catch(() => null);
+                const data = await api.getDashboard();
+                applyDashboard(data, await todayPromise);
+                // v29.6: الكروت الجانبية بتتطلب بعد ما الحصص والأرقام تظهر، مش في نفس اللحظة:
+                // لما 10 طلبات بيتبعتوا مع بعض لـ n8n كلهم بيبطّأوا بعض، والمحتوى الأساسي كان بيستنى معاهم
+                const sideLoads = [loadBillingDue(), loadIncomeCard(), loadTodayEvents(), loadLibraryCard()];
                 await Promise.all([refreshOnboarding(), ...sideLoads]);
                 // v28: لو المدرس لسه ماختارش مواعيد التذكير (مرة واحدة)
                 if (!reminderCardShown) { reminderCardShown = true; mountReminderSetupCard(document.getElementById('reminder-setup'), { onEnablePush: requestPermission }); }
@@ -574,6 +612,8 @@
                 }
             } catch (err) {
                 ErrorHandler.showError(ErrorHandler.getErrorMessage(err));
+                // النسخة المحفوظة ظاهرة: نسيبها (من غير أزرار الحصص) بدل ما نبدّلها برسالة خطأ
+                if (shownFromCache) return;
                 const ld = document.getElementById('loading');
                 ld.innerHTML = 'تعذّر تحميل الصفحة. اتأكد من النت. <button type="button" class="btn btn-sm" id="dash-retry">حاول تاني</button>';
                 document.getElementById('dash-retry').addEventListener('click', () => { ld.textContent = 'جاري التحميل...'; loadDashboard(); });
