@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=34">
+    <link rel="stylesheet" href="css/style.css?v=37">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -56,7 +56,7 @@
             .login-container { padding: 1.75rem 1.25rem; }
         }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=34">
+    <link rel="stylesheet" href="css/v29.css?v=37">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -107,12 +107,12 @@
     <div class="oauth-overlay" id="oauth-overlay" hidden><div class="spinner"></div><span>جاري الدخول بحساب جوجل...</span></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=34"></script>
+    <script type="module" src="js/config.js?v=37"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=34';
-        import { Validators, ErrorHandler } from './js/utils.js?v=34';
-        import { icon } from './js/icons.js?v=34';
-        import { mountGoogleButton, handleOAuthReturn } from './js/google-auth.js?v=34';
+        import { Auth } from './js/auth.js?v=37';
+        import { Validators, ErrorHandler } from './js/utils.js?v=37';
+        import { icon } from './js/icons.js?v=37';
+        import { mountGoogleButton, handleOAuthReturn } from './js/google-auth.js?v=37';
 
         document.getElementById('login-logo').innerHTML = icon('graduationCap', { size: 28 });
         if (new URLSearchParams(window.location.search).get('reset') === '1') document.getElementById('reset-notice').style.display = 'block';
@@ -178,6 +178,6 @@
             }
         });
     </script>
-    <script src="js/pwa-install.js?v=34" defer></script>
+    <script src="js/pwa-install.js?v=37" defer></script>
 </body>
 </html>

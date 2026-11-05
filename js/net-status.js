@@ -4,7 +4,7 @@
  * - "⏳ 2 هيتبعتوا أول ما النت يرجع": عدد العمليات المستنية في الطابور (js/api.js → Outbox)
  * - "✓ رجع النت": بيختفي لوحده
  */
-import { Outbox } from './api.js?v=34';
+import { Outbox } from './api.js?v=37';
 
 const STYLE = `
 .tm-net { position: fixed; z-index: 3200; inset-inline: 0; margin: 0 auto; width: fit-content; max-width: calc(100vw - 24px);

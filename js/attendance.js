@@ -6,13 +6,13 @@
  * لو فيه حصة جارية (lessonId) بتتحوّل هي نفسها لغياب بدل ما يتعمل صف جديد.
  */
 
-import { api } from './api.js?v=34';
-import { Formatters, ErrorHandler } from './utils.js?v=34';
-import { icon } from './icons.js?v=34';
-import { localDateISO } from './lesson-utils.js?v=34';
-import { whatsappUrl } from './billing.js?v=34';
-import { saveWithConflictCheck } from './groups-utils.js?v=34';
-import { DAY_NAMES, formatClock12, timeToMinutes } from './calendar-utils.js?v=34';
+import { api } from './api.js?v=37';
+import { Formatters, ErrorHandler } from './utils.js?v=37';
+import { icon } from './icons.js?v=37';
+import { localDateISO, addDaysISO as addDaysFromToday } from './lesson-utils.js?v=37';
+import { whatsappUrl } from './billing.js?v=37';
+import { saveWithConflictCheck } from './groups-utils.js?v=37';
+import { DAY_NAMES, formatClock12, timeToMinutes } from './calendar-utils.js?v=37';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 
@@ -68,11 +68,8 @@ function dayLabel(iso) {
         return `${DAY_NAMES[d.getDay()]} ${d.toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long' })}`;
     } catch (e) { return iso; }
 }
-function addDaysISO(n) {
-    const d = new Date();
-    d.setDate(d.getDate() + n);
-    return localDateISO(d);
-}
+// v29.7: من النهارده الحقيقي (مش ساعة الجهاز)
+const addDaysISO = (n) => addDaysFromToday(n);
 
 export function openAttendanceModal(opts) {
     const { studentId, studentName = '', lessonId = null, onSaved } = opts || {};

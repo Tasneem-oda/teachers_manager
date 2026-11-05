@@ -1,15 +1,15 @@
 /**
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
-import { Auth } from './auth.js?v=34';
-import { icon } from './icons.js?v=34';
-import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=34';
-import { CONFIG } from './config.js?v=34';
-import { openSuggestionModal } from './suggestions.js?v=34';
-import { mountFloatingLesson } from './live-lesson.js?v=34';
-import { initTracking } from './track.js?v=34';
-import { askChoice } from './utils.js?v=34';
-import { priceFor, subscribeMessage, waUrl, currentUserInfo, offerActive, annualAvailable } from './pricing.js?v=34';
+import { Auth } from './auth.js?v=37';
+import { icon } from './icons.js?v=37';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=37';
+import { CONFIG } from './config.js?v=37';
+import { openSuggestionModal } from './suggestions.js?v=37';
+import { mountFloatingLesson } from './live-lesson.js?v=37';
+import { initTracking } from './track.js?v=37';
+import { askChoice } from './utils.js?v=37';
+import { priceFor, subscribeMessage, waUrl, currentUserInfo, offerActive, annualAvailable } from './pricing.js?v=37';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
@@ -37,7 +37,7 @@ let subFetchPromise = null;
 function fetchSubscriptionNow() {
     if (subFetchPromise) return subFetchPromise;
     subFetchPromise = (async () => {
-        const { api } = await import('./api.js?v=34');
+        const { api } = await import('./api.js?v=37');
         const data = await api.checkSubscription();
         try {
             sessionStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
@@ -48,6 +48,9 @@ function fetchSubscriptionNow() {
     return subFetchPromise;
 }
 
+// v29.6: الحالة القديمة بتتعرض على طول بس لو مش "مقفول" (عشان مدرس اشترك من شوية مايشوفش رسالة القفل)
+const usableStale = (data) => { try { return !!data && !computeSubscriptionState(data).locked; } catch (e) { return false; } };
+
 export async function getSubscriptionCached() {
     try {
         const raw = sessionStorage.getItem(SUB_CACHE_KEY);
@@ -55,10 +58,33 @@ export async function getSubscriptionCached() {
             const cached = JSON.parse(raw);
             const age = cached ? Date.now() - cached.ts : Infinity;
             if (age < SUB_CACHE_TTL_MS) return cached.data;
-            if (age < SUB_CACHE_STALE_MS) { fetchSubscriptionNow().catch(() => { /* تجاهل */ }); return cached.data; }
+            if (age < SUB_CACHE_STALE_MS && usableStale(cached.data)) { refreshSubscription(); return cached.data; }
         }
     } catch (e) { /* تجاهل تخزين تالف */ }
+    // آخر حالة رجعت مع بيانات المدرس (bootstrap-session) من فتحة فاتت
+    try {
+        const prof = JSON.parse(localStorage.getItem('user_profile') || 'null');
+        if (prof && prof.subscription && usableStale(prof.subscription)) { refreshSubscription(); return prof.subscription; }
+    } catch (e) { /* تجاهل */ }
+    // مفيش حالة محفوظة: bootstrap-session (اللي الصفحة محتاجاه كده كده) بيرجّع الاشتراك، فنستنى رده بدل طلب تاني
+    try {
+        const session = await Auth.getSession();
+        if (session) {
+            const prof = await (Auth._bootPromise || Auth.bootstrapSession());
+            if (prof && prof.subscription) return prof.subscription;
+        }
+    } catch (e) { /* نكمّل بالطريقة العادية */ }
     return fetchSubscriptionNow();
+}
+
+/** تحديث في الخلفية: من bootstrap-session (اللي بيرجّع الاشتراك) ولو مارجّعوش من check-subscription */
+let subRefreshAt = 0;
+function refreshSubscription() {
+    if (Date.now() - subRefreshAt < 60 * 1000) return;
+    subRefreshAt = Date.now();
+    Promise.resolve(Auth.bootstrapSession()).then((prof) => {
+        if (!(prof && prof.subscription)) fetchSubscriptionNow().catch(() => { /* تجاهل */ });
+    }).catch(() => { /* تجاهل */ });
 }
 
 // ------------------------------------------------------------------ v29.5: الشريط والهيدر يظهروا فورًا
@@ -422,8 +448,10 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
     loadHeaderProfile();
 
     // v29.5: حالة النت + تذكير الحصص من على الجهاز (بيشتغل من غير نت)
-    import('./net-status.js?v=34').then((m) => m.initNetStatus()).catch(() => { /* تجاهل */ });
-    const startReminders = () => import('./local-reminders.js?v=34').then((m) => m.initLocalReminders()).catch(() => { /* تجاهل */ });
+    import('./net-status.js?v=37').then((m) => m.initNetStatus()).catch(() => { /* تجاهل */ });
+    // v29.7: الوقت الصح من السيرفر (لو ساعة الجهاز غلط التذكيرات وتاريخ الحصص بيمشوا على الوقت الحقيقي)
+    import('./server-time.js?v=37').then((m) => m.initServerTime()).catch(() => { /* تجاهل */ });
+    const startReminders = () => import('./local-reminders.js?v=37').then((m) => m.initLocalReminders()).catch(() => { /* تجاهل */ });
     if ('requestIdleCallback' in window) requestIdleCallback(startReminders, { timeout: 3000 }); else setTimeout(startReminders, 1200);
 
     // تفعيل إشعارات Push (تذكير الحصص اليومي) - مرة واحدة بعد رسم الهيدر
@@ -439,7 +467,7 @@ async function loadHeaderProfile() {
         const profile = Auth.cachedProfile(session.user && session.user.id) || await Auth.bootstrapSession();
         // v28: الحساب مجدول للحذف؟ نعرض "رجّع حسابي" قبل أي حاجة
         if (profile && profile.deletion_scheduled_for) {
-            try { const m = await import('./account-delete.js?v=34'); m.showDeletionScheduledGate(profile); } catch (e) { /* تجاهل */ }
+            try { const m = await import('./account-delete.js?v=37'); m.showDeletionScheduledGate(profile); } catch (e) { /* تجاهل */ }
         }
         const nameEl = document.getElementById('header-user-name');
         const avatarEl = document.getElementById('header-avatar-fallback');

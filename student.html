@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=34">
+    <link rel="stylesheet" href="css/style.css?v=37">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -24,8 +24,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=34">
-    <link rel="stylesheet" href="css/groups.css?v=34">
+    <link rel="stylesheet" href="css/lessons.css?v=37">
+    <link rel="stylesheet" href="css/groups.css?v=37">
     <style>
         .loading { text-align: center; padding: 2rem; color: var(--primary); }
         .empty-state { text-align: center; padding: 2rem; color: var(--text-secondary); }
@@ -51,7 +51,7 @@
         .e-guard { background: #FAFAF7; border: 1px dashed #E2DCCB; border-radius: 12px; padding: 0.7rem 0.8rem 0.1rem; margin-bottom: 1rem; }
         .e-guard > p { margin: 0 0 0.5rem; font-size: 0.82rem; color: var(--text-secondary); }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=34">
+    <link rel="stylesheet" href="css/v29.css?v=37">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -242,22 +242,22 @@
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=34"></script>
+    <script type="module" src="js/config.js?v=37"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=34';
-        import { api } from './js/api.js?v=34';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=34';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=34';
-        import { icon } from './js/icons.js?v=34';
-        import { openStudentAppointments } from './js/student-appointments.js?v=34';
-        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=34';
-        import { openAttendanceModal } from './js/attendance.js?v=34';
-        import { openMonthlyReport } from './js/report.js?v=34';
-        import { showTips } from './js/tips.js?v=34';
-        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=34';
-        import { groupTitle, groupColorClass } from './js/groups-utils.js?v=34';
-        import { confirmDeleteStudent, confirmRemoveFromGroup, setStudentStatus } from './js/student-actions.js?v=34';
-        import { openRecordingLinkModal } from './js/recording.js?v=34';
+        import { Auth } from './js/auth.js?v=37';
+        import { api } from './js/api.js?v=37';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=37';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=37';
+        import { icon } from './js/icons.js?v=37';
+        import { openStudentAppointments } from './js/student-appointments.js?v=37';
+        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=37';
+        import { openAttendanceModal } from './js/attendance.js?v=37';
+        import { openMonthlyReport } from './js/report.js?v=37';
+        import { showTips } from './js/tips.js?v=37';
+        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=37';
+        import { groupTitle, groupColorClass } from './js/groups-utils.js?v=37';
+        import { confirmDeleteStudent, confirmRemoveFromGroup, setStudentStatus } from './js/student-actions.js?v=37';
+        import { openRecordingLinkModal } from './js/recording.js?v=37';
 
         renderSidebar('students');
         renderTopHeader({ title: 'ملف الطالب', subtitle: 'كل ما يخص الطالب في مكان واحد' });
@@ -806,6 +806,6 @@
 
         window.openBillingSetup = () => openBillingSetup({ student, view: billView }, billingCtx.onChange);
     </script>
-    <script src="js/pwa-install.js?v=34" defer></script>
+    <script src="js/pwa-install.js?v=37" defer></script>
 </body>
 </html>

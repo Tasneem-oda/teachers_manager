@@ -16,8 +16,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=34">
-    <link rel="stylesheet" href="css/lessons.css?v=34">
+    <link rel="stylesheet" href="css/style.css?v=37">
+    <link rel="stylesheet" href="css/lessons.css?v=37">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -186,7 +186,7 @@
             .day-strip .ds-name { font-size: 0.66rem; }
         }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=34">
+    <link rel="stylesheet" href="css/v29.css?v=37">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -347,20 +347,20 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=34"></script>
+    <script type="module" src="js/config.js?v=37"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=34';
-        import { api } from './js/api.js?v=34';
-        import { ErrorHandler, Formatters, uuidv4, askChoice } from './js/utils.js?v=34';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=34';
-        import { icon } from './js/icons.js?v=34';
-        import { mountTimePicker, refreshTimePicker, mountDayChips } from './js/form-widgets.js?v=34';
+        import { Auth } from './js/auth.js?v=37';
+        import { api } from './js/api.js?v=37';
+        import { ErrorHandler, Formatters, uuidv4, askChoice } from './js/utils.js?v=37';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=37';
+        import { icon } from './js/icons.js?v=37';
+        import { mountTimePicker, refreshTimePicker, mountDayChips } from './js/form-widgets.js?v=37';
         import {
             DAY_NAMES, DAY_SHORT, EVENT_COLORS, isoDate, parseDate, weekStart, addDays, sameDay, weekDays,
             minutesToTime, formatClock12, formatRange, durationText, formatDayDate, occursOn,
             lessonItem, eventItem, itemsOn, layoutLanes, findConflicts
-        } from './js/calendar-utils.js?v=34';
-        import { groupTitle, membersText } from './js/groups-utils.js?v=34';
+        } from './js/calendar-utils.js?v=37';
+        import { groupTitle, membersText } from './js/groups-utils.js?v=37';
 
         renderSidebar('schedule');
         renderTopHeader({ title: 'جدولي', subtitle: 'حصصك ومواعيدك في مكان واحد' });
@@ -429,6 +429,7 @@
                 students = studentsData.students || [];
                 schedules = schedulesData.schedules || [];
                 groupSchedules = schedulesData.group_schedules || [];
+                shareWithReminders(schedulesData);
                 eventsAvailable = ev !== null;
                 events = ev || [];
                 if (evFailed) {
@@ -929,6 +930,26 @@
         $('btn-delete').addEventListener('click', () => deleteItem('one'));
         $('btn-delete-group').addEventListener('click', () => deleteItem('group'));
 
+        // v29.8: تحديث في الخلفية (من غير شاشة تحميل ومن غير رسالة خطأ لو النت ضعيف)
+        async function refreshSilently() {
+            const [studentsData, schedulesData, ev] = await Promise.all([
+                api.getAllStudents(),
+                api.getSchedules(),
+                eventsAvailable ? api.getPersonalEvents().catch(() => events) : Promise.resolve(null)
+            ]);
+            students = studentsData.students || [];
+            schedules = schedulesData.schedules || [];
+            groupSchedules = schedulesData.group_schedules || [];
+            if (ev) events = ev;
+            rebuildItems();
+            render();
+            shareWithReminders(schedulesData);
+        }
+        // تذكير الحصص على الجهاز ياخد نفس الجدول (من غير ما يطلبه تاني)
+        function shareWithReminders(d) {
+            try { window.dispatchEvent(new CustomEvent('tm:schedules-data', { detail: d })); } catch (e) { /* تجاهل */ }
+        }
+
         async function reloadItems() {
             const [schedulesData, ev] = await Promise.all([
                 api.getSchedules(),
@@ -947,6 +968,8 @@
             const authInfo = await Auth.requireAuth();
             if (!authInfo) return;
             await loadData();
+            // v29.8: لو اتسجّل موعد من جهاز تاني (أو المدرس رجع للبرنامج) الجدول يتحدّث لوحده
+            import('./js/auto-refresh.js?v=37').then((m) => m.onAppResume(refreshSilently)).catch(() => { /* تجاهل */ });
             const addStudent = new URLSearchParams(location.search).get('add_student');
             if (addStudent) openItemModal({ type: 'lesson', date: selected });
             if (new URLSearchParams(location.search).get('add') === 'event') openItemModal({ type: 'event', date: selected });
@@ -954,6 +977,6 @@
             setInterval(() => { if (!document.querySelector('.modal.active')) render(); }, 60000);
         })();
     </script>
-    <script src="js/pwa-install.js?v=34" defer></script>
+    <script src="js/pwa-install.js?v=37" defer></script>
 </body>
 </html>

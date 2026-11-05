@@ -7,8 +7,8 @@
  * في كل مكان (وليس window.supabase، لأن هذا الأخير هو مكتبة supabase-js
  * الخام القادمة من الـ CDN وليس عميلاً مهيّأً، وليس لديه خاصية .auth).
  */
-import { CONFIG } from './config.js?v=34';
-import { APIUtils, Storage, ErrorHandler, Validators, toLatinDigits } from './utils.js?v=34';
+import { CONFIG } from './config.js?v=37';
+import { APIUtils, Storage, ErrorHandler, Validators, toLatinDigits } from './utils.js?v=37';
 
 /** fetch بمهلة: على النت الضعيف الدخول/التسجيل مايفضلش يلف للأبد */
 async function fetchWithTimeout(url, options = {}, ms = 12000) {
@@ -427,6 +427,11 @@ export const Auth = {
                 if (done) profile = await fetchProfile();
             }
             if (profile) {
+                // v29.6: bootstrap-session بيرجّع حالة الاشتراك كمان: نحفظها عشان السايدبار مايبعتش check-subscription لوحده
+                if (profile.subscription && typeof profile.subscription === 'object') {
+                    try { sessionStorage.setItem('tm_sub_cache_v1', JSON.stringify({ ts: Date.now(), data: profile.subscription })); } catch (e) { /* تجاهل */ }
+                    try { window.dispatchEvent(new CustomEvent('tm:subscription', { detail: profile.subscription })); } catch (e) { /* تجاهل */ }
+                }
                 Storage.set('user_profile', profile);
                 try { sessionStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({ ts: Date.now(), uid: session.user && session.user.id, data: profile })); } catch (e) { /* تجاهل */ }
             }
@@ -460,7 +465,7 @@ export const Auth = {
         try { localStorage.removeItem('tm_shell_v1'); } catch (e) { /* تجاهل */ }
         // v29.5: اللي مستني يتبعت يتبعت الأول (بحد أقصى 4 ثواني)، وبعدين نمسح بيانات المدرس المحفوظة للعرض من غير نت
         try {
-            const m = await import('./api.js?v=34');
+            const m = await import('./api.js?v=37');
             if (m.Outbox && m.Outbox.count()) await Promise.race([m.Outbox.flush(), new Promise((r) => setTimeout(r, 4000))]);
             if (m.OfflineCache) m.OfflineCache.clear();
             ['tm_outbox_v1', 'tm_rem_sched_v1', 'tm_rem_shown_v1'].forEach((k) => localStorage.removeItem(k));

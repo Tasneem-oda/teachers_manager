@@ -5,10 +5,10 @@
  * ودي أساس داشبورد المساهمين بعدين.
  */
 
-import { api } from './api.js?v=34';
-import { ErrorHandler } from './utils.js?v=34';
-import { icon } from './icons.js?v=34';
-import { CONFIG } from './config.js?v=34';
+import { api } from './api.js?v=37';
+import { ErrorHandler } from './utils.js?v=37';
+import { icon } from './icons.js?v=37';
+import { CONFIG } from './config.js?v=37';
 
 export function openSuggestionModal() {
     if (document.getElementById('tm-suggest-modal')) return;
