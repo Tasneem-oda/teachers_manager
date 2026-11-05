@@ -3,7 +3,8 @@
  * (أسماء المواد، التقييمات بالعربي، التواريخ النسبية، أقرب موعد قادم، مسودة الحصة)
  */
 
-import { Formatters } from './utils.js?v=34';
+import { Formatters } from './utils.js?v=37';
+import { appParts, clockOffset } from './server-time.js?v=37';
 
 export const SUBJECTS = {
     quran: 'القرآن الكريم',
@@ -107,12 +108,26 @@ export function attendanceStats(stats) {
 // ------------------------------------------------------------------ التواريخ
 const pad = (n) => String(n).padStart(2, '0');
 
-export function localDateISO(d = new Date()) {
+// v29.7: من غير تاريخ = النهارده "الحقيقي" بتوقيت مصر (حتى لو ساعة الجهاز أو منطقته الزمنية غلط)
+export function localDateISO(d) {
+    if (d === undefined) return appParts().ymd;
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-export function localTimeISO(d = new Date()) {
+export function localTimeISO(d) {
+    if (d === undefined) { const p = appParts(); return `${pad(p.h)}:${pad(p.m)}:${pad(p.s)}`; }
     return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+/** وقت متسجل بساعة الجهاز (Date.now()) ← تاريخه الحقيقي بتوقيت مصر */
+export const deviceMsToDateISO = (ms) => appParts(Number(ms) + clockOffset()).ymd;
+/** وقت جاي من السيرفر (مظبوط) ← تاريخه بتوقيت مصر */
+export const serverTimeToDateISO = (t) => { const ms = typeof t === 'number' ? t : Date.parse(t); return Number.isFinite(ms) ? appParts(ms).ymd : localDateISO(); };
+/** النهارده الحقيقي + عدد أيام */
+export function addDaysISO(n, from = localDateISO()) {
+    const [y, m, d] = from.split('-').map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d + n));
+    return dt.toISOString().slice(0, 10);
 }
 
 function startOfDay(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }

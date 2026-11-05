@@ -15,13 +15,14 @@
  *   وأي event بيتعمله push في dataLayer في أي مكان في البرنامج.
  */
 
-import { CONFIG } from './config.js?v=32';
-import { APIUtils } from './utils.js?v=32';
+import { CONFIG } from './config.js?v=37';
+import { APIUtils } from './utils.js?v=37';
 
 const QUEUE_KEY = 'tm_track_queue_v1';
 const SESSION_KEY = 'tm_track_session';
-const MAX_BATCH = 25;
-const FLUSH_MS = 15000;
+const MAX_BATCH = 50;
+// v29.4: كل دقيقة بدل كل 15 ثانية (أقل ضغط على n8n؛ ولو الصفحة اتقفلت الأحداث بتتبعت فورًا بـ beacon)
+const FLUSH_MS = 60000;
 const PROP_LIMIT = 1500;
 
 let token = null;
@@ -220,11 +221,14 @@ function trackClicks() {
 function trackErrors() {
     window.addEventListener('error', (e) => {
         if (!e || !e.message) return;
+        if (/Transition was (aborted|skipped)|ViewTransition/i.test(e.message)) return;
         track('js_error', { msg: String(e.message).slice(0, 80), src: String(e.filename || '').split('/').pop().slice(0, 40), line: e.lineno || 0 }, { gtm: false });
     });
     window.addEventListener('unhandledrejection', (e) => {
         const r = e && e.reason;
         const msg = r && (r.message || (r.error && r.error.code) || String(r));
+        // v29.5: إلغاء الانتقال الناعم بين الصفحات (تحويل سريع) مش عطل، ومشاكل النت ليها أحداثها الخاصة
+        if (/Transition was (aborted|skipped)|ViewTransition|^NETWORK$|^TIMEOUT$|^ABORTED$/i.test(String(msg || ''))) return;
         track('js_error', { msg: String(msg || 'promise').slice(0, 80), kind: 'promise' }, { gtm: false });
     });
     // رسالة خطأ ظهرت للمدرس (ErrorHandler.showError)

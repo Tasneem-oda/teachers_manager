@@ -5,10 +5,10 @@
  *   الفيديو بيتحفظ على جهاز المدرس (مفيش رفع ولا تكلفة تخزين).
  * • openRecordingLinkModal: لينك التسجيل بعد ما المدرس يرفعه على Drive/YouTube، ويتبعت لولي الأمر بضغطة.
  */
-import { api } from './api.js?v=34';
-import { ErrorHandler, Formatters } from './utils.js?v=34';
-import { icon } from './icons.js?v=34';
-import { whatsappUrl, recipientChooser } from './billing.js?v=34';
+import { api } from './api.js?v=37';
+import { ErrorHandler, Formatters } from './utils.js?v=37';
+import { icon } from './icons.js?v=37';
+import { whatsappUrl, recipientChooser } from './billing.js?v=37';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 

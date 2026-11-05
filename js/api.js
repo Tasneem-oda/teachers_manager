@@ -3,8 +3,8 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=34';
-import { APIUtils, Storage } from './utils.js?v=34';
+import { CONFIG } from './config.js?v=37';
+import { APIUtils, Storage } from './utils.js?v=37';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -74,6 +74,10 @@ async function apiCall(endpoint, method = 'GET', body = null, options = {}) {
         const data = await APIUtils.handleResponse(response);
         if ((method === 'GET' || options.offlineCache) && !options.noOfflineCache) OfflineCache.put(cacheKeyOf(endpoint, method, body), data, session.user && session.user.id);
         markOnline();
+        // v29.8: حفظ حاجة (حصة/موعد/طالب…): التابات التانية المفتوحة على نفس الجهاز تتحدّث على طول
+        if (method !== 'GET' && !options.offlineCache && !/track-events|notifications|ai-chat|assistant|ask-sources|prepare-lesson|owner-/i.test(endpoint)) {
+            import('./auto-refresh.js?v=37').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
+        }
 
         return data;
 
@@ -163,7 +167,7 @@ export const Outbox = (() => {
     const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
     const write = (list) => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { /* تجاهل */ } emit(); };
     const emit = () => { try { window.dispatchEvent(new CustomEvent('tm:outbox', { detail: { count: read().length } })); } catch (e) { /* تجاهل */ } };
-    const toast = (msg, ok = true) => import('./utils.js?v=34').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
+    const toast = (msg, ok = true) => import('./utils.js?v=37').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
     return {
         list: read,
         count: () => read().length,

@@ -9,8 +9,10 @@
  *    أو النت يرجع، طالما الحصة لسه ماخلصتش ولسه ماتسجلتش.
  * كل تذكير بيظهر مرة واحدة بس.
  */
-import { api, OfflineCache } from './api.js?v=34';
-import { CONFIG } from './config.js?v=34';
+import { api, OfflineCache } from './api.js?v=37';
+import { CONFIG } from './config.js?v=37';
+// v29.7: الوقت الحقيقي بتوقيت مصر (نفس توقيت السيرفر) مش ساعة الجهاز
+import { appParts, clockOffset } from './server-time.js?v=37';
 
 const SCHED_KEY = 'tm_rem_sched_v1';
 const SHOWN_KEY = 'tm_rem_shown_v1';
@@ -36,9 +38,9 @@ function settings() {
 function schedCache() { return readJSON(SCHED_KEY, null); }
 
 /** مواعيد يوم معيّن من الجدول (نفس قواعد التكرار اللي في n8n) */
-export function occurrencesOn(date, cache = schedCache()) {
+export function occurrencesOn(parts = appParts(), cache = schedCache()) {
     if (!cache) return [];
-    const d = ymd(date); const dow = date.getDay(); const dom = date.getDate();
+    const d = parts.ymd; const dow = parts.dow; const dom = parts.day;
     const out = [];
     (cache.schedules || []).forEach((s) => {
         const rt = s.recurrence_type || 'weekly';
@@ -68,7 +70,7 @@ function handledToday(today) {
     } catch (e) { /* تجاهل */ }
     try {
         const e = OfflineCache.getEntry(CONFIG.API_ENDPOINTS.LESSONS.GET_TODAY);
-        if (e && e.at && ymd(new Date(e.at)) === today && e.data) {
+        if (e && e.at && appParts(e.at + clockOffset()).ymd === today && e.data) {
             (e.data.lessons || []).forEach((l) => { if (l.lesson_status) done.add(`${l.student_id}|${String(l.start_time || '').slice(0, 5)}`); });
         }
     } catch (e) { /* تجاهل */ }
@@ -88,11 +90,11 @@ function shownMap() {
 }
 
 /** التذكيرات اللي وقتها جه ولسه ماظهرتش */
-export function dueReminders(now = new Date()) {
+export function dueReminders(now = appParts()) {
     const st = settings();
     if (!st || (st.remind_before_minutes == null && !st.remind_at_start)) return [];
-    const today = ymd(now);
-    const nowMin = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+    const today = now.ymd;
+    const nowMin = now.minutes;
     const shown = shownMap();
     const done = handledToday(today);
     const due = [];
@@ -149,8 +151,7 @@ function inWords(m) {
 }
 function textOf(r) {
     // الوقت الفاضل فعلًا (لو التذكير اتأخر عشان النت كان مقطوع، بيقول الصح)
-    const now = new Date();
-    const left = Math.max(0, Math.round((minutesOf(r.start) || 0) - (now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60)));
+    const left = Math.max(0, Math.round((minutesOf(r.start) || 0) - appParts().minutes));
     const title = r.type === 'before' ? `⏰ ${r.title} ${inWords(left)}` : `🔔 ميعاد ${r.title} ${r.late > 3 ? `بدأ الساعة ${fmtTime(r.start)}` : 'دلوقتي'}`;
     const body = r.type === 'before' ? `الساعة ${fmtTime(r.start)}. جهّز نفسك 👌` : (r.kind === 'group' ? 'افتح المجموعة وابدأ الحصة.' : 'افتح الحصة وابدأ.');
     return { title, body };
@@ -173,7 +174,7 @@ function show(r) {
     stack().appendChild(box);
     setTimeout(() => { if (box.isConnected) box.remove(); }, 10 * 60 * 1000);
     const st = settings();
-    if (st && st.remind_sound && document.visibilityState === 'visible') import('./reminder-settings.js?v=34').then((m) => m.playReminderSound()).catch(() => { /* تجاهل */ });
+    if (st && st.remind_sound && document.visibilityState === 'visible') import('./reminder-settings.js?v=37').then((m) => m.playReminderSound()).catch(() => { /* تجاهل */ });
     // من غير نت إشعار n8n مش هيوصل: نطلّع إشعار الموبايل من الجهاز نفسه
     if (navigator.onLine === false || window.__tmNetDown === true) systemNotify(r, t);
 }
@@ -225,6 +226,11 @@ export function initLocalReminders() {
     window.addEventListener('online', () => { setTimeout(kick, 800); refreshSchedules(); refreshSettings(); });
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') kick(); });
     window.addEventListener('tm:schedules-changed', () => { refreshSchedules(true); });
+    // v29.8: صفحة الجدول جابت المواعيد: ناخدها على طول من غير طلب تاني
+    window.addEventListener('tm:schedules-data', (e) => {
+        const d = e && e.detail;
+        if (d && (Array.isArray(d.schedules) || Array.isArray(d.group_schedules))) { writeJSON(SCHED_KEY, { at: Date.now(), schedules: d.schedules || [], group_schedules: d.group_schedules || [] }); kick(); }
+    });
     window.addEventListener('tm:settings-changed', kick);
     // الجدول والإعدادات بيتحدّثوا في الخلفية (بعد ما الصفحة تخلص تحميل)
     const later = () => setTimeout(() => { refreshSettings(); refreshSchedules().then(kick); }, 3000);
