@@ -3,9 +3,10 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=38';
-import { APIUtils, Storage } from './utils.js?v=38';
-import { getFreshSession } from './session.js?v=38';
+import { CONFIG } from './config.js?v=39';
+import { APIUtils, Storage } from './utils.js?v=39';
+import { getFreshSession } from './session.js?v=39';
+import { currentSyncVersion, syncTrusted } from './realtime-sync.js?v=39';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -102,7 +103,7 @@ async function apiCallNow(endpoint, method = 'GET', body = null, options = {}) {
         // v29.8: حفظ حاجة (حصة/موعد/طالب…): التابات والأجهزة التانية تتحدّث على طول
         if (method !== 'GET' && !isRead && !/track-events|notifications|ai-chat|assistant|ask-sources|prepare-lesson|owner-/i.test(endpoint)) {
             ReadCache.clear();
-            import('./auto-refresh.js?v=38').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
+            import('./auto-refresh.js?v=39').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
         }
         return data;
 
@@ -136,9 +137,12 @@ async function apiCallNow(endpoint, method = 'GET', body = null, options = {}) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// ============================================================ v30: كاش قصير لطلبات القراءة
+// ============================================================ v31: كاش القراءة المختوم برقم المزامنة
 // التنقل بين الصفحات (الرئيسية ← الطلاب ← الجدول) كان بيطلب نفس البيانات من n8n كل مرة.
-// دلوقتي نفس الطلب خلال 40 ثانية بيرجع من الجهاز فورًا، وأي حفظ أو تغيير من جهاز تاني بيمسح الكاش كله.
+// دلوقتي: كل رد محفوظ على الجهاز مختوم برقم "عدّاد التغييرات" بتاع المدرس (js/realtime-sync.js).
+//  - الرقم ماتغيّرش والمزامنة شغالة ← الكاش صالح لحد 10 دقايق (التنقل فوري).
+//  - الرقم اتغيّر (حفظ من أي جهاز) ← الكاش بيتمسح والبيانات تيجي جديدة.
+//  - المزامنة مش متأكدة (أول تحميل / من غير نت) ← 40 ثانية بس زي الأول.
 const READ_ACTIONS = { '/groups': ['list', 'get'], '/group-session': ['prepare'], '/group-billing': ['month'], '/teacher-settings': ['get'], '/lesson-tools': ['board_list'] };
 const NO_READ_CACHE = /notifications|check-subscription|bootstrap-session|get-book-content|ai-chat|assistant|ask-sources|prepare-lesson|track-events|export-data/;
 function isReadRequest(endpoint, method, body, options = {}) {
@@ -150,8 +154,9 @@ function isReadRequest(endpoint, method, body, options = {}) {
 }
 const inflight = new Map();
 export const ReadCache = (() => {
-    const KEY = 'tm_rc_v1';
+    const KEY = 'tm_rc_v2';
     const TTL = 40 * 1000;
+    const TTL_SYNCED = 10 * 60 * 1000;
     const uid = () => { try { const p = JSON.parse(localStorage.getItem('user_profile') || 'null'); return (p && p.id) || ''; } catch (e) { return ''; } };
     let mem = null;
     const load = () => {
@@ -164,8 +169,20 @@ export const ReadCache = (() => {
         get(k) {
             const m = load();
             const e = m[uid() + '|' + k];
-            if (!e || Date.now() - e.at > TTL || Date.now() < e.at) return undefined;
+            if (!e || Date.now() < e.at) return undefined;
+            const age = Date.now() - e.at;
+            const cur = currentSyncVersion();
+            if (e.ver && cur && e.ver !== cur) return undefined;           // حصل تغيير بعد ما اتحفظ
+            const fresh = (e.ver && cur && e.ver === cur && syncTrusted()) ? age <= TTL_SYNCED : age <= TTL;
+            if (!fresh) return undefined;
             try { return JSON.parse(e.v); } catch (er) { return undefined; }
+        },
+        /** ختم اللي اتحمّل بعد حفظ من الجهاز ده برقم المزامنة الجديد (عشان مايتعادش تحميله) */
+        restamp(ver, since) {
+            const m = load();
+            let changed = false;
+            Object.keys(m).forEach((x) => { if (m[x].at >= since || (!m[x].ver && m[x].at >= Date.now() - TTL)) { m[x].ver = ver; changed = true; } });
+            if (changed) persist();
         },
         put(k, data) {
             try {
@@ -173,8 +190,8 @@ export const ReadCache = (() => {
                 if (v.length > 200 * 1024) return;
                 const m = load();
                 const now = Date.now();
-                Object.keys(m).forEach((x) => { if (now - m[x].at > TTL) delete m[x]; });
-                m[uid() + '|' + k] = { at: now, v };
+                Object.keys(m).forEach((x) => { if (now - m[x].at > TTL_SYNCED) delete m[x]; });
+                m[uid() + '|' + k] = { at: now, v, ver: currentSyncVersion() };
                 persist();
             } catch (e) { /* تجاهل */ }
         },
@@ -186,6 +203,11 @@ if (typeof window !== 'undefined' && !window.__tmReadCacheWired) {
     // تغيير من تابة/جهاز تاني، أو تحديث تلقائي: البيانات لازم تيجي من السيرفر
     window.addEventListener('tm:cache-invalidate', () => ReadCache.clear());
     window.addEventListener('storage', (e) => { if (e.key === 'tm_data_changed') ReadCache.clear(); });
+    // رقم المزامنة وصل لأول مرة ← نختم الكاش الحالي (اللي اتحمّل من أقل من 40 ثانية)
+    window.addEventListener('tm:sync-version', (e) => {
+        const d = (e && e.detail) || {};
+        if (d.first) ReadCache.restamp(d.v, Date.now() + 1);
+    });
 }
 
 // ============================================================ v29.5: من غير نت
@@ -246,7 +268,7 @@ export const Outbox = (() => {
     const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
     const write = (list) => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { /* تجاهل */ } emit(); };
     const emit = () => { try { window.dispatchEvent(new CustomEvent('tm:outbox', { detail: { count: read().length } })); } catch (e) { /* تجاهل */ } };
-    const toast = (msg, ok = true) => import('./utils.js?v=38').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
+    const toast = (msg, ok = true) => import('./utils.js?v=39').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
     return {
         list: read,
         count: () => read().length,
@@ -300,7 +322,7 @@ let billingDueCache = null;
 let conflictAsk = null;   // سؤال واحد لكل الأيام اللي بتتحفظ مع بعض
 async function askAllowConflict(message) {
     if (conflictAsk) return conflictAsk;
-    conflictAsk = import('./utils.js?v=38').then(({ askChoice }) => askChoice({
+    conflictAsk = import('./utils.js?v=39').then(({ askChoice }) => askChoice({
         title: '⚠️ الميعاد ده فيه حصة تانية',
         message: message || 'الميعاد ده بيتعارض مع حصة تانية متسجلة. لو ده مقصود احفظ الحصتين في نفس الميعاد، وهيظهروا في الجدول بعلامة تعارض.',
         choices: [{ label: 'احفظ الحصتين في نفس الميعاد', value: 'force' }],

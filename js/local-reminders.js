@@ -9,10 +9,10 @@
  *    أو النت يرجع، طالما الحصة لسه ماخلصتش ولسه ماتسجلتش.
  * كل تذكير بيظهر مرة واحدة بس.
  */
-import { api, OfflineCache } from './api.js?v=38';
-import { CONFIG } from './config.js?v=38';
+import { api, OfflineCache } from './api.js?v=39';
+import { CONFIG } from './config.js?v=39';
 // v29.7: الوقت الحقيقي بتوقيت مصر (نفس توقيت السيرفر) مش ساعة الجهاز
-import { appParts, clockOffset } from './server-time.js?v=38';
+import { appParts, clockOffset } from './server-time.js?v=39';
 
 const SCHED_KEY = 'tm_rem_sched_v1';
 const SHOWN_KEY = 'tm_rem_shown_v1';
@@ -174,7 +174,7 @@ function show(r) {
     stack().appendChild(box);
     setTimeout(() => { if (box.isConnected) box.remove(); }, 10 * 60 * 1000);
     const st = settings();
-    if (st && st.remind_sound && document.visibilityState === 'visible') import('./reminder-settings.js?v=38').then((m) => m.playReminderSound()).catch(() => { /* تجاهل */ });
+    if (st && st.remind_sound && document.visibilityState === 'visible') import('./reminder-settings.js?v=39').then((m) => m.playReminderSound()).catch(() => { /* تجاهل */ });
     // من غير نت إشعار n8n مش هيوصل: نطلّع إشعار الموبايل من الجهاز نفسه
     if (navigator.onLine === false || window.__tmNetDown === true) systemNotify(r, t);
 }

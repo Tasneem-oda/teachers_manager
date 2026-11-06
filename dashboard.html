@@ -16,9 +16,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=38">
-    <link rel="stylesheet" href="css/lessons.css?v=38">
-    <link rel="stylesheet" href="css/groups.css?v=38">
+    <link rel="stylesheet" href="css/style.css?v=39">
+    <link rel="stylesheet" href="css/lessons.css?v=39">
+    <link rel="stylesheet" href="css/groups.css?v=39">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -71,7 +71,7 @@
         }
         @media (prefers-reduced-motion: reduce) { .wa-cta { transition: none; } .wa-cta:hover { transform: none; } }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=38">
+    <link rel="stylesheet" href="css/v29.css?v=39">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -93,6 +93,8 @@
                     <div id="onboarding-root"></div>
                     <!-- v28: سؤال التذكيرات (مرة واحدة) -->
                     <div id="reminder-setup"></div>
+                    <!-- v31: الحصص التجريبية (النهارده / محتاجة قرار) -->
+                    <div id="trial-dash"></div>
                     <!-- v25: حصص النهارده أول حاجة بعد البانر، والفلوس والإحصائيات تحتها، وواتساب في الآخر -->
                     <div class="dashboard-grid">
                         <!-- حصص اليوم -->
@@ -185,25 +187,26 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=38"></script>
+    <script type="module" src="js/config.js?v=39"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=38';
-        import { api } from './js/api.js?v=38';
-        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=38';
-        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=38';
-        import { icon } from './js/icons.js?v=38';
-        import { renderOnboarding } from './js/onboarding.js?v=38';
-        import { openAttendanceModal } from './js/attendance.js?v=38';
-        import { ATTENDANCE } from './js/lesson-utils.js?v=38';
-        import { computeBilling, openReminder, lessonsText, buildReminder, parentPhone, openBulkReminders } from './js/billing.js?v=38';
-        import { showTips } from './js/tips.js?v=38';
-        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=38';
-        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=38';
-        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=38';
-        import { mountReminderSetupCard } from './js/reminder-settings.js?v=38';
-        import { requestPermission } from './js/notifications.js?v=38';
-        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=38';
-        import { whatsappUrl } from './js/billing.js?v=38';
+        import { Auth } from './js/auth.js?v=39';
+        import { api } from './js/api.js?v=39';
+        import { isTrial, trialState, trialDate, bindTrialActions } from './js/trial.js?v=39';
+        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=39';
+        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=39';
+        import { icon } from './js/icons.js?v=39';
+        import { renderOnboarding } from './js/onboarding.js?v=39';
+        import { openAttendanceModal } from './js/attendance.js?v=39';
+        import { ATTENDANCE } from './js/lesson-utils.js?v=39';
+        import { computeBilling, openReminder, lessonsText, buildReminder, parentPhone, openBulkReminders } from './js/billing.js?v=39';
+        import { showTips } from './js/tips.js?v=39';
+        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=39';
+        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=39';
+        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=39';
+        import { mountReminderSetupCard } from './js/reminder-settings.js?v=39';
+        import { requestPermission } from './js/notifications.js?v=39';
+        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=39';
+        import { whatsappUrl } from './js/billing.js?v=39';
 
         renderSidebar('dashboard');
 
@@ -436,7 +439,7 @@
                         <div class="lesson-main">
                             <div class="lesson-avatar">${Formatters.escapeHtml((l.student_name || '؟').charAt(0))}</div>
                             <div class="lesson-info">
-                                <p class="name">${Formatters.escapeHtml(l.student_name || '')}</p>
+                                <p class="name">${Formatters.escapeHtml(l.student_name || '')}${isTrial(l) ? '<span class="tr-badge">🎯 تجريبية</span>' : ''}</p>
                                 <p class="meta">${Formatters.escapeHtml(l.current_topic || 'بدون موضوع محدد')}</p>
                                 ${badge}${state !== 'cancelled' ? clashHtml(clash) : ''}
                             </div>
@@ -514,13 +517,37 @@
         }
 
         let reminderCardShown = false;
+        // ------------------------------------------------------------ v31: الطلاب التجريبيين
+        let trialStudents = [];
+        async function loadTrialCard() {
+            const host = document.getElementById('trial-dash');
+            try {
+                const data = await api.getAllStudents();
+                trialStudents = ((data && data.students) || []).filter((s) => isTrial(s) && (!s.status || s.status === 'active'));
+            } catch (e) { return; }
+            const items = trialStudents.map((s) => ({ s, st: trialState(s) }))
+                .filter((x) => x.st.phase !== 'upcoming' || (trialDate(x.s) && trialDate(x.s).getTime() - Date.now() < 2 * 86400000))
+                .sort((a, b) => (a.st.phase === 'decide' ? -1 : 0) - (b.st.phase === 'decide' ? -1 : 0));
+            if (!items.length) { host.innerHTML = ''; return; }
+            const decide = items.filter((x) => x.st.phase === 'decide').length;
+            host.innerHTML = `<div class="tr-card" style="margin-bottom:1.2rem">
+                <div class="tr-card-head">🎯 ${decide ? (decide === 1 ? 'حصة تجريبية خلصت — محتاجة قرارك' : `${decide} حصص تجريبية خلصت — محتاجة قرارك`) : 'حصص تجريبية قريبة'}</div>
+                ${items.map(({ s, st }) => `<div class="tr-list-item">
+                    <div class="tr-li-main"><a href="student.html?id=${encodeURIComponent(s.id)}">${Formatters.escapeHtml(s.name || '')}</a><small>${Formatters.escapeHtml(st.text)}</small></div>
+                    <div class="tr-btns">${st.phase === 'decide'
+                        ? `<button type="button" class="btn btn-sm" data-trial-convert data-sid="${Formatters.escapeHtml(String(s.id))}">ضيفه لطلابي</button><button type="button" class="btn btn-sm btn-ghost" data-trial-delete data-sid="${Formatters.escapeHtml(String(s.id))}">مكملش</button>`
+                        : `<button type="button" class="btn btn-sm btn-outline" data-trial-resched data-sid="${Formatters.escapeHtml(String(s.id))}">غيّر الميعاد</button>`}</div>
+                </div>`).join('')}</div>`;
+        }
+        bindTrialActions(document.getElementById('trial-dash'), (b) => trialStudents.find((s) => String(s.id) === String(b.dataset.sid)), () => { loadTrialCard(); loadDashboard(); });
+
         async function loadDashboard() {
             try {
                 // السرعة: الطلبين بيتبعتوا مع بعض بدل ما واحد يستنى التاني
                 const todayPromise = api.getTodayLessons().catch(() => null);
                 // v29.4: الكروت اللي مش محتاجة بيانات الرئيسية بتتطلب من أول لحظة
                 // (كانت بتستنى get-dashboard يخلص الأول، وده كان بيزوّد 3 ثواني على الموبايل)
-                const sideLoads = [loadBillingDue(), loadIncomeCard(), loadTodayEvents(), loadLibraryCard()];
+                const sideLoads = [loadBillingDue(), loadIncomeCard(), loadTodayEvents(), loadLibraryCard(), loadTrialCard()];
                 const data = await api.getDashboard();
                 dashboardData = data;
 
@@ -719,16 +746,16 @@
         }
         window.addEventListener('tm:schedules-changed', () => { loadDashboard(); });
         // v29.8: لو اتسجّلت حصة من جهاز تاني (أو المدرس رجع للبرنامج) الرئيسية تتحدّث لوحدها
-        import('./js/auto-refresh.js?v=38').then((m) => m.onAppResume(() => loadDashboard())).catch(() => { /* تجاهل */ });
+        import('./js/auto-refresh.js?v=39').then((m) => m.onAppResume(() => loadDashboard())).catch(() => { /* تجاهل */ });
 
         (async () => {
             const authInfo = await Auth.requireAuth();
             if (!authInfo) return;
             // v29: أول دخول بحساب جوجل: سؤال المادة + الموبايل
-            try { const { maybeCompleteProfile } = await import('./js/complete-profile.js?v=38'); maybeCompleteProfile(authInfo.profile, authInfo.session); } catch (e) { /* تجاهل */ }
+            try { const { maybeCompleteProfile } = await import('./js/complete-profile.js?v=39'); maybeCompleteProfile(authInfo.profile, authInfo.session); } catch (e) { /* تجاهل */ }
             await loadDashboard();
         })();
     </script>
-    <script src="js/pwa-install.js?v=38" defer></script>
+    <script src="js/pwa-install.js?v=39" defer></script>
 </body>
 </html>
