@@ -5,11 +5,11 @@
  * الحضور والغياب، مستوى الحفظ/التلاوة/المراجعة، الواجبات، اللي خلصناه، والخطة الجاية.
  */
 
-import { ErrorHandler } from './utils.js?v=37';
-import { icon } from './icons.js?v=37';
-import { lessonDay, ratingFieldLabels, ratingLabel, normalizeLesson } from './lesson-utils.js?v=37';
-import { whatsappUrl, recipientChooser } from './billing.js?v=37';
-import { CONFIG } from './config.js?v=37';
+import { ErrorHandler } from './utils.js?v=38';
+import { icon } from './icons.js?v=38';
+import { lessonDay, ratingFieldLabels, ratingLabel, normalizeLesson } from './lesson-utils.js?v=38';
+import { whatsappUrl, recipientChooser } from './billing.js?v=38';
+import { CONFIG } from './config.js?v=38';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -33,6 +33,24 @@ function mode(values) {
     return best ? best[0] : null;
 }
 
+/** "الخميس 5 نوفمبر 2026" — التاريخ بيتقرا كتاريخ محلي (YYYY-MM-DD مش بيتزحلق يوم بسبب المنطقة الزمنية) */
+export function fullDate(date) {
+    if (!date) return '';
+    let d = date;
+    if (typeof date === 'string') {
+        const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(date);
+        d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12) : new Date(date);
+    }
+    if (!(d instanceof Date) || Number.isNaN(d.getTime())) return '';
+    try { return d.toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`; }
+}
+
+function shortDate(lessonDate) {
+    const d = lessonDay(lessonDate);
+    if (!d) return '';
+    try { return d.toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'short', day: 'numeric', month: 'numeric' }); } catch (e) { return `${d.getDate()}/${d.getMonth() + 1}`; }
+}
+
 function firstLine(s, max = 70) {
     const t = String(s || '').split('\n')[0].trim();
     return t.length > max ? `${t.slice(0, max - 1)}…` : t;
@@ -42,7 +60,7 @@ function firstLine(s, max = 70) {
  * يحسب بيانات الشهر ويبني الرسالة
  * @returns {{text:string, stats:object}}
  */
-export function buildMonthlyReport(allLessons, student, start, { note = '', signature = true, refCode = '' } = {}) {
+export function buildMonthlyReport(allLessons, student, start, { note = '', signature = true, refCode = '', completedTotal = 0 } = {}) {
     const lessons = (allLessons || []).map(normalizeLesson).filter((l) => inMonth(l, start));
     const done = lessons.filter((l) => l.status === 'completed' || (!l.status && !l.attendance));
     const excused = lessons.filter((l) => l.status === 'cancelled' && l.attendance === 'absent_excused').length;
@@ -59,6 +77,25 @@ export function buildMonthlyReport(allLessons, student, start, { note = '', sign
         if (excused) absParts.push(`${excused} بعذر`);
         if (unexcused) absParts.push(`${unexcused} بدون عذر`);
         lines.push(`✅ الحضور: ${done.length} من ${scheduled}${absParts.length ? ` (غاب ${absParts.join(' و')})` : ''}`);
+        // v30: كل حصة برقمها وتاريخها (الأقدم الأول)
+        const dated = [...done].sort((a, b) => String(a.lesson_date || '').localeCompare(String(b.lesson_date || '')));
+        if (dated.length) {
+            // الرقم الحقيقي للحصة في ملف الطالب: الإجمالي - الحصص اللي بعد الشهر ده - حصص الشهر
+            const total = Number(completedTotal) || 0;
+            const monthEnd = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+            const after = (allLessons || []).map(normalizeLesson).filter((l) => {
+                const d = lessonDay(l.lesson_date);
+                return d && d >= monthEnd && (l.status === 'completed' || (!l.status && !l.attendance));
+            }).length;
+            const base = total ? total - after - dated.length : 0;
+            const items = dated.slice(-12).map((l, i, arr) => {
+                const idx = dated.length - arr.length + i;
+                const useTotal = total && base >= 0;
+                const n = useTotal ? base + idx + 1 : idx + 1;
+                return `${useTotal ? `#${n}` : `${n})`} ${shortDate(l.lesson_date)}`;
+            });
+            lines.push(`📅 الحصص: ${items.join(' · ')}${dated.length > 12 ? ' …' : ''}`);
+        }
 
         const levels = ['memorization', 'recitation', 'revision']
             .map((k) => { const m = mode(done.map((l) => l[k])); return m ? `${labels[k]} ${ratingLabel(m)}` : null; })
@@ -93,7 +130,7 @@ export function buildMonthlyReport(allLessons, student, start, { note = '', sign
 /**
  * @param {{student:object, loadLessons:(start:Date)=>Promise<Array>}} opts
  */
-export function openMonthlyReport({ student, loadLessons }) {
+export function openMonthlyReport({ student, loadLessons, completedTotal = 0 }) {
     // كود ترشيح قصير من معرّف المدرس (أول 8 حروف)
     let refCode = '';
     try {
@@ -146,7 +183,7 @@ export function openMonthlyReport({ student, loadLessons }) {
     to.bind(modal, (ph) => { toPhone = ph; refreshLink(); });
 
     const rebuild = () => {
-        const r = buildMonthlyReport(lessons, student, monthStart(offset), { note: $('#rp-note').value, signature: $('#rp-sign').checked, refCode });
+        const r = buildMonthlyReport(lessons, student, monthStart(offset), { note: $('#rp-note').value, signature: $('#rp-sign').checked, refCode, completedTotal });
         msg.value = r.text;
         edited = false;
         $('#rp-hint').textContent = r.stats.scheduled
@@ -205,13 +242,18 @@ function getRefCode() {
  * @param {object} student {name, subject}
  * @param {object} f الحقول: lesson_content, memorization, recitation, revision, homework_status, performance, homework, next_assignment
  */
-export function buildLessonReport(student, f, { date = new Date(), note = '', signature = true, refCode = '', recordingUrl = '' } = {}) {
+export function buildLessonReport(student, f, { date = new Date(), note = '', signature = true, refCode = '', recordingUrl = '', lessonNumber = null, groupName = '', groupSessionNumber = null } = {}) {
     const fields = f || {};
     const labels = ratingFieldLabels(student && student.subject);
     const name = String((student && student.name) || '').trim().split(/\s+/)[0] || 'الطالب';
-    let day = '';
-    try { day = new Date(date).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long' }); } catch (e) { /* تجاهل */ }
-    const lines = ['السلام عليكم 🌸', `📋 تقرير حصة ${name}${day ? ` — ${day}` : ''}`];
+    // v30: رقم الحصة وتاريخها كاملين (اليوم + التاريخ + السنة) في أول التقرير
+    const lines = ['السلام عليكم 🌸', `📋 تقرير حصة ${name}${groupName ? ` — ${groupName}` : ''}`];
+    const num = Number(lessonNumber) > 0 ? Number(lessonNumber) : null;
+    const gnum = Number(groupSessionNumber) > 0 ? Number(groupSessionNumber) : null;
+    if (num) lines.push(`🔢 رقم الحصة: ${num}${gnum && gnum !== num ? ` (حصة المجموعة رقم ${gnum})` : ''}`);
+    else if (gnum) lines.push(`🔢 حصة المجموعة رقم ${gnum}`);
+    const day = fullDate(date);
+    if (day) lines.push(`📅 التاريخ: ${day}`);
     if (fields.lesson_content) lines.push(`📖 اللي أخدناه: ${fields.lesson_content.trim()}`);
     const levels = ['memorization', 'recitation', 'revision']
         .filter((k) => fields[k])
@@ -223,14 +265,14 @@ export function buildLessonReport(student, f, { date = new Date(), note = '', si
     if (fields.next_assignment) lines.push(`🎯 الحصة الجاية: ${fields.next_assignment.trim()}`);
     if (note && note.trim()) lines.push(`✍️ ${note.trim()}`);
     if (recordingUrl) lines.push(`🎥 تسجيل الحصة: ${recordingUrl}`);
-    if (lines.length === 2) lines.push('✅ الحصة اتعملت النهارده.');
+    if (!fields.lesson_content && !levels.length && !fields.homework_status && !fields.performance && !fields.homework && !fields.next_assignment && !(note && note.trim()) && !recordingUrl) lines.push('✅ الحصة اتعملت.');
     lines.push('مع تحياتي 🌷');
     if (signature) lines.push(`— من خلال Teachers Manager\n${CONFIG.SITE_URL.replace(/^https?:\/\//, '')}${refCode ? `/?ref=${refCode}` : ''}`);
     return lines.join('\n');
 }
 
 /** نافذة التقرير: نص جاهز يتعدّل + إرسال واتساب لرقم الطالب/ولي الأمر */
-export function openLessonReport({ student, fields, date, recordingUrl }) {
+export function openLessonReport({ student, fields, date, recordingUrl, lessonNumber = null, groupName = '', groupSessionNumber = null }) {
     const refCode = getRefCode();
     const to = recipientChooser(student);
     let toPhone = to.initial;
@@ -263,7 +305,7 @@ export function openLessonReport({ student, fields, date, recordingUrl }) {
     const refreshLink = () => { wa.href = whatsappUrl(toPhone, msg.value); };
     to.bind(modal, (ph) => { toPhone = ph; refreshLink(); });
     const rebuild = () => {
-        msg.value = buildLessonReport(student, fields, { date, note: $('#lr-note').value, signature: $('#lr-sign').checked, refCode, recordingUrl });
+        msg.value = buildLessonReport(student, fields, { date, note: $('#lr-note').value, signature: $('#lr-sign').checked, refCode, recordingUrl, lessonNumber, groupName, groupSessionNumber });
         edited = false;
         refreshLink();
     };
@@ -278,5 +320,106 @@ export function openLessonReport({ student, fields, date, recordingUrl }) {
         try { window.tmTrack && window.tmTrack('lesson_report_sent', {}); } catch (e) { /* تجاهل */ }
         setTimeout(closeModal, 400);
     });
+    rebuild();
+}
+
+// ============================================================ v30: تقرير المجموعة الشهري (لجروب الواتساب)
+/**
+ * @param {object} group {name}
+ * @param {Array} sessions حصص المجموعة (من صفحة المجموعة)
+ * @param {Date} start أول الشهر
+ * @param {{note?:string, signature?:boolean, refCode?:string, complete?:boolean, title?:string}} o
+ */
+export function buildGroupMonthlyReport(group, sessions, start, { note = '', signature = true, refCode = '', complete = true, title = '' } = {}) {
+    const all = (sessions || []).filter((s) => s && s.session_date);
+    const inM = (s) => { const d = lessonDay(s.session_date); return !!d && d.getFullYear() === start.getFullYear() && d.getMonth() === start.getMonth(); };
+    const doneAll = all.filter((s) => s.status === 'completed')
+        .sort((a, b) => String(a.session_date).localeCompare(String(b.session_date)) || String(a.start_time || '').localeCompare(String(b.start_time || '')));
+    const done = doneAll.filter(inM);
+    const cancelled = all.filter((s) => s.status === 'cancelled' && inM(s)).length;
+    const lines = [`📘 تقرير ${title || 'المجموعة'} — شهر ${monthLabel(start)}`];
+    if (!done.length && !cancelled) {
+        lines.push('لم تُسجَّل حصص في هذا الشهر.');
+    } else {
+        lines.push(`🗓️ عدد الحصص: ${done.length}${cancelled ? ` (واتلغت ${cancelled})` : ''}`);
+        if (done.length) {
+            const items = done.slice(-14).map((s) => {
+                const n = complete ? doneAll.indexOf(s) + 1 : 0;
+                return `${n ? `#${n} ` : ''}${shortDate(s.session_date)}`;
+            });
+            lines.push(`📅 الحصص: ${items.join(' · ')}${done.length > 14 ? ' …' : ''}`);
+            const att = done.filter((s) => Number(s.present_count) + Number(s.absent_count || 0) > 0);
+            if (att.length) {
+                const p = att.reduce((a, s) => a + (Number(s.present_count) || 0), 0);
+                const tot = att.reduce((a, s) => a + (Number(s.present_count) || 0) + (Number(s.absent_count) || 0), 0);
+                if (tot) lines.push(`👥 الحضور: ${Math.round((p / tot) * 100)}% (متوسط ${Math.round(p / att.length)} في الحصة)`);
+            }
+            const topics = done.map((s) => firstLine(s.lesson_content)).filter(Boolean).slice(-4);
+            if (topics.length) lines.push(`📖 اللي خلصناه: ${topics.join(' — ')}`);
+            const latest = [...done].reverse().find((s) => s.next_assignment);
+            if (latest) lines.push(`🎯 الخطة الجاية: ${firstLine(latest.next_assignment, 90)}`);
+            const hw = [...done].reverse().find((s) => s.homework);
+            if (hw) lines.push(`📝 آخر واجب: ${firstLine(hw.homework, 90)}`);
+        }
+    }
+    if (!complete) lines.push('(التقرير من آخر الحصص الظاهرة في صفحة المجموعة)');
+    if (note && note.trim()) lines.push(`💬 ملاحظة: ${note.trim()}`);
+    lines.push('مع تحياتي 🌷');
+    if (signature) lines.push(`— من خلال Teachers Manager\n${CONFIG.SITE_URL.replace(/^https?:\/\//, '')}${refCode ? `/?ref=${refCode}` : ''}`);
+    return { text: lines.join('\n'), count: done.length };
+}
+
+/** نافذة تقرير المجموعة: الشهر ده/اللي فات + ملاحظة + واتساب (يختار جروب المجموعة) أو نسخ */
+export function openGroupMonthlyReport({ group, title, sessions, complete = true }) {
+    const refCode = getRefCode();
+    const modal = document.createElement('div');
+    modal.className = 'modal active bill-modal rp-modal';
+    modal.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-label="تقرير المجموعة الشهري">
+        <button type="button" class="bm-close" aria-label="إغلاق">${icon('x', { size: 18 })}</button>
+        <h2 class="bm-title">تقرير ${esc(title || 'المجموعة')} الشهري</h2>
+        <div class="bm-tones" role="tablist">
+            <button type="button" class="bm-tone active" data-month="0">الشهر ده</button>
+            <button type="button" class="bm-tone" data-month="-1">الشهر اللي فات</button>
+        </div>
+        <div class="bm-field"><label for="grp-note">ملاحظة منك <small>(اختياري)</small></label>
+            <input type="text" id="grp-note" maxlength="200" placeholder="مثلًا: الامتحان الشهري يوم الخميس الجاي"></div>
+        <textarea id="grp-msg" class="bm-msg" rows="10" dir="rtl" aria-label="نص التقرير"></textarea>
+        <label class="ls-check" style="margin-top:0.5rem"><input type="checkbox" id="grp-sign" checked> إضافة سطر "من خلال Teachers Manager"</label>
+        <p class="bm-hint">واتساب هيفتح وتختار جروب المجموعة. تقدر تعدّل النص قبل الإرسال.</p>
+        <div class="bm-buttons">
+            <a class="btn bm-wa" id="grp-wa" target="_blank" rel="noopener">${icon('messageCircle', { size: 16 })} إرسال واتساب</a>
+            <button type="button" class="btn btn-ghost" id="grp-copy">${icon('copy', { size: 15 })} نسخ</button>
+        </div>
+    </div>`;
+    const $ = (s) => modal.querySelector(s);
+    const closeModal = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = (e) => { if (e.key === 'Escape') closeModal(); };
+    modal.addEventListener('mousedown', (e) => { if (e.target === modal) closeModal(); });
+    $('.bm-close').addEventListener('click', closeModal);
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(modal);
+    let offset = 0;
+    let edited = false;
+    const msg = $('#grp-msg');
+    const refresh = () => { $('#grp-wa').href = whatsappUrl('', msg.value); };
+    const rebuild = () => {
+        msg.value = buildGroupMonthlyReport(group, sessions, monthStart(offset), { note: $('#grp-note').value, signature: $('#grp-sign').checked, refCode, complete, title }).text;
+        edited = false;
+        refresh();
+    };
+    modal.querySelectorAll('[data-month]').forEach((b) => b.addEventListener('click', () => {
+        if (edited && !confirm('هيتم استبدال التعديلات اللي عملتها في النص. تكمل؟')) return;
+        modal.querySelectorAll('[data-month]').forEach((x) => x.classList.toggle('active', x === b));
+        offset = Number(b.dataset.month);
+        rebuild();
+    }));
+    $('#grp-note').addEventListener('input', () => { if (!edited) rebuild(); });
+    $('#grp-sign').addEventListener('change', () => { if (!edited) rebuild(); });
+    msg.addEventListener('input', () => { edited = true; refresh(); });
+    $('#grp-copy').addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(msg.value); } catch (e) { msg.select(); try { document.execCommand('copy'); } catch (x) { /* تجاهل */ } }
+        ErrorHandler.showSuccess('تم نسخ التقرير');
+    });
+    $('#grp-wa').addEventListener('click', () => { try { window.tmTrack && window.tmTrack('group_report_sent', {}); } catch (e) { /* تجاهل */ } });
     rebuild();
 }

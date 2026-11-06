@@ -272,8 +272,14 @@ if (typeof window !== 'undefined') {
 
 if (typeof window !== 'undefined' && window.supabase && !window.supabaseClient && !__redirectingToReset) {
     // إنشاء العميل مرة واحدة فقط وتخزينه في window.supabaseClient
+    // v30: لو ساعة الموبايل فرقها كبير عن الوقت الحقيقي (أكتر من 5 دقايق، زي التوقيت الصيفي الغلط)
+    // التجديد التلقائي بتاع المكتبة بيمشي بساعة الموبايل فبيجدّد في الوقت الغلط (أو كل 30 ثانية).
+    // في الحالة دي js/session.js هو اللي بيجدّد بالوقت الحقيقي قبل كل طلب.
+    let clockOff = 0;
+    try { const c = JSON.parse(localStorage.getItem('tm_clock_v1') || 'null'); clockOff = c && Number.isFinite(c.offset) ? c.offset : 0; } catch (e) { clockOff = 0; }
     window.supabaseClient = window.supabase.createClient(
         CONFIG.SUPABASE_URL,
-        CONFIG.SUPABASE_ANON_KEY
+        CONFIG.SUPABASE_ANON_KEY,
+        { auth: { autoRefreshToken: Math.abs(clockOff) < 5 * 60 * 1000, persistSession: true, detectSessionInUrl: true } }
     );
 }

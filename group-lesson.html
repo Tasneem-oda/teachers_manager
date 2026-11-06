@@ -16,9 +16,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=37">
-    <link rel="stylesheet" href="css/lessons.css?v=37">
-    <link rel="stylesheet" href="css/groups.css?v=37">
+    <link rel="stylesheet" href="css/style.css?v=38">
+    <link rel="stylesheet" href="css/lessons.css?v=38">
+    <link rel="stylesheet" href="css/groups.css?v=38">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -26,8 +26,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/books.css?v=37">
-    <link rel="stylesheet" href="css/v29.css?v=37">
+    <link rel="stylesheet" href="css/books.css?v=38">
+    <link rel="stylesheet" href="css/v29.css?v=38">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -56,6 +56,8 @@
                             <b id="live-clock" dir="ltr">00:00</b>
                             <small id="live-left"></small>
                         </div>
+                        <a class="btn btn-sm btn-outline gl-live-link" id="btn-live-link" target="_blank" rel="noopener" hidden></a>
+                        <button type="button" class="btn btn-sm btn-outline ls-pip-btn gl-live-pip" id="btn-pip" title="نافذة صغيرة فوق Zoom / Meet" hidden></button>
                         <button type="button" class="btn btn-sm gl-live-ai" id="btn-ai-live"></button>
                         <div class="gl-live-bar"><span id="live-progress"></span></div>
                     </div>
@@ -67,6 +69,8 @@
                         <button type="button" class="btn btn-sm btn-outline ls-rec" id="btn-rec" hidden></button>
                         <p class="ls-rec-warn" id="rec-warn" hidden></p>
                     </div>
+                    <!-- v30: كتب الحصة للمجموعة (زي حصة الطالب): تتفتح فوق الحصة، والرسم بيتحفظ للمجموعة -->
+                    <div class="lb-host" id="g-books"></div>
                     <div id="same-day" class="gl-same-day" hidden></div>
                     <!-- v27: ابدأ الحصة بدل التسجيل بعدها -->
                     <div id="start-card" class="x-card gl-start" hidden>
@@ -90,6 +94,12 @@
                         <div class="x-card" id="prev-card" hidden>
                             <div class="gl-prev" id="prev-box"></div>
                         </div>
+
+                        <!-- v30: الحصص اللي فاتت للمجموعة (زي "الحصص السابقة" في حصة الطالب) -->
+                        <details class="x-card gl-history" id="hist-card">
+                            <summary>📚 الحصص اللي فاتت للمجموعة</summary>
+                            <div id="hist-list" class="gl-hist-list"><div class="muted" style="font-size:0.85rem;">جاري التحميل...</div></div>
+                        </details>
 
                         <div class="x-card" id="att-card">
                             <div class="att-head">
@@ -123,6 +133,7 @@
 
                         <div class="gl-save-bar">
                             <button type="submit" class="btn" id="btn-save"></button>
+                            <button type="button" class="btn btn-outline" id="btn-reports" hidden style="flex:0 0 auto;"></button>
                             <button type="button" class="btn btn-outline" id="btn-delete" hidden style="flex:0 0 auto;"></button>
                         </div>
                     </form>
@@ -137,22 +148,23 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=37"></script>
+    <script type="module" src="js/config.js?v=38"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=37';
-        import { api } from './js/api.js?v=37';
-        import { ErrorHandler, Formatters, askChoice, uuidv4 } from './js/utils.js?v=37';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=37';
-        import { icon } from './js/icons.js?v=37';
-        import { RATINGS, HOMEWORK_STATUS, ratingFieldLabels, formatLessonDate, localDateISO } from './js/lesson-utils.js?v=37';
-        import { whatsappUrl, parentPhone } from './js/billing.js?v=37';
-        import { formatClock12, timeToMinutes } from './js/calendar-utils.js?v=37';
-        import { groupTitle, membersText, sessionShareText } from './js/groups-utils.js?v=37';
-        import { mountGroupAi } from './js/group-ai.js?v=37';
-        import { buildLessonReport } from './js/report.js?v=37';
-        import { LiveLesson, clockText, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=37';
-        import { openWhiteboard } from './js/whiteboard.js?v=37';
-        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=37';
+        import { Auth } from './js/auth.js?v=38';
+        import { api } from './js/api.js?v=38';
+        import { ErrorHandler, Formatters, askChoice, uuidv4 } from './js/utils.js?v=38';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=38';
+        import { icon } from './js/icons.js?v=38';
+        import { RATINGS, HOMEWORK_STATUS, ratingFieldLabels, formatLessonDate, localDateISO } from './js/lesson-utils.js?v=38';
+        import { whatsappUrl, parentPhone } from './js/billing.js?v=38';
+        import { formatClock12, timeToMinutes } from './js/calendar-utils.js?v=38';
+        import { groupTitle, membersText, sessionShareText } from './js/groups-utils.js?v=38';
+        import { mountGroupAi } from './js/group-ai.js?v=38';
+        import { buildLessonReport, fullDate } from './js/report.js?v=38';
+        import { openBookViewer } from './js/book-viewer.js?v=38';
+        import { LiveLesson, clockText, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=38';
+        import { openWhiteboard } from './js/whiteboard.js?v=38';
+        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=38';
 
         const $ = (id) => document.getElementById(id);
         const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
@@ -309,6 +321,14 @@
             $('btn-delete').innerHTML = isLive ? `${icon('x', { size: 17 })} إلغاء` : `${icon('trash', { size: 17 })} حذف`;
             setupLive();
             setupAi();
+            // v30: كتب الحصة + الحصص اللي فاتت + تقارير أولياء الأمور لحصة متسجلة
+            loadGroupBooks();
+            resetHistory();
+            const rb = $('btn-reports');
+            rb.hidden = !(s && s.status === 'completed' && !isLive);
+            rb.innerHTML = `${icon('messageCircle', { size: 17 })} تقارير أولياء الأمور`;
+            // جاي من تاب "التقارير" في صفحة المجموعة
+            if (!rb.hidden && params.get('reports') === '1') setTimeout(() => rb.click(), 150);
             if (g.status === 'archived' && !s) {
                 $('same-day').hidden = false;
                 $('same-day').innerHTML = 'المجموعة دي مؤرشفة. رجّعها من الإعدادات الأول عشان تسجّل حصص جديدة.';
@@ -352,6 +372,13 @@
             liveTimer = setInterval(tick, 1000);
             renderGroupLink();
             renderTeachTools();
+            // v30: رابط الحصة + النافذة الصغيرة فوق Zoom/Meet (زي حصة الطالب)
+            const ll = $('btn-live-link');
+            ll.hidden = !g.lesson_link;
+            if (g.lesson_link) { ll.href = g.lesson_link; ll.innerHTML = `${icon('link', { size: 14 })} الرابط`; }
+            const pb = $('btn-pip');
+            pb.hidden = !('documentPictureInPicture' in window);
+            pb.innerHTML = `${icon('clock', { size: 14 })} نافذة صغيرة`;
         }
 
         // ------------------------------------------------------------ v29: السبورة + تسجيل الحصة
@@ -416,6 +443,263 @@
             const t = $('f-time').value;
             saveDraft();
             location.href = `group-lesson.html?group_id=${encodeURIComponent(groupId)}&start=1${t ? `&time=${encodeURIComponent(t)}` : ''}`;
+        });
+
+        // ------------------------------------------------------------ v30: تقارير أولياء الأمور (برقم الحصة وتاريخها)
+        let groupDetailP = null;
+        const groupDetail = () => (groupDetailP = groupDetailP || api.getGroup(groupId).catch(() => null));
+        /** رقم حصة المجموعة (من أول حصة اتسجلت لها) — null لو مش متأكدين */
+        async function groupSessionNumber(sid, date, time) {
+            const d = await groupDetail();
+            if (!d || !Array.isArray(d.sessions)) return null;
+            if ((Number(d.sessions_total) || 0) > d.sessions.length) return null;   // القايمة مش كاملة
+            const done = d.sessions.filter((x) => x.status === 'completed')
+                .sort((x, y) => String(x.session_date).localeCompare(String(y.session_date)) || String(x.start_time || '').localeCompare(String(y.start_time || '')));
+            const i = done.findIndex((x) => String(x.id) === String(sid));
+            if (i >= 0) return i + 1;
+            return done.filter((x) => String(x.session_date) < date || (String(x.session_date) === date && String(x.start_time || '') <= String(time || ''))).length + 1;
+        }
+        function reportsHtml(payload, num) {
+            const g = prep.group;
+            const byId = new Map((prep.members || []).map((m) => [String(m.student_id), m]));
+            const presents = payload.attendance.filter((a) => a.attendance === 'present');
+            if (!presents.length) return '<p class="muted" style="margin:0;">مفيش طلاب حضروا الحصة دي.</p>';
+            return `<p style="font-weight:700; margin:0 0 0.1rem;">📩 تقرير الحصة لولي أمر كل طالب</p>
+                <p class="muted" style="font-size:0.82rem; margin:0 0 0.3rem;">${num ? `حصة المجموعة رقم ${num} · ` : ''}${esc(fullDate(payload.date))} — فيه المحتوى والواجب وتقييم الطالب نفسه.</p>
+                ${presents.map((a) => {
+                    const m = byId.get(String(a.student_id)) || { name: 'طالب' };
+                    const txt = buildLessonReport({ name: m.name, subject: g.subject }, {
+                        lesson_content: payload.lesson_content, memorization: a.rating, homework_status: a.homework_status,
+                        performance: a.note, homework: payload.homework, next_assignment: payload.next_assignment
+                    }, { date: payload.date, signature: false, groupName: groupTitle(g.name), groupSessionNumber: num });
+                    return `<div class="member-row"><div class="member-avatar">${esc((m.name || '؟').charAt(0))}</div>
+                        <div class="member-main"><a href="student.html?id=${encodeURIComponent(a.student_id)}">${esc(m.name)}</a><div class="member-stats"><span>حضر</span></div></div>
+                        <div class="member-actions">${parentPhone(m) ? `<a class="btn btn-sm btn-outline" data-report href="${esc(whatsappUrl(parentPhone(m), txt))}" target="_blank" rel="noopener">${icon('messageCircle', { size: 15 })} ابعت التقرير</a>` : `<button type="button" class="btn btn-sm btn-ghost" data-copy-report="${esc(txt)}">${icon('copy', { size: 14 })} انسخ</button>`}</div></div>`;
+                }).join('')}`;
+        }
+        function fillReports(container, payload, sid) {
+            container.innerHTML = reportsHtml(payload, null);
+            groupSessionNumber(sid, payload.date, payload.start_time).then((n) => { if (n && container.isConnected) container.innerHTML = reportsHtml(payload, n); }).catch(() => { /* من غير رقم */ });
+        }
+        document.addEventListener('click', async (e) => {
+            const c = e.target.closest('[data-copy-report]');
+            if (!c) return;
+            try { await navigator.clipboard.writeText(c.dataset.copyReport); ErrorHandler.showSuccess('اتنسخ التقرير. مفيش رقم لولي الأمر: ابعته بنفسك.'); }
+            catch (er) { ErrorHandler.showError('مقدرناش ننسخ. ضيف رقم ولي الأمر من ملف الطالب.'); }
+        });
+        // حصة متسجلة قبل كده: التقارير من غير ما نحفظ تاني
+        $('btn-reports').addEventListener('click', () => {
+            const s = prep && prep.session;
+            if (!s) return;
+            const payload = {
+                date: s.session_date, start_time: s.start_time ? String(s.start_time).slice(0, 5) : '',
+                lesson_content: $('f-content').value.trim(), homework: $('f-homework').value.trim(), next_assignment: $('f-next').value.trim(),
+                attendance: [...state.entries()].map(([student_id, v]) => ({ student_id, attendance: v.attendance, rating: v.rating, homework_status: v.homework_status, note: (v.note || '').trim() || null }))
+            };
+            const modal = document.createElement('div');
+            modal.className = 'modal active gl-reports-modal';
+            modal.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-label="تقارير أولياء الأمور" style="max-width:560px;">
+                <span class="close-modal" data-x>&times;</span>
+                <h2 style="margin-top:0;">تقارير أولياء الأمور</h2>
+                <div class="absent-list" style="margin-top:0;"></div></div>`;
+            document.body.appendChild(modal);
+            const close = () => modal.remove();
+            modal.querySelector('[data-x]').addEventListener('click', close);
+            modal.addEventListener('mousedown', (ev) => { if (ev.target === modal) close(); });
+            fillReports(modal.querySelector('.absent-list'), payload, s.id);
+        });
+
+        // ------------------------------------------------------------ v30: كتب الحصة للمجموعة
+        const GBOOK_POS_KEY = `tm_book_pos_g_${groupId}`;
+        const GBOOK_HINT_KEY = 'tm_group_books_hint_off';
+        const GBOOK_TYPE = { pdf: 'PDF', docx: 'Word', pptx: 'PowerPoint', txt: 'نص', image: 'صورة' };
+        let groupBooks = null;
+        let groupBooksAll = 0;
+        let gBookViewer = null;
+        const gBookPos = {
+            all() { try { return JSON.parse(localStorage.getItem(GBOOK_POS_KEY) || '{}') || {}; } catch (e) { return {}; } },
+            get(id) { return this.all()[id] || null; },
+            set(id, page) { try { const a = this.all(); a[id] = { page: Math.max(1, Number(page) || 1), at: Date.now() }; localStorage.setItem(GBOOK_POS_KEY, JSON.stringify(a)); } catch (e) { /* تجاهل */ } }
+        };
+        async function loadGroupBooks() {
+            if (groupBooks !== null) { renderGroupBooks(); return; }
+            try {
+                const res = await api.listBooks();
+                const books = (res && res.books) || (Array.isArray(res) ? res : []);
+                const usable = books.filter((b) => b && b.status === 'ready' && b.storage_path);
+                groupBooksAll = usable.length;
+                const memberIds = (prep.members || []).filter((m) => !m.left_at).map((m) => String(m.student_id));
+                const pos = gBookPos.all();
+                groupBooks = usable.map((b) => {
+                    const ids = (b.student_ids || []).map(String);
+                    return { ...b, mine: ids.some((id) => memberIds.includes(id)), general: ids.length === 0, last: pos[b.id] || null };
+                }).filter((b) => b.mine || b.general)
+                    .sort((a, b) => ((b.last ? b.last.at : 0) - (a.last ? a.last.at : 0)) || (b.mine - a.mine) || (Date.parse(b.created_at || 0) - Date.parse(a.created_at || 0)));
+            } catch (e) { groupBooks = []; groupBooksAll = -1; }
+            renderGroupBooks();
+        }
+        function gBookTile(b, i) {
+            const unit = b.file_type === 'pptx' ? 'شريحة' : 'صفحة';
+            const meta = b.last && b.last.page > 1 ? `<span class="lb-resume">كمّل من ${unit} ${b.last.page}</span>`
+                : b.mine ? '<span class="lb-mine">كتاب طلاب المجموعة</span>'
+                : `<span>${esc(GBOOK_TYPE[b.file_type] || b.file_type || '')}${b.page_count ? ` · ${b.page_count} ${unit}` : ''}</span>`;
+            return `<button type="button" class="lb-tile${i === 0 && b.last ? ' is-last' : ''}" data-gbook="${esc(b.id)}" title="فتح ${esc(b.title)}">
+                <span class="lb-ic">${icon(b.file_type === 'image' ? 'image' : 'bookOpen', { size: 18 })}</span>
+                <span class="lb-txt"><span class="lb-title">${esc(b.title)}</span><span class="lb-meta">${meta}</span></span></button>`;
+        }
+        function renderGroupBooks() {
+            const host = $('g-books');
+            if (!host || groupBooks === null) return;
+            if (!groupBooks.length) {
+                let off = false;
+                try { off = localStorage.getItem(GBOOK_HINT_KEY) === '1'; } catch (e) { /* تجاهل */ }
+                if (off || groupBooksAll < 0) { host.innerHTML = ''; return; }
+                host.innerHTML = `<div class="lb-hint"><span class="lb-ic">${icon('bookOpen', { size: 17 })}</span>
+                    <span>ارفع كتاب أو مذكرة المجموعة من <a href="books.html">مكتبتي</a> (عام أو مربوط بطلاب المجموعة)، وهيظهر هنا تفتحه وقت الحصة وتشرح عليه.</span>
+                    <button type="button" class="lb-hint-x" aria-label="إخفاء">${icon('x', { size: 14 })}</button></div>`;
+                host.querySelector('.lb-hint-x').addEventListener('click', () => { try { localStorage.setItem(GBOOK_HINT_KEY, '1'); } catch (e) { /* تجاهل */ } host.innerHTML = ''; });
+                return;
+            }
+            const shown = groupBooks.slice(0, 4);
+            host.innerHTML = `<div class="lb-card"><div class="lb-head">
+                    <span class="lb-head-title">${icon('bookOpen', { size: 16 })} كتب الحصة</span>
+                    ${groupBooks.length > shown.length ? `<button type="button" class="lb-all" data-gbooks-all>كل الكتب (${groupBooks.length})</button>` : ''}
+                </div><div class="lb-row">${shown.map(gBookTile).join('')}</div></div>`;
+        }
+        document.addEventListener('click', (e) => {
+            const tile = e.target.closest('[data-gbook]');
+            if (tile && groupBooks) {
+                const b = groupBooks.find((x) => String(x.id) === tile.dataset.gbook);
+                if (b) { const m = tile.closest('.lb-picker'); if (m) m.remove(); openGroupBook(b, tile); }
+                return;
+            }
+            if (e.target.closest('[data-gbooks-all]')) openGroupBooksPicker();
+        });
+        function openGroupBooksPicker() {
+            if (!groupBooks || document.querySelector('.lb-picker')) return;
+            const modal = document.createElement('div');
+            modal.className = 'modal active lb-picker';
+            modal.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-label="كتب الحصة">
+                <div class="lb-picker-head"><h2>كتب ${esc(groupTitle(prep.group.name))}</h2><button type="button" class="lb-picker-x" aria-label="إغلاق">${icon('x', { size: 18 })}</button></div>
+                <input type="search" class="lb-search" placeholder="ابحث باسم الكتاب…" aria-label="ابحث باسم الكتاب">
+                <div class="lb-list"></div>
+                <a class="lb-lib-link" href="books.html">${icon('plus', { size: 14 })} إضافة كتاب من مكتبتي</a></div>`;
+            document.body.appendChild(modal);
+            const list = modal.querySelector('.lb-list');
+            const draw = (q) => {
+                const t = String(q || '').trim().toLowerCase();
+                const items = groupBooks.filter((b) => !t || String(b.title).toLowerCase().includes(t));
+                list.innerHTML = items.length ? items.map(gBookTile).join('') : '<div class="x-empty">مفيش كتاب بالاسم ده</div>';
+            };
+            draw('');
+            const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+            const onKey = (ev) => { if (ev.key === 'Escape') close(); };
+            document.addEventListener('keydown', onKey);
+            modal.querySelector('.lb-picker-x').addEventListener('click', close);
+            modal.addEventListener('mousedown', (ev) => { if (ev.target === modal) close(); });
+            const search = modal.querySelector('.lb-search');
+            search.addEventListener('input', () => draw(search.value));
+        }
+        function openGroupBook(book, opener) {
+            if (gBookViewer) return;
+            const last = gBookPos.get(book.id);
+            gBookViewer = openBookViewer({
+                api, book, opener,
+                owner: { group_id: groupId }, ownerName: groupTitle(prep.group.name),
+                startPage: last ? last.page : 1,
+                onPageChange: (pg) => gBookPos.set(book.id, pg),
+                onClose: () => {
+                    gBookViewer = null;
+                    try { window.dispatchEvent(new CustomEvent('tm:live-lesson-except', { detail: liveKey() })); } catch (e) { /* تجاهل */ }
+                    if (groupBooks) {
+                        const pos = gBookPos.all();
+                        groupBooks.forEach((b) => { b.last = pos[b.id] || null; });
+                        groupBooks.sort((a, b) => ((b.last ? b.last.at : 0) - (a.last ? a.last.at : 0)) || (b.mine - a.mine));
+                    }
+                    renderGroupBooks();
+                }
+            });
+            if (!last) gBookPos.set(book.id, 1);
+            try { window.tmTrack && window.tmTrack('group_book_opened', { live: isLive }); } catch (e) { /* تجاهل */ }
+            if (isLive) { try { window.dispatchEvent(new CustomEvent('tm:live-lesson-except', { detail: null })); } catch (e) { /* تجاهل */ } }
+            if ($('f-cancelled').checked) return;
+            const tools = gBookViewer.root && gBookViewer.root.querySelector('.bv-tools');
+            if (!tools) return;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'bv-btn lb-log-btn';
+            btn.title = 'اكتب اسم الكتاب ورقم الصفحة في "أخدنا إيه النهارده"';
+            btn.innerHTML = `${icon('plus', { size: 15 })}<span>سجّل الصفحة في الحصة</span>`;
+            btn.addEventListener('click', () => {
+                const v = gBookViewer;
+                const page = v && v.pageCount && v.pageCount > 1 ? v.page : null;
+                const unit = book.file_type === 'pptx' ? 'شريحة' : 'ص';
+                const line = `📖 ${book.title}${page ? ` — ${unit} ${page}` : ''}`;
+                const ta = $('f-content');
+                if (!ta.value.includes(line)) { ta.value = ta.value.trim() ? `${ta.value.trim()}\n${line}` : line; saveDraft(); }
+                ErrorHandler.showSuccess(page ? `اتسجّلت ${unit === 'ص' ? 'صفحة' : 'شريحة'} ${page} في الحصة` : 'اتسجّل الكتاب في الحصة');
+            });
+            tools.insertBefore(btn, tools.firstChild);
+        }
+        window.addEventListener('tm:live-lesson-go', (e) => {
+            if (gBookViewer && String(e.detail) === liveKey()) { e.preventDefault(); gBookViewer.close(); }
+        });
+
+        // ------------------------------------------------------------ v30: الحصص اللي فاتت
+        function resetHistory() {
+            const card = $('hist-card');
+            card.open = false;
+            card._loaded = false;
+            card.hidden = !(prep.last_session || (prep.session && prep.session.status !== 'in_progress'));
+        }
+        $('hist-card').addEventListener('toggle', async () => {
+            const card = $('hist-card');
+            if (!card.open || card._loaded) return;
+            card._loaded = true;
+            const box = $('hist-list');
+            const d = await groupDetail();
+            const list = ((d && d.sessions) || []).filter((x) => x.status === 'completed' && (!prep.session || String(x.id) !== String(prep.session.id))).slice(0, 8);
+            if (!list.length) { box.innerHTML = '<div class="muted" style="font-size:0.85rem;">لسه مفيش حصص قبل كده.</div>'; return; }
+            box.innerHTML = list.map((x) => `<a class="gl-hist-item" href="group-lesson.html?group_id=${encodeURIComponent(groupId)}&session_id=${encodeURIComponent(x.id)}" target="_blank" rel="noopener">
+                <b>${esc(formatLessonDate(x.session_date))}</b>${x.start_time ? ` <small>${esc(formatClock12(timeToMinutes(x.start_time)))}</small>` : ''}
+                <span>${esc(String(x.lesson_content || 'من غير محتوى مكتوب').split('\n')[0].slice(0, 140))}</span>
+                ${x.homework ? `<small>📝 ${esc(String(x.homework).split('\n')[0].slice(0, 100))}</small>` : ''}
+                <small class="muted">حضر ${Number(x.present_count) || 0}${x.absent_count ? ` · غاب ${x.absent_count}` : ''}</small></a>`).join('');
+        });
+
+        // ------------------------------------------------------------ v30: نافذة صغيرة فوق Zoom / Meet (كروم على الكمبيوتر)
+        let pipWin = null;
+        let pipTimer = null;
+        $('btn-pip').addEventListener('click', async () => {
+            if (!('documentPictureInPicture' in window)) return;
+            if (pipWin) { try { pipWin.close(); } catch (e) { /* تجاهل */ } return; }
+            try { pipWin = await window.documentPictureInPicture.requestWindow({ width: 320, height: 180 }); }
+            catch (e) { pipWin = null; ErrorHandler.showError('المتصفح ماسمحش بفتح النافذة الصغيرة'); return; }
+            const d = pipWin.document;
+            d.documentElement.lang = 'ar'; d.documentElement.dir = 'rtl'; d.title = 'الحصة';
+            const st = d.createElement('style');
+            st.textContent = `*{box-sizing:border-box}html,body{margin:0;height:100%}body{font-family:'IBM Plex Sans Arabic',Tahoma,Arial,sans-serif;background:#2E2140;color:#fff;display:flex;flex-direction:column;gap:.45rem;padding:.7rem .8rem}
+                .top{display:flex;align-items:center;gap:.5rem}.name{font-weight:700;font-size:.85rem;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+                .time{font-size:1.7rem;font-weight:800;direction:ltr;unicode-bidi:isolate}.left{font-size:.8rem;color:#CFC3DD}
+                form{display:flex;gap:.35rem;margin-top:auto}input{flex:1;min-width:0;border:0;border-radius:9px;padding:.5rem .6rem;font:inherit;font-size:.85rem}
+                button{border:0;border-radius:9px;padding:.45rem .65rem;font:inherit;font-size:.8rem;font-weight:800;cursor:pointer;background:#C59A4A;color:#2E2140}.ok{font-size:.72rem;color:#3DDC84;min-height:1em}`;
+            d.head.appendChild(st);
+            d.body.innerHTML = `<div class="top"><span class="name"></span></div><div><span class="time" id="t">00:00</span> <span class="left" id="l"></span></div>
+                <form id="f"><input id="n" placeholder="ملاحظة سريعة عن اللي اتعمل…" maxlength="300" autocomplete="off"><button type="submit">أضف</button></form><div class="ok" id="ok"></div>`;
+            d.querySelector('.name').textContent = groupTitle(prep.group.name);
+            const tick = () => { if (!pipWin || !liveStartedAt) return; const s2 = timeState(liveStartedAt, livePlannedMin); d.getElementById('t').textContent = clockText(s2.elapsed); d.getElementById('l').textContent = s2.text || ''; };
+            tick(); pipTimer = setInterval(tick, 1000);
+            d.getElementById('f').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const inp = d.getElementById('n'); const v = inp.value.trim();
+                if (!v) return;
+                const ta = $('f-content');
+                ta.value = ta.value.trim() ? `${ta.value.trim()}\n${v}` : v;
+                saveDraft(); inp.value = '';
+                d.getElementById('ok').textContent = '✓ اتضافت لـ "أخدنا إيه"';
+                setTimeout(() => { if (pipWin) d.getElementById('ok').textContent = ''; }, 2500);
+            });
+            pipWin.addEventListener('pagehide', () => { clearInterval(pipTimer); pipWin = null; });
         });
 
         // ------------------------------------------------------------ v27: المساعد الذكي
@@ -676,24 +960,16 @@
                             <div class="member-main"><a href="student.html?id=${encodeURIComponent(a.student_id)}">${esc(m.name)}</a><div class="member-stats"><span>${a.attendance === 'absent_excused' ? 'غاب بعذر' : 'غاب'}</span></div></div>
                             <div class="member-actions">${parentPhone(m) ? `<a class="btn btn-sm btn-outline" href="${esc(whatsappUrl(parentPhone(m), absentMsg(m.name)))}" target="_blank" rel="noopener">${icon('messageCircle', { size: 15 })} واتساب</a>` : '<span class="muted" style="font-size:0.8rem;">مفيش رقم</span>'}</div></div>`;
                     }).join('')}</div>` : ''}
-                ${!cancelled && presents.length && tSettings.report_after_lesson !== false ? `<div class="absent-list">
-                    <p style="font-weight:700; margin:0 0 0.1rem;">📩 تقرير الحصة لولي أمر كل طالب</p>
-                    <p class="muted" style="font-size:0.82rem; margin:0 0 0.3rem;">فيه المحتوى والواجب وتقييم الطالب نفسه.</p>
-                    ${presents.map((a) => {
-                        const m = byId.get(String(a.student_id)) || { name: 'طالب' };
-                        const txt = buildLessonReport({ name: m.name, subject: g.subject }, {
-                            lesson_content: payload.lesson_content, memorization: a.rating, homework_status: a.homework_status,
-                            performance: a.note, homework: payload.homework, next_assignment: payload.next_assignment
-                        }, { date: new Date(payload.date + 'T12:00:00'), signature: false });
-                        return `<div class="member-row"><div class="member-avatar">${esc((m.name || '؟').charAt(0))}</div>
-                            <div class="member-main"><a href="student.html?id=${encodeURIComponent(a.student_id)}">${esc(m.name)}</a><div class="member-stats"><span>حضر</span></div></div>
-                            <div class="member-actions">${parentPhone(m) ? `<a class="btn btn-sm btn-outline" data-report href="${esc(whatsappUrl(parentPhone(m), txt))}" target="_blank" rel="noopener">${icon('messageCircle', { size: 15 })} ابعت التقرير</a>` : '<span class="muted" style="font-size:0.8rem;">مفيش رقم</span>'}</div></div>`;
-                    }).join('')}</div>` : ''}
+                ${!cancelled && presents.length && tSettings.report_after_lesson !== false ? `<div class="absent-list" id="done-reports"></div>` : ''}
                 <div class="gl-done-actions">
                     <a class="btn btn-outline" href="group-lesson.html?group_id=${encodeURIComponent(groupId)}&session_id=${encodeURIComponent(sessionId)}">عدّل الحصة</a>
                     <a class="btn btn-outline" href="group.html?id=${encodeURIComponent(groupId)}">صفحة المجموعة</a>
                     <a class="btn btn-outline" href="dashboard.html">الرئيسية</a>
                 </div>`;
+            // v30: تقارير أولياء الأمور برقم حصة المجموعة وتاريخها
+            groupDetailP = null;
+            const dr = $('done-reports');
+            if (dr) fillReports(dr, payload, sessionId);
             const grBtn = $('btn-group-rec');
             if (grBtn) grBtn.addEventListener('click', () => openRecordingLinkModal({
                 groupSessionId: sessionId, groupName: groupTitle(g.name), current: (prep.session && prep.session.recording_url) || ''
@@ -721,6 +997,6 @@
             } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
         });
     </script>
-    <script src="js/pwa-install.js?v=37" defer></script>
+    <script src="js/pwa-install.js?v=38" defer></script>
 </body>
 </html>

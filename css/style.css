@@ -638,3 +638,8 @@ button { font-family: inherit; }
 @media (prefers-reduced-motion: reduce) {
     ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
 }
+
+/* v30: حصتين في نفس الوقت (الرئيسية) */
+.lesson-status-badge.status-conflict { background: #FDECEA; color: #8E2A1F; border: 1.5px dashed #C0392B; margin-inline-start: 0.3rem; }
+.lesson-item.is-conflict { box-shadow: inset 4px 0 0 #C0392B; background-image: repeating-linear-gradient(135deg, rgba(192,57,43,0.05) 0 8px, transparent 8px 16px); }
+[dir="rtl"] .lesson-item.is-conflict { box-shadow: inset -4px 0 0 #C0392B; }

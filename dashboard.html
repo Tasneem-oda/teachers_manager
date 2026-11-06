@@ -16,9 +16,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=37">
-    <link rel="stylesheet" href="css/lessons.css?v=37">
-    <link rel="stylesheet" href="css/groups.css?v=37">
+    <link rel="stylesheet" href="css/style.css?v=38">
+    <link rel="stylesheet" href="css/lessons.css?v=38">
+    <link rel="stylesheet" href="css/groups.css?v=38">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -71,7 +71,7 @@
         }
         @media (prefers-reduced-motion: reduce) { .wa-cta { transition: none; } .wa-cta:hover { transform: none; } }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=37">
+    <link rel="stylesheet" href="css/v29.css?v=38">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -185,25 +185,25 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=37"></script>
+    <script type="module" src="js/config.js?v=38"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=37';
-        import { api } from './js/api.js?v=37';
-        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=37';
-        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=37';
-        import { icon } from './js/icons.js?v=37';
-        import { renderOnboarding } from './js/onboarding.js?v=37';
-        import { openAttendanceModal } from './js/attendance.js?v=37';
-        import { ATTENDANCE } from './js/lesson-utils.js?v=37';
-        import { computeBilling, openReminder, lessonsText, buildReminder, parentPhone, openBulkReminders } from './js/billing.js?v=37';
-        import { showTips } from './js/tips.js?v=37';
-        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=37';
-        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=37';
-        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=37';
-        import { mountReminderSetupCard } from './js/reminder-settings.js?v=37';
-        import { requestPermission } from './js/notifications.js?v=37';
-        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=37';
-        import { whatsappUrl } from './js/billing.js?v=37';
+        import { Auth } from './js/auth.js?v=38';
+        import { api } from './js/api.js?v=38';
+        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=38';
+        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=38';
+        import { icon } from './js/icons.js?v=38';
+        import { renderOnboarding } from './js/onboarding.js?v=38';
+        import { openAttendanceModal } from './js/attendance.js?v=38';
+        import { ATTENDANCE } from './js/lesson-utils.js?v=38';
+        import { computeBilling, openReminder, lessonsText, buildReminder, parentPhone, openBulkReminders } from './js/billing.js?v=38';
+        import { showTips } from './js/tips.js?v=38';
+        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=38';
+        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=38';
+        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=38';
+        import { mountReminderSetupCard } from './js/reminder-settings.js?v=38';
+        import { requestPermission } from './js/notifications.js?v=38';
+        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=38';
+        import { whatsappUrl } from './js/billing.js?v=38';
 
         renderSidebar('dashboard');
 
@@ -328,7 +328,7 @@
             }
             return 'upcoming';
         }
-        function groupLessonHtml(g) {
+        function groupLessonHtml(g, clash = []) {
             const state = groupState(g);
             const name = groupTitle(g.group_name);
             const time5 = String(g.start_time || '').substring(0, 5);
@@ -355,13 +355,13 @@
                 </div>`;
             }
             return `
-                <div class="lesson-item is-${state} is-group ${groupColorClass(g.color)}">
+                <div class="lesson-item is-${state} is-group ${groupColorClass(g.color)}${clash.length && state !== 'cancelled' ? ' is-conflict' : ''}">
                     <div class="lesson-main">
                         <div class="lesson-avatar">${icon('group', { size: 18 })}</div>
                         <div class="lesson-info">
                             <p class="name"><a href="group.html?id=${encodeURIComponent(g.group_id)}" style="color:inherit;">${Formatters.escapeHtml(name)}</a></p>
                             <p class="meta">حصة مجموعة · ${Formatters.escapeHtml(membersText(g.members_count || 0))}</p>
-                            ${badge}
+                            ${badge}${clash.length && state !== 'cancelled' ? `<span class="lesson-status-badge status-conflict">⚠️ في نفس الوقت مع ${Formatters.escapeHtml(clash.slice(0, 2).join('، '))}</span>` : ''}
                         </div>
                     </div>
                     <div class="lesson-time">${Formatters.formatTime ? Formatters.formatTime(g.start_time) : g.start_time}</div>
@@ -387,8 +387,18 @@
                 ...lessons.map((l) => ({ kind: 'lesson', t: String(l.start_time || ''), l })),
                 ...groups.map((g) => ({ kind: 'group', t: String(g.start_time || ''), g }))
             ].sort((a, b) => a.t.localeCompare(b.t));
-            container.innerHTML = merged.map(({ kind, l, g }) => {
-                if (kind === 'group') return groupLessonHtml(g);
+            // v30: حصتين في نفس الوقت النهارده: علامة واضحة على الاتنين
+            const mins = (t) => { const p = String(t || '').split(':'); return (Number(p[0]) || 0) * 60 + (Number(p[1]) || 0); };
+            const span = merged.map((m) => {
+                const x = m.kind === 'group' ? m.g : m.l;
+                const st = mins(x.start_time);
+                return { st, en: st + (Number(x.duration_minutes) || (m.kind === 'group' ? 60 : 45)), name: m.kind === 'group' ? groupTitle(x.group_name) : (x.student_name || '') };
+            });
+            const clashOf = (i) => span.filter((o, j) => j !== i && o.st < span[i].en && span[i].st < o.en).map((o) => o.name);
+            const clashHtml = (names) => (names.length ? `<span class="lesson-status-badge status-conflict">⚠️ في نفس الوقت مع ${Formatters.escapeHtml(names.slice(0, 2).join('، '))}</span>` : '');
+            container.innerHTML = merged.map(({ kind, l, g }, mi) => {
+                const clash = clashOf(mi);
+                if (kind === 'group') return groupLessonHtml(g, clash);
                 const { state } = getLessonState(l);
 
                 let badge = '';
@@ -422,13 +432,13 @@
                 }
 
                 return `
-                    <div class="lesson-item is-${state}">
+                    <div class="lesson-item is-${state}${clash.length && state !== 'cancelled' ? ' is-conflict' : ''}">
                         <div class="lesson-main">
                             <div class="lesson-avatar">${Formatters.escapeHtml((l.student_name || '؟').charAt(0))}</div>
                             <div class="lesson-info">
                                 <p class="name">${Formatters.escapeHtml(l.student_name || '')}</p>
                                 <p class="meta">${Formatters.escapeHtml(l.current_topic || 'بدون موضوع محدد')}</p>
-                                ${badge}
+                                ${badge}${state !== 'cancelled' ? clashHtml(clash) : ''}
                             </div>
                         </div>
                         <div class="lesson-time">${Formatters.formatTime ? Formatters.formatTime(l.start_time) : l.start_time}</div>
@@ -709,16 +719,16 @@
         }
         window.addEventListener('tm:schedules-changed', () => { loadDashboard(); });
         // v29.8: لو اتسجّلت حصة من جهاز تاني (أو المدرس رجع للبرنامج) الرئيسية تتحدّث لوحدها
-        import('./js/auto-refresh.js?v=37').then((m) => m.onAppResume(() => loadDashboard())).catch(() => { /* تجاهل */ });
+        import('./js/auto-refresh.js?v=38').then((m) => m.onAppResume(() => loadDashboard())).catch(() => { /* تجاهل */ });
 
         (async () => {
             const authInfo = await Auth.requireAuth();
             if (!authInfo) return;
             // v29: أول دخول بحساب جوجل: سؤال المادة + الموبايل
-            try { const { maybeCompleteProfile } = await import('./js/complete-profile.js?v=37'); maybeCompleteProfile(authInfo.profile, authInfo.session); } catch (e) { /* تجاهل */ }
+            try { const { maybeCompleteProfile } = await import('./js/complete-profile.js?v=38'); maybeCompleteProfile(authInfo.profile, authInfo.session); } catch (e) { /* تجاهل */ }
             await loadDashboard();
         })();
     </script>
-    <script src="js/pwa-install.js?v=37" defer></script>
+    <script src="js/pwa-install.js?v=38" defer></script>
 </body>
 </html>

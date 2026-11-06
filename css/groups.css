@@ -246,3 +246,18 @@
 .sp-icon-btn.sp-del { color: var(--danger); border-color: #E7C9C9; }
 .sp-icon-btn.sp-del:hover { border-color: var(--danger); background: #FFF7F7; }
 .gp-remove { margin: 0; min-height: 36px; display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.3rem 0.6rem; font-size: 0.82rem; }
+
+/* v30: حصة المجموعة بقت فيها كل أدوات حصة الطالب */
+.gl-live-link, .gl-live-pip { flex-shrink: 0; background: rgba(255,255,255,0.12) !important; color: inherit !important; border-color: rgba(255,255,255,0.35) !important; }
+@media (max-width: 900px) { .gl-live-pip { display: none !important; } }
+.gl-history { padding: 0.75rem 1rem; }
+.gl-history > summary { cursor: pointer; font-weight: 700; font-size: 0.95rem; list-style: none; }
+.gl-history > summary::-webkit-details-marker { display: none; }
+.gl-hist-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.7rem; }
+.gl-hist-item { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.55rem 0.7rem; border: 1px solid var(--border); border-radius: 10px; color: var(--text-primary); text-decoration: none; background: var(--bg-secondary, #F5F3F0); font-size: 0.86rem; line-height: 1.6; }
+.gl-hist-item:hover { border-color: var(--primary); }
+.gl-hist-item small { font-size: 0.78rem; }
+#g-books { margin: 0 0 0.8rem; }
+.gr-month { display: flex; gap: 0.4rem; margin: 0.2rem 0 0.8rem; flex-wrap: wrap; }
+.gr-section + .gr-section { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.gr-section h3 { margin: 0 0 0.3rem; font-size: 1rem; }

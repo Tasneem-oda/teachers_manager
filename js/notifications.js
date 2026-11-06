@@ -33,10 +33,10 @@
  * كل جزء بيفشل بصمت (من غير ما يكسر باقي الصفحة) لو لسه معمولش الإعداد بتاعه.
  * ============================================================================
  */
-import { CONFIG } from './config.js?v=37';
-import { Auth } from './auth.js?v=37';
-import { api } from './api.js?v=37';
-import { ErrorHandler } from './utils.js?v=37';
+import { CONFIG } from './config.js?v=38';
+import { Auth } from './auth.js?v=38';
+import { api } from './api.js?v=38';
+import { ErrorHandler } from './utils.js?v=38';
 
 const PROMPT_DISMISS_KEY = 'tm_notif_prompt_dismissed';
 const BADGE_CACHE_KEY = 'tm_notif_badge_cache_v1';
@@ -127,6 +127,13 @@ async function initAndLinkTeacher() {
         // ربط هذا المتصفح/الجهاز بمعرّف المعلم الموحّد، عشان نقدر نستهدفه
         // بالإشعار اليومي من n8n لاحقًا بنفس الـ UUID المستخدم في باقي النظام
         await OneSignal.login(teacherId);
+        // v30: الإذن متاح بس الاشتراك واقع (اتمسح مع تحديث المتصفح / Service Worker قديم / مسح بيانات): نصلّحه بهدوء
+        try {
+            const ps = OneSignal.User && OneSignal.User.PushSubscription;
+            if (ps && 'Notification' in window && Notification.permission === 'granted' && !ps.optedIn && typeof ps.optIn === 'function') {
+                await ps.optIn();
+            }
+        } catch (e) { /* تجاهل */ }
         // v28: لو البرنامج مفتوح وقت التذكير والمدرس مختار "بصوت": جرس من البرنامج نفسه + اهتزاز
         try {
             OneSignal.Notifications.addEventListener('foregroundWillDisplay', (event) => {
@@ -140,7 +147,7 @@ async function initAndLinkTeacher() {
                         return;
                     }
                     if (data.tm_sound === true || data.tm_sound === 'true') {
-                        import('./reminder-settings.js?v=37').then((m) => m.playReminderSound()).catch(() => { /* تجاهل */ });
+                        import('./reminder-settings.js?v=38').then((m) => m.playReminderSound()).catch(() => { /* تجاهل */ });
                     }
                 } catch (e) { /* تجاهل */ }
             });
@@ -281,31 +288,56 @@ function afterPageSettles() {
 
 export async function requestPermission() {
     try { startPush().catch(() => { /* fallback تحت بيتعامل */ }); } catch (e) { /* تجاهل */ }
-    if ('Notification' in window && Notification.permission === 'denied') {
+    if (!('Notification' in window)) {
+        const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        ErrorHandler.showError(ios
+            ? 'على الآيفون الإشعارات بتشتغل بس لما تفتح البرنامج من الأيقونة على الشاشة الرئيسية (مشاركة ← إضافة إلى الشاشة الرئيسية).'
+            : 'المتصفح ده مابيدعمش الإشعارات. افتح البرنامج من كروم.', 9000);
+        return;
+    }
+    if (Notification.permission === 'denied') {
         ErrorHandler.showError(
             'إذن الإشعارات محظور لهذا الموقع من إعدادات المتصفح. افتح إعدادات الموقع (أيقونة القفل 🔒 بجانب رابط الموقع) ← الإشعارات ← اختر "سماح"، ثم أعد تحميل الصفحة.'
         );
         return;
     }
 
-    // لو خدمة الإشعارات ماتحمّلتش (نت ضعيف / حاجب إعلانات) مانسيبش الزرار معلّق للأبد
-    let settled = false;
-    const fallback = new Promise((resolve) => setTimeout(async () => {
-        if (settled) return resolve();
+    // v30: طلب الإذن لازم يحصل "جوه" ضغطة المدرس نفسها (الآيفون وبعض متصفحات أندرويد بيرفضوا الطلب
+    // لو اتأخر لحد ما مكتبة OneSignal تتحمّل) — فبنطلب الإذن من المتصفح على طول، وبعدين OneSignal يكمّل الاشتراك
+    if (Notification.permission === 'default') {
+        let perm = 'default';
         try {
-            if ('Notification' in window && Notification.permission === 'default') await Notification.requestPermission();
-        } catch (e) { /* تجاهل */ }
-        if ('Notification' in window && Notification.permission !== 'granted') {
-            ErrorHandler.showError('خدمة التنبيهات ماردّتش (ممكن النت ضعيف). جرّب تاني بعد شوية.');
+            perm = await new Promise((resolve) => {
+                let done = false;
+                const fin = (v) => { if (!done) { done = true; resolve(v); } };
+                try {
+                    const r = Notification.requestPermission(fin);
+                    if (r && typeof r.then === 'function') r.then(fin, () => fin('default'));
+                } catch (e) { fin('default'); }
+            });
+        } catch (e) { perm = Notification.permission; }
+        if (perm !== 'granted') {
+            if (perm === 'denied') ErrorHandler.showError('الإشعارات اتقفلت. تقدر تفعّلها بعدين من إعدادات الموقع في المتصفح.');
+            return;
         }
+    }
+
+    // الإذن موجود: نربط الجهاز بحساب المدرس في OneSignal (لو المكتبة ماتحمّلتش خلال 10 ثواني مانعلّقش الزرار)
+    let settled = false;
+    const fallback = new Promise((resolve) => setTimeout(() => {
+        if (!settled) ErrorHandler.showError('خدمة التنبيهات ماردّتش (ممكن النت ضعيف). هنكمّل التفعيل لوحدنا أول ما النت يتحسن.');
         resolve();
     }, 10000));
     const main = new Promise((resolve) => {
         runWhenOneSignalReady(async (OneSignal) => {
             try {
-                await OneSignal.Notifications.requestPermission();
+                if (OneSignal.User && OneSignal.User.PushSubscription && typeof OneSignal.User.PushSubscription.optIn === 'function') {
+                    await OneSignal.User.PushSubscription.optIn();
+                } else {
+                    await OneSignal.Notifications.requestPermission();
+                }
             } catch (e) {
-                console.warn('تعذّر طلب إذن الإشعارات:', e);
+                console.warn('تعذّر تفعيل اشتراك الإشعارات:', e);
                 ErrorHandler.showError(
                     'تعذّر تفعيل الإشعارات. تأكد إن الإشعارات مش محظورة من إعدادات المتصفح لهذا الموقع، ولو بتستخدم آيفون، تأكد إنك فتحت الموقع من الشاشة الرئيسية بعد إضافته (Add to Home Screen) لا من متصفح Safari مباشرة.'
                 );

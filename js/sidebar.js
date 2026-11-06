@@ -1,15 +1,15 @@
 /**
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
-import { Auth } from './auth.js?v=37';
-import { icon } from './icons.js?v=37';
-import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=37';
-import { CONFIG } from './config.js?v=37';
-import { openSuggestionModal } from './suggestions.js?v=37';
-import { mountFloatingLesson } from './live-lesson.js?v=37';
-import { initTracking } from './track.js?v=37';
-import { askChoice } from './utils.js?v=37';
-import { priceFor, subscribeMessage, waUrl, currentUserInfo, offerActive, annualAvailable } from './pricing.js?v=37';
+import { Auth } from './auth.js?v=38';
+import { icon } from './icons.js?v=38';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=38';
+import { CONFIG } from './config.js?v=38';
+import { openSuggestionModal } from './suggestions.js?v=38';
+import { mountFloatingLesson } from './live-lesson.js?v=38';
+import { initTracking } from './track.js?v=38';
+import { askChoice } from './utils.js?v=38';
+import { priceFor, subscribeMessage, waUrl, currentUserInfo, offerActive, annualAvailable } from './pricing.js?v=38';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
@@ -37,7 +37,7 @@ let subFetchPromise = null;
 function fetchSubscriptionNow() {
     if (subFetchPromise) return subFetchPromise;
     subFetchPromise = (async () => {
-        const { api } = await import('./api.js?v=37');
+        const { api } = await import('./api.js?v=38');
         const data = await api.checkSubscription();
         try {
             sessionStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
@@ -448,10 +448,12 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
     loadHeaderProfile();
 
     // v29.5: حالة النت + تذكير الحصص من على الجهاز (بيشتغل من غير نت)
-    import('./net-status.js?v=37').then((m) => m.initNetStatus()).catch(() => { /* تجاهل */ });
+    import('./net-status.js?v=38').then((m) => m.initNetStatus()).catch(() => { /* تجاهل */ });
     // v29.7: الوقت الصح من السيرفر (لو ساعة الجهاز غلط التذكيرات وتاريخ الحصص بيمشوا على الوقت الحقيقي)
-    import('./server-time.js?v=37').then((m) => m.initServerTime()).catch(() => { /* تجاهل */ });
-    const startReminders = () => import('./local-reminders.js?v=37').then((m) => m.initLocalReminders()).catch(() => { /* تجاهل */ });
+    import('./server-time.js?v=38').then((m) => m.initServerTime()).catch(() => { /* تجاهل */ });
+    // v30: مزامنة لحظية بين أجهزة نفس المدرس (حصة اتسجلت على اللابتوب ← الموبايل يتحدّث فورًا)
+    import('./realtime-sync.js?v=38').then((m) => m.initRealtimeSync()).catch(() => { /* تجاهل */ });
+    const startReminders = () => import('./local-reminders.js?v=38').then((m) => m.initLocalReminders()).catch(() => { /* تجاهل */ });
     if ('requestIdleCallback' in window) requestIdleCallback(startReminders, { timeout: 3000 }); else setTimeout(startReminders, 1200);
 
     // تفعيل إشعارات Push (تذكير الحصص اليومي) - مرة واحدة بعد رسم الهيدر
@@ -467,7 +469,7 @@ async function loadHeaderProfile() {
         const profile = Auth.cachedProfile(session.user && session.user.id) || await Auth.bootstrapSession();
         // v28: الحساب مجدول للحذف؟ نعرض "رجّع حسابي" قبل أي حاجة
         if (profile && profile.deletion_scheduled_for) {
-            try { const m = await import('./account-delete.js?v=37'); m.showDeletionScheduledGate(profile); } catch (e) { /* تجاهل */ }
+            try { const m = await import('./account-delete.js?v=38'); m.showDeletionScheduledGate(profile); } catch (e) { /* تجاهل */ }
         }
         const nameEl = document.getElementById('header-user-name');
         const avatarEl = document.getElementById('header-avatar-fallback');

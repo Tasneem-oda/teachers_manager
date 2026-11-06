@@ -15,8 +15,9 @@
  *   وأي event بيتعمله push في dataLayer في أي مكان في البرنامج.
  */
 
-import { CONFIG } from './config.js?v=37';
-import { APIUtils } from './utils.js?v=37';
+import { CONFIG } from './config.js?v=38';
+import { APIUtils } from './utils.js?v=38';
+import { getFreshSession } from './session.js?v=38';
 
 const QUEUE_KEY = 'tm_track_queue_v1';
 const SESSION_KEY = 'tm_track_session';
@@ -90,8 +91,9 @@ function restore() {
 async function refreshToken() {
     try {
         if (!window.supabaseClient) return;
-        const { data } = await window.supabaseClient.auth.getSession();
-        token = data && data.session ? data.session.access_token : null;
+        // v30: توكن صالح بالوقت الحقيقي (التتبع كان بيبعت توكن منتهي فبيعمل Unauthorized في n8n)
+        const s = await getFreshSession();
+        token = s ? s.access_token : null;
     } catch (e) { /* تجاهل */ }
 }
 

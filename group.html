@@ -16,9 +16,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=37">
-    <link rel="stylesheet" href="css/lessons.css?v=37">
-    <link rel="stylesheet" href="css/groups.css?v=37">
+    <link rel="stylesheet" href="css/style.css?v=38">
+    <link rel="stylesheet" href="css/lessons.css?v=38">
+    <link rel="stylesheet" href="css/groups.css?v=38">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -26,7 +26,7 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/v29.css?v=37">
+    <link rel="stylesheet" href="css/v29.css?v=38">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -71,6 +71,7 @@
                         <button type="button" class="sp-tab active" data-tab="members" role="tab">الطلاب <span class="sp-count" id="cnt-members"></span></button>
                         <button type="button" class="sp-tab" data-tab="sessions" role="tab">الحصص <span class="sp-count" id="cnt-sessions"></span></button>
                         <button type="button" class="sp-tab" data-tab="billing" role="tab" id="tab-billing" hidden>الاشتراك <span class="sp-count" id="cnt-unpaid"></span></button>
+                        <button type="button" class="sp-tab" data-tab="reports" role="tab">التقارير</button>
                         <button type="button" class="sp-tab" data-tab="schedule" role="tab">المواعيد</button>
                         <button type="button" class="sp-tab" data-tab="settings" role="tab">الإعدادات</button>
                     </nav>
@@ -117,6 +118,25 @@
                         </div>
                     </section>
 
+                    <!-- v30: التقارير (زي ملف الطالب: تقرير الشهر لولي الأمر + تقرير المجموعة + تقرير آخر حصة) -->
+                    <section class="tab-pane" data-pane="reports" hidden>
+                        <div class="x-card">
+                            <div class="gr-section">
+                                <h3>📊 تقرير المجموعة الشهري</h3>
+                                <p class="muted" style="font-size:0.86rem; margin:0 0 0.6rem;">لجروب واتساب المجموعة: عدد الحصص بأرقامها وتواريخها، اللي خلصناه، ونسبة الحضور.</p>
+                                <button type="button" class="btn" id="btn-group-report"></button>
+                            </div>
+                            <div class="gr-section">
+                                <h3>📩 تقرير آخر حصة لأولياء الأمور</h3>
+                                <div id="gr-last"></div>
+                            </div>
+                            <div class="gr-section">
+                                <h3>📨 تقرير الشهر لولي أمر كل طالب</h3>
+                                <p class="muted" style="font-size:0.86rem; margin:0 0 0.4rem;">الحضور والمستوى والواجبات لكل طالب (حصص المجموعة وحصصه الخاصة) برقم كل حصة وتاريخها.</p>
+                                <div id="gr-members"></div>
+                            </div>
+                        </div>
+                    </section>
                     <!-- المواعيد -->
                     <section class="tab-pane" data-pane="schedule" hidden>
                         <div class="x-card">
@@ -210,18 +230,19 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=37"></script>
+    <script type="module" src="js/config.js?v=38"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=37';
-        import { api } from './js/api.js?v=37';
-        import { ErrorHandler, Formatters, askChoice } from './js/utils.js?v=37';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=37';
-        import { icon } from './js/icons.js?v=37';
-        import { subjectLabel, formatLessonDate } from './js/lesson-utils.js?v=37';
-        import { computeBilling, billingBadge, whatsappUrl, parentPhone } from './js/billing.js?v=37';
-        import { parseDate, formatClock12, timeToMinutes, lessonItem, findConflicts } from './js/calendar-utils.js?v=37';
-        import { groupTitle, groupColorClass, membersText, scheduleSummary, subjectOptionsHtml, mountScheduleEditor, mountStudentPicker, quickCreateStudent, sessionShareText, GROUP_COLORS, GROUP_COLOR_LABELS, saveWithConflictCheck, todayScheduleTime, monthLabel, shiftMonth, currentMonthKey } from './js/groups-utils.js?v=37';
-        import { money } from './js/billing.js?v=37';
+        import { Auth } from './js/auth.js?v=38';
+        import { api } from './js/api.js?v=38';
+        import { ErrorHandler, Formatters, askChoice } from './js/utils.js?v=38';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=38';
+        import { icon } from './js/icons.js?v=38';
+        import { subjectLabel, formatLessonDate } from './js/lesson-utils.js?v=38';
+        import { computeBilling, billingBadge, whatsappUrl, parentPhone } from './js/billing.js?v=38';
+        import { parseDate, formatClock12, timeToMinutes, lessonItem, findConflicts } from './js/calendar-utils.js?v=38';
+        import { groupTitle, groupColorClass, membersText, scheduleSummary, subjectOptionsHtml, mountScheduleEditor, mountStudentPicker, quickCreateStudent, sessionShareText, GROUP_COLORS, GROUP_COLOR_LABELS, saveWithConflictCheck, todayScheduleTime, monthLabel, shiftMonth, currentMonthKey } from './js/groups-utils.js?v=38';
+        import { money } from './js/billing.js?v=38';
+        import { openMonthlyReport, openGroupMonthlyReport, fullDate } from './js/report.js?v=38';
 
         const $ = (id) => document.getElementById(id);
         const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
@@ -254,7 +275,13 @@
                 try { history.replaceState(null, '', `group.html?id=${encodeURIComponent(groupId)}`); } catch (e) { /* تجاهل */ }
             }
             const tab = (location.hash || '').replace('#', '');
-            if (['members', 'sessions', 'schedule', 'settings', 'billing'].includes(tab)) showTab(tab);
+            if (['members', 'sessions', 'schedule', 'settings', 'billing', 'reports'].includes(tab)) showTab(tab);
+            // v30: تحديث تلقائي (حصة اتسجلت من جهاز تاني…) — مش وقت تعديل المواعيد أو الإعدادات
+            import('./js/auto-refresh.js?v=38').then((m) => m.onAppResume(async () => {
+                if (['schedule', 'settings'].includes(currentTab)) return;
+                const d = await api.getGroup(groupId);
+                if (d) { detail = d; render(); }
+            })).catch(() => { /* تجاهل */ });
         })();
 
         async function load() {
@@ -336,6 +363,7 @@
             $('cnt-unpaid').textContent = unpaid || '';
             renderMembers();
             renderSessions();
+            renderReports();
             renderSchedule();
             renderSettings();
             if (monthly && currentTab === 'billing') loadBilling();
@@ -466,6 +494,55 @@
                 $('sessions-list').insertAdjacentHTML('beforeend', `<p class="muted" style="font-size:0.85rem; text-align:center;">بيظهر آخر ${list.length} حصة. الحصص الأقدم موجودة في ملف كل طالب.</p>`);
             }
         }
+
+        // ------------------------------------------------------------ v30: التقارير
+        function renderReports() {
+            const g = detail.group;
+            $('btn-group-report').innerHTML = `${icon('messageCircle', { size: 17 })} جهّز تقرير المجموعة`;
+            const last = (detail.sessions || []).find((s) => s.status === 'completed');
+            $('gr-last').innerHTML = last
+                ? `<div class="member-row"><div class="member-avatar">${icon('clipboardList', { size: 16 })}</div>
+                    <div class="member-main"><b>${esc(fullDate(last.session_date))}</b><div class="member-stats"><span>${esc(String(last.lesson_content || 'من غير محتوى مكتوب').split('\n')[0].slice(0, 90))}</span></div></div>
+                    <div class="member-actions"><a class="btn btn-sm" href="group-lesson.html?group_id=${encodeURIComponent(groupId)}&session_id=${encodeURIComponent(last.id)}&reports=1">${icon('messageCircle', { size: 15 })} ابعت التقارير</a></div></div>
+                   <p class="muted" style="font-size:0.8rem; margin:0.3rem 0 0;">ولأي حصة قديمة: افتحها من تاب "الحصص" ← "تقارير أولياء الأمور".</p>`
+                : '<div class="x-empty">لسه مفيش حصص متسجلة.</div>';
+            const act = activeMembers();
+            $('gr-members').innerHTML = act.length ? act.map((m) => `<div class="member-row">
+                    <div class="member-avatar">${esc((m.name || '؟').trim().charAt(0))}</div>
+                    <div class="member-main"><a href="student.html?id=${encodeURIComponent(m.student_id)}">${esc(m.name)}</a><div class="member-stats"><span>حضر ${Number(m.present) || 0}${m.absent ? ` · غاب ${m.absent}` : ''}</span></div></div>
+                    <div class="member-actions"><button type="button" class="btn btn-sm btn-outline" data-mreport="${esc(m.student_id)}">${icon('messageCircle', { size: 15 })} تقرير الشهر</button></div>
+                </div>`).join('') : '<div class="x-empty">مفيش طلاب في المجموعة.</div>';
+        }
+        $('btn-group-report').addEventListener('click', () => {
+            const complete = !((Number(detail.sessions_total) || 0) > (detail.sessions || []).length);
+            openGroupMonthlyReport({ group: detail.group, title: groupTitle(detail.group.name), sessions: detail.sessions || [], complete });
+        });
+        $('gr-members').addEventListener('click', async (e) => {
+            const b = e.target.closest('[data-mreport]');
+            if (!b || b.disabled) return;
+            const sid = b.dataset.mreport;
+            b.disabled = true;
+            const label = b.innerHTML;
+            b.textContent = 'جاري التجهيز...';
+            try {
+                const first = await api.getStudentOverview(sid, { limit: 50 });
+                const loadLessons = async (start) => {
+                    let all = (first && first.lessons) || [];
+                    for (let page = 1; page < 4; page++) {
+                        const oldest = all[all.length - 1];
+                        if (all.length < page * 50 || !oldest) break;
+                        if (new Date(String(oldest.lesson_date).slice(0, 10) + 'T12:00:00') < start) break;
+                        const res = await api.getStudentOverview(sid, { offset: page * 50, limit: 50 });
+                        all = all.concat(res.lessons || []);
+                    }
+                    return all;
+                };
+                const m = detail.members.find((x) => String(x.student_id) === String(sid)) || {};
+                const student = { ...m, ...((first && first.student) || {}), id: sid };
+                openMonthlyReport({ student, loadLessons, completedTotal: first && first.stats && !first.legacy ? Number(first.stats.completed) || 0 : 0 });
+            } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
+            finally { b.disabled = false; b.innerHTML = label; }
+        });
 
         // ------------------------------------------------------------ المواعيد
         function renderSchedule() {
@@ -686,6 +763,6 @@
         }));
         document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => $(b.dataset.close).classList.remove('active')));
     </script>
-    <script src="js/pwa-install.js?v=37" defer></script>
+    <script src="js/pwa-install.js?v=38" defer></script>
 </body>
 </html>

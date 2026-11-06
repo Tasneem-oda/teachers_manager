@@ -6,13 +6,14 @@
  * لو فيه حصة جارية (lessonId) بتتحوّل هي نفسها لغياب بدل ما يتعمل صف جديد.
  */
 
-import { api } from './api.js?v=37';
-import { Formatters, ErrorHandler } from './utils.js?v=37';
-import { icon } from './icons.js?v=37';
-import { localDateISO, addDaysISO as addDaysFromToday } from './lesson-utils.js?v=37';
-import { whatsappUrl } from './billing.js?v=37';
-import { saveWithConflictCheck } from './groups-utils.js?v=37';
-import { DAY_NAMES, formatClock12, timeToMinutes } from './calendar-utils.js?v=37';
+import { api } from './api.js?v=38';
+import { Formatters, ErrorHandler } from './utils.js?v=38';
+import { uuidv4 } from './utils.js?v=38';
+import { icon } from './icons.js?v=38';
+import { localDateISO, addDaysISO as addDaysFromToday } from './lesson-utils.js?v=38';
+import { whatsappUrl } from './billing.js?v=38';
+import { saveWithConflictCheck } from './groups-utils.js?v=38';
+import { DAY_NAMES, formatClock12, timeToMinutes } from './calendar-utils.js?v=38';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 
@@ -239,7 +240,7 @@ export function openAttendanceModal(opts) {
         btn.classList.add('is-busy');
         try {
             // v29.5: رقم ثابت لكل تسجيل: لو النت قطع بيتحفظ على الجهاز ويتبعت أول ما يرجع من غير ما يتكرر
-            reqId = reqId || ((window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+            reqId = reqId || uuidv4();
             const res = await api.saveLesson({
                 action: 'absence',
                 attendance: btn.dataset.value,
