@@ -97,12 +97,12 @@
             try {
                 const cn = navigator.connection;
                 if (cn && (cn.saveData || /2g/.test(cn.effectiveType || ''))) return;
-                const last = Number(localStorage.getItem('tm_sw_warm_at_v38') || 0);
+                const last = Number(localStorage.getItem('tm_sw_warm_at_v39') || 0);
                 if (Date.now() - last < 6 * 3600 * 1000) return;
                 navigator.serviceWorker.ready.then((reg) => {
                     if (!reg.active) return;
                     reg.active.postMessage({ type: 'tm:warm', pages: ['dashboard.html', 'students.html', 'student.html', 'schedule.html', 'lesson.html', 'books.html', 'settings.html', 'groups.html', 'group.html', 'group-lesson.html', 'subscription.html'] });
-                    localStorage.setItem('tm_sw_warm_at_v38', String(Date.now()));
+                    localStorage.setItem('tm_sw_warm_at_v39', String(Date.now()));
                 }).catch(() => { /* تجاهل */ });
             } catch (e) { /* تجاهل */ }
         };
@@ -110,7 +110,7 @@
         navigator.serviceWorker.addEventListener('message', (e) => {
             const d = e.data || {};
             if (d.type !== 'tm:sw-updated') return;
-            try { localStorage.removeItem('tm_sw_warm_at_v38'); } catch (er) { /* تجاهل */ }
+            try { localStorage.removeItem('tm_sw_warm_at_v39'); } catch (er) { /* تجاهل */ }
             setTimeout(warm, 3000);
             const page = (location.pathname.split('/').pop() || '').replace(/\.html$/, '');
             if (/^(lesson|group-lesson|login|signup|reset-password|index)$/.test(page) || document.getElementById('tm-update-bar')) return;

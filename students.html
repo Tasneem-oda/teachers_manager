@@ -16,9 +16,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=38">
-    <link rel="stylesheet" href="css/lessons.css?v=38">
-    <link rel="stylesheet" href="css/groups.css?v=38">
+    <link rel="stylesheet" href="css/style.css?v=39">
+    <link rel="stylesheet" href="css/lessons.css?v=39">
+    <link rel="stylesheet" href="css/groups.css?v=39">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -61,6 +61,20 @@
         .st-badge.archived { background: #EEE; color: #555; }
         .student-card.is-archived { opacity: 0.75; }
         .guardian-box { background: #FAFAF7; border: 1px dashed #E2DCCB; border-radius: 12px; padding: 0.7rem 0.8rem 0.1rem; margin-bottom: 1.25rem; }
+        /* v31: الطالب التجريبي */
+        .add-mode { display: flex; gap: 0.35rem; background: var(--bg-secondary, #F5F3F0); padding: 0.25rem; border-radius: 12px; margin: 0 0 0.7rem; }
+        .add-mode-btn { flex: 1; border: 0; background: transparent; border-radius: 9px; padding: 0.55rem 0.4rem; font: inherit; font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; min-height: 42px; }
+        .add-mode-btn.active { background: #fff; color: var(--primary); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+        .trial-box { background: #FFFBF2; border: 1.5px solid #F0D49A; border-radius: 12px; padding: 0.75rem 0.85rem 0.1rem; margin-bottom: 1.1rem; }
+        .trial-box > p { margin: 0 0 0.6rem; font-size: 0.84rem; color: var(--text-secondary); line-height: 1.65; }
+        .trial-box .g-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+        .trial-box .form-group { margin-bottom: 0.7rem; }
+        .st-badge.trial { background: #FFF1D6; color: #8A5A00; }
+        .student-card.is-trial { border: 1.5px solid #F0D49A; background: linear-gradient(180deg, #FFFBF2, #fff); }
+        .student-card .trial-line { font-size: 0.84rem; color: #8A5A00; font-weight: 600; margin: 0.2rem 0 0.4rem; line-height: 1.6; }
+        .student-card .trial-line.decide { color: #B3261E; }
+        .trial-strip { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; background: #FFFBF2; border: 1.5px solid #F0D49A; border-radius: 12px; padding: 0.6rem 0.85rem; margin: 0 0 1rem; font-size: 0.9rem; }
+        @media (max-width: 480px) { .trial-box .g-grid { grid-template-columns: 1fr; } }
         .guardian-box > p { margin: 0 0 0.6rem; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6; }
         .guardian-box .g-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
         .guardian-box .form-group { margin-bottom: 0.7rem; }
@@ -69,7 +83,7 @@
             .filters-row select { max-width: 100%; flex: 1; }
         }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=38">
+    <link rel="stylesheet" href="css/v29.css?v=39">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -92,6 +106,7 @@
                     <h1 class="page-title-dup" style="margin:0;">قائمة الطلاب</h1>
                     <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
                     <button class="btn btn-outline" id="btn-add-bulk">إضافة أكثر من طالب</button>
+                    <button class="btn btn-outline" id="btn-add-trial">🎯 حصة تجريبية</button>
                     <button class="btn" id="btn-add-new"><span id="ic-add-btn" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> طالب جديد</button>
                     </div>
                 </div>
@@ -112,9 +127,12 @@
 
                 <div class="st-tabs" id="st-tabs" role="tablist" aria-label="حالة الطالب" hidden>
                     <button type="button" class="st-tab active" data-st="active" role="tab">النشطين <b id="cnt-active">0</b></button>
+                    <button type="button" class="st-tab" data-st="trial" role="tab">🎯 تجريبي <b id="cnt-trial">0</b></button>
                     <button type="button" class="st-tab" data-st="paused" role="tab">متوقفين مؤقتًا <b id="cnt-paused">0</b></button>
                     <button type="button" class="st-tab" data-st="archived" role="tab">الأرشيف <b id="cnt-archived">0</b></button>
                 </div>
+                <!-- v31: طلاب تجريبيين محتاجين قرار -->
+                <div id="trial-strip"></div>
                 <div class="loader" id="loader">جاري تحميل الطلاب...</div>
                 <div class="students-grid" id="students-container"></div>
             </div>
@@ -126,8 +144,22 @@
         <div class="modal-content">
             <span class="close-modal" data-close="add-student-modal">&times;</span>
             <h2 id="modal-title">إضافة طالب جديد</h2>
-            <p class="muted" style="margin:-0.4rem 0 1rem; font-size:0.88rem;">الاسم بس يكفي — باقي البيانات تقدر تكمّلها بعدين.</p>
+            <!-- v31: طالب عادي ولا حصة تجريبية الأول -->
+            <div class="add-mode" role="tablist" aria-label="نوع الإضافة">
+                <button type="button" class="add-mode-btn active" data-mode="normal" role="tab" aria-selected="true">طالب جديد</button>
+                <button type="button" class="add-mode-btn" data-mode="trial" role="tab" aria-selected="false">🎯 حصة تجريبية الأول</button>
+            </div>
+            <p class="muted" id="add-hint" style="margin:0 0 1rem; font-size:0.88rem; line-height:1.7;">الاسم بس يكفي — باقي البيانات تقدر تكمّلها بعدين.</p>
             <form id="add-student-form" novalidate>
+                <div class="trial-box" id="trial-box" hidden>
+                    <p><b>ميعاد الحصة التجريبية</b> — هتظهر في حصص اليوم ده وفي الجدول. بعدها تقرّر: يكمل معاك (وتحدد مواعيده والباقة) ولا لأ.</p>
+                    <div class="g-grid">
+                        <div class="form-group"><label for="trial-date">اليوم</label><input type="date" id="trial-date"></div>
+                        <div class="form-group"><label for="trial-time">الساعة</label><input type="time" id="trial-time"></div>
+                    </div>
+                    <div class="form-group"><label for="trial-dur">مدة الحصة</label>
+                        <select id="trial-dur"><option value="30">30 دقيقة</option><option value="45" selected>45 دقيقة</option><option value="60">ساعة</option><option value="90">ساعة ونص</option></select></div>
+                </div>
                 <div class="form-group">
                     <label for="student-name">اسم الطالب *</label>
                     <input type="text" id="student-name" maxlength="120" autocomplete="off" required>
@@ -225,16 +257,17 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=38"></script>
+    <script type="module" src="js/config.js?v=39"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=38';
-        import { api } from './js/api.js?v=38';
-        import { ErrorHandler, Formatters, toLatinDigits } from './js/utils.js?v=38';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=38';
-        import { icon } from './js/icons.js?v=38';
-        import { openStudentAppointments } from './js/student-appointments.js?v=38';
-        import { subjectLabel } from './js/lesson-utils.js?v=38';
-        import { confirmDeleteStudent } from './js/student-actions.js?v=38';
+        import { Auth } from './js/auth.js?v=39';
+        import { api } from './js/api.js?v=39';
+        import { ErrorHandler, Formatters, toLatinDigits } from './js/utils.js?v=39';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=39';
+        import { icon } from './js/icons.js?v=39';
+        import { openStudentAppointments } from './js/student-appointments.js?v=39';
+        import { subjectLabel } from './js/lesson-utils.js?v=39';
+        import { confirmDeleteStudent } from './js/student-actions.js?v=39';
+        import { isTrial, trialState, trialWhen, localSlot, defaultTrialSlot, bookTrialSlot, bindTrialActions } from './js/trial.js?v=39';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الطلاب', subtitle: 'إدارة كل طلابك من مكان واحد' });
@@ -247,8 +280,10 @@
         const modal = document.getElementById('add-student-modal');
         let allStudents = [];
         let statusFilter = 'active';
-        const stOf = (s) => (s && (s.status === 'paused' || s.status === 'archived')) ? s.status : 'active';
-        const STATUS_LABEL = { paused: 'متوقف مؤقتًا', archived: 'أرشيف' };
+        // v31: التجريبي (لسه ماقرّرش يكمل) ليه تاب لوحده ومش بيظهر مع الطلاب الأساسيين
+        const stOf = (s) => (s && (s.status === 'paused' || s.status === 'archived')) ? s.status : (isTrial(s) ? 'trial' : 'active');
+        const STATUS_LABEL = { paused: 'متوقف مؤقتًا', archived: 'أرشيف', trial: 'تجريبي' };
+        let addMode = 'normal';
 
         const urlParams = new URLSearchParams(window.location.search);
         const onboardingFlow = urlParams.get('onboarding') === '1';
@@ -267,13 +302,30 @@
             if (![...select.options].some((o) => o.value === sub)) select.add(new Option(subjectLabel(sub), sub));
             select.value = sub;
         }
-        function openAdd() {
+        function setAddMode(mode) {
+            addMode = mode === 'trial' ? 'trial' : 'normal';
+            document.querySelectorAll('.add-mode-btn').forEach((b) => { const on = b.dataset.mode === addMode; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
+            document.getElementById('trial-box').hidden = addMode !== 'trial';
+            document.getElementById('modal-title').textContent = addMode === 'trial' ? 'طالب جديد بحصة تجريبية' : 'إضافة طالب جديد';
+            document.getElementById('add-hint').textContent = addMode === 'trial'
+                ? 'الطالب هيتسجل "تجريبي" لحد ما تقرّر بعد الحصة. الاسم والميعاد بس يكفوا.'
+                : 'الاسم بس يكفي — باقي البيانات تقدر تكمّلها بعدين.';
+            document.getElementById('add-save').textContent = addMode === 'trial' ? 'احفظ واحجز الحصة التجريبية' : 'حفظ';
+            if (addMode === 'trial') {
+                const d = defaultTrialSlot();
+                if (!document.getElementById('trial-date').value) document.getElementById('trial-date').value = d.date;
+                if (!document.getElementById('trial-time').value) document.getElementById('trial-time').value = d.time;
+            }
+        }
+        function openAdd(mode = 'normal') {
             document.getElementById('add-student-form').reset();
             document.getElementById('link-error').hidden = true;
             presetSubject(document.getElementById('student-subject'));
+            setAddMode(typeof mode === 'string' ? mode : 'normal');
             modal.classList.add('active');
             setTimeout(() => document.getElementById('student-name').focus(), 60);
         }
+        document.querySelectorAll('.add-mode-btn').forEach((b) => b.addEventListener('click', () => setAddMode(b.dataset.mode)));
         function openBulk() {
             modal.classList.remove('active');
             document.getElementById('bulk-form').reset();
@@ -288,10 +340,11 @@
             const authInfo = await Auth.requireAuth();
             if (!authInfo) return;
             if (urlParams.get('action') === 'add') openAdd();
+            if (urlParams.get('action') === 'trial') openAdd('trial');
             if (urlParams.get('action') === 'bulk') openBulk();
             await loadStudents();
             // v29.8: لو اتضاف/اتعدّل طالب من جهاز تاني القايمة تتحدّث لوحدها (والبحث والفلتر بيفضلوا زي ما هما)
-            import('./js/auto-refresh.js?v=38').then((m) => m.onAppResume(() => loadStudents())).catch(() => { /* تجاهل */ });
+            import('./js/auto-refresh.js?v=39').then((m) => m.onAppResume(() => loadStudents())).catch(() => { /* تجاهل */ });
             const searchTerm = urlParams.get('search');
             if (searchTerm) {
                 document.getElementById('student-search').value = searchTerm;
@@ -330,11 +383,17 @@
                 return;
             }
             container.innerHTML = students.map(student => `
-                <div class="student-card${stOf(student) === 'archived' ? ' is-archived' : ''}" data-open="${Formatters.escapeHtml(String(student.id))}" tabindex="0" role="link" aria-label="ملف ${Formatters.escapeHtml(student.name || '')}">
+                <div class="student-card${stOf(student) === 'archived' ? ' is-archived' : ''}${stOf(student) === 'trial' ? ' is-trial' : ''}" data-open="${Formatters.escapeHtml(String(student.id))}" tabindex="0" role="link" aria-label="ملف ${Formatters.escapeHtml(student.name || '')}">
                     <div class="student-name">${Formatters.escapeHtml(student.name || '')}${stOf(student) !== 'active' ? `<span class="st-badge ${stOf(student)}">${STATUS_LABEL[stOf(student)]}</span>` : ''}</div>
+                    ${stOf(student) === 'trial' ? (() => { const t = trialState(student); return `<div class="trial-line ${t.phase === 'decide' ? 'decide' : ''}">🎯 ${Formatters.escapeHtml(t.text)}</div>`; })() : ''}
                     <div class="student-info">${icon('bookOpen', { size: 14 })} ${Formatters.escapeHtml(subjectLabel(student.subject))}</div>
                     <div class="student-info">${icon('target', { size: 14 })} ${Formatters.escapeHtml(student.current_topic || 'بدون موضوع')}</div>
                     <div class="student-info">${icon('phone', { size: 14 })} ${Formatters.escapeHtml(student.phone || 'بدون رقم')}</div>
+                    ${stOf(student) === 'trial' ? `<div class="student-actions" style="margin-bottom:0.45rem;">
+                        <button type="button" class="btn btn-sm" data-trial-convert data-sid="${Formatters.escapeHtml(String(student.id))}">${icon('check', { size: 14 })} ضيفه لطلابي</button>
+                        <button type="button" class="btn btn-sm btn-outline" data-trial-resched data-sid="${Formatters.escapeHtml(String(student.id))}">${icon('calendar', { size: 14 })} الميعاد</button>
+                        <button type="button" class="btn btn-sm btn-ghost" data-trial-delete data-sid="${Formatters.escapeHtml(String(student.id))}">مكملش</button>
+                    </div>` : ''}
                     <div class="student-actions">
                         <a href="student.html?id=${encodeURIComponent(student.id)}" class="btn">عرض الملف</a>
                         <button class="btn btn-outline btn-open-appts" data-id="${Formatters.escapeHtml(String(student.id))}">${icon('calendar', { size: 14 })} المواعيد</button>
@@ -345,7 +404,13 @@
             `).join('');
         }
 
+        // v31: أزرار الطالب التجريبي (ضيفه / الميعاد / مكملش)
+        const trialById = (b) => allStudents.find((s) => String(s.id) === String(b.dataset.sid));
+        const afterTrial = () => { api.clearBillingDueCache && api.clearBillingDueCache(); loadStudents(); };
+        bindTrialActions(container, trialById, afterTrial);
+        bindTrialActions(document.getElementById('trial-strip'), (b) => trialById(b), afterTrial);
         container.addEventListener('click', (e) => {
+            if (e.target.closest('[data-trial-convert], [data-trial-resched], [data-trial-delete]')) return;
             const del = e.target.closest('.btn-del-student');
             if (del) { window.deleteStudent(del.dataset.id); return; }
             const btn = e.target.closest('.btn-open-appts');
@@ -369,11 +434,22 @@
             const subject = document.getElementById('filter-subject').value;
             const q = toLatinDigits(document.getElementById('student-search').value).trim().toLowerCase();
             // v29: عدّاد كل حالة + التبويبات بتظهر بس لو فيه طالب متوقف أو مؤرشف
-            const counts = { active: 0, paused: 0, archived: 0 };
+            const counts = { active: 0, trial: 0, paused: 0, archived: 0 };
             allStudents.forEach((s) => { counts[stOf(s)]++; });
-            ['active', 'paused', 'archived'].forEach((k) => { document.getElementById('cnt-' + k).textContent = counts[k]; });
+            ['active', 'trial', 'paused', 'archived'].forEach((k) => { document.getElementById('cnt-' + k).textContent = counts[k]; });
             const tabs = document.getElementById('st-tabs');
-            tabs.hidden = !(counts.paused || counts.archived);
+            tabs.hidden = !(counts.paused || counts.archived || counts.trial);
+            tabs.querySelector('[data-st="trial"]').hidden = !counts.trial;
+            if (!counts.trial && statusFilter === 'trial') statusFilter = 'active';
+            // شريط "محتاجين قرار" فوق الطلاب النشطين
+            const decide = allStudents.filter((s) => stOf(s) === 'trial' && trialState(s).phase === 'decide');
+            const strip = document.getElementById('trial-strip');
+            strip.innerHTML = decide.length && statusFilter !== 'trial'
+                ? `<div class="trial-strip"><span>🎯 ${decide.length === 1 ? `الحصة التجريبية مع <b>${Formatters.escapeHtml(decide[0].name || '')}</b> خلصت — هيكمل معاك؟` : `<b>${decide.length}</b> طلاب خلصوا الحصة التجريبية ومستنيين قرارك`}</span>
+                    ${decide.length === 1 ? `<span style="display:flex;gap:.4rem;flex-wrap:wrap"><button type="button" class="btn btn-sm" data-trial-convert data-sid="${Formatters.escapeHtml(String(decide[0].id))}">ضيفه لطلابي</button><button type="button" class="btn btn-sm btn-ghost" data-trial-delete data-sid="${Formatters.escapeHtml(String(decide[0].id))}">مكملش</button></span>` : '<button type="button" class="btn btn-sm" data-show-trials>اعرضهم</button>'}</div>`
+                : '';
+            const show = strip.querySelector('[data-show-trials]');
+            if (show) show.addEventListener('click', () => { statusFilter = 'trial'; applyFilter(); });
             if (tabs.hidden) statusFilter = 'active';
             tabs.querySelectorAll('.st-tab').forEach((b) => b.classList.toggle('active', b.dataset.st === statusFilter));
             // البحث بيدوّر في كل الطلاب (حتى المؤرشفين) عشان مايضيعش طالب
@@ -405,7 +481,8 @@
                 if (t) { linkInput.value = normalizeLink(t); linkInput.dispatchEvent(new Event('input')); ErrorHandler.showSuccess('اتلصق اللينك'); }
             } catch (e) { linkInput.focus(); ErrorHandler.showError('اضغط جوه الخانة واختار "لصق"'); }
         });
-        document.getElementById('btn-add-new').addEventListener('click', openAdd);
+        document.getElementById('btn-add-new').addEventListener('click', () => openAdd('normal'));
+        document.getElementById('btn-add-trial').addEventListener('click', () => openAdd('trial'));
         document.getElementById('btn-add-bulk').addEventListener('click', openBulk);
         document.getElementById('open-bulk').addEventListener('click', openBulk);
         document.querySelectorAll('[data-close]').forEach(btn => {
@@ -423,7 +500,16 @@
             if (!name) { ErrorHandler.showError('اكتب اسم الطالب'); document.getElementById('student-name').focus(); return; }
             if (!subject) { ErrorHandler.showError('اختر المادة'); return; }
             if (link && !/^https?:\/\/[^\s.]+\.[^\s]+/i.test(link)) { document.getElementById('link-error').hidden = false; document.getElementById('student-link').focus(); return; }
+            // v31: ميعاد الحصة التجريبية
+            let trialSlot = null;
+            if (addMode === 'trial') {
+                const td = document.getElementById('trial-date').value;
+                const tt = document.getElementById('trial-time').value;
+                if (!td || !tt) { ErrorHandler.showError('حدد يوم وساعة الحصة التجريبية'); return; }
+                trialSlot = localSlot(td, tt);
+            }
             const studentData = {
+                ...(trialSlot ? { is_trial: true, trial_at: trialSlot.iso } : {}),
                 name,
                 email: document.getElementById('student-email').value.trim() || null,
                 phone: document.getElementById('student-phone').value.trim() || null,
@@ -437,11 +523,31 @@
             saveBtn.disabled = true;
             try {
                 const res = await api.createStudent(studentData);
-                try { (window.dataLayer = window.dataLayer || []).push({ event: 'student_added', students_count: 1, method: 'single' }); } catch (e) { /* تجاهل */ }
+                try { (window.dataLayer = window.dataLayer || []).push({ event: 'student_added', students_count: 1, method: trialSlot ? 'trial' : 'single' }); } catch (e) { /* تجاهل */ }
                 modal.classList.remove('active');
+                let newId = newIdFrom(res);
+                if (trialSlot && newId) {
+                    // حجز ميعاد التجربة (مرة واحدة). لو فشل، الطالب اتسجل وتقدر تحدد الميعاد من الكارت
+                    try {
+                        await bookTrialSlot(newId, trialSlot, document.getElementById('trial-dur').value);
+                    } catch (er) {
+                        ErrorHandler.showError(`${name} اتسجل، بس ميعاد التجربة ماتحفظش: ${ErrorHandler.getErrorMessage(er)} — حدده من زرار "الميعاد".`, 9000);
+                    }
+                }
                 await loadStudents();
-                const newId = newIdFrom(res) || ((allStudents.find(s => s.name === name) || {}).id);
-                if (onboardingFlow) {
+                newId = newId || ((allStudents.find(s => s.name === name) || {}).id);
+                if (trialSlot) {
+                    const saved = allStudents.find((s) => String(s.id) === String(newId));
+                    if (saved && !('is_trial' in saved)) {
+                        // n8n لسه مش متحدث (ملفات v31): الطالب اتسجل عادي
+                        ErrorHandler.showError('الطالب اتسجل والحصة اتحجزت، بس كـ"طالب عادي": لازم تحديث n8n (ملفات v31) عشان يتسجل تجريبي.', 9000);
+                    } else {
+                        statusFilter = 'trial';
+                        applyFilter();
+                        ErrorHandler.showSuccess(`اتحجزت الحصة التجريبية مع ${name.split(' ')[0]}: ${trialWhen({ trial_at: trialSlot.iso })} ✓`);
+                    }
+                    try { window.tmTrack && window.tmTrack('trial_added', {}); } catch (e) { /* تجاهل */ }
+                } else if (onboardingFlow) {
                     if (newId) {
                         ErrorHandler.showSuccess(`تمام! الخطوة الجاية: حدّد أيام ومواعيد حصة ${name}`);
                         openStudentAppointments(newId, name, { onboarding: true });
@@ -525,6 +631,6 @@
         // v29: الطالب اتأرشف من رسالة الحذف
         window.addEventListener('tm:student-status', () => loadStudents());
     </script>
-    <script src="js/pwa-install.js?v=38" defer></script>
+    <script src="js/pwa-install.js?v=39" defer></script>
 </body>
 </html>

@@ -115,7 +115,9 @@ export function lessonItem(sch, studentName) {
     return {
         kind: 'lesson',
         id: sch.id,
-        title: studentName || sch.student_name || 'طالب',
+        // v31: حصة الطالب التجريبي باينة في الجدول
+        title: `${sch.is_trial === true ? '🎯 ' : ''}${studentName || sch.student_name || 'طالب'}`,
+        trial: sch.is_trial === true,
         student_id: sch.student_id,
         day_of_week: Number(sch.day_of_week),
         start: timeToMinutes(sch.start_time),

@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=38">
+    <link rel="stylesheet" href="css/style.css?v=39">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -24,8 +24,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=38">
-    <link rel="stylesheet" href="css/groups.css?v=38">
+    <link rel="stylesheet" href="css/lessons.css?v=39">
+    <link rel="stylesheet" href="css/groups.css?v=39">
     <style>
         .loading { text-align: center; padding: 2rem; color: var(--primary); }
         .empty-state { text-align: center; padding: 2rem; color: var(--text-secondary); }
@@ -51,7 +51,7 @@
         .e-guard { background: #FAFAF7; border: 1px dashed #E2DCCB; border-radius: 12px; padding: 0.7rem 0.8rem 0.1rem; margin-bottom: 1rem; }
         .e-guard > p { margin: 0 0 0.5rem; font-size: 0.82rem; color: var(--text-secondary); }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=38">
+    <link rel="stylesheet" href="css/v29.css?v=39">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -86,6 +86,8 @@
                     <!-- ملخص سريع -->
                     <div class="sp-stats" id="sp-stats"></div>
 
+                    <!-- v31: الطالب التجريبي: كارت القرار -->
+                    <div id="trial-host"></div>
                     <nav class="sp-tabs" id="sp-tabs" role="tablist">
                         <button class="sp-tab active" data-tab="overview" type="button">نظرة عامة</button>
                         <button class="sp-tab" data-tab="lessons" type="button">الحصص <span class="sp-count" id="cnt-lessons"></span></button>
@@ -242,22 +244,23 @@
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=38"></script>
+    <script type="module" src="js/config.js?v=39"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=38';
-        import { api } from './js/api.js?v=38';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=38';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=38';
-        import { icon } from './js/icons.js?v=38';
-        import { openStudentAppointments } from './js/student-appointments.js?v=38';
-        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=38';
-        import { openAttendanceModal } from './js/attendance.js?v=38';
-        import { openMonthlyReport, openLessonReport } from './js/report.js?v=38';
-        import { showTips } from './js/tips.js?v=38';
-        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=38';
-        import { groupTitle, groupColorClass } from './js/groups-utils.js?v=38';
-        import { confirmDeleteStudent, confirmRemoveFromGroup, setStudentStatus } from './js/student-actions.js?v=38';
-        import { openRecordingLinkModal } from './js/recording.js?v=38';
+        import { Auth } from './js/auth.js?v=39';
+        import { api } from './js/api.js?v=39';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=39';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=39';
+        import { icon } from './js/icons.js?v=39';
+        import { openStudentAppointments } from './js/student-appointments.js?v=39';
+        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=39';
+        import { openAttendanceModal } from './js/attendance.js?v=39';
+        import { openMonthlyReport, openLessonReport } from './js/report.js?v=39';
+        import { isTrial, trialCardHtml, bindTrialActions } from './js/trial.js?v=39';
+        import { showTips } from './js/tips.js?v=39';
+        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=39';
+        import { groupTitle, groupColorClass } from './js/groups-utils.js?v=39';
+        import { confirmDeleteStudent, confirmRemoveFromGroup, setStudentStatus } from './js/student-actions.js?v=39';
+        import { openRecordingLinkModal } from './js/recording.js?v=39';
 
         renderSidebar('students');
         renderTopHeader({ title: 'ملف الطالب', subtitle: 'كل ما يخص الطالب في مكان واحد' });
@@ -295,7 +298,7 @@
                 if (['overview', 'lessons', 'billing', 'notes', 'info'].includes(hashTab)) switchTab(hashTab);
                 // v30: حصة/دفعة اتسجلت من جهاز تاني (أو المدرس رجع للبرنامج): الملف يتحدّث لوحده
                 // (مش وقت تعديل البيانات أو الملاحظات، ولا بعد "عرض المزيد" عشان مانرجّعش القايمة لأولها)
-                import('./js/auto-refresh.js?v=38').then((m) => m.onAppResume(async () => {
+                import('./js/auto-refresh.js?v=39').then((m) => m.onAppResume(async () => {
                     const tab = document.querySelector('.sp-tab.active');
                     if (tab && ['info', 'notes'].includes(tab.dataset.tab)) return;
                     if (lessons.length > PAGE) return;
@@ -320,6 +323,7 @@
         }
 
         function renderAll() {
+            renderTrial();
             renderHeader();
             renderStats();
             renderLastLesson();
@@ -330,11 +334,23 @@
             renderStatus();
         }
 
+        // ------------------------------------------------------------ v31: الطالب التجريبي
+        function renderTrial() {
+            const host = $('trial-host');
+            host.innerHTML = isTrial(student) ? trialCardHtml(student, { doneLessons: (ov && ov.stats && !ov.legacy) ? Number(ov.stats.completed) || 0 : 0 }) : '';
+        }
+        bindTrialActions($('trial-host'), () => ({ ...student, id: studentId }), (what) => {
+            if (what === 'deleted') { window.location.href = 'students.html'; return; }
+            loadOverview().catch(() => { /* تجاهل */ });
+        });
+
         // ------------------------------------------------------------ الرأس
         function renderHeader() {
             $('sp-name').textContent = student.name || 'بدون اسم';
             if (student.status === 'paused' || student.status === 'archived') {
                 $('sp-name').insertAdjacentHTML('beforeend', `<span class="st-badge ${student.status}">${student.status === 'paused' ? 'متوقف مؤقتًا' : 'أرشيف'}</span>`);
+            } else if (isTrial(student)) {
+                $('sp-name').insertAdjacentHTML('beforeend', '<span class="tr-badge">🎯 تجريبي</span>');
             }
             const sub = [`<span>${icon('bookOpen', { size: 14 })} ${esc(subjectLabel(student.subject))}</span>`];
             if (student.current_topic) sub.push(`<span>${icon('target', { size: 14 })} ${esc(student.current_topic)}</span>`);
@@ -833,6 +849,6 @@
 
         window.openBillingSetup = () => openBillingSetup({ student, view: billView }, billingCtx.onChange);
     </script>
-    <script src="js/pwa-install.js?v=38" defer></script>
+    <script src="js/pwa-install.js?v=39" defer></script>
 </body>
 </html>

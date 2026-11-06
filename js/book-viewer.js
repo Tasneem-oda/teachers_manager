@@ -10,12 +10,12 @@
  * + زر شات صغير بيفتح نافذة أسئلة عن الكتاب ده بالذات، والاستشهادات فيها بتفتح مكانها هنا.
  */
 
-import { icon } from './icons.js?v=38';
-import { CONFIG } from './config.js?v=38';
-import { loadPdfJs, pdfDocumentParams, loadDocxPreview, loadPptxPreview, loadJsZip, loadStyle, CDN, repairPdfBytes } from './book-libs.js?v=38';
-import { detectDir } from './book-chunker.js?v=38';
-import { BookChat } from './book-chat.js?v=38';
-import { PresentTools } from './present-tools.js?v=38';
+import { icon } from './icons.js?v=39';
+import { CONFIG } from './config.js?v=39';
+import { loadPdfJs, pdfDocumentParams, loadDocxPreview, loadPptxPreview, loadJsZip, loadStyle, CDN, repairPdfBytes } from './book-libs.js?v=39';
+import { detectDir } from './book-chunker.js?v=39';
+import { BookChat } from './book-chat.js?v=39';
+import { PresentTools } from './present-tools.js?v=39';
 
 const ZOOM_STEPS = [0.5, 0.67, 0.8, 1, 1.25, 1.5, 2, 2.5, 3];
 const TYPE_LABEL = { pdf: 'PDF', docx: 'Word', pptx: 'PowerPoint', txt: 'نص', image: 'صورة' };

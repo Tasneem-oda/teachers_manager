@@ -50,7 +50,7 @@ try { importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js')
 // v30: رقم النسخة (لازم يساوي ?v= في الصفحات). لما يتغيّر:
 //  - كاش الصفحات بيتمسح (أول فتحة بعد التحديث بتجيب الصفحات الجديدة من النت)
 //  - ملفات النسخ القديمة جدًا بتتمسح من الجهاز (بنسيب النسخة اللي قبلها بس للتبديل الآمن)
-const APP_VERSION = 38;
+const APP_VERSION = 39;
 const STATIC_CACHE = 'tm-static-v1';
 const PAGE_CACHE = 'tm-pages-v' + APP_VERSION;
 const KEEP = [STATIC_CACHE, PAGE_CACHE];

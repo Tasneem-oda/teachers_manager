@@ -16,9 +16,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=38">
-    <link rel="stylesheet" href="css/lessons.css?v=38">
-    <link rel="stylesheet" href="css/groups.css?v=38">
+    <link rel="stylesheet" href="css/style.css?v=39">
+    <link rel="stylesheet" href="css/lessons.css?v=39">
+    <link rel="stylesheet" href="css/groups.css?v=39">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -26,7 +26,7 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/v29.css?v=38">
+    <link rel="stylesheet" href="css/v29.css?v=39">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -230,19 +230,19 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=38"></script>
+    <script type="module" src="js/config.js?v=39"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=38';
-        import { api } from './js/api.js?v=38';
-        import { ErrorHandler, Formatters, askChoice } from './js/utils.js?v=38';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=38';
-        import { icon } from './js/icons.js?v=38';
-        import { subjectLabel, formatLessonDate } from './js/lesson-utils.js?v=38';
-        import { computeBilling, billingBadge, whatsappUrl, parentPhone } from './js/billing.js?v=38';
-        import { parseDate, formatClock12, timeToMinutes, lessonItem, findConflicts } from './js/calendar-utils.js?v=38';
-        import { groupTitle, groupColorClass, membersText, scheduleSummary, subjectOptionsHtml, mountScheduleEditor, mountStudentPicker, quickCreateStudent, sessionShareText, GROUP_COLORS, GROUP_COLOR_LABELS, saveWithConflictCheck, todayScheduleTime, monthLabel, shiftMonth, currentMonthKey } from './js/groups-utils.js?v=38';
-        import { money } from './js/billing.js?v=38';
-        import { openMonthlyReport, openGroupMonthlyReport, fullDate } from './js/report.js?v=38';
+        import { Auth } from './js/auth.js?v=39';
+        import { api } from './js/api.js?v=39';
+        import { ErrorHandler, Formatters, askChoice } from './js/utils.js?v=39';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=39';
+        import { icon } from './js/icons.js?v=39';
+        import { subjectLabel, formatLessonDate } from './js/lesson-utils.js?v=39';
+        import { computeBilling, billingBadge, whatsappUrl, parentPhone } from './js/billing.js?v=39';
+        import { parseDate, formatClock12, timeToMinutes, lessonItem, findConflicts } from './js/calendar-utils.js?v=39';
+        import { groupTitle, groupColorClass, membersText, scheduleSummary, subjectOptionsHtml, mountScheduleEditor, mountStudentPicker, quickCreateStudent, sessionShareText, GROUP_COLORS, GROUP_COLOR_LABELS, saveWithConflictCheck, todayScheduleTime, monthLabel, shiftMonth, currentMonthKey } from './js/groups-utils.js?v=39';
+        import { money } from './js/billing.js?v=39';
+        import { openMonthlyReport, openGroupMonthlyReport, fullDate } from './js/report.js?v=39';
 
         const $ = (id) => document.getElementById(id);
         const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
@@ -277,7 +277,7 @@
             const tab = (location.hash || '').replace('#', '');
             if (['members', 'sessions', 'schedule', 'settings', 'billing', 'reports'].includes(tab)) showTab(tab);
             // v30: تحديث تلقائي (حصة اتسجلت من جهاز تاني…) — مش وقت تعديل المواعيد أو الإعدادات
-            import('./js/auto-refresh.js?v=38').then((m) => m.onAppResume(async () => {
+            import('./js/auto-refresh.js?v=39').then((m) => m.onAppResume(async () => {
                 if (['schedule', 'settings'].includes(currentTab)) return;
                 const d = await api.getGroup(groupId);
                 if (d) { detail = d; render(); }
@@ -763,6 +763,6 @@
         }));
         document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => $(b.dataset.close).classList.remove('active')));
     </script>
-    <script src="js/pwa-install.js?v=38" defer></script>
+    <script src="js/pwa-install.js?v=39" defer></script>
 </body>
 </html>

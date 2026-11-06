@@ -41,36 +41,62 @@ export function onAppResume(refresh, { minHiddenMs = 20000, everyMs = 120000 } =
     let last = Date.now();
     let hiddenAt = document.visibilityState === 'hidden' ? Date.now() : 0;
 
-    const run = async (why) => {
+    const runNow = async (why) => {
         if (navigator.onLine === false) return;
         if (document.visibilityState !== 'visible') { pending = true; return; }
         if (busy()) { pending = true; return; }
         if (running) { pending = true; return; }
         running = true; pending = false; last = Date.now();
-        // v30: التحديث لازم يجيب من السيرفر مش من الكاش القصير
-        try { window.dispatchEvent(new CustomEvent('tm:cache-invalidate')); } catch (e) { /* تجاهل */ }
+        // v31: مابنمسحش الكاش هنا: الكاش مختوم برقم المزامنة، فلو مفيش تغيير الرسم بيبقى من الجهاز فورًا،
+        // ولو فيه تغيير (remote/other-tab) الكاش اتمسح قبل ما نوصل هنا
         try { await refresh(why); } catch (e) { /* الصفحة بتتعامل مع الخطأ؛ هنجرب تاني المرة الجاية */ } finally { running = false; }
+        if (pending && !busy()) setTimeout(() => run('pending'), 300);
+    };
+    // تجميع: كذا إشارة ورا بعض (تابة تانية + جهاز تاني) = تحديث واحد
+    let timer = null;
+    let reason = null;
+    const run = (why) => {
+        reason = reason || why;
+        clearTimeout(timer);
+        timer = setTimeout(() => { const w = reason; reason = null; runNow(w); }, 250);
+    };
+
+    /** المدرس رجع للبرنامج: نسأل "فيه تغيير؟" (طلب صغير لـ Supabase) قبل ما نحمّل أي حاجة */
+    const resume = async (why, away) => {
+        const check = window.__tmSyncCheck;
+        if (typeof check === 'function' && window.__tmSyncOk) {
+            let st = null;
+            try { st = await Promise.race([check(), new Promise((r) => setTimeout(() => r('timeout'), 2500))]); } catch (e) { st = null; }
+            if (st === 'changed') return;                     // realtime-sync هيبعت remote-change والصفحة تتحدّث
+            if (st === 'same' || st === 'first') {
+                // مفيش تغيير: نعيد الرسم بس لو غاب كتير (حالات الوقت زي "متأخرة/دلوقتي") — من الكاش من غير نت
+                if (pending || away >= 5 * 60 * 1000) run(why);
+                return;
+            }
+        }
+        run(why);
     };
 
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
         const away = hiddenAt ? Date.now() - hiddenAt : 0;
         hiddenAt = 0;
-        if (pending || away >= minHiddenMs) run('resume');
+        if (pending || away >= minHiddenMs) resume('resume', away);
     });
     // الرجوع بزرار "رجوع": الصفحة راجعة من ذاكرة المتصفح بالبيانات القديمة
-    window.addEventListener('pageshow', (e) => { if (e.persisted) run('back'); });
-    window.addEventListener('online', () => setTimeout(() => run('online'), 1500));
+    window.addEventListener('pageshow', (e) => { if (e.persisted) resume('back', 10 * 60 * 1000); });
+    window.addEventListener('online', () => setTimeout(() => { try { window.dispatchEvent(new CustomEvent('tm:cache-invalidate')); } catch (e) { /* تجاهل */ } run('online'); }, 1500));
     // تغيير من تابة تانية على نفس الجهاز
-    if (bc) bc.addEventListener('message', () => run('other-tab'));
-    // v30: تغيير من جهاز تاني (لحظي عن طريق js/realtime-sync.js)
+    if (bc) bc.addEventListener('message', () => { try { window.dispatchEvent(new CustomEvent('tm:cache-invalidate')); } catch (e) { /* تجاهل */ } run('other-tab'); });
+    // تغيير من جهاز تاني (js/realtime-sync.js مسح الكاش قبلها)
     window.addEventListener('tm:remote-change', () => run('remote'));
     window.addEventListener('storage', (e) => { if (e.key === 'tm_data_changed') run('other-tab'); });
-    // تغيير من جهاز تاني: كل دقيقتين طول ما الصفحة ظاهرة
+    // احتياطي دوري لو المزامنة مش شغالة خالص (ولا القناة ولا فحص الرقم)
     setInterval(() => {
         if (document.visibilityState !== 'visible') return;
-        // لو القناة اللحظية شغالة التغييرات بتوصل فورًا، فالتحديث الدوري بيبقى احتياطي كل 5 دقايق بس
-        const every = window.__tmRealtime ? Math.max(everyMs, 5 * 60 * 1000) : everyMs;
+        const syncing = window.__tmRealtime || window.__tmSyncOk;
+        // المزامنة شغالة: التغييرات بتوصل لوحدها؛ بنعيد الرسم كل 10 دقايق بس عشان حالات الوقت (من الكاش)
+        const every = syncing ? Math.max(everyMs, 10 * 60 * 1000) : everyMs;
         if (pending || Date.now() - last >= every) run('interval');
     }, 15000);
     // لو كان مستني عشان نافذة مفتوحة/كتابة: أول ما يخلص
