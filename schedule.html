@@ -16,8 +16,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=37">
-    <link rel="stylesheet" href="css/lessons.css?v=37">
+    <link rel="stylesheet" href="css/style.css?v=38">
+    <link rel="stylesheet" href="css/lessons.css?v=38">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -185,8 +185,17 @@
             .ag-item .ag-tag { display: none; }
             .day-strip .ds-name { font-size: 0.66rem; }
         }
+        /* v30: حصتين في نفس الميعاد — شكل مختلف وواضح */
+        :root { --cf-border: #C0392B; --cf-bg: #FDECEA; --cf-text: #8E2A1F; }
+        .cal-legend .lg-conflict { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 2px dashed var(--cf-border); background: repeating-linear-gradient(135deg, var(--cf-bg) 0 4px, #fff 4px 8px); vertical-align: -1px; }
+        .cal-conflicts { background: var(--cf-bg); border: 1px solid #F3C1BB; color: var(--cf-text); border-radius: 12px; padding: 0.6rem 0.85rem; font-size: 0.88rem; line-height: 1.7; margin: 0 0 0.8rem; }
+        .cal-conflicts .cf-chip, .cf-chip { display: inline-block; border: 1.5px dashed var(--cf-border); color: var(--cf-text); background: #fff; border-radius: 999px; padding: 0 0.45rem; font-size: 0.78rem; font-weight: 700; }
+        .ag-item.is-conflict { border-inline-start-width: 5px; border-inline-start-style: dashed; background: repeating-linear-gradient(135deg, rgba(192,57,43,0.06) 0 8px, transparent 8px 16px), var(--card-bg, #fff); box-shadow: 0 0 0 1.5px rgba(192,57,43,0.35) inset; }
+        .ag-item .cf-note { display: block; margin-top: 0.2rem; color: var(--cf-text); font-size: 0.78rem; font-weight: 700; }
+        .wk-block.is-conflict { border-style: dashed !important; border-width: 2px !important; background-image: repeating-linear-gradient(135deg, rgba(192,57,43,0.16) 0 6px, transparent 6px 12px) !important; box-shadow: 0 0 0 1px rgba(192,57,43,0.45); }
+        .wk-block.is-conflict b { color: var(--cf-text); }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=37">
+    <link rel="stylesheet" href="css/v29.css?v=38">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -224,7 +233,10 @@
                     <span><i class="lg-lesson"></i> حصة</span>
                     <span><i class="lg-event"></i> موعد شخصي</span>
                     <span class="cal-summary" id="cal-summary"></span>
+                    <span><i class="lg-conflict"></i> تعارض</span>
                 </div>
+                <!-- v30: تنبيه الحصص المتعارضة (حصتين في نفس الوقت) -->
+                <div class="cal-conflicts" id="cal-conflicts" role="status" hidden></div>
 
                 <div id="cal-loading" class="loading">جاري تحميل الجدول...</div>
 
@@ -347,20 +359,20 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=37"></script>
+    <script type="module" src="js/config.js?v=38"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=37';
-        import { api } from './js/api.js?v=37';
-        import { ErrorHandler, Formatters, uuidv4, askChoice } from './js/utils.js?v=37';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=37';
-        import { icon } from './js/icons.js?v=37';
-        import { mountTimePicker, refreshTimePicker, mountDayChips } from './js/form-widgets.js?v=37';
+        import { Auth } from './js/auth.js?v=38';
+        import { api } from './js/api.js?v=38';
+        import { ErrorHandler, Formatters, uuidv4, askChoice } from './js/utils.js?v=38';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=38';
+        import { icon } from './js/icons.js?v=38';
+        import { mountTimePicker, refreshTimePicker, mountDayChips } from './js/form-widgets.js?v=38';
         import {
             DAY_NAMES, DAY_SHORT, EVENT_COLORS, isoDate, parseDate, weekStart, addDays, sameDay, weekDays,
             minutesToTime, formatClock12, formatRange, durationText, formatDayDate, occursOn,
-            lessonItem, eventItem, itemsOn, layoutLanes, findConflicts
-        } from './js/calendar-utils.js?v=37';
-        import { groupTitle, membersText } from './js/groups-utils.js?v=37';
+            lessonItem, eventItem, itemsOn, layoutLanes, findConflicts, dayConflicts
+        } from './js/calendar-utils.js?v=38';
+        import { groupTitle, membersText } from './js/groups-utils.js?v=38';
 
         renderSidebar('schedule');
         renderTopHeader({ title: 'جدولي', subtitle: 'حصصك ومواعيدك في مكان واحد' });
@@ -460,6 +472,14 @@
             const lw = (n) => n === 1 ? 'حصة واحدة' : n === 2 ? 'حصتين' : n <= 10 ? `${n} حصص` : `${n} حصة`;
             const ew = (n) => n === 1 ? 'موعد واحد' : n === 2 ? 'موعدين' : n <= 10 ? `${n} مواعيد` : `${n} موعد`;
             $('cal-summary').textContent = (lessons || evs) ? `الأسبوع ده: ${[lessons ? lw(lessons) : '', evs ? ew(evs) : ''].filter(Boolean).join(' · ')}` : 'الأسبوع ده فاضي';
+            // v30: تنبيه واضح لو فيه حصتين في نفس الميعاد الأسبوع ده
+            let clashes = 0;
+            days.forEach((d) => { clashes += dayConflicts(itemsOn(items, d)).size; });
+            const cw = $('cal-conflicts');
+            if (cw) {
+                cw.hidden = !clashes;
+                cw.innerHTML = clashes ? `⚠️ <b>${clashes}</b> حصص في نفس الوقت الأسبوع ده — عليها علامة <span class="cf-chip">تعارض</span>` : '';
+            }
             document.querySelectorAll('.seg [data-view]').forEach((b) => b.classList.toggle('active', b.dataset.view === view));
             $('view-day').hidden = view !== 'day';
             $('view-week').hidden = view !== 'week';
@@ -513,13 +533,15 @@
             const nowMin = today.getHours() * 60 + today.getMinutes();
             let nowPlaced = !isToday;
             let html = '';
+            const clash = dayConflicts(list);
             list.forEach((it, i) => {
+                const withWho = clash.get(`${it.kind}:${it.id}`);
                 if (!nowPlaced && it.start > nowMin) { html += `<div class="ag-now">دلوقتي ${formatClock12(nowMin)}</div>`; nowPlaced = true; }
                 const c = itemColors(it);
                 const past = isToday && it.start + it.duration <= nowMin;
-                html += `<button type="button" class="ag-item ${past ? 'is-past' : ''}" data-idx="${i}" style="border-inline-start-color:${c.border}">
+                html += `<button type="button" class="ag-item ${past ? 'is-past' : ''} ${withWho ? 'is-conflict' : ''}" data-idx="${i}" style="border-inline-start-color:${withWho ? 'var(--cf-border)' : c.border}">
                     <span class="ag-time"><b>${formatClock12(it.start)}</b><small>لحد ${formatClock12(it.start + it.duration)}</small></span>
-                    <span class="ag-main"><span class="ag-title" style="display:block">${it.kind === 'event' ? '📌 ' : it.kind === 'group' ? '👥 ' : ''}${esc(it.title)}</span><span class="ag-sub" style="display:block">${esc(itemSub(it))}</span></span>
+                    <span class="ag-main"><span class="ag-title" style="display:block">${it.kind === 'event' ? '📌 ' : it.kind === 'group' ? '👥 ' : ''}${esc(it.title)}</span><span class="ag-sub" style="display:block">${esc(itemSub(it))}</span>${withWho ? `<span class="cf-note">⚠️ في نفس الوقت مع ${esc(withWho.slice(0, 3).join('، '))}</span>` : ''}</span>
                     <span class="ag-tag ${it.kind === 'lesson' ? 'tag-lesson' : ''}" style="${it.kind !== 'lesson' ? `background:${c.bg};color:${c.text}` : ''}">${KIND_TAG[it.kind] || 'موعد'}</span>
                 </button>`;
             });
@@ -575,16 +597,18 @@
             days.forEach((d, i) => {
                 const isToday = sameDay(d, today);
                 html += `<div class="wk-col ${isToday ? 'is-today' : ''}" style="grid-row:2; grid-column:${i + 2}; height:${height}px; background-image:${lines}" data-date="${isoDate(d)}">`;
+                const clash = dayConflicts(weekItems[i]);
                 layoutLanes(weekItems[i]).forEach((it) => {
                     const c = itemColors(it);
+                    const withWho = clash.get(`${it.kind}:${it.id}`);
                     const top = (it.start - minM) / 60 * HOUR_PX;
                     const h = Math.max(22, it.duration / 60 * HOUR_PX - 2);
                     const w = 100 / it.lanes;
                     const idx = weekItems[i].findIndex((x) => x.kind === it.kind && x.id === it.id);
-                    html += `<button type="button" class="wk-block" data-day="${i}" data-idx="${idx}"
-                        style="top:${top + 1}px; height:${h}px; inset-inline-start:calc(${it.lane * w}% + 2px); width:calc(${w}% - 4px); background:${c.bg}; border-color:${c.border}; color:${c.text}"
-                        title="${esc(it.title)} · ${esc(formatRange(it.start, it.duration))}">
-                        <b>${it.kind === 'event' ? '📌 ' : it.kind === 'group' ? '👥 ' : ''}${esc(it.title)}</b>${h >= 36 ? `<span>${esc(formatRange(it.start, it.duration))}</span>` : ''}</button>`;
+                    html += `<button type="button" class="wk-block ${withWho ? 'is-conflict' : ''}" data-day="${i}" data-idx="${idx}"
+                        style="top:${top + 1}px; height:${h}px; inset-inline-start:calc(${it.lane * w}% + 2px); width:calc(${w}% - 4px); background:${c.bg}; border-color:${withWho ? 'var(--cf-border)' : c.border}; color:${c.text}"
+                        title="${esc(it.title)} · ${esc(formatRange(it.start, it.duration))}${withWho ? ` · ⚠️ متعارضة مع ${esc(withWho.join('، '))}` : ''}">
+                        <b>${withWho ? '⚠️ ' : ''}${it.kind === 'event' ? '📌 ' : it.kind === 'group' ? '👥 ' : ''}${esc(it.title)}</b>${h >= 36 ? `<span>${esc(formatRange(it.start, it.duration))}</span>` : ''}</button>`;
                 });
                 if (isToday) {
                     const nowMin = today.getHours() * 60 + today.getMinutes();
@@ -786,7 +810,7 @@
             const list = findConflicts(items, t, exclude).slice(0, 3);
             if (!list.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
             box.innerHTML = '⚠️ بيتعارض مع: ' + list.map((it) => `${KIND_TAG[it.kind] || 'موعد'} <b>${esc(it.title)}</b> (${DAY_NAMES[it.day_of_week]} ${esc(formatRange(it.start, it.duration))})`).join('، ')
-                + (form.type === 'lesson' && list.some((x) => x.kind === 'lesson') ? '<br><small>الحصص اللي بتتعارض مع حصة تانية مش هتتحفظ.</small>' : '<br><small>تقدر تحفظ عادي لو ده مقصود.</small>');
+                + (form.type === 'lesson' && list.some((x) => x.kind !== 'event') ? '<br><small>تقدر تحفظ الحصتين في نفس الميعاد لو ده مقصود، وهيظهروا في الجدول بعلامة ⚠️ تعارض.</small>' : '<br><small>تقدر تحفظ عادي لو ده مقصود.</small>');
             box.style.display = 'block';
         }
 
@@ -848,11 +872,27 @@
         async function saveLesson(t, editing) {
             const studentId = $('f-student').value;
             if (!studentId) throw new Error('اختار الطالب');
+            // v30: حصتين في نفس الميعاد مسموح، بس بعد تحذير واضح وموافقة المدرس
+            const exclude = form.editItem ? `${form.editItem.kind}:${form.editItem.id}` : '';
+            const clashes = findConflicts(items, t, exclude).filter((x) => x.kind !== 'event');
+            let allowConflict = false;
+            if (clashes.length) {
+                const names = clashes.slice(0, 4).map((x) => `${x.kind === 'group' ? 'مجموعة' : 'حصة'} ${x.title} (${DAY_NAMES[x.day_of_week]} ${formatRange(x.start, x.duration)})`).join('، ');
+                const pick = await askChoice({
+                    title: '⚠️ الميعاد ده فيه حصة تانية',
+                    message: `بيتعارض مع: ${names}${clashes.length > 4 ? ' وغيرهم' : ''}. لو ده مقصود (مثلًا طالبين مع بعض أو حصة تعويض) احفظ الاتنين في نفس الميعاد، وهيظهروا في الجدول بعلامة تعارض.`,
+                    choices: [{ label: 'احفظ الحصتين في نفس الميعاد', value: 'force' }],
+                    cancelLabel: 'أغيّر الميعاد'
+                });
+                if (pick !== 'force') return 'cancelled';
+                allowConflict = true;
+            }
             const base = {
                 student_id: studentId,
                 start_time: minutesToTime(t.start),
                 duration_minutes: t.duration,
-                recurrence_type: t.recurrence_type
+                recurrence_type: t.recurrence_type,
+                ...(allowConflict ? { allow_conflict: true } : {})
             };
             if (editing) {
                 const payload = { ...base, recurrence_group_id: t.recurrence_type === 'daily' ? (form.editItem.group || null) : null };
@@ -880,7 +920,7 @@
                     const results = await Promise.allSettled(members.map((m) => api.updateSchedule(m.id, { ...payload, day_of_week: m.day_of_week, start_date: null })));
                     const bad = results.filter((r) => r.status === 'rejected').length;
                     if (bad === members.length) throw (results[0].reason || new Error('ماتعدّلش'));
-                    if (bad) ErrorHandler.showError(`اتعدّل ${members.length - bad} من ${members.length} أيام. الباقي فيه تعارض.`);
+                    if (bad) ErrorHandler.showError(`اتعدّل ${members.length - bad} من ${members.length} أيام. الباقي ماتعدّلش: ${ErrorHandler.getErrorMessage(results.find((r) => r.status === 'rejected').reason)}`);
                     else ErrorHandler.showSuccess(`تم تعديل الحصة في كل الأيام (${members.length})`);
                     return;
                 }
@@ -901,7 +941,7 @@
             results.forEach((r, i) => { if (r.status === 'fulfilled') ok++; else failed.push(`${DAY_NAMES[t.days[i]]} (${ErrorHandler.getErrorMessage(r.reason)})`); });
             if (!ok) throw new Error('ماتحفظش أي موعد: ' + failed.join('، '));
             track('schedule_saved', { days_count: ok, recurrence: t.recurrence_type });
-            if (failed.length) ErrorHandler.showError(`اتحفظ ${ok} من ${t.days.length}. الأيام اللي فيها تعارض: ${failed.join('، ')}`);
+            if (failed.length) ErrorHandler.showError(`اتحفظ ${ok} من ${t.days.length}. الأيام اللي ماتحفظتش: ${failed.join('، ')}`);
             else ErrorHandler.showSuccess(ok === 1 ? 'تم حفظ الحصة' : `تم حفظ ${ok} مواعيد`);
         }
 
@@ -969,7 +1009,7 @@
             if (!authInfo) return;
             await loadData();
             // v29.8: لو اتسجّل موعد من جهاز تاني (أو المدرس رجع للبرنامج) الجدول يتحدّث لوحده
-            import('./js/auto-refresh.js?v=37').then((m) => m.onAppResume(refreshSilently)).catch(() => { /* تجاهل */ });
+            import('./js/auto-refresh.js?v=38').then((m) => m.onAppResume(refreshSilently)).catch(() => { /* تجاهل */ });
             const addStudent = new URLSearchParams(location.search).get('add_student');
             if (addStudent) openItemModal({ type: 'lesson', date: selected });
             if (new URLSearchParams(location.search).get('add') === 'event') openItemModal({ type: 'event', date: selected });
@@ -977,6 +1017,6 @@
             setInterval(() => { if (!document.querySelector('.modal.active')) render(); }, 60000);
         })();
     </script>
-    <script src="js/pwa-install.js?v=37" defer></script>
+    <script src="js/pwa-install.js?v=38" defer></script>
 </body>
 </html>

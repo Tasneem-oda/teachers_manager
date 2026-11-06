@@ -21,6 +21,8 @@ export function announceChange(kind = 'data') {
     const msg = { kind, at: Date.now() };
     try { if (bc) bc.postMessage(msg); } catch (e) { /* تجاهل */ }
     try { localStorage.setItem('tm_data_changed', JSON.stringify(msg)); } catch (e) { /* تجاهل */ }
+    // v30: الأجهزة التانية (js/realtime-sync.js)
+    try { window.dispatchEvent(new CustomEvent('tm:local-change', { detail: kind })); } catch (e) { /* تجاهل */ }
 }
 
 function busy() {
@@ -45,6 +47,8 @@ export function onAppResume(refresh, { minHiddenMs = 20000, everyMs = 120000 } =
         if (busy()) { pending = true; return; }
         if (running) { pending = true; return; }
         running = true; pending = false; last = Date.now();
+        // v30: التحديث لازم يجيب من السيرفر مش من الكاش القصير
+        try { window.dispatchEvent(new CustomEvent('tm:cache-invalidate')); } catch (e) { /* تجاهل */ }
         try { await refresh(why); } catch (e) { /* الصفحة بتتعامل مع الخطأ؛ هنجرب تاني المرة الجاية */ } finally { running = false; }
     };
 
@@ -59,11 +63,15 @@ export function onAppResume(refresh, { minHiddenMs = 20000, everyMs = 120000 } =
     window.addEventListener('online', () => setTimeout(() => run('online'), 1500));
     // تغيير من تابة تانية على نفس الجهاز
     if (bc) bc.addEventListener('message', () => run('other-tab'));
+    // v30: تغيير من جهاز تاني (لحظي عن طريق js/realtime-sync.js)
+    window.addEventListener('tm:remote-change', () => run('remote'));
     window.addEventListener('storage', (e) => { if (e.key === 'tm_data_changed') run('other-tab'); });
     // تغيير من جهاز تاني: كل دقيقتين طول ما الصفحة ظاهرة
     setInterval(() => {
         if (document.visibilityState !== 'visible') return;
-        if (pending || Date.now() - last >= everyMs) run('interval');
+        // لو القناة اللحظية شغالة التغييرات بتوصل فورًا، فالتحديث الدوري بيبقى احتياطي كل 5 دقايق بس
+        const every = window.__tmRealtime ? Math.max(everyMs, 5 * 60 * 1000) : everyMs;
+        if (pending || Date.now() - last >= every) run('interval');
     }, 15000);
     // لو كان مستني عشان نافذة مفتوحة/كتابة: أول ما يخلص
     document.addEventListener('focusout', () => { if (pending) setTimeout(() => run('pending'), 400); });

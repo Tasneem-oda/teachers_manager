@@ -3,15 +3,41 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=37';
-import { APIUtils, Storage } from './utils.js?v=37';
+import { CONFIG } from './config.js?v=38';
+import { APIUtils, Storage } from './utils.js?v=38';
+import { getFreshSession } from './session.js?v=38';
 
 /**
  * دالة أساسية لكل الطلبات
  * options.signal    : AbortSignal لإلغاء الطلب (زرار "إيقاف" في الشات مثلًا)
  * options.timeoutMs : مهلة قصوى للطلب (بدونها بيفضل منتظر لحد ما المتصفح يقطع)
+ * options.fresh     : v30 — تجاهل الكاش القصير وهات من السيرفر
  */
 async function apiCall(endpoint, method = 'GET', body = null, options = {}) {
+    // وضع "قراءة فقط" بعد نهاية الفترة المجانية/الاشتراك (js/sidebar.js بيحدده):
+    // القراءة شغالة عادي، والحفظ الجديد بيفتح نافذة الاشتراك بدل ما يتنفذ.
+    if (isBlockedByReadOnly(endpoint, method, body)) {
+        try { if (window.tmOpenSubscribePrompt) window.tmOpenSubscribePrompt(window.__tmReadOnlyReason); } catch (e) { /* تجاهل */ }
+        throw { error: { code: 'READ_ONLY', message: 'التسجيل الجديد محتاج اشتراك. بياناتك كلها محفوظة.' } };
+    }
+    // v30: طلبات القراءة: نفس الطلب في نفس اللحظة = طلب واحد، وكاش قصير بين الصفحات (بيتمسح مع أي حفظ)
+    const readKey = isReadRequest(endpoint, method, body, options) ? cacheKeyOf(endpoint, method, body) : null;
+    if (readKey) {
+        if (!options.fresh) {
+            const hit = ReadCache.get(readKey);
+            if (hit !== undefined) return hit;
+        }
+        if (inflight.has(readKey)) return inflight.get(readKey);
+        const p = apiCallNow(endpoint, method, body, options).then((data) => { ReadCache.put(readKey, data); return data; });
+        inflight.set(readKey, p);
+        try { return await p; } finally { inflight.delete(readKey); }
+    }
+    const data = await apiCallNow(endpoint, method, body, options);
+    if (String(method).toUpperCase() !== 'GET' && !readKey) ReadCache.clear();
+    return data;
+}
+
+async function apiCallNow(endpoint, method = 'GET', body = null, options = {}) {
     // مؤقّت المهلة + إلغاء خارجي في AbortController واحد
     const controller = new AbortController();
     let timedOut = false;
@@ -27,58 +53,57 @@ async function apiCall(endpoint, method = 'GET', body = null, options = {}) {
         timer = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
     }
 
-    // وضع "قراءة فقط" بعد نهاية الفترة المجانية/الاشتراك (js/sidebar.js بيحدده):
-    // القراءة شغالة عادي، والحفظ الجديد بيفتح نافذة الاشتراك بدل ما يتنفذ.
-    if (isBlockedByReadOnly(endpoint, method, body)) {
-        if (timer) clearTimeout(timer);
-        try { if (window.tmOpenSubscribePrompt) window.tmOpenSubscribePrompt(window.__tmReadOnlyReason); } catch (e) { /* تجاهل */ }
-        throw { error: { code: 'READ_ONLY', message: 'التسجيل الجديد محتاج اشتراك. بياناتك كلها محفوظة.' } };
-    }
-
     const t0 = Date.now();
     let failure = null;
+    const isRead = String(method).toUpperCase() === 'GET' || isReadRequest(endpoint, method, body, { offlineCache: options.offlineCache });
     try {
-        // 1. الحصول على الجلسة والـ token (النت الضعيف مايتعاملش كأن المدرس اتسجّل خروجه)
-        const session = await getSessionOrRedirect();
-
-        // 2. بناء الـ headers
-        const headers = APIUtils.buildHeaders(session.access_token);
-
-        // 3. بناء الـ options
-        const fetchOptions = {
-            method,
-            headers,
-            signal: controller.signal
+        const url = APIUtils.buildUrl(endpoint);
+        const send = async (session) => {
+            const fetchOptions = { method, headers: APIUtils.buildHeaders(session.access_token), signal: controller.signal };
+            if (body && method !== 'GET') fetchOptions.body = JSON.stringify(body);
+            let response;
+            try {
+                response = await fetch(url, fetchOptions);
+            } catch (netError) {
+                if (netError && netError.name === 'AbortError') {
+                    if (timedOut) throw { error: { code: 'TIMEOUT', message: 'استغرق الطلب وقتًا أطول من المتوقع. حاول مرة أخرى.' } };
+                    throw { error: { code: 'ABORTED', message: 'تم إلغاء الطلب' }, aborted: true };
+                }
+                throw { error: { code: 'NETWORK', message: 'تعذّر الاتصال بالخادم. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.' } };
+            }
+            return APIUtils.handleResponse(response);
         };
 
-        if (body && method !== 'GET') {
-            fetchOptions.body = JSON.stringify(body);
-        }
-
-        // 4. الاتصال بالـ API
-        const url = APIUtils.buildUrl(endpoint);
-        let response;
+        // 1. جلسة صالحة (بساعة السيرفر) — النت الضعيف مايتعاملش كأن المدرس اتسجّل خروجه
+        let session = await getSessionOrRedirect();
+        let data;
         try {
-            response = await fetch(url, fetchOptions);
-        } catch (netError) {
-            if (netError && netError.name === 'AbortError') {
-                if (timedOut) {
-                    throw { error: { code: 'TIMEOUT', message: 'استغرق الطلب وقتًا أطول من المتوقع. حاول مرة أخرى.' } };
-                }
-                throw { error: { code: 'ABORTED', message: 'تم إلغاء الطلب' }, aborted: true };
+            data = await send(session);
+        } catch (err) {
+            if (err && err.status === 401) {
+                // v30: التوكن اتجدد/خلص: نجدّد ونعيد الطلب مرة واحدة بدل ما نطلّع المدرس برّه
+                session = await getSessionOrRedirect({ force: true, rejected: session.access_token });
+                data = await send(session);
+            } else if (err && (err.status === 503 && err.error && err.error.code === 'AUTH_UNAVAILABLE')) {
+                // التحقق من الحساب اتأخر ثواني (الطلب ماتنفذش أصلًا): نعيد بأمان حتى لو حفظ
+                await sleep(900);
+                data = await send(session);
+            } else if (isRead && err && (err.status >= 500 || (err.error && err.error.code === 'SERVER_BUSY'))) {
+                // قراءة بس: عطل لحظي في السيرفر (DNS / قاعدة البيانات) → محاولة تانية بعد ثانية
+                await sleep(1000);
+                data = await send(session);
+            } else {
+                throw err;
             }
-            throw { error: { code: 'NETWORK', message: 'تعذّر الاتصال بالخادم. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.' } };
         }
 
-        // 5. معالجة الاستجابة
-        const data = await APIUtils.handleResponse(response);
         if ((method === 'GET' || options.offlineCache) && !options.noOfflineCache) OfflineCache.put(cacheKeyOf(endpoint, method, body), data, session.user && session.user.id);
         markOnline();
-        // v29.8: حفظ حاجة (حصة/موعد/طالب…): التابات التانية المفتوحة على نفس الجهاز تتحدّث على طول
-        if (method !== 'GET' && !options.offlineCache && !/track-events|notifications|ai-chat|assistant|ask-sources|prepare-lesson|owner-/i.test(endpoint)) {
-            import('./auto-refresh.js?v=37').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
+        // v29.8: حفظ حاجة (حصة/موعد/طالب…): التابات والأجهزة التانية تتحدّث على طول
+        if (method !== 'GET' && !isRead && !/track-events|notifications|ai-chat|assistant|ask-sources|prepare-lesson|owner-/i.test(endpoint)) {
+            ReadCache.clear();
+            import('./auto-refresh.js?v=38').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
         }
-
         return data;
 
     } catch (error) {
@@ -86,7 +111,7 @@ async function apiCall(endpoint, method = 'GET', body = null, options = {}) {
             throw error;
         }
 
-        // 401 = الجلسة خلصت فعلًا. (403 ممكن تكون قاعدة عمل، فمانخرجش المدرس بسببها)
+        // 401 بعد التجديد = الجلسة خلصت فعلًا. (403 ممكن تكون قاعدة عمل، فمانخرجش المدرس بسببها)
         if (error && error.status === 401) {
             try { await window.supabaseClient.auth.signOut({ scope: 'local' }); } catch (e) { /* تجاهل */ }
             window.location.href = 'login.html';
@@ -109,6 +134,60 @@ async function apiCall(endpoint, method = 'GET', body = null, options = {}) {
     }
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// ============================================================ v30: كاش قصير لطلبات القراءة
+// التنقل بين الصفحات (الرئيسية ← الطلاب ← الجدول) كان بيطلب نفس البيانات من n8n كل مرة.
+// دلوقتي نفس الطلب خلال 40 ثانية بيرجع من الجهاز فورًا، وأي حفظ أو تغيير من جهاز تاني بيمسح الكاش كله.
+const READ_ACTIONS = { '/groups': ['list', 'get'], '/group-session': ['prepare'], '/group-billing': ['month'], '/teacher-settings': ['get'], '/lesson-tools': ['board_list'] };
+const NO_READ_CACHE = /notifications|check-subscription|bootstrap-session|get-book-content|ai-chat|assistant|ask-sources|prepare-lesson|track-events|export-data/;
+function isReadRequest(endpoint, method, body, options = {}) {
+    const path = String(endpoint || '').split('?')[0];
+    if (NO_READ_CACHE.test(path)) return false;
+    if (String(method || 'GET').toUpperCase() === 'GET') return true;
+    const acts = READ_ACTIONS[path];
+    return !!(acts && body && acts.includes(body.action));
+}
+const inflight = new Map();
+export const ReadCache = (() => {
+    const KEY = 'tm_rc_v1';
+    const TTL = 40 * 1000;
+    const uid = () => { try { const p = JSON.parse(localStorage.getItem('user_profile') || 'null'); return (p && p.id) || ''; } catch (e) { return ''; } };
+    let mem = null;
+    const load = () => {
+        if (mem) return mem;
+        try { mem = JSON.parse(sessionStorage.getItem(KEY) || '{}') || {}; } catch (e) { mem = {}; }
+        return mem;
+    };
+    const persist = () => { try { sessionStorage.setItem(KEY, JSON.stringify(mem)); } catch (e) { mem = {}; try { sessionStorage.removeItem(KEY); } catch (er) { /* تجاهل */ } } };
+    return {
+        get(k) {
+            const m = load();
+            const e = m[uid() + '|' + k];
+            if (!e || Date.now() - e.at > TTL || Date.now() < e.at) return undefined;
+            try { return JSON.parse(e.v); } catch (er) { return undefined; }
+        },
+        put(k, data) {
+            try {
+                const v = JSON.stringify(data);
+                if (v.length > 200 * 1024) return;
+                const m = load();
+                const now = Date.now();
+                Object.keys(m).forEach((x) => { if (now - m[x].at > TTL) delete m[x]; });
+                m[uid() + '|' + k] = { at: now, v };
+                persist();
+            } catch (e) { /* تجاهل */ }
+        },
+        clear() { mem = {}; try { sessionStorage.removeItem(KEY); } catch (e) { /* تجاهل */ } }
+    };
+})();
+if (typeof window !== 'undefined' && !window.__tmReadCacheWired) {
+    window.__tmReadCacheWired = true;
+    // تغيير من تابة/جهاز تاني، أو تحديث تلقائي: البيانات لازم تيجي من السيرفر
+    window.addEventListener('tm:cache-invalidate', () => ReadCache.clear());
+    window.addEventListener('storage', (e) => { if (e.key === 'tm_data_changed') ReadCache.clear(); });
+}
+
 // ============================================================ v29.5: من غير نت
 // طلبات القراءة اللي بتتبعت POST (المجموعات مثلًا) مفتاحها فيه نوع الطلب
 const cacheKeyOf = (endpoint, method, body) => (method === 'GET' || !body ? endpoint : `${endpoint}#${JSON.stringify(body)}`);
@@ -116,7 +195,7 @@ const cacheKeyOf = (endpoint, method, body) => (method === 'GET' || !body ? endp
 /** الطلب فشل بسبب النت (مش رفض من الخادم) */
 export function isNetworkFailure(err) {
     const code = err && err.error && err.error.code;
-    return code === 'NETWORK' || code === 'TIMEOUT' || (typeof navigator !== 'undefined' && navigator.onLine === false && !(err && err.status));
+    return code === 'NETWORK' || code === 'TIMEOUT' || code === 'SERVER_BUSY' || (typeof navigator !== 'undefined' && navigator.onLine === false && !(err && err.status));
 }
 function emitNet(detail) { try { window.dispatchEvent(new CustomEvent('tm:net', { detail })); } catch (e) { /* تجاهل */ } }
 function markOffline(fromCache) { emitNet({ online: false, fromCache: !!fromCache }); }
@@ -167,7 +246,7 @@ export const Outbox = (() => {
     const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
     const write = (list) => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { /* تجاهل */ } emit(); };
     const emit = () => { try { window.dispatchEvent(new CustomEvent('tm:outbox', { detail: { count: read().length } })); } catch (e) { /* تجاهل */ } };
-    const toast = (msg, ok = true) => import('./utils.js?v=37').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
+    const toast = (msg, ok = true) => import('./utils.js?v=38').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
     return {
         list: read,
         count: () => read().length,
@@ -217,22 +296,49 @@ if (typeof window !== 'undefined' && !window.__tmOutboxWired) {
 
 let billingDueCache = null;
 
-/**
- * الجلسة الحالية. لو التجديد فشل بسبب النت (مش لأن الجلسة انتهت) بنرمي خطأ "نت" بدل ما نودّي المدرس لصفحة الدخول.
- */
-async function getSessionOrRedirect() {
-    let res;
+// ------------------------------------------------------------------ v30: تعارض المواعيد
+let conflictAsk = null;   // سؤال واحد لكل الأيام اللي بتتحفظ مع بعض
+async function askAllowConflict(message) {
+    if (conflictAsk) return conflictAsk;
+    conflictAsk = import('./utils.js?v=38').then(({ askChoice }) => askChoice({
+        title: '⚠️ الميعاد ده فيه حصة تانية',
+        message: message || 'الميعاد ده بيتعارض مع حصة تانية متسجلة. لو ده مقصود احفظ الحصتين في نفس الميعاد، وهيظهروا في الجدول بعلامة تعارض.',
+        choices: [{ label: 'احفظ الحصتين في نفس الميعاد', value: 'force' }],
+        cancelLabel: 'أغيّر الميعاد'
+    })).then((v) => v === 'force');
+    try { return await conflictAsk; } finally { setTimeout(() => { conflictAsk = null; }, 1500); }
+}
+async function saveScheduleWithConflict(send, data) {
     try {
-        res = await window.supabaseClient.auth.getSession();
+        return await send(data);
+    } catch (err) {
+        const code = err && err.error && err.error.code;
+        if (code !== 'SCHEDULE_CONFLICT') throw err;
+        if (data && data.allow_conflict) {
+            throw { error: { code: 'SCHEDULE_CONFLICT', message: 'الخادم لسه بيمنع حصتين في نفس الميعاد. شغّل ملف الإصلاح (TM Maintenance) في n8n مرة واحدة وجرّب تاني.' }, status: err.status };
+        }
+        if (!(await askAllowConflict())) throw { error: { code: 'CANCELLED', message: 'ماتحفظش: غيّر الميعاد.' }, cancelled: true };
+        return await saveScheduleWithConflict(send, { ...data, allow_conflict: true });
+    }
+}
+const signedUrlCache = new Map();
+
+/**
+ * الجلسة الحالية (v30: بساعة السيرفر، وبتتجدد قبل ما تخلص). لو التجديد فشل بسبب النت (مش لأن الجلسة انتهت)
+ * بنرمي خطأ "نت" بدل ما نودّي المدرس لصفحة الدخول.
+ */
+async function getSessionOrRedirect({ force = false, rejected = null } = {}) {
+    let session = null;
+    try {
+        session = await getFreshSession({ force, rejected });
     } catch (e) {
         throw { error: { code: 'NETWORK', message: 'تعذّر الاتصال بالخادم. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.' } };
     }
-    const session = res && res.data ? res.data.session : null;
-    const err = res ? res.error : null;
     if (session) return session;
-    if ((err && /fetch|network|retryable|timeout/i.test(`${err.name || ''} ${err.message || ''}`)) || (typeof navigator !== 'undefined' && navigator.onLine === false)) {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
         throw { error: { code: 'NETWORK', message: 'تعذّر الاتصال بالخادم. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.' } };
     }
+    try { await window.supabaseClient.auth.signOut({ scope: 'local' }); } catch (e) { /* تجاهل */ }
     window.location.href = 'login.html';
     throw { error: { code: 'AUTH_EXPIRED', message: 'انتهت الجلسة، سجّل الدخول تاني.' } };
 }
@@ -758,16 +864,13 @@ export const api = {
 
     // ==================== SCHEDULES ====================
     
+    // v30: حصتين في نفس الميعاد: لو الخادم قال "تعارض" نسأل المدرس مرة واحدة ونعيد بـ allow_conflict
     async createSchedule(scheduleData) {
-        return await apiCall(CONFIG.API_ENDPOINTS.SCHEDULES.CREATE, 'POST', scheduleData);
+        return await saveScheduleWithConflict((data) => apiCall(CONFIG.API_ENDPOINTS.SCHEDULES.CREATE, 'POST', data), scheduleData);
     },
 
     async updateSchedule(scheduleId, scheduleData) {
-        return await apiCall(
-            CONFIG.API_ENDPOINTS.SCHEDULES.UPDATE,
-            'POST',
-            { id: scheduleId, ...scheduleData }
-        );
+        return await saveScheduleWithConflict((data) => apiCall(CONFIG.API_ENDPOINTS.SCHEDULES.UPDATE, 'POST', { id: scheduleId, ...data }), scheduleData);
     },
 
     async deleteSchedule(scheduleId) {
@@ -1016,6 +1119,7 @@ export const api = {
     // على n8n كبايتات خام) - أسرع وأبسط، وبيستخدم صلاحيات RLS الخاصة
     // بالمعلم نفسه (كل معلم بيشوف/يرفع في مجلده بس).
     async uploadBookFile(storagePath, file) {
+        try { await getFreshSession(); } catch (e) { /* المكتبة هتحاول بنفسها */ }
         const { error: uploadError } = await window.supabaseClient.storage
             .from(CONFIG.BOOKS_SETTINGS.BUCKET)
             .upload(storagePath, file, { contentType: file.type || 'application/octet-stream', upsert: false });
@@ -1026,11 +1130,17 @@ export const api = {
     // رابط موقّع (Signed URL) لملف الكتاب الأصلي - للعرض أو التحميل.
     // download: true أو اسم ملف → الرابط بيفرض تنزيل الملف بدل فتحه في المتصفح
     async getBookFileUrl(storagePath, { expiresIn = 3600, download = false } = {}) {
+        // v30: الرابط الموقّع بيتحفظ لحد ما يقرب يخلص (فتح نفس الكتاب تاني بيبقى فوري)
+        const ck = `${storagePath}|${download ? String(download) : ''}`;
+        const hit = signedUrlCache.get(ck);
+        if (hit && hit.until > Date.now()) return hit.url;
+        try { await getFreshSession(); } catch (e) { /* المكتبة هتحاول بنفسها */ }
         const opts = download ? { download } : undefined;
         const { data, error } = await window.supabaseClient.storage
             .from(CONFIG.BOOKS_SETTINGS.BUCKET)
             .createSignedUrl(storagePath, expiresIn, opts);
         if (error) throw error;
+        signedUrlCache.set(ck, { url: data.signedUrl, until: Date.now() + Math.max(60, expiresIn - 300) * 1000 });
         return data.signedUrl;
     },
 
@@ -1072,6 +1182,7 @@ export const api = {
 
     // حذف ملف الكتاب من التخزين (بيتنادى بعد نجاح deleteBook في السيرفر)
     async deleteBookFile(storagePath) {
+        try { await getFreshSession(); } catch (e) { /* تجاهل */ }
         try {
             await window.supabaseClient.storage.from(CONFIG.BOOKS_SETTINGS.BUCKET).remove([storagePath]);
         } catch (e) {

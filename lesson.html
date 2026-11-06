@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=37">
+    <link rel="stylesheet" href="css/style.css?v=38">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -24,10 +24,10 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=37">
-    <link rel="stylesheet" href="css/books.css?v=37">
+    <link rel="stylesheet" href="css/lessons.css?v=38">
+    <link rel="stylesheet" href="css/books.css?v=38">
     <style>body { margin: 0; }</style>
-    <link rel="stylesheet" href="css/v29.css?v=37">
+    <link rel="stylesheet" href="css/v29.css?v=38">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -309,27 +309,27 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=37"></script>
+    <script type="module" src="js/config.js?v=38"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=37';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=37';
-        import { api } from './js/api.js?v=37';
-        import { ErrorHandler, Formatters, uuidv4 } from './js/utils.js?v=37';
-        import { icon } from './js/icons.js?v=37';
+        import { Auth } from './js/auth.js?v=38';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=38';
+        import { api } from './js/api.js?v=38';
+        import { ErrorHandler, Formatters, uuidv4 } from './js/utils.js?v=38';
+        import { icon } from './js/icons.js?v=38';
         import {
             subjectLabel, ratingFieldLabels, RATINGS, HOMEWORK_STATUS, relativeDay, localDateISO, localTimeISO,
             formatDuration, minutesText, LessonDraft, lessonHasContent, lessonDetailsHtml, nextOccurrence, formatNextOccurrence,
             normalizeLesson, isAbsenceRow, attendanceInfo, lessonDay, deviceMsToDateISO, serverTimeToDateISO
-        } from './js/lesson-utils.js?v=37';
-        import { openAttendanceModal } from './js/attendance.js?v=37';
-        import { showTips, dismissTip } from './js/tips.js?v=37';
-        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=37';
-        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=37';
-        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=37';
-        import { openBookViewer } from './js/book-viewer.js?v=37';
-        import { openLessonReport } from './js/report.js?v=37';
-        import { openWhiteboard } from './js/whiteboard.js?v=37';
-        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=37';
+        } from './js/lesson-utils.js?v=38';
+        import { openAttendanceModal } from './js/attendance.js?v=38';
+        import { showTips, dismissTip } from './js/tips.js?v=38';
+        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=38';
+        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=38';
+        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=38';
+        import { openBookViewer } from './js/book-viewer.js?v=38';
+        import { openLessonReport } from './js/report.js?v=38';
+        import { openWhiteboard } from './js/whiteboard.js?v=38';
+        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=38';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'ابدأ الحصة وتابعها وسجّلها في مكان واحد', showSearch: false });
@@ -1151,7 +1151,8 @@
                     });
                 } catch (e) { /* تجاهل */ }
                 const duration = mode === 'live' && lesson.startedAt ? Date.now() - lesson.startedAt : null;
-                lastSaved = { fields: { ...fields }, date: payload.local_date ? new Date(payload.local_date + 'T12:00:00') : new Date(), lessonId: payload.lesson_id || null, recordingUrl: '' };
+                // v30: رقم الحصة = عدد الحصص اللي خلصت قبلها + 1 (بيتأكد بعد ما البيانات الجديدة توصل)
+                lastSaved = { fields: { ...fields }, date: payload.local_date || localDateISO(), lessonId: payload.lesson_id || null, recordingUrl: '', lessonNumber: (ov && ov.stats && !ov.legacy) ? lessonsCount() + 1 : null, queued: !!(saveRes && saveRes.queued) };
                 // v29: الحصة خلصت والتسجيل شغال: نوقفه وننزّل الفيديو
                 if (recorder && recorder.recording) stopRecording(payload.lesson_id || null);
                 LessonDraft.clear(studentIdParam);
@@ -1178,7 +1179,7 @@
         function draftRequestId() {
             const d = LessonDraft.load(studentIdParam) || {};
             if (d.requestId) return d.requestId;
-            const id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            const id = uuidv4();   // v30: UUID حقيقي حتى على الموبايلات القديمة (الخادم بيرفض غيره)
             LessonDraft.save(studentIdParam, { ...d, requestId: id });
             return id;
         }
@@ -1196,6 +1197,18 @@
 
         function refreshDoneInfo(duration) {
             if (!$('state-done').classList.contains('active')) return;
+            // الرقم الحقيقي بعد ما الحصة اتحسبت على السيرفر
+            if (lastSaved && !lastSaved.queued && lessonsCount() > 0) {
+                lastSaved.lessonNumber = lessonsCount();
+                // حصة متسجلة بتاريخ قديم: رقمها حسب ترتيبها في السجل (الأحدث الأول)
+                const rows = (ov && ov.lessons) || [];
+                let seen = 0;
+                for (const r of rows) {
+                    if (isAbsenceRow(r) || r.status === 'in_progress') continue;
+                    if (lastSaved.lessonId && r.id === lastSaved.lessonId) { lastSaved.lessonNumber = lessonsCount() - seen; break; }
+                    seen++;
+                }
+            }
             const parts = [];
             if (duration) parts.push(`مدة الحصة ${minutesText(duration)}`);
             if (lessonsCount()) parts.push(`إجمالي حصص ${student.name ? student.name.split(' ')[0] : 'الطالب'}: ${lessonsCount()}`);
@@ -1248,7 +1261,7 @@
                 <button type="button" class="btn" id="btn-lesson-report">${icon('messageCircle', { size: 16 })} ابعت التقرير على واتساب</button>
                 ${saved0.lessonId ? `<button type="button" class="btn btn-sm btn-ghost lh-recbtn" id="btn-lesson-rec">${icon('video', { size: 15 })} ضيف لينك تسجيل الحصة</button>` : ''}`;
             const saved = lastSaved;
-            $('btn-lesson-report').addEventListener('click', () => openLessonReport({ student, fields: saved.fields, date: saved.date, recordingUrl: saved.recordingUrl || '' }));
+            $('btn-lesson-report').addEventListener('click', () => openLessonReport({ student, fields: saved.fields, date: saved.date, recordingUrl: saved.recordingUrl || '', lessonNumber: saved.lessonNumber }));
             const recBtn = $('btn-lesson-rec');
             if (recBtn) recBtn.addEventListener('click', () => openRecordingLinkModal({
                 lessonId: saved.lessonId, student, current: saved.recordingUrl || '',
@@ -2026,6 +2039,6 @@
             }
         });
         </script>
-    <script src="js/pwa-install.js?v=37" defer></script>
+    <script src="js/pwa-install.js?v=38" defer></script>
 </body>
 </html>

@@ -97,15 +97,33 @@
             try {
                 const cn = navigator.connection;
                 if (cn && (cn.saveData || /2g/.test(cn.effectiveType || ''))) return;
-                const last = Number(localStorage.getItem('tm_sw_warm_at') || 0);
+                const last = Number(localStorage.getItem('tm_sw_warm_at_v38') || 0);
                 if (Date.now() - last < 6 * 3600 * 1000) return;
                 navigator.serviceWorker.ready.then((reg) => {
                     if (!reg.active) return;
                     reg.active.postMessage({ type: 'tm:warm', pages: ['dashboard.html', 'students.html', 'student.html', 'schedule.html', 'lesson.html', 'books.html', 'settings.html', 'groups.html', 'group.html', 'group-lesson.html', 'subscription.html'] });
-                    localStorage.setItem('tm_sw_warm_at', String(Date.now()));
+                    localStorage.setItem('tm_sw_warm_at_v38', String(Date.now()));
                 }).catch(() => { /* تجاهل */ });
             } catch (e) { /* تجاهل */ }
         };
+        // v30: نسخة جديدة من البرنامج اتفعّلت: نجهّز الصفحات الجديدة، ونقول للمدرس يحدّث لما يكون فاضي
+        navigator.serviceWorker.addEventListener('message', (e) => {
+            const d = e.data || {};
+            if (d.type !== 'tm:sw-updated') return;
+            try { localStorage.removeItem('tm_sw_warm_at_v38'); } catch (er) { /* تجاهل */ }
+            setTimeout(warm, 3000);
+            const page = (location.pathname.split('/').pop() || '').replace(/\.html$/, '');
+            if (/^(lesson|group-lesson|login|signup|reset-password|index)$/.test(page) || document.getElementById('tm-update-bar')) return;
+            const bar = document.createElement('div');
+            bar.id = 'tm-update-bar';
+            bar.setAttribute('role', 'status');
+            bar.style.cssText = 'position:fixed;z-index:3300;top:calc(10px + env(safe-area-inset-top,0px));inset-inline:0;margin:0 auto;width:min(420px,calc(100vw - 20px));background:#2E2140;color:#fff;border-radius:12px;padding:.6rem .8rem;display:flex;gap:.6rem;align-items:center;justify-content:space-between;font:600 14px/1.5 "IBM Plex Sans Arabic",Tahoma,Arial,sans-serif;direction:rtl;box-shadow:0 8px 24px rgba(0,0,0,.2)';
+            bar.innerHTML = '<span>✨ فيه تحديث جديد للبرنامج</span><span style="display:flex;gap:.4rem"><button type="button" data-r style="border:0;background:#C59A4A;color:#2E2140;border-radius:8px;padding:.3rem .8rem;font:inherit;cursor:pointer">حدّث</button><button type="button" data-x aria-label="إغلاق" style="border:0;background:transparent;color:#fff;font:inherit;cursor:pointer">✕</button></span>';
+            bar.querySelector('[data-r]').addEventListener('click', () => location.reload());
+            bar.querySelector('[data-x]').addEventListener('click', () => bar.remove());
+            document.body.appendChild(bar);
+            setTimeout(() => { if (bar.isConnected) bar.remove(); }, 20000);
+        });
         const later = () => setTimeout(() => ('requestIdleCallback' in window ? requestIdleCallback(warm, { timeout: 5000 }) : warm()), 4000);
         if (document.readyState === 'complete') later(); else window.addEventListener('load', later, { once: true });
     }

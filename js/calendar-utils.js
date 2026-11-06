@@ -213,3 +213,25 @@ export function findConflicts(items, target, excludeKey = '') {
     });
     return res;
 }
+
+/**
+ * v30: الحصص المتعارضة في نفس اليوم (حصة/مجموعة مع حصة/مجموعة في نفس الوقت).
+ * بيرجّع Map: "kind:id" ← قايمة أسماء اللي بيتعارض معاها. المواعيد الشخصية مش بتتحسب تعارض.
+ */
+export function dayConflicts(dayItems) {
+    const res = new Map();
+    const list = (dayItems || []).filter((it) => it.kind === 'lesson' || it.kind === 'group');
+    for (let i = 0; i < list.length; i++) {
+        for (let j = i + 1; j < list.length; j++) {
+            const a = list[i], b = list[j];
+            if (a.start < b.start + b.duration && b.start < a.start + a.duration) {
+                const ka = `${a.kind}:${a.id}`, kb = `${b.kind}:${b.id}`;
+                if (!res.has(ka)) res.set(ka, []);
+                if (!res.has(kb)) res.set(kb, []);
+                res.get(ka).push(b.title);
+                res.get(kb).push(a.title);
+            }
+        }
+    }
+    return res;
+}

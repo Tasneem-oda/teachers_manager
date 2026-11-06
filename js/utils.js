@@ -2,7 +2,7 @@
  * utils.js - دوال مساعدة موحدة للتطبيق
  */
 
-import { CONFIG } from './config.js?v=37';
+import { CONFIG } from './config.js?v=38';
 
 /** أرقام عربية/فارسية (٠١٢ / ۰۱۲) ← أرقام إنجليزية. كيبوردات كتير في مصر بتكتب الأرقام العربي افتراضيًا */
 export function toLatinDigits(value) {
@@ -298,26 +298,34 @@ export const APIUtils = {
     },
     
     handleResponse: async (response) => {
-        const text = await response.text();
-        
-        if (!text) {
-            throw new Error('استجابة الخادم فارغة');
+        let text = '';
+        try { text = await response.text(); } catch (e) {
+            throw { error: { code: 'NETWORK', message: 'النت قطع قبل ما الرد يوصل. حاول مرة أخرى.' } };
         }
-        
+        const status = response.status;
+        // v30: السيرفر مشغول/بيتعمله تحديث (502/503/504 من Cloudflare أو nginx بصفحة HTML)
+        const busy = status === 502 || status === 503 || status === 504 || status === 520 || status === 522 || status === 524;
+
+        if (!text) {
+            if (busy) throw { error: { code: 'SERVER_BUSY', message: 'السيرفر مشغول ثواني. حاول تاني بعد شوية.' }, status };
+            throw { error: { code: 'EMPTY', message: 'الخادم مارجّعش رد. حاول مرة أخرى.' }, status };
+        }
+
         let data;
         try {
             data = JSON.parse(text);
         } catch (e) {
-            throw new Error('فشل قراءة استجابة الخادم');
+            if (busy || status >= 500) throw { error: { code: 'SERVER_BUSY', message: 'السيرفر مشغول ثواني. حاول تاني بعد شوية.' }, status };
+            throw { error: { code: 'BAD_RESPONSE', message: 'فشل قراءة استجابة الخادم' }, status };
         }
-        
-        if (!data.success) {
-            throw {
-                error: data.error || { message: 'حدث خطأ' },
-                status: response.status
-            };
+
+        if (!data || !data.success) {
+            // n8n لما workflow يقع بيرجّع {"message":"Error in workflow"} من غير success
+            const err = (data && data.error && typeof data.error === 'object') ? data.error
+                : { code: status >= 500 ? 'SERVER_ERROR' : 'ERROR', message: status >= 500 ? 'حصل خطأ مؤقت في الخادم. حاول مرة أخرى.' : 'حدث خطأ' };
+            throw { error: err, status };
         }
-        
+
         return data.data;
     }
 };

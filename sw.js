@@ -47,9 +47,14 @@ try { importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js')
  *   (لو مفيش نسخة محفوظة بنجيبها من النت عادي، ولو مفيش نت خالص بنعرض رسالة "مفيش نت").
  * - طلبات n8n و Supabase مابتعديش على الكاش هنا خالص (الكود في js/api.js هو اللي بيتعامل معاها).
  */
+// v30: رقم النسخة (لازم يساوي ?v= في الصفحات). لما يتغيّر:
+//  - كاش الصفحات بيتمسح (أول فتحة بعد التحديث بتجيب الصفحات الجديدة من النت)
+//  - ملفات النسخ القديمة جدًا بتتمسح من الجهاز (بنسيب النسخة اللي قبلها بس للتبديل الآمن)
+const APP_VERSION = 38;
 const STATIC_CACHE = 'tm-static-v1';
-const PAGE_CACHE = 'tm-pages-v1';
+const PAGE_CACHE = 'tm-pages-v' + APP_VERSION;
 const KEEP = [STATIC_CACHE, PAGE_CACHE];
+const MAX_STATIC_ENTRIES = 260;
 
 const OFFLINE_HTML = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>مفيش نت</title>
 <style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#FAF9F6;font-family:Tahoma,Arial,sans-serif;color:#29252D;text-align:center;padding:24px}
@@ -65,8 +70,20 @@ self.addEventListener('activate', (event) => {
     event.waitUntil((async () => {
         // طلب الصفحة بيبدأ على طول من غير ما يستنى الـ Service Worker "يصحى" (أسرع على الموبايل)
         try { if (self.registration.navigationPreload) await self.registration.navigationPreload.enable(); } catch (e) { /* متصفح قديم */ }
-        try { for (const k of await caches.keys()) if (k.startsWith('tm-') && !KEEP.includes(k)) await caches.delete(k); } catch (e) { /* تجاهل */ }
+        let hadOld = false;
+        try { for (const k of await caches.keys()) if (k.startsWith('tm-') && !KEEP.includes(k)) { if (k.startsWith('tm-pages-')) hadOld = true; await caches.delete(k); } } catch (e) { /* تجاهل */ }
+        // ملفات النسخ القديمة (?v= أقل من النسخة اللي قبل الحالية) مالهاش لازمة: بتاخد مساحة على الموبايل
+        try {
+            const cache = await caches.open(STATIC_CACHE);
+            const reqs = await cache.keys();
+            for (const r of reqs) {
+                const v = Number(new URL(r.url).searchParams.get('v'));
+                if (Number.isFinite(v) && v > 0 && v < APP_VERSION - 1) await cache.delete(r);
+            }
+        } catch (e) { /* تجاهل */ }
         await self.clients.claim();
+        // الصفحات المفتوحة تعرف إن فيه نسخة جديدة (js/pwa-install.js بيعرض "حدّث")
+        if (hadOld) try { for (const c of await self.clients.matchAll({ type: 'window' })) c.postMessage({ type: 'tm:sw-updated', version: APP_VERSION }); } catch (e) { /* تجاهل */ }
     })());
 });
 
@@ -82,8 +99,21 @@ async function staticFirst(req) {
     const hit = await cache.match(req);
     if (hit) return hit;
     const res = await fetch(req);
-    if (res && (res.ok || res.type === 'opaque')) { try { await cache.put(req, res.clone()); } catch (e) { /* التخزين مليان */ } }
+    if (res && (res.ok || res.type === 'opaque')) {
+        try { await cache.put(req, res.clone()); } catch (e) { /* التخزين مليان */ }
+        trimStatic(cache);
+    }
     return res;
+}
+
+let trimming = false;
+async function trimStatic(cache) {
+    if (trimming) return;
+    trimming = true;
+    try {
+        const keys = await cache.keys();
+        if (keys.length > MAX_STATIC_ENTRIES) for (const k of keys.slice(0, keys.length - MAX_STATIC_ENTRIES)) await cache.delete(k);
+    } catch (e) { /* تجاهل */ } finally { trimming = false; }
 }
 
 // مفتاح الصفحة من غير ?student_id=... (نفس الصفحة لكل الطلاب)

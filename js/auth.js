@@ -7,8 +7,9 @@
  * في كل مكان (وليس window.supabase، لأن هذا الأخير هو مكتبة supabase-js
  * الخام القادمة من الـ CDN وليس عميلاً مهيّأً، وليس لديه خاصية .auth).
  */
-import { CONFIG } from './config.js?v=37';
-import { APIUtils, Storage, ErrorHandler, Validators, toLatinDigits } from './utils.js?v=37';
+import { CONFIG } from './config.js?v=38';
+import { APIUtils, Storage, ErrorHandler, Validators, toLatinDigits } from './utils.js?v=38';
+import { getFreshSession } from './session.js?v=38';
 
 /** fetch بمهلة: على النت الضعيف الدخول/التسجيل مايفضلش يلف للأبد */
 async function fetchWithTimeout(url, options = {}, ms = 12000) {
@@ -400,19 +401,27 @@ export const Auth = {
 
     async _bootstrapSessionNow() {
         try {
-            const { data: { session }, error } = await window.supabaseClient.auth.getSession();
-
-            if (error || !session) {
+            // v30: توكن صالح بساعة السيرفر (بيتجدد قبل ما يخلص) بدل getSession اللي بيعتمد على ساعة الموبايل
+            let session = null;
+            try { session = await getFreshSession(); } catch (e) {
+                const r = await window.supabaseClient.auth.getSession();
+                session = r && r.data ? r.data.session : null;
+            }
+            if (!session) {
                 return null;
             }
 
-            const fetchProfile = async () => {
+            const fetchProfile = async (retried = false) => {
                 const headers = APIUtils.buildHeaders(session.access_token);
                 const response = await fetchWithTimeout(
                     APIUtils.buildUrl(CONFIG.API_ENDPOINTS.AUTH.BOOTSTRAP_SESSION),
                     { method: 'GET', headers },
                     12000
                 );
+                if (response.status === 401 && !retried) {
+                    try { const s2 = await getFreshSession({ force: true }); if (s2) { session = s2; return fetchProfile(true); } } catch (e) { /* نت */ }
+                    return null;
+                }
                 if (!response.ok) return null;
                 const text = await response.text();
                 let data = null;
@@ -465,7 +474,7 @@ export const Auth = {
         try { localStorage.removeItem('tm_shell_v1'); } catch (e) { /* تجاهل */ }
         // v29.5: اللي مستني يتبعت يتبعت الأول (بحد أقصى 4 ثواني)، وبعدين نمسح بيانات المدرس المحفوظة للعرض من غير نت
         try {
-            const m = await import('./api.js?v=37');
+            const m = await import('./api.js?v=38');
             if (m.Outbox && m.Outbox.count()) await Promise.race([m.Outbox.flush(), new Promise((r) => setTimeout(r, 4000))]);
             if (m.OfflineCache) m.OfflineCache.clear();
             ['tm_outbox_v1', 'tm_rem_sched_v1', 'tm_rem_shown_v1'].forEach((k) => localStorage.removeItem(k));

@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=37">
+    <link rel="stylesheet" href="css/style.css?v=38">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -24,8 +24,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=37">
-    <link rel="stylesheet" href="css/groups.css?v=37">
+    <link rel="stylesheet" href="css/lessons.css?v=38">
+    <link rel="stylesheet" href="css/groups.css?v=38">
     <style>
         .loading { text-align: center; padding: 2rem; color: var(--primary); }
         .empty-state { text-align: center; padding: 2rem; color: var(--text-secondary); }
@@ -51,7 +51,7 @@
         .e-guard { background: #FAFAF7; border: 1px dashed #E2DCCB; border-radius: 12px; padding: 0.7rem 0.8rem 0.1rem; margin-bottom: 1rem; }
         .e-guard > p { margin: 0 0 0.5rem; font-size: 0.82rem; color: var(--text-secondary); }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=37">
+    <link rel="stylesheet" href="css/v29.css?v=38">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -242,22 +242,22 @@
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=37"></script>
+    <script type="module" src="js/config.js?v=38"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=37';
-        import { api } from './js/api.js?v=37';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=37';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=37';
-        import { icon } from './js/icons.js?v=37';
-        import { openStudentAppointments } from './js/student-appointments.js?v=37';
-        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=37';
-        import { openAttendanceModal } from './js/attendance.js?v=37';
-        import { openMonthlyReport } from './js/report.js?v=37';
-        import { showTips } from './js/tips.js?v=37';
-        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=37';
-        import { groupTitle, groupColorClass } from './js/groups-utils.js?v=37';
-        import { confirmDeleteStudent, confirmRemoveFromGroup, setStudentStatus } from './js/student-actions.js?v=37';
-        import { openRecordingLinkModal } from './js/recording.js?v=37';
+        import { Auth } from './js/auth.js?v=38';
+        import { api } from './js/api.js?v=38';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=38';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=38';
+        import { icon } from './js/icons.js?v=38';
+        import { openStudentAppointments } from './js/student-appointments.js?v=38';
+        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=38';
+        import { openAttendanceModal } from './js/attendance.js?v=38';
+        import { openMonthlyReport, openLessonReport } from './js/report.js?v=38';
+        import { showTips } from './js/tips.js?v=38';
+        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=38';
+        import { groupTitle, groupColorClass } from './js/groups-utils.js?v=38';
+        import { confirmDeleteStudent, confirmRemoveFromGroup, setStudentStatus } from './js/student-actions.js?v=38';
+        import { openRecordingLinkModal } from './js/recording.js?v=38';
 
         renderSidebar('students');
         renderTopHeader({ title: 'ملف الطالب', subtitle: 'كل ما يخص الطالب في مكان واحد' });
@@ -293,6 +293,14 @@
                 $('content').style.display = 'block';
                 const hashTab = (location.hash || '').replace('#', '');
                 if (['overview', 'lessons', 'billing', 'notes', 'info'].includes(hashTab)) switchTab(hashTab);
+                // v30: حصة/دفعة اتسجلت من جهاز تاني (أو المدرس رجع للبرنامج): الملف يتحدّث لوحده
+                // (مش وقت تعديل البيانات أو الملاحظات، ولا بعد "عرض المزيد" عشان مانرجّعش القايمة لأولها)
+                import('./js/auto-refresh.js?v=38').then((m) => m.onAppResume(async () => {
+                    const tab = document.querySelector('.sp-tab.active');
+                    if (tab && ['info', 'notes'].includes(tab.dataset.tab)) return;
+                    if (lessons.length > PAGE) return;
+                    await loadOverview();
+                })).catch(() => { /* تجاهل */ });
                 if (new URLSearchParams(window.location.search).get('appts') === '1') openStudentAppointments(studentId, student.name || '');
                 showTips([
                     { id: 'student_billing', target: '#sp-stats [data-goto="billing"]', title: 'حصص ودفع الطالب', text: 'من هنا تعرف فاضل كام حصة في الباقة، وتسجّل الدفعات وتبعت رسالة تذكير.' },
@@ -478,7 +486,7 @@
             if (!lessons.length) { list.innerHTML = '<div class="x-card"><div class="x-empty">لا توجد حصص مسجّلة</div></div>'; $('btn-more-lessons').hidden = true; return; }
             let doneSeen = 0;
             let openedFirst = false;
-            list.innerHTML = lessons.map((l) => {
+            list.innerHTML = lessons.map((l, idx) => {
                 const absent = isAbsenceRow(l);
                 const isGroup = !!l.group_session_id;
                 const groupUrl = isGroup && l.group_id ? `group-lesson.html?group_id=${encodeURIComponent(l.group_id)}&session_id=${encodeURIComponent(l.group_session_id)}` : '';
@@ -493,10 +501,12 @@
                     <div class="lh-body">${lessonDetailsHtml(l, student.subject, icon)}
                         ${l.id && isGroup ? `<div class="lh-actions">
                             ${groupUrl ? `<a class="lh-edit" href="${groupUrl}">${icon('edit', { size: 13 })} تعديل حصة المجموعة</a>` : '<span class="muted" style="font-size:0.82rem;">حصة مجموعة (اتمسحت المجموعة)</span>'}
+                            ${!absent && l.status === 'completed' ? `<button type="button" class="lh-recbtn" data-report-idx="${idx}" data-report-num="${num || ''}">${icon('messageCircle', { size: 13 })} تقرير لولي الأمر</button>` : ''}
                             ${!absent && groupUrl ? `<button type="button" class="lh-recbtn" data-rec-gs="${esc(l.group_session_id)}" data-rec-url="${esc(l.recording_url || '')}">${icon('video', { size: 13 })} ${l.recording_url ? 'لينك التسجيل' : 'ضيف لينك التسجيل'}</button>` : ''}
                         </div>` : ''}
                         ${l.id && !isGroup ? `<div class="lh-actions">
                             ${!absent && l.status !== 'in_progress' ? `<a class="lh-edit" href="lesson.html?student_id=${encodeURIComponent(studentId)}&edit_lesson=${encodeURIComponent(l.id)}">${icon('edit', { size: 13 })} تعديل الحصة</a>` : ''}
+                            ${!absent && l.status === 'completed' ? `<button type="button" class="lh-recbtn" data-report-idx="${idx}" data-report-num="${num || ''}">${icon('messageCircle', { size: 13 })} تقرير لولي الأمر</button>` : ''}
                             ${!absent && l.status === 'completed' ? `<button type="button" class="lh-recbtn" data-rec-lesson="${esc(l.id)}" data-rec-url="${esc(l.recording_url || '')}">${icon('video', { size: 13 })} ${l.recording_url ? 'لينك التسجيل' : 'ضيف لينك التسجيل'}</button>` : ''}
                             <button type="button" class="lh-del" data-del-lesson="${esc(l.id)}" data-absent="${absent ? '1' : ''}">${icon('trash', { size: 13 })} ${absent ? 'مسح الغياب ده' : 'مسح الحصة دي'}</button>
                         </div>` : ''}</div></details>`;
@@ -510,6 +520,23 @@
             ErrorHandler.showSuccess('اتعدّلت الحصة');
             try { history.replaceState(null, '', location.pathname + '?id=' + encodeURIComponent(studentId) + location.hash); } catch (e) { /* تجاهل */ }
         }
+
+        // v30: تقرير أي حصة قديمة لولي الأمر (برقمها وتاريخها)
+        $('lessons-list').addEventListener('click', (e) => {
+            const b = e.target.closest('[data-report-idx]');
+            if (!b) return;
+            const l = lessons[Number(b.dataset.reportIdx)];
+            if (!l) return;
+            const n = normalizeLesson(l);
+            openLessonReport({
+                student,
+                fields: { lesson_content: n.lesson_content, memorization: n.memorization, recitation: n.recitation, revision: n.revision, homework_status: n.homework_status, performance: n.performance, homework: n.homework, next_assignment: n.next_assignment },
+                date: String(l.lesson_date || '').slice(0, 10),
+                recordingUrl: l.recording_url || '',
+                lessonNumber: Number(b.dataset.reportNum) || null,
+                groupName: l.group_session_id ? groupTitle(l.group_name || '') : ''
+            });
+        });
 
         // v29: لينك تسجيل الحصة من سجل الحصص
         $('lessons-list').addEventListener('click', (e) => {
@@ -774,7 +801,7 @@
             }
             return all;
         }
-        $('btn-report').addEventListener('click', () => openMonthlyReport({ student, loadLessons: loadLessonsSince }));
+        $('btn-report').addEventListener('click', () => openMonthlyReport({ student, loadLessons: loadLessonsSince, completedTotal: (ov && ov.stats && !ov.legacy) ? Number(ov.stats.completed) || 0 : 0 }));
         // جاي من شاشة "تم حفظ الحصة" (زرار ابعت التقرير): نفتح التقرير أول ما الصفحة تجهز
         if (new URLSearchParams(window.location.search).get('report') === '1') {
             const waitReady = setInterval(() => {
@@ -806,6 +833,6 @@
 
         window.openBillingSetup = () => openBillingSetup({ student, view: billView }, billingCtx.onChange);
     </script>
-    <script src="js/pwa-install.js?v=37" defer></script>
+    <script src="js/pwa-install.js?v=38" defer></script>
 </body>
 </html>
