@@ -3,10 +3,10 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=39';
-import { APIUtils, Storage } from './utils.js?v=39';
-import { getFreshSession } from './session.js?v=39';
-import { currentSyncVersion, syncTrusted } from './realtime-sync.js?v=39';
+import { CONFIG } from './config.js?v=40';
+import { APIUtils, Storage } from './utils.js?v=40';
+import { getFreshSession } from './session.js?v=40';
+import { currentSyncVersion, syncTrusted } from './realtime-sync.js?v=40';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -34,7 +34,7 @@ async function apiCall(endpoint, method = 'GET', body = null, options = {}) {
         try { return await p; } finally { inflight.delete(readKey); }
     }
     const data = await apiCallNow(endpoint, method, body, options);
-    if (String(method).toUpperCase() !== 'GET' && !readKey) ReadCache.clear();
+    if (String(method).toUpperCase() !== 'GET' && !readKey && !(body && (body.action === 'push_status' || body.action === 'test'))) ReadCache.clear();
     return data;
 }
 
@@ -101,9 +101,10 @@ async function apiCallNow(endpoint, method = 'GET', body = null, options = {}) {
         if ((method === 'GET' || options.offlineCache) && !options.noOfflineCache) OfflineCache.put(cacheKeyOf(endpoint, method, body), data, session.user && session.user.id);
         markOnline();
         // v29.8: حفظ حاجة (حصة/موعد/طالب…): التابات والأجهزة التانية تتحدّث على طول
-        if (method !== 'GET' && !isRead && !/track-events|notifications|ai-chat|assistant|ask-sources|prepare-lesson|owner-/i.test(endpoint)) {
+        const quiet = !!(body && (body.action === 'push_status' || body.action === 'test'));   // v32: مش تغيير بيانات
+        if (method !== 'GET' && !isRead && !quiet && !/track-events|notifications|ai-chat|assistant|ask-sources|prepare-lesson|owner-/i.test(endpoint)) {
             ReadCache.clear();
-            import('./auto-refresh.js?v=39').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
+            import('./auto-refresh.js?v=40').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
         }
         return data;
 
@@ -268,7 +269,7 @@ export const Outbox = (() => {
     const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
     const write = (list) => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { /* تجاهل */ } emit(); };
     const emit = () => { try { window.dispatchEvent(new CustomEvent('tm:outbox', { detail: { count: read().length } })); } catch (e) { /* تجاهل */ } };
-    const toast = (msg, ok = true) => import('./utils.js?v=39').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
+    const toast = (msg, ok = true) => import('./utils.js?v=40').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
     return {
         list: read,
         count: () => read().length,
@@ -322,7 +323,7 @@ let billingDueCache = null;
 let conflictAsk = null;   // سؤال واحد لكل الأيام اللي بتتحفظ مع بعض
 async function askAllowConflict(message) {
     if (conflictAsk) return conflictAsk;
-    conflictAsk = import('./utils.js?v=39').then(({ askChoice }) => askChoice({
+    conflictAsk = import('./utils.js?v=40').then(({ askChoice }) => askChoice({
         title: '⚠️ الميعاد ده فيه حصة تانية',
         message: message || 'الميعاد ده بيتعارض مع حصة تانية متسجلة. لو ده مقصود احفظ الحصتين في نفس الميعاد، وهيظهروا في الجدول بعلامة تعارض.',
         choices: [{ label: 'احفظ الحصتين في نفس الميعاد', value: 'force' }],
@@ -369,7 +370,7 @@ async function getSessionOrRedirect({ force = false, rejected = null } = {}) {
 // (get-book-content و ask مش "حفظ": قراءة الكتب مسموحة زي ما وعدنا المدرس في شريط القراءة فقط) + أحداث التتبع
 const READ_ONLY_ALLOWED = ['/check-subscription', '/submit-suggestion', '/mark-notifications-read', '/bootstrap-session', '/initialize-teacher', '/monthly-income', '/get-book-content', '/track-events', '/update-profile', '/export-data'];
 // v27: طلبات المجموعات كلها POST، فبنسمح بالقراءة بس (عرض المجموعات/الحصة/كشف الاشتراك) في وضع القراءة فقط
-const READ_ONLY_ACTIONS = { '/groups': ['list', 'get'], '/group-session': ['prepare'], '/group-billing': ['month'], '/teacher-settings': ['get', 'save', 'test'], '/delete-account': ['request', 'cancel', 'status'], '/lesson-tools': ['board_list'] };
+const READ_ONLY_ACTIONS = { '/groups': ['list', 'get'], '/group-session': ['prepare'], '/group-billing': ['month'], '/teacher-settings': ['get', 'save', 'test', 'push_status'], '/delete-account': ['request', 'cancel', 'status'], '/lesson-tools': ['board_list'] };
 function isBlockedByReadOnly(endpoint, method, body = null) {
     if (typeof window === 'undefined' || !window.__tmReadOnly) return false;
     if (String(method || 'GET').toUpperCase() === 'GET') return false;
@@ -772,6 +773,8 @@ export const api = {
     },
     /** "جرّب التنبيه": الخادم بيبعت إشعار تجربة دلوقتي */
     async testReminder() { return await apiCall(CONFIG.API_ENDPOINTS.SETTINGS.API, 'POST', { action: 'test' }); },
+    // v32: حالة اشتراك الإشعارات على الجهاز ده (js/push-health.js) — للمتابعة من السيرفر
+    async reportPushStatus(data) { return await apiCall(CONFIG.API_ENDPOINTS.SETTINGS.API, 'POST', { action: 'push_status', ...(data || {}) }, { timeoutMs: 15000 }); },
 
     // ------------------------------------------------------------------ v28: تأجيل الحصة
     /** payload: student_id, new_date, new_time, mode (once|always), occ_date, occ_time, schedule_id, lesson_id, note, force */

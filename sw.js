@@ -35,8 +35,17 @@
  * عنده Service Worker خاص به بالفعل.)
  * ============================================================================
  */
-// v29.5: لو مكتبة OneSignal ماتحمّلتش (النت/حاجب إعلانات) الـ Service Worker يفضل شغال (الكاش والفتح من غير نت)
-try { importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js'); } catch (e) { /* الإشعارات بس اللي هتقف لحد التحديث الجاي */ }
+// v32: كود OneSignal (هو اللي بيعرض الإشعار والبرنامج مقفول)
+//  - لو ماتحمّلش وده "تحديث" لنسخة شغالة: بنفشّل التحديث عمدًا، فالنسخة القديمة (اللي فيها الإشعارات) تفضل شغالة
+//    والمتصفح يحاول تاني بعدين. قبل كده التحديث كان بيكمل من غير كود الإشعارات، فالإشعارات كانت بتقف بصمت.
+//  - لو ده أول تثبيت: بنكمل من غير الإشعارات (الكاش والفتح من غير نت يشتغلوا)، والصفحة هتلاحظ وتطلب تحديث.
+self.__tmOneSignalSW = false;
+try {
+    importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
+    self.__tmOneSignalSW = true;
+} catch (e) {
+    if (self.registration && self.registration.active) throw e;
+}
 
 /**
  * v29.5: كاش ذكي عشان التنقل يبقى فوري والبرنامج يفتح من غير نت
@@ -50,7 +59,7 @@ try { importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js')
 // v30: رقم النسخة (لازم يساوي ?v= في الصفحات). لما يتغيّر:
 //  - كاش الصفحات بيتمسح (أول فتحة بعد التحديث بتجيب الصفحات الجديدة من النت)
 //  - ملفات النسخ القديمة جدًا بتتمسح من الجهاز (بنسيب النسخة اللي قبلها بس للتبديل الآمن)
-const APP_VERSION = 39;
+const APP_VERSION = 40;
 const STATIC_CACHE = 'tm-static-v1';
 const PAGE_CACHE = 'tm-pages-v' + APP_VERSION;
 const KEEP = [STATIC_CACHE, PAGE_CACHE];
@@ -181,6 +190,11 @@ self.addEventListener('fetch', (event) => {
 
 // الصفحة بتقول للـ Service Worker "خزّن الصفحات دي" (بعد ما تفتح أول مرة) عشان التنقل بينها يبقى فوري حتى أول مرة
 self.addEventListener('message', (event) => {
+    // v32: فحص صحة الإشعارات من الصفحة (js/push-health.js)
+    if (event.data && event.data.type === 'tm:sw-status') {
+        try { (event.ports && event.ports[0] ? event.ports[0] : event.source).postMessage({ onesignal: !!self.__tmOneSignalSW, version: APP_VERSION }); } catch (e) { /* تجاهل */ }
+        return;
+    }
     const d = event.data || {};
     if (d.type !== 'tm:warm' || !Array.isArray(d.pages)) return;
     event.waitUntil((async () => {

@@ -33,10 +33,10 @@
  * كل جزء بيفشل بصمت (من غير ما يكسر باقي الصفحة) لو لسه معمولش الإعداد بتاعه.
  * ============================================================================
  */
-import { CONFIG } from './config.js?v=39';
-import { Auth } from './auth.js?v=39';
-import { api } from './api.js?v=39';
-import { ErrorHandler } from './utils.js?v=39';
+import { CONFIG } from './config.js?v=40';
+import { Auth } from './auth.js?v=40';
+import { api } from './api.js?v=40';
+import { ErrorHandler } from './utils.js?v=40';
 
 const PROMPT_DISMISS_KEY = 'tm_notif_prompt_dismissed';
 const BADGE_CACHE_KEY = 'tm_notif_badge_cache_v1';
@@ -133,6 +133,12 @@ async function initAndLinkTeacher() {
             if (ps && 'Notification' in window && Notification.permission === 'granted' && !ps.optedIn && typeof ps.optIn === 'function') {
                 await ps.optIn();
             }
+            // v32: لو الاشتراك اتغيّر بعدين (اتلغى/رجع) السيرفر يعرف على طول
+            if (ps && typeof ps.addEventListener === 'function') {
+                ps.addEventListener('change', () => {
+                    import('./push-health.js?v=40').then(async (m) => m.reportPushStatus(await m.checkPushHealth())).catch(() => { /* تجاهل */ });
+                });
+            }
         } catch (e) { /* تجاهل */ }
         // v28: لو البرنامج مفتوح وقت التذكير والمدرس مختار "بصوت": جرس من البرنامج نفسه + اهتزاز
         try {
@@ -147,7 +153,7 @@ async function initAndLinkTeacher() {
                         return;
                     }
                     if (data.tm_sound === true || data.tm_sound === 'true') {
-                        import('./reminder-settings.js?v=39').then((m) => m.playReminderSound()).catch(() => { /* تجاهل */ });
+                        import('./reminder-settings.js?v=40').then((m) => m.playReminderSound()).catch(() => { /* تجاهل */ });
                     }
                 } catch (e) { /* تجاهل */ }
             });
@@ -788,6 +794,10 @@ export async function initPushNotifications() {
         // بانر التفعيل بيظهر بتأخير بسيط عشان ميزاحمش تحميل باقي الصفحة،
         // ومش هيظهر أصلًا لو الإذن مفعّل/مرفوض بالفعل أو المعلم قفله قبل كده
         setTimeout(showEnablePrompt, 2000);
+        // v32: فحص إن الإشعارات واصلة فعلًا (مش بس إن الإذن متاح) + إصلاح تلقائي + تبليغ السيرفر
+        setTimeout(() => {
+            import('./push-health.js?v=40').then((m) => m.runPushHealth({ requestPermission })).catch(() => { /* تجاهل */ });
+        }, 5000);
     } catch (e) {
         // فشل تفعيل الإشعارات مش المفروض يوقف استخدام باقي البرنامج
         console.warn('تعذّر تهيئة إشعارات Push:', e);

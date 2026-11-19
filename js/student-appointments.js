@@ -11,11 +11,11 @@
  * من غير أي تعديل أو إضافة على أي workflow في n8n.
  */
 
-import { api } from './api.js?v=39';
-import { ErrorHandler, Formatters, uuidv4, askChoice } from './utils.js?v=39';
-import { icon } from './icons.js?v=39';
-import { mountTimePicker, refreshTimePicker, mountDayChips, weekIndex } from './form-widgets.js?v=39';
-import { parseDate, isoDate } from './calendar-utils.js?v=39';
+import { api } from './api.js?v=40';
+import { ErrorHandler, Formatters, uuidv4, askChoice } from './utils.js?v=40';
+import { icon } from './icons.js?v=40';
+import { mountTimePicker, refreshTimePicker, mountDayChips, weekIndex } from './form-widgets.js?v=40';
+import { parseDate, isoDate } from './calendar-utils.js?v=40';
 
 const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const RECURRENCE_LABELS = { weekly: 'أسبوعيًا', daily: 'يوميًا', monthly: 'شهريًا', none: 'مرة واحدة' };

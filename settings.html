@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=39">
+    <link rel="stylesheet" href="css/style.css?v=40">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -53,7 +53,7 @@
         .success-message { background: #E8F5E9; color: var(--success-text); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; display: none; }
         .error-message { background: #FFEBEE; color: var(--danger); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; display: none; }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=39">
+    <link rel="stylesheet" href="css/v29.css?v=40">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -210,40 +210,49 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=39"></script>
+    <script type="module" src="js/config.js?v=40"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=39';
-        import { Storage, ErrorHandler, toLatinDigits } from './js/utils.js?v=39';
-        import { api } from './js/api.js?v=39';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=39';
-        import { icon } from './js/icons.js?v=39';
-        import { CONFIG } from './js/config.js?v=39';
-        import { requestPermission, unlinkOnSignOut } from './js/notifications.js?v=39';
-        import { mountReminderControls } from './js/reminder-settings.js?v=39';
-        import { openDeleteAccount } from './js/account-delete.js?v=39';
+        import { Auth } from './js/auth.js?v=40';
+        import { Storage, ErrorHandler, toLatinDigits } from './js/utils.js?v=40';
+        import { api } from './js/api.js?v=40';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=40';
+        import { icon } from './js/icons.js?v=40';
+        import { CONFIG } from './js/config.js?v=40';
+        import { requestPermission, unlinkOnSignOut } from './js/notifications.js?v=40';
+        import { mountReminderControls } from './js/reminder-settings.js?v=40';
+        import { openDeleteAccount } from './js/account-delete.js?v=40';
 
-        function renderPushStatus() {
+        // v32: الحالة الحقيقية (الجهاز متسجل فعلًا عند خدمة الإشعارات) مش بس "الإذن متاح"
+        let pushHealth = null;
+        async function renderPushStatus() {
             const el = document.getElementById('push-status');
             const btn = document.getElementById('btn-enable-push');
             if (!el || !btn) return;
-            if (!('Notification' in window)) {
-                el.textContent = 'المتصفح ده مش بيدعم التنبيهات. على الآيفون: ثبّت البرنامج على الشاشة الرئيسية وافتحه من هناك.';
-                btn.hidden = true;
-                return;
+            el.textContent = 'جاري التأكد من الإشعارات على الجهاز ده...';
+            btn.hidden = true;
+            try {
+                const ph = await import('./js/push-health.js?v=40');
+                pushHealth = await ph.checkPushHealth({ waitSdkMs: 10000 });
+                const t = ph.healthText(pushHealth);
+                el.innerHTML = `<b>${t.title}</b>${t.desc ? `<br><small>${t.desc}</small>` : ''}`;
+                el.style.color = t.ok ? 'var(--success-text, #2E7D32)' : '';
+                btn.hidden = !!t.ok;
+                btn.textContent = t.label || 'فعّل الإشعارات';
+                ph.reportPushStatus(pushHealth);
+            } catch (e) {
+                el.textContent = 'مقدرناش نتأكد من حالة الإشعارات دلوقتي.';
             }
-            const p = Notification.permission;
-            el.textContent = p === 'granted' ? '✓ التنبيهات مفعّلة على الجهاز ده'
-                : p === 'denied' ? 'التنبيهات مقفولة من إعدادات المتصفح. افتح إعدادات الموقع (علامة القفل جنب الرابط) ← الإشعارات ← سماح.'
-                : 'التنبيهات لسه مش مفعّلة على الجهاز ده.';
-            btn.hidden = p === 'granted';
         }
         document.getElementById('btn-enable-push').addEventListener('click', async (e) => {
             const b = e.currentTarget;
             if (b.disabled) return;
             const label = b.textContent;
             b.disabled = true;
-            b.textContent = 'جاري التفعيل...';
-            try { await requestPermission(); } finally { b.disabled = false; b.textContent = label; }
+            b.textContent = 'لحظة...';
+            try {
+                const ph = await import('./js/push-health.js?v=40');
+                await ph.fixNow(pushHealth || { state: 'default', p: ph.devicePlatform() }, requestPermission);
+            } finally { b.disabled = false; b.textContent = label; }
             renderPushStatus();
         });
         renderPushStatus();
@@ -255,7 +264,7 @@
         document.getElementById('ic-account').innerHTML = icon('logout', { size: 18 });
         document.getElementById('ic-export').innerHTML = icon('download', { size: 18 });
         document.getElementById('btn-export').addEventListener('click', async (e) => {
-            const { downloadAllData } = await import('./js/export-data.js?v=39');
+            const { downloadAllData } = await import('./js/export-data.js?v=40');
             downloadAllData(e.currentTarget);
         });
         document.getElementById('ic-install').innerHTML = icon('download', { size: 18 });
@@ -439,6 +448,6 @@
             rep.addEventListener('change', () => save({ report_after_lesson: rep.checked }));
         })();
     </script>
-    <script src="js/pwa-install.js?v=39" defer></script>
+    <script src="js/pwa-install.js?v=40" defer></script>
 </body>
 </html>
