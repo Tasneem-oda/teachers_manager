@@ -3,10 +3,11 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=43';
-import { APIUtils, Storage } from './utils.js?v=43';
-import { getFreshSession } from './session.js?v=43';
-import { currentSyncVersion, syncTrusted } from './realtime-sync.js?v=43';
+import { CONFIG } from './config.js?v=44';
+import { APIUtils, Storage } from './utils.js?v=44';
+import { getFreshSession } from './session.js?v=44';
+import { Resume, affectedBySleep, waitAfterResume } from './resume.js?v=44';
+import { currentSyncVersion, syncTrusted } from './realtime-sync.js?v=44';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -38,7 +39,24 @@ async function apiCall(endpoint, method = 'GET', body = null, options = {}) {
     return data;
 }
 
+/**
+ * v35: بعد ما الجهاز ينام/التاب تتجمّد: نستنى النت والجلسة يجهزوا قبل الطلب،
+ * ولو الطلب اتقطع بسبب النوم نعيده مرة لوحدنا بدل رسالة "تعذّر الاتصال" (js/resume.js)
+ */
 async function apiCallNow(endpoint, method = 'GET', body = null, options = {}) {
+    await waitAfterResume(() => getFreshSession());
+    try {
+        return await apiCallOnce(endpoint, method, body, options);
+    } catch (err) {
+        if (!err || !err.__resumeRetry) throw err;
+        delete err.__resumeRetry;
+        await waitAfterResume(() => getFreshSession());
+        return apiCallOnce(endpoint, method, body, { ...options, __retry: true });
+    }
+}
+
+async function apiCallOnce(endpoint, method = 'GET', body = null, options = {}) {
+    const rc = Resume.count;
     // مؤقّت المهلة + إلغاء خارجي في AbortController واحد
     const controller = new AbortController();
     let timedOut = false;
@@ -104,13 +122,20 @@ async function apiCallNow(endpoint, method = 'GET', body = null, options = {}) {
         const quiet = isQuiet(body);   // v32/v33: مش تغيير بيانات
         if (method !== 'GET' && !isRead && !quiet && !/track-events|notifications|ai-chat|assistant|ask-sources|prepare-lesson|owner-/i.test(endpoint)) {
             ReadCache.clear();
-            import('./auto-refresh.js?v=43').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
+            import('./auto-refresh.js?v=44').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
         }
         return data;
 
     } catch (error) {
         if (error && error.error && error.error.code === 'AUTH_EXPIRED') {
             throw error;
+        }
+        // v35: الطلب اتقطع لأن الجهاز نام/التاب اتجمّدت (أو طلع أول ما صحي قبل النت): نعيده مرة
+        const code = error && error.error && error.error.code;
+        if (!options.__retry && !error.aborted && (code === 'NETWORK' || code === 'TIMEOUT') && affectedBySleep(t0, rc, timeoutMs)) {
+            // الحفظ: نعيد بس لو الطلب فشل فورًا (ماوصلش السيرفر أصلًا) عشان مايتكررش
+            const fastFail = code === 'NETWORK' && Date.now() - t0 < 4000;
+            if (isRead || fastFail) { error.__resumeRetry = true; throw error; }
         }
 
         // 401 بعد التجديد = الجلسة خلصت فعلًا. (403 ممكن تكون قاعدة عمل، فمانخرجش المدرس بسببها)
@@ -273,7 +298,7 @@ export const Outbox = (() => {
     const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
     const write = (list) => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { /* تجاهل */ } emit(); };
     const emit = () => { try { window.dispatchEvent(new CustomEvent('tm:outbox', { detail: { count: read().length } })); } catch (e) { /* تجاهل */ } };
-    const toast = (msg, ok = true) => import('./utils.js?v=43').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
+    const toast = (msg, ok = true) => import('./utils.js?v=44').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
     return {
         list: read,
         count: () => read().length,
@@ -327,7 +352,7 @@ let billingDueCache = null;
 let conflictAsk = null;   // سؤال واحد لكل الأيام اللي بتتحفظ مع بعض
 async function askAllowConflict(message) {
     if (conflictAsk) return conflictAsk;
-    conflictAsk = import('./utils.js?v=43').then(({ askChoice }) => askChoice({
+    conflictAsk = import('./utils.js?v=44').then(({ askChoice }) => askChoice({
         title: '⚠️ الميعاد ده فيه حصة تانية',
         message: message || 'الميعاد ده بيتعارض مع حصة تانية متسجلة. لو ده مقصود احفظ الحصتين في نفس الميعاد، وهيظهروا في الجدول بعلامة تعارض.',
         choices: [{ label: 'احفظ الحصتين في نفس الميعاد', value: 'force' }],

@@ -6,16 +6,16 @@
  *   - رفع كتاب جديد ومعالجته في المتصفح مع نسبة تقدّم حقيقية، إعادة المعالجة، إدارة الوصول، و"اسأل كتبك"
  */
 
-import { CONFIG } from './config.js?v=43';
-import { Auth } from './auth.js?v=43';
-import { renderSidebar, renderTopHeader } from './sidebar.js?v=43';
-import { icon } from './icons.js?v=43';
-import { api } from './api.js?v=43';
-import { ErrorHandler, Formatters } from './utils.js?v=43';
-import { detectFileType, processBook } from './book-processor.js?v=43';
-import { openBookViewer } from './book-viewer.js?v=43';
-import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=43';
-import { CATS, catOf, guessCategory, FOLDER_COLORS, folderColor, FOLDER_ICONS, FOLDER_SUGGESTIONS } from './lib-meta.js?v=43';
+import { CONFIG } from './config.js?v=44';
+import { Auth } from './auth.js?v=44';
+import { renderSidebar, renderTopHeader } from './sidebar.js?v=44';
+import { icon } from './icons.js?v=44';
+import { api } from './api.js?v=44';
+import { ErrorHandler, Formatters } from './utils.js?v=44';
+import { detectFileType, processBook } from './book-processor.js?v=44';
+import { openBookViewer } from './book-viewer.js?v=44';
+import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=44';
+import { CATS, catOf, guessCategory, FOLDER_COLORS, folderColor, FOLDER_ICONS, FOLDER_SUGGESTIONS } from './lib-meta.js?v=44';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => Formatters.escapeHtml(String(s == null ? '' : s));

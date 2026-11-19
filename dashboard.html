@@ -16,9 +16,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=43">
-    <link rel="stylesheet" href="css/lessons.css?v=43">
-    <link rel="stylesheet" href="css/groups.css?v=43">
+    <link rel="stylesheet" href="css/style.css?v=44">
+    <link rel="stylesheet" href="css/lessons.css?v=44">
+    <link rel="stylesheet" href="css/groups.css?v=44">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -71,7 +71,7 @@
         }
         @media (prefers-reduced-motion: reduce) { .wa-cta { transition: none; } .wa-cta:hover { transform: none; } }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=43">
+    <link rel="stylesheet" href="css/v29.css?v=44">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -187,26 +187,26 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=43"></script>
+    <script type="module" src="js/config.js?v=44"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=43';
-        import { api } from './js/api.js?v=43';
-        import { isTrial, trialState, trialDate, bindTrialActions } from './js/trial.js?v=43';
-        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=43';
-        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=43';
-        import { icon } from './js/icons.js?v=43';
-        import { renderOnboarding } from './js/onboarding.js?v=43';
-        import { openAttendanceModal } from './js/attendance.js?v=43';
-        import { ATTENDANCE } from './js/lesson-utils.js?v=43';
-        import { computeBilling, openReminder, lessonsText, buildReminder, parentPhone, openBulkReminders } from './js/billing.js?v=43';
-        import { showTips } from './js/tips.js?v=43';
-        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=43';
-        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=43';
-        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=43';
-        import { mountReminderSetupCard } from './js/reminder-settings.js?v=43';
-        import { requestPermission } from './js/notifications.js?v=43';
-        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=43';
-        import { whatsappUrl } from './js/billing.js?v=43';
+        import { Auth } from './js/auth.js?v=44';
+        import { api } from './js/api.js?v=44';
+        import { isTrial, trialState, trialDate, bindTrialActions } from './js/trial.js?v=44';
+        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=44';
+        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=44';
+        import { icon } from './js/icons.js?v=44';
+        import { renderOnboarding } from './js/onboarding.js?v=44';
+        import { openAttendanceModal } from './js/attendance.js?v=44';
+        import { ATTENDANCE } from './js/lesson-utils.js?v=44';
+        import { computeBilling, openReminder, lessonsText, buildReminder, parentPhone, openBulkReminders } from './js/billing.js?v=44';
+        import { showTips } from './js/tips.js?v=44';
+        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=44';
+        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=44';
+        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=44';
+        import { mountReminderSetupCard } from './js/reminder-settings.js?v=44';
+        import { requestPermission } from './js/notifications.js?v=44';
+        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=44';
+        import { whatsappUrl } from './js/billing.js?v=44';
 
         renderSidebar('dashboard');
 
@@ -746,16 +746,16 @@
         }
         window.addEventListener('tm:schedules-changed', () => { loadDashboard(); });
         // v29.8: لو اتسجّلت حصة من جهاز تاني (أو المدرس رجع للبرنامج) الرئيسية تتحدّث لوحدها
-        import('./js/auto-refresh.js?v=43').then((m) => m.onAppResume(() => loadDashboard())).catch(() => { /* تجاهل */ });
+        import('./js/auto-refresh.js?v=44').then((m) => m.onAppResume(() => loadDashboard())).catch(() => { /* تجاهل */ });
 
         (async () => {
             const authInfo = await Auth.requireAuth();
             if (!authInfo) return;
             // v29: أول دخول بحساب جوجل: سؤال المادة + الموبايل
-            try { const { maybeCompleteProfile } = await import('./js/complete-profile.js?v=43'); maybeCompleteProfile(authInfo.profile, authInfo.session); } catch (e) { /* تجاهل */ }
+            try { const { maybeCompleteProfile } = await import('./js/complete-profile.js?v=44'); maybeCompleteProfile(authInfo.profile, authInfo.session); } catch (e) { /* تجاهل */ }
             await loadDashboard();
         })();
     </script>
-    <script src="js/pwa-install.js?v=43" defer></script>
+    <script src="js/pwa-install.js?v=44" defer></script>
 </body>
 </html>
