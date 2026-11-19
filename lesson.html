@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=40">
+    <link rel="stylesheet" href="css/style.css?v=41">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -24,10 +24,10 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=40">
-    <link rel="stylesheet" href="css/books.css?v=40">
+    <link rel="stylesheet" href="css/lessons.css?v=41">
+    <link rel="stylesheet" href="css/books.css?v=41">
     <style>body { margin: 0; }</style>
-    <link rel="stylesheet" href="css/v29.css?v=40">
+    <link rel="stylesheet" href="css/v29.css?v=41">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -94,6 +94,7 @@
                             <!-- v29: السبورة (صفحة بيضا) + تسجيل الحصة فيديو -->
                             <div class="ls-teach" id="ls-teach" hidden>
                                 <button type="button" class="btn btn-sm btn-outline" id="btn-board"></button>
+                                <button type="button" class="btn btn-sm btn-outline" id="btn-game">🎮 لعبة</button>
                                 <button type="button" class="btn btn-sm btn-outline ls-rec" id="btn-rec" hidden></button>
                                 <p class="ls-rec-warn" id="rec-warn" hidden></p>
                             </div>
@@ -311,28 +312,28 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=40"></script>
+    <script type="module" src="js/config.js?v=41"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=40';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=40';
-        import { api } from './js/api.js?v=40';
-        import { ErrorHandler, Formatters, uuidv4 } from './js/utils.js?v=40';
-        import { icon } from './js/icons.js?v=40';
+        import { Auth } from './js/auth.js?v=41';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=41';
+        import { api } from './js/api.js?v=41';
+        import { ErrorHandler, Formatters, uuidv4 } from './js/utils.js?v=41';
+        import { icon } from './js/icons.js?v=41';
         import {
             subjectLabel, ratingFieldLabels, RATINGS, HOMEWORK_STATUS, relativeDay, localDateISO, localTimeISO,
             formatDuration, minutesText, LessonDraft, lessonHasContent, lessonDetailsHtml, nextOccurrence, formatNextOccurrence,
             normalizeLesson, isAbsenceRow, attendanceInfo, lessonDay, deviceMsToDateISO, serverTimeToDateISO
-        } from './js/lesson-utils.js?v=40';
-        import { openAttendanceModal } from './js/attendance.js?v=40';
-        import { showTips, dismissTip } from './js/tips.js?v=40';
-        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=40';
-        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=40';
-        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=40';
-        import { openBookViewer } from './js/book-viewer.js?v=40';
-        import { openLessonReport } from './js/report.js?v=40';
-        import { isTrial, trialCardHtml, bindTrialActions } from './js/trial.js?v=40';
-        import { openWhiteboard } from './js/whiteboard.js?v=40';
-        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=40';
+        } from './js/lesson-utils.js?v=41';
+        import { openAttendanceModal } from './js/attendance.js?v=41';
+        import { showTips, dismissTip } from './js/tips.js?v=41';
+        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=41';
+        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=41';
+        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=41';
+        import { openBookViewer } from './js/book-viewer.js?v=41';
+        import { openLessonReport } from './js/report.js?v=41';
+        import { isTrial, trialCardHtml, bindTrialActions } from './js/trial.js?v=41';
+        import { openWhiteboard } from './js/whiteboard.js?v=41';
+        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=41';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'ابدأ الحصة وتابعها وسجّلها في مكان واحد', showSearch: false });
@@ -616,6 +617,8 @@
         function showReady() {
             mode = null;
             stopTimer();
+            // v33: "الواجب بالتفصيل" (حفظ/مراجعة/تلاوة + السورة + من/إلى)
+            import('./js/hw-builder.js?v=41').then((m) => m.mountHomeworkBuilder($('f-homework'), { subject: student && student.subject })).catch(() => { /* تجاهل */ });
             unpublishLive();
             $('r-name').textContent = student.name || 'بدون اسم';
             const sub = [`<span>${icon('bookOpen', { size: 14 })} ${esc(subjectLabel(student.subject))}</span>`];
@@ -865,6 +868,13 @@
         }
         $('btn-board').addEventListener('click', () => {
             openWhiteboard({ owner: { student_id: studentIdParam }, title: `سبورة ${firstName()}`, blank: true });
+        });
+        // v33: ألعاب الحصة (بتتحمّل بس لما المدرس يدوس)
+        $('btn-game').addEventListener('click', async () => {
+            try {
+                const m = await import('./js/games/picker.js?v=41');
+                m.openGamePicker({ api, subject: student && student.subject, toast: { ok: (t) => ErrorHandler.showSuccess(t), err: (e) => ErrorHandler.showError(ErrorHandler.getErrorMessage(e)) } });
+            } catch (e) { ErrorHandler.showError('الألعاب ماتحمّلتش. اتأكد من النت وجرّب تاني.'); }
         });
         $('btn-rec').addEventListener('click', async () => {
             const btn = $('btn-rec');
@@ -1155,7 +1165,10 @@
                 } catch (e) { /* تجاهل */ }
                 const duration = mode === 'live' && lesson.startedAt ? Date.now() - lesson.startedAt : null;
                 // v30: رقم الحصة = عدد الحصص اللي خلصت قبلها + 1 (بيتأكد بعد ما البيانات الجديدة توصل)
-                lastSaved = { fields: { ...fields }, date: payload.local_date || localDateISO(), lessonId: payload.lesson_id || null, recordingUrl: '', lessonNumber: (ov && ov.stats && !ov.legacy) ? lessonsCount() + 1 : null, queued: !!(saveRes && saveRes.queued) };
+                // v33: الواجب اللي فات (نصه) + حالة الباقة بعد الحصة دي ← تقرير ولي الأمر
+                const prevL = lastLesson();
+                lastSaved = { fields: { ...fields }, date: payload.local_date || localDateISO(), lessonId: payload.lesson_id || null, recordingUrl: '', lessonNumber: (ov && ov.stats && !ov.legacy) ? lessonsCount() + 1 : null, queued: !!(saveRes && saveRes.queued),
+                    prevHomework: prevL && prevL.homework ? String(prevL.homework) : '', billing: absenceValue ? null : projectedBilling() };
                 // v29: الحصة خلصت والتسجيل شغال: نوقفه وننزّل الفيديو
                 if (recorder && recorder.recording) stopRecording(payload.lesson_id || null);
                 LessonDraft.clear(studentIdParam);
@@ -1272,7 +1285,7 @@
                 <button type="button" class="btn" id="btn-lesson-report">${icon('messageCircle', { size: 16 })} ابعت التقرير على واتساب</button>
                 ${saved0.lessonId ? `<button type="button" class="btn btn-sm btn-ghost lh-recbtn" id="btn-lesson-rec">${icon('video', { size: 15 })} ضيف لينك تسجيل الحصة</button>` : ''}`;
             const saved = lastSaved;
-            $('btn-lesson-report').addEventListener('click', () => openLessonReport({ student, fields: saved.fields, date: saved.date, recordingUrl: saved.recordingUrl || '', lessonNumber: saved.lessonNumber }));
+            $('btn-lesson-report').addEventListener('click', () => openLessonReport({ student, fields: saved.fields, date: saved.date, recordingUrl: saved.recordingUrl || '', lessonNumber: saved.lessonNumber, prevHomework: saved.prevHomework, billing: saved.billing }));
             const recBtn = $('btn-lesson-rec');
             if (recBtn) recBtn.addEventListener('click', () => openRecordingLinkModal({
                 lessonId: saved.lessonId, student, current: saved.recordingUrl || '',
@@ -2050,6 +2063,6 @@
             }
         });
         </script>
-    <script src="js/pwa-install.js?v=40" defer></script>
+    <script src="js/pwa-install.js?v=41" defer></script>
 </body>
 </html>

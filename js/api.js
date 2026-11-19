@@ -3,10 +3,10 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=40';
-import { APIUtils, Storage } from './utils.js?v=40';
-import { getFreshSession } from './session.js?v=40';
-import { currentSyncVersion, syncTrusted } from './realtime-sync.js?v=40';
+import { CONFIG } from './config.js?v=41';
+import { APIUtils, Storage } from './utils.js?v=41';
+import { getFreshSession } from './session.js?v=41';
+import { currentSyncVersion, syncTrusted } from './realtime-sync.js?v=41';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -34,7 +34,7 @@ async function apiCall(endpoint, method = 'GET', body = null, options = {}) {
         try { return await p; } finally { inflight.delete(readKey); }
     }
     const data = await apiCallNow(endpoint, method, body, options);
-    if (String(method).toUpperCase() !== 'GET' && !readKey && !(body && (body.action === 'push_status' || body.action === 'test'))) ReadCache.clear();
+    if (String(method).toUpperCase() !== 'GET' && !readKey && !isQuiet(body)) ReadCache.clear();
     return data;
 }
 
@@ -101,10 +101,10 @@ async function apiCallNow(endpoint, method = 'GET', body = null, options = {}) {
         if ((method === 'GET' || options.offlineCache) && !options.noOfflineCache) OfflineCache.put(cacheKeyOf(endpoint, method, body), data, session.user && session.user.id);
         markOnline();
         // v29.8: حفظ حاجة (حصة/موعد/طالب…): التابات والأجهزة التانية تتحدّث على طول
-        const quiet = !!(body && (body.action === 'push_status' || body.action === 'test'));   // v32: مش تغيير بيانات
+        const quiet = isQuiet(body);   // v32/v33: مش تغيير بيانات
         if (method !== 'GET' && !isRead && !quiet && !/track-events|notifications|ai-chat|assistant|ask-sources|prepare-lesson|owner-/i.test(endpoint)) {
             ReadCache.clear();
-            import('./auto-refresh.js?v=40').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
+            import('./auto-refresh.js?v=41').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
         }
         return data;
 
@@ -144,8 +144,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 //  - الرقم ماتغيّرش والمزامنة شغالة ← الكاش صالح لحد 10 دقايق (التنقل فوري).
 //  - الرقم اتغيّر (حفظ من أي جهاز) ← الكاش بيتمسح والبيانات تيجي جديدة.
 //  - المزامنة مش متأكدة (أول تحميل / من غير نت) ← 40 ثانية بس زي الأول.
-const READ_ACTIONS = { '/groups': ['list', 'get'], '/group-session': ['prepare'], '/group-billing': ['month'], '/teacher-settings': ['get'], '/lesson-tools': ['board_list'] };
+const READ_ACTIONS = { '/app-hub': ['library', 'public_list', 'games_list'], '/groups': ['list', 'get'], '/group-session': ['prepare'], '/group-billing': ['month'], '/teacher-settings': ['get'], '/lesson-tools': ['board_list'] };
 const NO_READ_CACHE = /notifications|check-subscription|bootstrap-session|get-book-content|ai-chat|assistant|ask-sources|prepare-lesson|track-events|export-data/;
+// v33: طلبات مش بتغيّر بيانات المدرس (فمابنمسحش الكاش ولا بنحدّث الأجهزة التانية)
+const QUIET_ACTIONS = ['push_status', 'test', 'hello', 'ann_seen', 'ann_click', 'ann_dismiss', 'journey_mark', 'game_played', 'public_download'];
+function isQuiet(body) { return !!(body && QUIET_ACTIONS.includes(body.action) || (body && body.action === 'book_meta' && body.opened && !('category' in body) && !('pinned' in body))); }
 function isReadRequest(endpoint, method, body, options = {}) {
     const path = String(endpoint || '').split('?')[0];
     if (NO_READ_CACHE.test(path)) return false;
@@ -269,7 +272,7 @@ export const Outbox = (() => {
     const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
     const write = (list) => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { /* تجاهل */ } emit(); };
     const emit = () => { try { window.dispatchEvent(new CustomEvent('tm:outbox', { detail: { count: read().length } })); } catch (e) { /* تجاهل */ } };
-    const toast = (msg, ok = true) => import('./utils.js?v=40').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
+    const toast = (msg, ok = true) => import('./utils.js?v=41').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
     return {
         list: read,
         count: () => read().length,
@@ -323,7 +326,7 @@ let billingDueCache = null;
 let conflictAsk = null;   // سؤال واحد لكل الأيام اللي بتتحفظ مع بعض
 async function askAllowConflict(message) {
     if (conflictAsk) return conflictAsk;
-    conflictAsk = import('./utils.js?v=40').then(({ askChoice }) => askChoice({
+    conflictAsk = import('./utils.js?v=41').then(({ askChoice }) => askChoice({
         title: '⚠️ الميعاد ده فيه حصة تانية',
         message: message || 'الميعاد ده بيتعارض مع حصة تانية متسجلة. لو ده مقصود احفظ الحصتين في نفس الميعاد، وهيظهروا في الجدول بعلامة تعارض.',
         choices: [{ label: 'احفظ الحصتين في نفس الميعاد', value: 'force' }],
@@ -370,7 +373,7 @@ async function getSessionOrRedirect({ force = false, rejected = null } = {}) {
 // (get-book-content و ask مش "حفظ": قراءة الكتب مسموحة زي ما وعدنا المدرس في شريط القراءة فقط) + أحداث التتبع
 const READ_ONLY_ALLOWED = ['/check-subscription', '/submit-suggestion', '/mark-notifications-read', '/bootstrap-session', '/initialize-teacher', '/monthly-income', '/get-book-content', '/track-events', '/update-profile', '/export-data'];
 // v27: طلبات المجموعات كلها POST، فبنسمح بالقراءة بس (عرض المجموعات/الحصة/كشف الاشتراك) في وضع القراءة فقط
-const READ_ONLY_ACTIONS = { '/groups': ['list', 'get'], '/group-session': ['prepare'], '/group-billing': ['month'], '/teacher-settings': ['get', 'save', 'test', 'push_status'], '/delete-account': ['request', 'cancel', 'status'], '/lesson-tools': ['board_list'] };
+const READ_ONLY_ACTIONS = { '/app-hub': ['hello', 'ann_seen', 'ann_click', 'ann_dismiss', 'journey_mark', 'library', 'public_list', 'games_list', 'public_download', 'game_played', 'book_meta'], '/groups': ['list', 'get'], '/group-session': ['prepare'], '/group-billing': ['month'], '/teacher-settings': ['get', 'save', 'test', 'push_status'], '/delete-account': ['request', 'cancel', 'status'], '/lesson-tools': ['board_list'] };
 function isBlockedByReadOnly(endpoint, method, body = null) {
     if (typeof window === 'undefined' || !window.__tmReadOnly) return false;
     if (String(method || 'GET').toUpperCase() === 'GET') return false;
@@ -1283,6 +1286,12 @@ export const api = {
             'POST',
             { book_id: bookId }
         );
+    },
+
+    // ==================== v33: المكتبة (فولدرات + المكتبة العامة) والألعاب والإشعارات ورحلة المدرس ====================
+    // كل ده workflow واحد (n8n/v33-import/app-hub.json) ← دالة واحدة في قاعدة البيانات (DB_v33.sql)
+    async hub(action, data = {}, options = {}) {
+        return await apiCall(CONFIG.API_ENDPOINTS.HUB, 'POST', { action, ...(data || {}) }, { timeoutMs: 20000, ...options });
     },
 
     // تحديد مين يستخدم الكتاب ده: 'all' (كل الطلاب) أو 'students' مع قائمة

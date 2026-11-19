@@ -6,9 +6,9 @@
  * • "صفحة بيضا" (السبورة) في أي وقت، وقص جزء من الكتاب للسبورة
  * • أزرار الكيبورد لكل ده (بتشتغل والكيبورد عربي برضه)
  */
-import { icon } from './icons.js?v=40';
-import { W, InkLayer, InkController, ToolDock, handleInkKey, LaserPointer, confirmIn } from './annotate.js?v=40';
-import { openWhiteboard, isWhiteboardOpen } from './whiteboard.js?v=40';
+import { icon } from './icons.js?v=41';
+import { W, InkLayer, InkController, ToolDock, handleInkKey, LaserPointer, confirmIn } from './annotate.js?v=41';
+import { openWhiteboard, isWhiteboardOpen } from './whiteboard.js?v=41';
 
 const DRAW_TYPES = ['pdf', 'docx', 'pptx', 'image'];
 const BOOK_TOOLS = ['hand', 'pen', 'hl', 'temp', 'eraser', 'line', 'arrow', 'rect', 'ellipse', 'text', 'stamp', 'move', 'laser', 'magnifier', 'zoomarea', 'spotlight', 'ruler', 'snip'];
@@ -18,12 +18,12 @@ const DOCK_KEY = 'tm_pt_dock_v1';
 const SHORTCUTS = [
     ['التنقل', [['← →  أو  PageUp / PageDown', 'الصفحة الجاية / اللي فاتت'], ['Space / Shift+Space', 'صفحة لقدام / لورا'], ['Home / End', 'أول / آخر صفحة'], ['G', 'روح لصفحة رقم...']]],
     ['التكبير', [['+ / -', 'تكبير / تصغير'], ['0', 'الحجم الأصلي'], ['Ctrl + عجلة الماوس', 'تكبير مكان الماوس'], ['Z', 'زوم على جزء (ارسم مستطيل)'], ['M', 'عدسة مكبرة'], ['Esc', 'رجوع من الزوم']]],
-    ['الشرح', [['L', 'مؤشر ليزر'], ['S', 'كشاف (تغميق الباقي)'], ['R', 'مسطرة القراءة'], ['F', 'ملء الشاشة'], ['B', 'شاشة سودا'], ['W', 'صفحة بيضا (السبورة)'], ['X', 'قص جزء للسبورة']]],
+    ['الشرح', [['L', 'مؤشر ليزر'], ['S', 'كشاف (تغميق الباقي)'], ['R', 'مسطرة القراءة'], ['F', 'ملء الشاشة'], ['N', 'الوضع الليلي'], ['B', 'إخفاء الكتاب مؤقتًا'], ['W', 'صفحة بيضا (السبورة)'], ['X', 'قص جزء للسبورة']]],
     ['الكتابة', [['P', 'قلم'], ['H', 'هايلايتر'], ['Q', 'قلم مؤقت'], ['E', 'ممحاة'], ['A', 'سهم'], ['T', 'كتابة'], ['K', 'علامات ✓ ✗'], ['V', 'تحريك اللي اترسم'], ['1 - 7', 'الألوان'], ['[  ]', 'السُمك / حجم الكشاف'], ['Ctrl+Z / Ctrl+Y', 'رجوع / إعادة'], ['C', 'امسح رسم الصفحة']]]
 ];
 
 export class PresentTools {
-    /** @param {import('./book-viewer.js?v=40').BookViewer} viewer */
+    /** @param {import('./book-viewer.js?v=41').BookViewer} viewer */
     constructor(viewer) {
         this.v = viewer;
         this.layers = new Map();       // page → InkLayer
@@ -63,7 +63,9 @@ export class PresentTools {
             extra: [
                 { id: 'board', ic: 'board', label: 'صفحة بيضا (السبورة)', key: 'W', text: 'صفحة بيضا', wide: true, onClick: () => this.openBoard() },
                 { id: 'present', ic: 'maximize', label: 'ملء الشاشة للعرض', key: 'F', onClick: () => this.togglePresent(), active: () => this.presenting },
-                { id: 'black', ic: 'moon', label: 'شاشة سودا', key: 'B', onClick: () => this.toggleBlack() },
+                // v33: "الوضع الليلي" بقى قراءة مريحة فعلًا (الصفحة غامقة والكلام فاتح) بدل شاشة سودا فاضية
+                { id: 'night', ic: 'moon', label: 'الوضع الليلي (صفحة غامقة وكلام فاتح)', key: 'N', onClick: () => this.toggleNight(), active: () => this.night },
+                { id: 'black', ic: 'eyeOff', label: 'إخفاء الكتاب مؤقتًا', key: 'B', onClick: () => this.toggleBlack() },
                 { id: 'help', ic: 'keyboard', label: 'أزرار الكيبورد', key: '?', onClick: () => this.toggleHelp() },
                 { id: 'hide', ic: 'chevronDown', label: 'إخفاء الأدوات', onClick: () => this.setDock(false) }
             ]
@@ -98,6 +100,9 @@ export class PresentTools {
         let open = !window.matchMedia('(max-width: 640px)').matches;
         try { const v = localStorage.getItem(DOCK_KEY); if (v !== null) open = v !== '0'; } catch (e) { /* تجاهل */ }
         this.setDock(open);
+        let night = false;
+        try { night = localStorage.getItem('tm_bv_night') === '1'; } catch (e) { /* تجاهل */ }
+        if (night) { this.night = true; v.root.classList.add('bv-night'); this.dock.refresh(); }
     }
 
     setDock(open) {
@@ -526,11 +531,18 @@ export class PresentTools {
             else { this.presenting = !this.presenting; root.classList.toggle('bv-present', this.presenting); this.dock.refresh(); }
         } catch (e) { /* تجاهل */ }
     }
+    toggleNight(force) {
+        this.night = typeof force === 'boolean' ? force : !this.night;
+        this.v.root.classList.toggle('bv-night', this.night);
+        try { localStorage.setItem('tm_bv_night', this.night ? '1' : '0'); } catch (e) { /* تجاهل */ }
+        this.dock.refresh();
+        this._status(this.night ? 'الوضع الليلي شغال 🌙' : 'رجعنا للوضع العادي ☀️', 'ok', 1800);
+    }
     toggleBlack() {
         if (this._black) { this._black.remove(); this._black = null; return; }
         const b = document.createElement('div');
         b.className = 'pt-black';
-        b.innerHTML = '<span>اضغط أي زرار للرجوع للكتاب</span>';
+        b.innerHTML = '<div><strong>الكتاب مخفي مؤقتًا</strong><span>اضغط في أي مكان (أو أي زرار) للرجوع للكتاب</span></div>';
         b.addEventListener('click', () => this.toggleBlack());
         this.v.root.appendChild(b);
         this._black = b;
@@ -579,6 +591,7 @@ export class PresentTools {
         if (!e.ctrlKey && !e.metaKey && !e.altKey) {
             if (e.code === 'KeyF') { e.preventDefault(); this.togglePresent(); return true; }
             if (e.code === 'KeyB') { e.preventDefault(); this.toggleBlack(); return true; }
+            if (e.code === 'KeyN') { e.preventDefault(); this.toggleNight(); return true; }
             if (e.code === 'KeyW') { e.preventDefault(); this.openBoard(); return true; }
             if (e.key === '?' || (e.code === 'Slash' && e.shiftKey)) { e.preventDefault(); this.toggleHelp(); return true; }
         }

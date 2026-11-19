@@ -1,15 +1,15 @@
 /**
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
-import { Auth } from './auth.js?v=40';
-import { icon } from './icons.js?v=40';
-import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=40';
-import { CONFIG } from './config.js?v=40';
-import { openSuggestionModal } from './suggestions.js?v=40';
-import { mountFloatingLesson } from './live-lesson.js?v=40';
-import { initTracking } from './track.js?v=40';
-import { askChoice } from './utils.js?v=40';
-import { priceFor, subscribeMessage, waUrl, currentUserInfo, offerActive, annualAvailable } from './pricing.js?v=40';
+import { Auth } from './auth.js?v=41';
+import { icon } from './icons.js?v=41';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=41';
+import { CONFIG } from './config.js?v=41';
+import { openSuggestionModal } from './suggestions.js?v=41';
+import { mountFloatingLesson } from './live-lesson.js?v=41';
+import { initTracking } from './track.js?v=41';
+import { askChoice } from './utils.js?v=41';
+import { priceFor, subscribeMessage, waUrl, currentUserInfo, offerActive, annualAvailable } from './pricing.js?v=41';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
@@ -18,6 +18,7 @@ const NAV_ITEMS = [
     { key: 'groups', href: 'groups.html', icon: 'group', label: 'المجموعات', desktopOnly: true },
     { key: 'schedule', href: 'schedule.html', icon: 'calendar', label: 'جدولي' },
     { key: 'books', href: 'books.html', icon: 'bookOpen', label: 'مكتبتي' },
+    { key: 'games', href: 'games.html', icon: 'gamepad', label: 'ألعاب الحصة', desktopOnly: true },
     { key: 'settings', href: 'settings.html', icon: 'gear', label: 'الإعدادات' }
 ];
 
@@ -37,7 +38,7 @@ let subFetchPromise = null;
 function fetchSubscriptionNow() {
     if (subFetchPromise) return subFetchPromise;
     subFetchPromise = (async () => {
-        const { api } = await import('./api.js?v=40');
+        const { api } = await import('./api.js?v=41');
         const data = await api.checkSubscription();
         try {
             sessionStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
@@ -123,7 +124,7 @@ export function renderSidebar(activeKey) {
     if (!root) return;
 
     const navHtml = NAV_ITEMS.map(item => `
-        <a href="${item.href}" data-key="${item.key}" class="${[item.key === activeKey ? 'active' : '', item.desktopOnly ? 'nav-desktop-only' : '', item.key === 'students' && activeKey === 'groups' ? 'active-mobile' : ''].filter(Boolean).join(' ')}">
+        <a href="${item.href}" data-key="${item.key}" class="${[item.key === activeKey ? 'active' : '', item.desktopOnly ? 'nav-desktop-only' : '', (item.key === 'students' && activeKey === 'groups') || (item.key === 'books' && activeKey === 'games') ? 'active-mobile' : ''].filter(Boolean).join(' ')}">
             <span class="icon">${icon(item.icon, { size: 19 })}</span>
             <span class="label">${item.label}</span>
         </a>
@@ -143,6 +144,10 @@ export function renderSidebar(activeKey) {
                 <a href="#" id="sidebar-install" class="tm-install-entry" hidden>
                     <span class="icon">${icon('download', { size: 19 })}</span>
                     <span class="label">ثبّت التطبيق</span>
+                </a>
+                <a href="#" id="sidebar-contact" class="sidebar-contact">
+                    <span class="icon">${icon('headset', { size: 19 })}</span>
+                    <span class="label">تواصل مع المطوّر</span>
                 </a>
                 <a href="#" id="sidebar-suggest">
                     <span class="icon">${icon('lightbulb', { size: 19 })}</span>
@@ -168,6 +173,16 @@ export function renderSidebar(activeKey) {
         e.preventDefault();
         openSuggestionModal();
     });
+    document.getElementById('sidebar-contact').addEventListener('click', (e) => {
+        e.preventDefault();
+        import('./hub.js?v=41').then((m) => m.openContact()).catch(() => { window.open(`https://wa.me/${CONFIG.SUPPORT_WHATSAPP}`, '_blank', 'noopener'); });
+    });
+    // v33: إشعاراتك من المونيتور + الرسايل التلقائية (بعد ما الصفحة تخلص تحميل، من غير ما تأخرها)
+    try {
+        const startHub = () => import('./hub.js?v=41').then((m) => m.initHub()).catch(() => { /* تجاهل */ });
+        if ('requestIdleCallback' in window) requestIdleCallback(() => setTimeout(startHub, 600), { timeout: 3000 });
+        else setTimeout(startHub, 1500);
+    } catch (e) { /* تجاهل */ }
 
     document.getElementById('sidebar-logout').addEventListener('click', async (e) => {
         e.preventDefault();
@@ -404,8 +419,8 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
                 <button type="button" class="bell-btn header-install tm-install-entry" id="header-install" title="ثبّت التطبيق" aria-label="ثبّت التطبيق" hidden>
                     ${icon('download', { size: 17 })}<span>ثبّت</span>
                 </button>
-                <button type="button" class="bell-btn" id="header-suggest" title="عندك اقتراح؟" aria-label="عندك اقتراح؟">
-                    ${icon('lightbulb', { size: 18 })}
+                <button type="button" class="bell-btn header-contact" id="header-contact" title="تواصل مع المطوّر" aria-label="تواصل مع المطوّر">
+                    ${icon('headset', { size: 18 })}<span>تواصل</span>
                 </button>
                 <button type="button" class="bell-btn" id="header-bell" title="الإشعارات">
                     ${icon('bell', { size: 18 })}
@@ -424,7 +439,9 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
         </header>
     `;
 
-    document.getElementById('header-suggest').addEventListener('click', () => openSuggestionModal());
+    document.getElementById('header-contact').addEventListener('click', () => {
+        import('./hub.js?v=41').then((m) => m.openContact()).catch(() => { window.open(`https://wa.me/${CONFIG.SUPPORT_WHATSAPP}`, '_blank', 'noopener'); });
+    });
     document.getElementById('header-install').addEventListener('click', () => openInstall());
     syncInstallEntries();
 
@@ -448,12 +465,12 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
     loadHeaderProfile();
 
     // v29.5: حالة النت + تذكير الحصص من على الجهاز (بيشتغل من غير نت)
-    import('./net-status.js?v=40').then((m) => m.initNetStatus()).catch(() => { /* تجاهل */ });
+    import('./net-status.js?v=41').then((m) => m.initNetStatus()).catch(() => { /* تجاهل */ });
     // v29.7: الوقت الصح من السيرفر (لو ساعة الجهاز غلط التذكيرات وتاريخ الحصص بيمشوا على الوقت الحقيقي)
-    import('./server-time.js?v=40').then((m) => m.initServerTime()).catch(() => { /* تجاهل */ });
+    import('./server-time.js?v=41').then((m) => m.initServerTime()).catch(() => { /* تجاهل */ });
     // v30: مزامنة لحظية بين أجهزة نفس المدرس (حصة اتسجلت على اللابتوب ← الموبايل يتحدّث فورًا)
-    import('./realtime-sync.js?v=40').then((m) => m.initRealtimeSync()).catch(() => { /* تجاهل */ });
-    const startReminders = () => import('./local-reminders.js?v=40').then((m) => m.initLocalReminders()).catch(() => { /* تجاهل */ });
+    import('./realtime-sync.js?v=41').then((m) => m.initRealtimeSync()).catch(() => { /* تجاهل */ });
+    const startReminders = () => import('./local-reminders.js?v=41').then((m) => m.initLocalReminders()).catch(() => { /* تجاهل */ });
     if ('requestIdleCallback' in window) requestIdleCallback(startReminders, { timeout: 3000 }); else setTimeout(startReminders, 1200);
 
     // تفعيل إشعارات Push (تذكير الحصص اليومي) - مرة واحدة بعد رسم الهيدر
@@ -469,7 +486,7 @@ async function loadHeaderProfile() {
         const profile = Auth.cachedProfile(session.user && session.user.id) || await Auth.bootstrapSession();
         // v28: الحساب مجدول للحذف؟ نعرض "رجّع حسابي" قبل أي حاجة
         if (profile && profile.deletion_scheduled_for) {
-            try { const m = await import('./account-delete.js?v=40'); m.showDeletionScheduledGate(profile); } catch (e) { /* تجاهل */ }
+            try { const m = await import('./account-delete.js?v=41'); m.showDeletionScheduledGate(profile); } catch (e) { /* تجاهل */ }
         }
         const nameEl = document.getElementById('header-user-name');
         const avatarEl = document.getElementById('header-avatar-fallback');

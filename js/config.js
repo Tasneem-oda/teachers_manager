@@ -46,6 +46,8 @@ export const CONFIG = {
         }
     },
     SUPPORT_WHATSAPP: '201037728764',
+    // v33: مجموعة واتساب المدرسين (بتظهر تلقائي بعد أول حصة) — غيّريها هنا لو اللينك اتغيّر
+    COMMUNITY_URL: 'https://chat.whatsapp.com/LRWtf3mTrmBK6CA0FBwg3I',
     SITE_URL: 'https://teachers-manager.online',
 
     // API Endpoints تجميع لسهولة الصيانة
@@ -134,6 +136,10 @@ export const CONFIG = {
         SETTINGS: {
             API: '/teacher-settings'
         },
+        // v33: المكتبة (الفولدرات + المكتبة العامة) + ألعاب الحصة + إشعاراتك من المونيتور + رحلة المدرس
+        HUB: '/app-hub',
+        // v33: لعبة متشاركة مع الطالب (من غير تسجيل دخول)
+        GAME_PUBLIC: '/game-public',
         // v28: تأجيل حصة ليوم/ساعة تانية - n8n/postpone-lesson.json
         POSTPONE: '/postpone-lesson',
         // v28: حذف حساب المدرس بنفسه (مع مهلة رجوع) - n8n/delete-account.json
@@ -233,7 +239,7 @@ export const CONFIG = {
 };
 
 // لو مكتبة Supabase ماتحمّلتش (نت ضعيف / حاجب إعلانات): رسالة واضحة بدل صفحة واقفة من غير سبب
-if (typeof window !== 'undefined' && !window.supabase) {
+if (typeof window !== 'undefined' && !window.supabase && !window.__tmNoSupabase) {   // v33: صفحة لعبة الطالب (play.html) مش محتاجة Supabase
     const showLoadError = () => {
         if (document.getElementById('tm-load-error')) return;
         const bar = document.createElement('div');

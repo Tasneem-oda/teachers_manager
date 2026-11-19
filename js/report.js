@@ -5,11 +5,11 @@
  * الحضور والغياب، مستوى الحفظ/التلاوة/المراجعة، الواجبات، اللي خلصناه، والخطة الجاية.
  */
 
-import { ErrorHandler } from './utils.js?v=40';
-import { icon } from './icons.js?v=40';
-import { lessonDay, ratingFieldLabels, ratingLabel, normalizeLesson } from './lesson-utils.js?v=40';
-import { whatsappUrl, recipientChooser } from './billing.js?v=40';
-import { CONFIG } from './config.js?v=40';
+import { ErrorHandler } from './utils.js?v=41';
+import { icon } from './icons.js?v=41';
+import { lessonDay, ratingFieldLabels, ratingLabel, normalizeLesson } from './lesson-utils.js?v=41';
+import { whatsappUrl, recipientChooser, lessonsText } from './billing.js?v=41';
+import { CONFIG } from './config.js?v=41';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -242,7 +242,36 @@ function getRefCode() {
  * @param {object} student {name, subject}
  * @param {object} f الحقول: lesson_content, memorization, recitation, revision, homework_status, performance, homework, next_assignment
  */
-export function buildLessonReport(student, f, { date = new Date(), note = '', signature = true, refCode = '', recordingUrl = '', lessonNumber = null, groupName = '', groupSessionNumber = null } = {}) {
+/**
+ * v33: سطر الباقة الحالية (تم كام / فاضل كام في الباقة دي، مش إجمالي حصص الطالب)
+ * @param {object} view نتيجة computeBilling "بعد الحصة دي"
+ */
+export function packageLine(view) {
+    if (!view || !view.enabled) return '';
+    const b = Number(view.balance) || 0;
+    const size = Number(view.size) || 0;
+    if (view.mode === 'prepaid') {
+        if (b > size) return `📦 الباقة: مدفوع مقدمًا، فاضل ${lessonsText(b)}`;
+        if (b > 0) return `📦 الباقة الحالية: تم ${size - b} من ${size} ${size > 10 ? 'حصة' : 'حصص'} · فاضل ${lessonsText(b)}`;
+        if (b === 0) return `📦 الباقة الحالية خلصت (تم ${size} من ${size}) — محتاجين نجدد قبل الحصة الجاية`;
+        return `📦 الباقة خلصت، واتعمل بعدها ${lessonsText(-b)} لسه مادفعتش`;
+    }
+    // الدفع كل عدد حصص
+    if (b > 0) return `📦 مدفوع مقدمًا: فاضل ${lessonsText(b)}`;
+    const owed = -b;
+    if (!owed) return '';
+    if (owed >= size) return `📦 تم ${lessonsText(owed)} من آخر دفعة — ميعاد الدفع`;
+    return `📦 تم ${owed} من ${size} ${size > 10 ? 'حصة' : 'حصص'} قبل ميعاد الدفع (فاضل ${lessonsText(size - owed)})`;
+}
+
+/** الواجب سطر سطر (عشان ولي الأمر يقراه بسهولة) */
+function hwLines(text) {
+    const parts = String(text || '').split(/\n+/).map((x) => x.replace(/^[\s•\-*–]+/, '').trim()).filter(Boolean);
+    if (parts.length <= 1) return parts.length ? ` ${parts[0]}` : '';
+    return '\n' + parts.map((p) => `   • ${p}`).join('\n');
+}
+
+export function buildLessonReport(student, f, { date = new Date(), note = '', signature = true, refCode = '', recordingUrl = '', lessonNumber = null, groupName = '', groupSessionNumber = null, prevHomework = '', billing = null, showPackage = true } = {}) {
     const fields = f || {};
     const labels = ratingFieldLabels(student && student.subject);
     const name = String((student && student.name) || '').trim().split(/\s+/)[0] || 'الطالب';
@@ -259,10 +288,18 @@ export function buildLessonReport(student, f, { date = new Date(), note = '', si
         .filter((k) => fields[k])
         .map((k) => `${labels[k]}: ${ratingLabel(fields[k])}`);
     if (levels.length) lines.push(`⭐ المستوى: ${levels.join(' · ')}`);
-    if (fields.homework_status) lines.push(`📝 الواجب اللي فات: ${HW_TEXT[fields.homework_status] || fields.homework_status}`);
+    // v33: الواجب بالتفصيل: المطلوب اللي فات + اتعمل ولا لأ، والجديد سطر سطر
+    if (fields.homework_status || (prevHomework && prevHomework.trim())) {
+        const st = fields.homework_status ? (HW_TEXT[fields.homework_status] || fields.homework_status) : '';
+        const prev = String(prevHomework || '').trim();
+        if (prev) lines.push(`📝 الواجب اللي فات:${hwLines(prev)}${st ? `\n   ← ${st}` : ''}`);
+        else if (st) lines.push(`📝 الواجب اللي فات: ${st}`);
+    }
     if (fields.performance) lines.push(`💬 ملاحظات: ${fields.performance.trim()}`);
-    if (fields.homework) lines.push(`📚 الواجب الجاي: ${fields.homework.trim()}`);
+    if (fields.homework) lines.push(`📚 الواجب المطلوب للحصة الجاية:${hwLines(fields.homework)}`);
     if (fields.next_assignment) lines.push(`🎯 الحصة الجاية: ${fields.next_assignment.trim()}`);
+    const pkg = showPackage ? packageLine(billing) : '';
+    if (pkg) lines.push(pkg);
     if (note && note.trim()) lines.push(`✍️ ${note.trim()}`);
     if (recordingUrl) lines.push(`🎥 تسجيل الحصة: ${recordingUrl}`);
     if (!fields.lesson_content && !levels.length && !fields.homework_status && !fields.performance && !fields.homework && !fields.next_assignment && !(note && note.trim()) && !recordingUrl) lines.push('✅ الحصة اتعملت.');
@@ -272,7 +309,7 @@ export function buildLessonReport(student, f, { date = new Date(), note = '', si
 }
 
 /** نافذة التقرير: نص جاهز يتعدّل + إرسال واتساب لرقم الطالب/ولي الأمر */
-export function openLessonReport({ student, fields, date, recordingUrl, lessonNumber = null, groupName = '', groupSessionNumber = null }) {
+export function openLessonReport({ student, fields, date, recordingUrl, lessonNumber = null, groupName = '', groupSessionNumber = null, prevHomework = '', billing = null }) {
     const refCode = getRefCode();
     const to = recipientChooser(student);
     let toPhone = to.initial;
@@ -285,6 +322,7 @@ export function openLessonReport({ student, fields, date, recordingUrl, lessonNu
         <div class="bm-field"><label for="lr-note">كلمة منك <small>(اختياري)</small></label>
             <input type="text" id="lr-note" maxlength="200" placeholder="مثلًا: ما شاء الله كان مركز جدًا النهارده"></div>
         <textarea id="lr-msg" class="bm-msg" rows="10" dir="rtl" aria-label="نص التقرير"></textarea>
+        ${packageLine(billing) ? '<label class="ls-check" style="margin-top:0.5rem"><input type="checkbox" id="lr-pkg" checked> إضافة حالة الباقة (تم كام وفاضل كام)</label>' : ''}
         <label class="ls-check" style="margin-top:0.5rem"><input type="checkbox" id="lr-sign" checked> إضافة سطر "من خلال Teachers Manager"</label>
         <p class="bm-hint" id="lr-hint">${toPhone ? 'تقدر تعدّل النص قبل الإرسال.' : 'مفيش رقم لولي الأمر ولا للطالب: واتساب هيفتح وتختار جهة الاتصال بنفسك.'}</p>
         <div class="bm-buttons">
@@ -305,12 +343,13 @@ export function openLessonReport({ student, fields, date, recordingUrl, lessonNu
     const refreshLink = () => { wa.href = whatsappUrl(toPhone, msg.value); };
     to.bind(modal, (ph) => { toPhone = ph; refreshLink(); });
     const rebuild = () => {
-        msg.value = buildLessonReport(student, fields, { date, note: $('#lr-note').value, signature: $('#lr-sign').checked, refCode, recordingUrl, lessonNumber, groupName, groupSessionNumber });
+        msg.value = buildLessonReport(student, fields, { date, note: $('#lr-note').value, signature: $('#lr-sign').checked, refCode, recordingUrl, lessonNumber, groupName, groupSessionNumber, prevHomework, billing, showPackage: !$('#lr-pkg') || $('#lr-pkg').checked });
         edited = false;
         refreshLink();
     };
     $('#lr-note').addEventListener('input', () => { if (!edited) rebuild(); });
     $('#lr-sign').addEventListener('change', () => { if (!edited) rebuild(); });
+    if ($('#lr-pkg')) $('#lr-pkg').addEventListener('change', () => { if (!edited) rebuild(); });
     msg.addEventListener('input', () => { edited = true; refreshLink(); });
     $('#lr-copy').addEventListener('click', async () => {
         try { await navigator.clipboard.writeText(msg.value); } catch (e) { msg.select(); try { document.execCommand('copy'); } catch (x) { /* تجاهل */ } }

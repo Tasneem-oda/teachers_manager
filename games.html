@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-NXC2WZMT');</script>
+    <!-- End Google Tag Manager -->
+    <meta charset="UTF-8">
+    <script>/* v29.5: الانتقال الناعم بين الصفحات لو اتلغى (تحويل سريع) مايتسجلش كخطأ */(function(){function q(t){if(!t)return;["ready","finished","updateCallbackDone"].forEach(function(k){try{t[k]&&t[k].catch(function(){})}catch(e){}})}addEventListener("pagereveal",function(e){q(e.viewTransition)});addEventListener("pageswap",function(e){var t=e.viewTransition;q(t);try{var to=e.activation&&e.activation.entry&&e.activation.entry.url;if(t&&(!to||new URL(to).origin!==location.origin))t.skipTransition()}catch(x){}})})();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>ألعاب الحصة - Teachers Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
+    <link rel="stylesheet" href="css/style.css?v=41">
+    <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
+    <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4B3A5A">
+    <link rel="stylesheet" href="css/v29.css?v=41">
+    <link rel="stylesheet" href="css/v33.css?v=41">
+</head>
+<body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NXC2WZMT"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+    <div class="app-shell">
+        <div id="sidebar-root"></div>
+        <main class="main-content">
+            <div id="top-header-root"></div>
+            <script>/* v29.5: الشريط الجانبي/السفلي والهيدر بيظهروا فورًا من آخر نسخة محفوظة (قبل ما ملفات الصفحة تتحمّل) */(function(){try{var c=JSON.parse(localStorage.getItem('tm_shell_v1')||'null');if(!c||!c.nav)return;var p=(location.pathname.split('/').pop()||'dashboard').replace(/\.html$/,'')||'dashboard';var s=document.getElementById('sidebar-root');if(s&&!s.firstChild){s.innerHTML=c.nav;var k=(c.active&&c.active[p])||p,a=s.querySelectorAll('.sidebar-nav a[data-key]');for(var i=0;i<a.length;i++){if(a[i].getAttribute('data-key')===k)a[i].classList.add('active');if(k==='groups'&&a[i].getAttribute('data-key')==='students')a[i].classList.add('active-mobile');}s.setAttribute('data-shell','1');}var h=document.getElementById('top-header-root');if(h&&!h.firstChild&&c.header&&c.header[p]){h.innerHTML=c.header[p];h.setAttribute('data-shell','1');}}catch(e){}})();</script>
+            <div class="page-body lib2">
+                <nav class="lib2-tabs" aria-label="أقسام المكتبة">
+                    <a class="lib2-tab" href="books.html">📚 كتبي</a>
+                    <a class="lib2-tab" href="books.html?tab=public">🌍 المكتبة العامة</a>
+                    <span class="lib2-tab is-on" aria-current="page">🎮 ألعاب الحصة</span>
+                </nav>
+
+                <div class="card gx-intro" style="background:linear-gradient(135deg,#3B2D4A,#5B4A6B); color:#fff; border:0">
+                    <h2 style="margin:0 0 .3rem; color:#fff; font-size:1.2rem">🎮 ألعاب تفاعلية تشغّلها في الحصة</h2>
+                    <p style="margin:0; opacity:.9; line-height:1.8; font-size:.9rem">اعرضها على الشاشة (أو شاركها في Zoom/Meet) والطالب يجاوب. فيه وضع <b>فريقين</b> للمجموعات، وتقدر تبعت <b>لينك</b> للطالب يلعب من موبايله.</p>
+                </div>
+
+                <section class="card gx-sec" id="sec-quran">
+                    <h3>🕌 لعبة من آيات القرآن <small style="font-weight:500; color:var(--text-secondary); font-size:.78rem">(اختار السورة والآيات، واللعبة بتتعمل لوحدها)</small></h3>
+                    <div id="quran-builder"></div>
+                </section>
+
+                <section class="gx-sec" id="sec-mine">
+                    <h3>⭐ ألعابي <button type="button" class="btn btn-sm btn-primary" id="btn-new-game" style="margin-inline-start:auto">+ لعبة جديدة</button></h3>
+                    <div id="my-games"><div class="loading">جاري التحميل...</div></div>
+                </section>
+
+                <section class="gx-sec" id="sec-packs">
+                    <h3>🎁 ألعاب جاهزة (لغة عربية وتجويد)</h3>
+                    <div id="packs"></div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <div id="error-toast" style="display:none;"></div>
+    <div id="success-toast" style="display:none;"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+    <script type="module" src="js/config.js?v=41"></script>
+    <script type="module">
+        import { initGamesPage } from './js/games-page.js?v=41';
+        initGamesPage();
+    </script>
+    <script src="js/pwa-install.js?v=41" defer></script>
+</body>
+</html>

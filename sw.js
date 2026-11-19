@@ -59,7 +59,7 @@ try {
 // v30: رقم النسخة (لازم يساوي ?v= في الصفحات). لما يتغيّر:
 //  - كاش الصفحات بيتمسح (أول فتحة بعد التحديث بتجيب الصفحات الجديدة من النت)
 //  - ملفات النسخ القديمة جدًا بتتمسح من الجهاز (بنسيب النسخة اللي قبلها بس للتبديل الآمن)
-const APP_VERSION = 40;
+const APP_VERSION = 41;
 const STATIC_CACHE = 'tm-static-v1';
 const PAGE_CACHE = 'tm-pages-v' + APP_VERSION;
 const KEEP = [STATIC_CACHE, PAGE_CACHE];

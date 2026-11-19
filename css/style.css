@@ -643,3 +643,9 @@ button { font-family: inherit; }
 .lesson-status-badge.status-conflict { background: #FDECEA; color: #8E2A1F; border: 1.5px dashed #C0392B; margin-inline-start: 0.3rem; }
 .lesson-item.is-conflict { box-shadow: inset 4px 0 0 #C0392B; background-image: repeating-linear-gradient(135deg, rgba(192,57,43,0.05) 0 8px, transparent 8px 16px); }
 [dir="rtl"] .lesson-item.is-conflict { box-shadow: inset -4px 0 0 #C0392B; }
+
+/* v33: زرار التواصل مع المطوّر (واضح في كل الصفحات) */
+.bell-btn.header-contact { width: auto; padding: 0 0.75rem; gap: 0.35rem; color: #1E6B34; background: #E8F6EC; border-color: #BFE3C9; font: inherit; font-size: 0.82rem; font-weight: 800; }
+.bell-btn.header-contact:hover { background: #D7F0DF; }
+.sidebar-footer .sidebar-contact { color: #A8EBB3; font-weight: 700; }
+@media (max-width: 380px) { .bell-btn.header-contact span { display: none; } .bell-btn.header-contact { width: 40px; padding: 0; } }
