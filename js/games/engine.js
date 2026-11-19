@@ -8,17 +8,19 @@
  */
 
 export const TEMPLATES = [
-    { id: 'quiz', em: '❓', name: 'اختيار من متعدد', desc: 'سؤال و٢-٤ اختيارات' },
-    { id: 'truefalse', em: '✅', name: 'صح ولا غلط', desc: 'جمل والطالب يقول صح أو غلط' },
-    { id: 'match', em: '🔗', name: 'وصّل', desc: 'وصّل كل كلمة باللي يناسبها' },
-    { id: 'order', em: '🔢', name: 'رتّب', desc: 'رتّب الكلمات أو الآيات أو الحروف' },
-    { id: 'sort', em: '🗂️', name: 'صنّف', desc: 'حط كل كلمة في مجموعتها' },
-    { id: 'memory', em: '🃏', name: 'بطاقات الذاكرة', desc: 'اقلب كارتين ودوّر على الأزواج' },
-    { id: 'fill', em: '✏️', name: 'أكمل الفراغ', desc: 'نص فيه كلمات مخفية' },
-    { id: 'flash', em: '🎴', name: 'بطاقات التسميع', desc: 'وش وضهر: سؤال وإجابة' },
-    { id: 'letters', em: '🔠', name: 'كوّن الكلمة', desc: 'حروف متلخبطة يكوّن منها الكلمة' },
-    { id: 'wheel', em: '🎡', name: 'العجلة', desc: 'لف واختار طالب أو سؤال عشوائي' }
+    { id: 'quiz', name: 'اختيار من متعدد', desc: 'سؤال و٢-٤ اختيارات' },
+    { id: 'truefalse', name: 'صح ولا غلط', desc: 'جمل والطالب يقول صح أو غلط' },
+    { id: 'match', name: 'وصّل', desc: 'وصّل كل كلمة باللي يناسبها' },
+    { id: 'order', name: 'رتّب', desc: 'رتّب الكلمات أو الآيات أو الحروف' },
+    { id: 'sort', name: 'صنّف', desc: 'حط كل كلمة في مجموعتها' },
+    { id: 'memory', name: 'بطاقات الذاكرة', desc: 'اقلب كارتين ودوّر على الأزواج' },
+    { id: 'fill', name: 'أكمل الفراغ', desc: 'نص فيه كلمات مخفية' },
+    { id: 'flash', name: 'بطاقات التسميع', desc: 'وش وضهر: سؤال وإجابة' },
+    { id: 'letters', name: 'كوّن الكلمة', desc: 'حروف متلخبطة يكوّن منها الكلمة' },
+    { id: 'wheel', name: 'العجلة', desc: 'لف واختار طالب أو سؤال عشوائي' }
 ];
+import { gi } from './gicons.js?v=42';
+export { gi };
 export const templateOf = (id) => TEMPLATES.find((t) => t.id === id) || TEMPLATES[0];
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -59,7 +61,14 @@ function ensureCss() {
 .gm{position:fixed;inset:0;z-index:9600;display:flex;flex-direction:column;background:radial-gradient(circle at 20% 0%,#3B2D4A,#1E1726 70%);color:#fff;font-family:'IBM Plex Sans Arabic',Tahoma,Arial,sans-serif;direction:rtl}
 .gm *{box-sizing:border-box}
 .gm-top{display:flex;align-items:center;gap:.5rem;padding:.6rem .8rem;padding-top:calc(.6rem + env(safe-area-inset-top,0px));flex-wrap:wrap}
-.gm-title{flex:1 1 160px;min-width:0;font-weight:800;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gm-title{flex:1 1 160px;min-width:0;font-weight:800;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:.55rem}
+.gm-title>span{min-width:0;overflow:hidden;text-overflow:ellipsis}.gm-title svg{flex-shrink:0}
+.gm-btn svg{display:block}.gm-btn{display:inline-flex;align-items:center;justify-content:center;gap:.35rem}
+.gm-pill{display:inline-flex;align-items:center;gap:.3rem}.gi.gold{color:#F2C14E}.gi.dim{color:rgba(255,255,255,.35)}
+.gm-dot{display:inline-block;width:12px;height:12px;border-radius:50%}.gm-dot.b{background:#4C8BD9}.gm-dot.r{background:#E0605E}
+.gm-starrow{display:flex;justify-content:center;gap:.4rem;margin-top:.6rem}
+.gm-fb-ic{display:inline-flex;width:110px;height:110px;border-radius:50%;align-items:center;justify-content:center;color:#fff;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.gm-fb-ic.ok{background:radial-gradient(circle at 30% 30%,#7BE0A6,#1F8A5B)}.gm-fb-ic.no{background:radial-gradient(circle at 30% 30%,#F59A8E,#B3261E)}
 .gm-title small{display:block;font-weight:500;font-size:.75rem;opacity:.7}
 .gm-btn{min-height:42px;min-width:42px;padding:0 .8rem;border:0;border-radius:12px;background:rgba(255,255,255,.12);color:#fff;font:inherit;font-weight:700;font-size:.88rem;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:.35rem}
 .gm-btn:hover{background:rgba(255,255,255,.2)}.gm-btn:focus-visible{outline:3px solid #F2C14E;outline-offset:2px}
@@ -113,7 +122,7 @@ function ensureCss() {
 .gm-res{font-size:clamp(1.6rem,5vw,3rem);font-weight:900;color:#F2C14E;text-align:center;min-height:1.6em}
 .gm-foot{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;padding:.6rem .8rem calc(.8rem + env(safe-area-inset-bottom,0px))}
 .gm-end{text-align:center;display:flex;flex-direction:column;align-items:center;gap:.8rem;margin:auto}
-.gm-stars{font-size:3.4rem;letter-spacing:.3rem}
+.gm-stars{display:flex;flex-direction:column;align-items:center}
 .gm-end h2{margin:0;font-size:2rem}
 .gm-fb{position:fixed;left:50%;top:22%;transform:translate(-50%,-50%) scale(.6);font-size:5rem;opacity:0;pointer-events:none;transition:all .25s;z-index:9700}
 .gm-fb.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
@@ -150,12 +159,12 @@ export function openGame(game, opts = {}) {
     const t = templateOf(game.template);
     root.innerHTML = `
         <div class="gm-top">
-            ${opts.embedded ? '' : '<button type="button" class="gm-btn" data-g="close" aria-label="قفل اللعبة">✕</button>'}
-            <div class="gm-title">${t.em} ${esc(game.title || t.name)}<small>${esc(t.name)}</small></div>
+            ${opts.embedded ? '' : `<button type="button" class="gm-btn" data-g="close" aria-label="قفل اللعبة">${gi('close', { tile: false, size: 20 })}</button>`}
+            <div class="gm-title">${gi(t.id, { size: 34 })}<span>${esc(game.title || t.name)}<small>${esc(t.name)}</small></span></div>
             <div class="gm-score" data-g="score"></div>
-            <button type="button" class="gm-btn" data-g="teams" title="فريقين (للمجموعات)">👥 <span class="t">فريقين</span></button>
-            <button type="button" class="gm-btn" data-g="mute" aria-label="الصوت">${muted ? '🔇' : '🔊'}</button>
-            <button type="button" class="gm-btn" data-g="full" aria-label="ملء الشاشة">⛶</button>
+            <button type="button" class="gm-btn" data-g="teams" title="فريقين (للمجموعات)">${gi('teams', { tile: false, size: 20 })} <span class="t">فريقين</span></button>
+            <button type="button" class="gm-btn" data-g="mute" aria-label="الصوت">${gi(muted ? 'mute' : 'sound', { tile: false, size: 20 })}</button>
+            <button type="button" class="gm-btn" data-g="full" aria-label="ملء الشاشة">${gi('full', { tile: false, size: 20 })}</button>
         </div>
         <div class="gm-bar"><i style="width:0%"></i></div>
         <div class="gm-stage" data-g="stage"></div>
@@ -181,7 +190,7 @@ export function openGame(game, opts = {}) {
     const onKey = (e) => { if (e.key === 'Escape' && !document.fullscreenElement) close(); };
     document.addEventListener('keydown', onKey);
     if ($('close')) $('close').addEventListener('click', close);
-    $('mute').addEventListener('click', () => { muted = !muted; $('mute').textContent = muted ? '🔇' : '🔊'; try { localStorage.setItem('tm_gm_mute', muted ? '1' : '0'); } catch (e) { /* تجاهل */ } });
+    $('mute').addEventListener('click', () => { muted = !muted; $('mute').innerHTML = gi(muted ? 'mute' : 'sound', { tile: false, size: 20 }); try { localStorage.setItem('tm_gm_mute', muted ? '1' : '0'); } catch (e) { /* تجاهل */ } });
     $('full').addEventListener('click', () => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); else if (root.requestFullscreen) root.requestFullscreen().catch(() => {}); });
     $('teams').addEventListener('click', () => { state.teams = !state.teams; state.teamScore = [0, 0]; state.team = 0; renderScore(); });
     if (t.id === 'wheel' || t.id === 'flash') $('teams').hidden = true;
@@ -190,15 +199,15 @@ export function openGame(game, opts = {}) {
         const sc = $('score');
         if (t.id === 'wheel') { sc.innerHTML = ''; return; }
         if (state.teams) {
-            sc.innerHTML = `<span class="gm-pill team ${state.team === 0 ? 'on' : ''}" data-team="0">🔵 ${state.teamScore[0]}</span><span class="gm-pill team ${state.team === 1 ? 'on' : ''}" data-team="1">🔴 ${state.teamScore[1]}</span>`;
+            sc.innerHTML = `<span class="gm-pill team ${state.team === 0 ? 'on' : ''}" data-team="0"><i class="gm-dot b"></i> ${state.teamScore[0]}</span><span class="gm-pill team ${state.team === 1 ? 'on' : ''}" data-team="1"><i class="gm-dot r"></i> ${state.teamScore[1]}</span>`;
             sc.querySelectorAll('[data-team]').forEach((p) => p.addEventListener('click', () => { state.team = Number(p.dataset.team); renderScore(); }));
-        } else sc.innerHTML = `<span class="gm-pill">⭐ ${state.score}${state.total ? ` / ${state.total}` : ''}</span>`;
+        } else sc.innerHTML = `<span class="gm-pill">${gi('star', { tile: false, size: 16, cls: 'gold' })} ${state.score}${state.total ? ` / ${state.total}` : ''}</span>`;
         $('teams').style.background = state.teams ? 'rgba(242,193,78,.3)' : '';
     }
     const progress = (i, n) => { root.querySelector('.gm-bar i').style.width = `${n ? Math.round((i / n) * 100) : 0}%`; };
     function feedback(ok) {
         const fb = $('fb');
-        fb.textContent = ok ? ['🌟', '👏', '✨', '💯', '🎉'][Math.floor(Math.random() * 5)] : '🙈';
+        fb.innerHTML = ok ? `<span class="gm-fb-ic ok">${gi(['star', 'check', 'sparkle'][Math.floor(Math.random() * 3)], { tile: false, size: 64 })}</span>` : `<span class="gm-fb-ic no">${gi('cross', { tile: false, size: 56 })}</span>`;
         fb.classList.add('show');
         setTimeout(() => fb.classList.remove('show'), 650);
         if (ok) { sfx.good(); if (state.teams) state.teamScore[state.team] += 1; else state.score += 1; }
@@ -233,11 +242,11 @@ export function openGame(game, opts = {}) {
         let msg = '';
         if (state.teams) {
             const [a, b] = state.teamScore;
-            msg = a === b ? `تعادل! ${a} - ${b} 🤝` : `فاز ${a > b ? 'الفريق الأزرق 🔵' : 'الفريق الأحمر 🔴'} (${Math.max(a, b)} - ${Math.min(a, b)})`;
+            msg = a === b ? `تعادل! ${a} - ${b}` : `فاز ${a > b ? 'الفريق الأزرق' : 'الفريق الأحمر'} (${Math.max(a, b)} - ${Math.min(a, b)})`;
         } else msg = state.total ? `جاوبت ${state.score} من ${state.total}` : (state.wrong ? `خلصت بـ ${state.wrong} غلطة` : 'من غير ولا غلطة!');
-        stage.innerHTML = `<div class="gm-end"><div class="gm-stars" aria-label="${stars} نجوم">${'⭐'.repeat(stars)}${'☆'.repeat(3 - stars)}</div>
-            <h2>${stars === 3 ? 'ممتاز! ما شاء الله 🎉' : stars === 2 ? 'برافو! 👏' : 'كويس، نجرّب تاني؟ 💪'}</h2><p class="gm-sub">${msg}</p></div>`;
-        footer([{ id: 'again', label: '🔁 العب تاني', pri: true, on: () => { state.score = 0; state.total = 0; state.wrong = 0; state.teamScore = [0, 0]; renderScore(); restart(); } }, ...(opts.embedded ? [] : [{ id: 'x', label: 'خروج', on: close }])]);
+        stage.innerHTML = `<div class="gm-end"><div class="gm-stars" aria-label="${stars} نجوم">${gi('trophy', { size: 72 })}<span class="gm-starrow">${[0, 1, 2].map((k) => gi(k < stars ? 'star' : 'starEmpty', { tile: false, size: 40, cls: k < stars ? 'gold' : 'dim' })).join('')}</span></div>
+            <h2>${stars === 3 ? 'ممتاز! ما شاء الله' : stars === 2 ? 'برافو!' : 'كويس، نجرّب تاني؟'}</h2><p class="gm-sub">${msg}</p></div>`;
+        footer([{ id: 'again', label: `${gi('replay', { tile: false, size: 18 })} العب تاني`, pri: true, on: () => { state.score = 0; state.total = 0; state.wrong = 0; state.teamScore = [0, 0]; renderScore(); restart(); } }, ...(opts.embedded ? [] : [{ id: 'x', label: 'خروج', on: close }])]);
         if (opts.onFinish) try { opts.onFinish({ score: state.score, total: state.total, wrong: state.wrong }); } catch (e) { /* تجاهل */ }
     }
 
@@ -265,7 +274,7 @@ export function openGame(game, opts = {}) {
                     const btns = stage.querySelectorAll('.gm-opt');
                     btns.forEach((b, j) => { if (opts2[j].ok) b.classList.add('ok'); else if (j === k) b.classList.add('no'); else b.classList.add('dim'); });
                     feedback(k >= 0 && opts2[k].ok);
-                    footer([{ id: 'next', label: i + 1 < qs.length ? 'اللي بعده ←' : 'النتيجة 🏆', pri: true, on: () => { i += 1; nextTurn(); show(); } }]);
+                    footer([{ id: 'next', label: i + 1 < qs.length ? 'اللي بعده ←' : `النتيجة ${gi('trophy', { tile: false, size: 18 })}`, pri: true, on: () => { i += 1; nextTurn(); show(); } }]);
                 };
                 stage.querySelectorAll('.gm-opt').forEach((b) => b.addEventListener('click', () => answer(Number(b.dataset.k))));
                 footer([{ id: 'skip', label: 'عدّي', on: () => { answer(-1); } }]);
@@ -290,8 +299,8 @@ export function openGame(game, opts = {}) {
                 progress(i, items.length);
                 const it = items[i];
                 stage.innerHTML = `<p class="gm-sub">${i + 1} من ${items.length}</p><div class="gm-q ${C.quran ? 'quran' : ''}">${esc(it.q)}</div>
-                    <div class="gm-big2"><button type="button" class="gm-opt" data-v="1" style="background:#D8F5D0">✔ صح</button><button type="button" class="gm-opt" data-v="0" style="background:#FBD3E0">✘ غلط</button></div>
-                    ${it.note ? `<p class="gm-sub" data-note hidden>💡 ${esc(it.note)}</p>` : ''}`;
+                    <div class="gm-big2"><button type="button" class="gm-opt" data-v="1" style="background:#D8F5D0">${gi('check', { tile: false, size: 26 })} صح</button><button type="button" class="gm-opt" data-v="0" style="background:#FBD3E0">${gi('cross', { tile: false, size: 26 })} غلط</button></div>
+                    ${it.note ? `<p class="gm-sub" data-note hidden>${gi('hint', { tile: false, size: 16 })} ${esc(it.note)}</p>` : ''}`;
                 let done = false;
                 stage.querySelectorAll('[data-v]').forEach((b) => b.addEventListener('click', () => {
                     if (done) return; done = true;
@@ -299,7 +308,7 @@ export function openGame(game, opts = {}) {
                     b.classList.add(ok ? 'ok' : 'no');
                     const n = stage.querySelector('[data-note]'); if (n) n.hidden = false;
                     feedback(ok);
-                    footer([{ id: 'next', label: i + 1 < items.length ? 'اللي بعده ←' : 'النتيجة 🏆', pri: true, on: () => { i += 1; nextTurn(); show(); } }]);
+                    footer([{ id: 'next', label: i + 1 < items.length ? 'اللي بعده ←' : `النتيجة ${gi('trophy', { tile: false, size: 18 })}`, pri: true, on: () => { i += 1; nextTurn(); show(); } }]);
                 }));
                 footer([]);
             };
@@ -326,7 +335,7 @@ export function openGame(game, opts = {}) {
                     if (!sel) { b.classList.add('no'); setTimeout(() => b.classList.remove('no'), 400); return; }
                     if (sel.dataset.l === b.dataset.r) {
                         sel.classList.remove('sel'); sel.classList.add('ok', 'done'); b.classList.add('ok', 'done'); feedback(true); sel = null; left -= 1;
-                        if (!left) footer([{ id: 'next', label: r + 1 < rounds.length ? 'الجولة الجاية ←' : 'النتيجة 🏆', pri: true, on: () => { r += 1; show(); } }]);
+                        if (!left) footer([{ id: 'next', label: r + 1 < rounds.length ? 'الجولة الجاية ←' : `النتيجة ${gi('trophy', { tile: false, size: 18 })}`, pri: true, on: () => { r += 1; show(); } }]);
                     } else { b.classList.add('no'); sel.classList.add('no'); const s2 = sel; setTimeout(() => { b.classList.remove('no'); s2.classList.remove('no'); }, 450); feedback(false); nextTurn(); }
                 }));
                 footer([]);
@@ -353,14 +362,14 @@ export function openGame(game, opts = {}) {
                         <div class="gm-pool ${vert ? 'vert' : ''}">${pool.map((p, k) => `<button type="button" class="gm-chip ${qc}" data-take="${k}">${esc(p.txt)}</button>`).join('')}</div>`;
                     stage.querySelectorAll('[data-take]').forEach((b) => b.addEventListener('click', () => { line.push(pool.splice(Number(b.dataset.take), 1)[0]); draw(); }));
                     stage.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', () => { pool.push(line.splice(Number(b.dataset.back), 1)[0]); draw(); }));
-                    footer([{ id: 'check', label: 'تحقق ✔', pri: true, disabled: pool.length > 0, on: check }, { id: 'reset', label: 'من الأول', on: () => { pool = shuffle(items); line = []; draw(); } }]);
+                    footer([{ id: 'check', label: `تحقق ${gi('check', { tile: false, size: 18 })}`, pri: true, disabled: pool.length > 0, on: check }, { id: 'reset', label: 'من الأول', on: () => { pool = shuffle(items); line = []; draw(); } }]);
                 };
                 const check = () => {
                     const chips = stage.querySelectorAll('[data-back]');
                     let ok = true;
                     line.forEach((p, k) => { const good = plain(p.txt) === plain(items[k].txt); if (!good) ok = false; chips[k].classList.add(good ? 'ok' : 'no'); });
                     feedback(ok);
-                    if (ok) footer([{ id: 'next', label: r + 1 < rounds.length ? 'اللي بعده ←' : 'النتيجة 🏆', pri: true, on: () => { r += 1; nextTurn(); show(); } }]);
+                    if (ok) footer([{ id: 'next', label: r + 1 < rounds.length ? 'اللي بعده ←' : `النتيجة ${gi('trophy', { tile: false, size: 18 })}`, pri: true, on: () => { r += 1; nextTurn(); show(); } }]);
                     else footer([{ id: 'retry', label: 'صحّح الغلط', pri: true, on: () => { const keep = []; for (let k = 0; k < line.length; k++) { if (plain(line[k].txt) === plain(items[k].txt) && keep.length === k) keep.push(line[k]); else break; } pool = shuffle(items.filter((x) => !keep.includes(x))); line = keep; nextTurn(); draw(); } },
                         { id: 'show', label: 'وريني الحل', on: () => { line = items.slice(); pool = []; draw(); foot.innerHTML = ''; footer([{ id: 'next', label: 'اللي بعده ←', pri: true, on: () => { r += 1; show(); } }]); } }]);
                 };
@@ -472,7 +481,7 @@ export function openGame(game, opts = {}) {
                         selBlank = blanks.find((i) => !filled[i]);
                         draw(); checkEnd();
                     }));
-                    footer([{ id: 'reveal', label: 'وريني الكل', on: () => { blanks.forEach((i) => { if (!filled[i]) filled[i] = { w: tokens[i].w, ok: true, shown: true }; }); draw(); checkEnd(); } }, { id: 'again', label: '🔀 فراغات تانية', on: run }]);
+                    footer([{ id: 'reveal', label: 'وريني الكل', on: () => { blanks.forEach((i) => { if (!filled[i]) filled[i] = { w: tokens[i].w, ok: true, shown: true }; }); draw(); checkEnd(); } }, { id: 'again', label: `${gi('shuffle', { tile: false, size: 18 })} فراغات تانية`, on: run }]);
                 };
                 const checkEnd = () => { if (blanks.every((i) => filled[i] && filled[i].ok)) setTimeout(() => finish(run), 700); };
                 draw();
@@ -494,8 +503,8 @@ export function openGame(game, opts = {}) {
                 card.addEventListener('click', flip);
                 card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
                 footer([{ id: 'prev', label: '→ اللي قبله', disabled: i === 0, on: () => { i -= 1; back = false; draw(); } },
-                    { id: 'next', label: i + 1 < deck.length ? 'اللي بعده ←' : 'خلصنا 🎉', pri: true, on: () => { if (i + 1 >= deck.length) { finish(() => { i = 0; back = false; draw(); }); return; } i += 1; back = false; draw(); } },
-                    { id: 'sh', label: '🔀 لخبط', on: () => { deck = shuffle(deck); i = 0; back = false; draw(); } }]);
+                    { id: 'next', label: i + 1 < deck.length ? 'اللي بعده ←' : 'خلصنا', pri: true, on: () => { if (i + 1 >= deck.length) { finish(() => { i = 0; back = false; draw(); }); return; } i += 1; back = false; draw(); } },
+                    { id: 'sh', label: `${gi('shuffle', { tile: false, size: 18 })} لخبط`, on: () => { deck = shuffle(deck); i = 0; back = false; draw(); } }]);
             };
             draw();
         },
@@ -522,12 +531,12 @@ export function openGame(game, opts = {}) {
                         ${line.length ? `<div class="gm-q" style="font-size:2.2rem">${esc(line.map((p) => p.ch).join(''))}</div>` : ''}`;
                     stage.querySelectorAll('[data-take]').forEach((b) => b.addEventListener('click', () => { line.push(pool.splice(Number(b.dataset.take), 1)[0]); draw(); if (!pool.length) check(); }));
                     stage.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', () => { pool.push(line.splice(Number(b.dataset.back), 1)[0]); draw(); }));
-                    footer([{ id: 'hint', label: '💡 أول حرف', on: () => { if (line.length) return; const k = pool.findIndex((p) => p.ch === letters[0]); if (k >= 0) { line.push(pool.splice(k, 1)[0]); draw(); } } }, { id: 'skip', label: 'عدّي', on: () => { stage.insertAdjacentHTML('beforeend', `<div class="gm-res">${esc(word)}</div>`); setTimeout(() => { i += 1; nextTurn(); show(); }, 1200); } }]);
+                    footer([{ id: 'hint', label: `${gi('hint', { tile: false, size: 18 })} أول حرف`, on: () => { if (line.length) return; const k = pool.findIndex((p) => p.ch === letters[0]); if (k >= 0) { line.push(pool.splice(k, 1)[0]); draw(); } } }, { id: 'skip', label: 'عدّي', on: () => { stage.insertAdjacentHTML('beforeend', `<div class="gm-res">${esc(word)}</div>`); setTimeout(() => { i += 1; nextTurn(); show(); }, 1200); } }]);
                 };
                 const check = () => {
                     const ok = line.map((p) => p.ch).join('') === letters.join('');
                     tries += 1;
-                    if (ok) { if (tries === 1) feedback(true); else { sfx.good(); } stage.insertAdjacentHTML('beforeend', `<div class="gm-res">✔ ${esc(word)}</div>`); setTimeout(() => { i += 1; nextTurn(); show(); }, 1100); }
+                    if (ok) { if (tries === 1) feedback(true); else { sfx.good(); } stage.insertAdjacentHTML('beforeend', `<div class="gm-res">${gi('check', { tile: false, size: 22 })} ${esc(word)}</div>`); setTimeout(() => { i += 1; nextTurn(); show(); }, 1100); }
                     else { feedback(false); setTimeout(() => { pool = shuffle(letters.map((ch, k) => ({ ch, k }))); line = []; draw(); }, 800); }
                 };
                 draw();
@@ -574,7 +583,7 @@ export function openGame(game, opts = {}) {
                         let rel = ((pointer - angle) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
                         const k = Math.floor(rel / a) % n;
                         const won = items[k];
-                        stage.querySelector('[data-res]').textContent = `🎉 ${won}`;
+                        stage.querySelector('[data-res]').innerHTML = `${gi('sparkle', { tile: false, size: 22, cls: 'gold' })} ${esc(won)}`;
                         sfx.win();
                         if (removeAfter && items.length > 1) { items = items.filter((_, j) => j !== k); setTimeout(draw, 1200); }
                         foot.querySelector('[data-f="spin"]').disabled = false;
@@ -583,8 +592,8 @@ export function openGame(game, opts = {}) {
                 foot.querySelector('[data-f="spin"]').disabled = true;
                 requestAnimationFrame(step);
             };
-            footer([{ id: 'spin', label: '🎡 لف العجلة', pri: true, on: spin },
-                { id: 'rm', label: removeAfter ? '✔ شيل اللي يطلع' : 'سيب اللي يطلع', on: (e) => { removeAfter = !removeAfter; e.currentTarget.textContent = removeAfter ? '✔ شيل اللي يطلع' : 'سيب اللي يطلع'; } },
+            footer([{ id: 'spin', label: `${gi('wheel', { tile: false, size: 18 })} لف العجلة`, pri: true, on: spin },
+                { id: 'rm', label: removeAfter ? 'شيل اللي يطلع: أيوه' : 'شيل اللي يطلع: لأ', on: (e) => { removeAfter = !removeAfter; e.currentTarget.textContent = removeAfter ? 'شيل اللي يطلع: أيوه' : 'شيل اللي يطلع: لأ'; } },
                 { id: 'reset', label: '↺ رجّع الكل', on: () => { items = all.slice(); draw(); stage.querySelector('[data-res]').textContent = ''; } }]);
             cv.addEventListener('click', spin);
         }

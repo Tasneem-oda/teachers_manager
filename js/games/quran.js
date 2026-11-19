@@ -8,7 +8,7 @@ const LS_SURAHS = 'tm_q_surahs_v2';
 const LS_PREFIX = 'tm_q_s_v1_';
 const MAX_CACHED = 24;
 
-import { shuffle, plain } from './engine.js?v=41';
+import { shuffle, plain } from './engine.js?v=42';
 
 const lsGet = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
@@ -60,14 +60,14 @@ export async function surahAyahs(n) {
 }
 
 export const QURAN_GAMES = [
-    { id: 'complete', em: '✏️', name: 'أكمل الآية', desc: 'كلمات مخفية والطالب يكمّلها' },
-    { id: 'recite', em: '🗣️', name: 'سمّع وأظهر', desc: 'الطالب يقول الكلمة وانت تظهرها' },
-    { id: 'words', em: '🔢', name: 'رتّب كلمات الآية', desc: 'كلمات الآية متلخبطة' },
-    { id: 'ayahs', em: '📜', name: 'رتّب الآيات', desc: 'الآيات متلخبطة يرتّبها' },
-    { id: 'next', em: '➡️', name: 'الآية اللي بعدها', desc: 'يختار الآية الجاية صح' },
-    { id: 'halves', em: '🔗', name: 'وصّل أول الآية بآخرها', desc: 'نص الآية الأول بنصها التاني' },
-    { id: 'cards', em: '🎴', name: 'بطاقات التسميع', desc: 'أول الآية والطالب يكمّل' },
-    { id: 'surahs', em: '📚', name: 'رتّب السور', desc: 'ترتيب أسماء السور في المصحف' }
+    { id: 'complete', name: 'أكمل الآية', desc: 'كلمات مخفية والطالب يكمّلها' },
+    { id: 'recite', name: 'سمّع وأظهر', desc: 'الطالب يقول الكلمة وانت تظهرها' },
+    { id: 'words', name: 'رتّب كلمات الآية', desc: 'كلمات الآية متلخبطة' },
+    { id: 'ayahs', name: 'رتّب الآيات', desc: 'الآيات متلخبطة يرتّبها' },
+    { id: 'next', name: 'الآية اللي بعدها', desc: 'يختار الآية الجاية صح' },
+    { id: 'halves', name: 'وصّل أول الآية بآخرها', desc: 'نص الآية الأول بنصها التاني' },
+    { id: 'cards', name: 'بطاقات التسميع', desc: 'أول الآية والطالب يكمّل' },
+    { id: 'surahs', name: 'رتّب السور', desc: 'ترتيب أسماء السور في المصحف' }
 ];
 
 const words = (t) => String(t).split(/\s+/).filter(Boolean);

@@ -16,9 +16,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=41">
-    <link rel="stylesheet" href="css/lessons.css?v=41">
-    <link rel="stylesheet" href="css/groups.css?v=41">
+    <link rel="stylesheet" href="css/style.css?v=42">
+    <link rel="stylesheet" href="css/lessons.css?v=42">
+    <link rel="stylesheet" href="css/groups.css?v=42">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -26,8 +26,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/books.css?v=41">
-    <link rel="stylesheet" href="css/v29.css?v=41">
+    <link rel="stylesheet" href="css/books.css?v=42">
+    <link rel="stylesheet" href="css/v29.css?v=42">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -66,7 +66,7 @@
                     <!-- v29: السبورة (صفحة بيضا) + تسجيل الحصة -->
                     <div class="ls-teach" id="g-teach">
                         <button type="button" class="btn btn-sm btn-outline" id="btn-board"></button>
-                        <button type="button" class="btn btn-sm btn-outline" id="btn-game">🎮 لعبة</button>
+                        <button type="button" class="btn btn-sm btn-outline" id="btn-game"><span class="ic-game" aria-hidden="true"></span> لعبة</button>
                         <button type="button" class="btn btn-sm btn-outline ls-rec" id="btn-rec" hidden></button>
                         <p class="ls-rec-warn" id="rec-warn" hidden></p>
                     </div>
@@ -104,7 +104,7 @@
 
                         <div class="x-card" id="att-card">
                             <div class="att-head">
-                                <h3 style="margin:0; font-size:1.02rem;">الحضور</h3>
+                                <h3 style="margin:0; font-size:1.02rem;">الحضور وتقييم كل طالب</h3>
                                 <button type="button" class="btn btn-sm btn-outline" id="btn-all-present">الكل حضر</button>
                             </div>
                             <div class="att-summary" id="att-summary"></div>
@@ -149,23 +149,23 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=41"></script>
+    <script type="module" src="js/config.js?v=42"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=41';
-        import { api } from './js/api.js?v=41';
-        import { ErrorHandler, Formatters, askChoice, uuidv4 } from './js/utils.js?v=41';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=41';
-        import { icon } from './js/icons.js?v=41';
-        import { RATINGS, HOMEWORK_STATUS, ratingFieldLabels, formatLessonDate, localDateISO } from './js/lesson-utils.js?v=41';
-        import { whatsappUrl, parentPhone } from './js/billing.js?v=41';
-        import { formatClock12, timeToMinutes } from './js/calendar-utils.js?v=41';
-        import { groupTitle, membersText, sessionShareText } from './js/groups-utils.js?v=41';
-        import { mountGroupAi } from './js/group-ai.js?v=41';
-        import { buildLessonReport, fullDate } from './js/report.js?v=41';
-        import { openBookViewer } from './js/book-viewer.js?v=41';
-        import { LiveLesson, clockText, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=41';
-        import { openWhiteboard } from './js/whiteboard.js?v=41';
-        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=41';
+        import { Auth } from './js/auth.js?v=42';
+        import { api } from './js/api.js?v=42';
+        import { ErrorHandler, Formatters, askChoice, uuidv4 } from './js/utils.js?v=42';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=42';
+        import { icon } from './js/icons.js?v=42';
+        import { RATINGS, HOMEWORK_STATUS, ratingFieldLabels, formatLessonDate, localDateISO } from './js/lesson-utils.js?v=42';
+        import { whatsappUrl, parentPhone } from './js/billing.js?v=42';
+        import { formatClock12, timeToMinutes } from './js/calendar-utils.js?v=42';
+        import { groupTitle, membersText, sessionShareText } from './js/groups-utils.js?v=42';
+        import { mountGroupAi } from './js/group-ai.js?v=42';
+        import { buildLessonReport, fullDate } from './js/report.js?v=42';
+        import { openBookViewer } from './js/book-viewer.js?v=42';
+        import { LiveLesson, clockText, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=42';
+        import { openWhiteboard } from './js/whiteboard.js?v=42';
+        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=42';
 
         const $ = (id) => document.getElementById(id);
         const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
@@ -391,9 +391,10 @@
             if (!recorder || !recorder.recording) rec.innerHTML = `${icon('record', { size: 15 })} سجّل الحصة`;
         }
         // v33: ألعاب الحصة (وضع الفريقين + عجلة أسماء المجموعة)
+        try { document.querySelector('#btn-game .ic-game').innerHTML = icon('gamepad', { size: 16 }); } catch (e) { /* تجاهل */ }
         $('btn-game').addEventListener('click', async () => {
             try {
-                const m = await import('./js/games/picker.js?v=41');
+                const m = await import('./js/games/picker.js?v=42');
                 const names = ((prep && prep.members) || []).filter((x) => !x.left_at).map((x) => String(x.name || '').split(' ')[0]);
                 m.openGamePicker({ api, teams: names.length >= 4, names, subject: prep && prep.group && prep.group.subject, toast: { ok: (t) => ErrorHandler.showSuccess(t), err: (e) => ErrorHandler.showError(ErrorHandler.getErrorMessage(e)) } });
             } catch (e) { ErrorHandler.showError('الألعاب ماتحمّلتش. اتأكد من النت وجرّب تاني.'); }
@@ -795,7 +796,6 @@
                 const id = String(m.student_id);
                 const st = state.get(id);
                 const absent = st.attendance !== 'present';
-                const hasDetails = st.rating || st.homework_status || st.note;
                 return `<div class="att-row ${absent ? 'is-absent' : ''}" data-id="${esc(id)}">
                     <div class="att-line">
                         <div class="att-name"><span class="member-avatar">${esc((m.name || '؟').trim().charAt(0))}</span><span>${esc(m.name)}${m.left_at ? ' <small class="muted">(خرج من المجموعة)</small>' : ''}</span></div>
@@ -803,14 +803,13 @@
                             ${ATT_OPTS.map((o) => `<button type="button" data-v="${o.v}" aria-pressed="${st.attendance === o.v}">${o.label}</button>`).join('')}
                         </div>
                     </div>
-                    <details class="att-more" ${hasDetails ? 'open' : ''}>
-                        <summary>${hasDetails ? 'تقييمه' : '+ تقييم وملاحظة'}</summary>
-                        <span class="att-lbl">${esc(labels.memorization)}</span>
-                        <div class="chip-group" data-field="rating">${RATINGS.map((r) => `<button type="button" data-val="${r.value}" aria-pressed="${st.rating === r.value}">${r.label}</button>`).join('')}</div>
-                        <span class="att-lbl">الواجب اللي فات</span>
-                        <div class="chip-group" data-field="homework_status">${HOMEWORK_STATUS.map((h) => `<button type="button" data-val="${h.value}" aria-pressed="${st.homework_status === h.value}">${h.label}</button>`).join('')}</div>
-                        <input type="text" class="att-note" maxlength="500" placeholder="ملاحظة على الطالب ده (بتظهر في ملفه)" value="${esc(st.note)}" aria-label="ملاحظة على ${esc(m.name)}">
-                    </details>
+                    <div class="att-eval">
+                        <div class="att-eval-row"><span class="att-lbl">⭐ تقييمه (${esc(labels.memorization)})</span>
+                            <div class="chip-group" data-field="rating">${RATINGS.map((r) => `<button type="button" data-val="${r.value}" aria-pressed="${st.rating === r.value}">${r.label}</button>`).join('')}</div></div>
+                        <div class="att-eval-row"><span class="att-lbl">📚 الواجب اللي فات</span>
+                            <div class="chip-group" data-field="homework_status">${HOMEWORK_STATUS.map((h) => `<button type="button" data-val="${h.value}" aria-pressed="${st.homework_status === h.value}">${h.label}</button>`).join('')}</div></div>
+                        <input type="text" class="att-note" maxlength="500" placeholder="ملاحظة على ${esc(m.name)} (بتظهر في ملفه وتقريره)" value="${esc(st.note)}" aria-label="ملاحظة على ${esc(m.name)}">
+                    </div>
                 </div>`;
             }).join('');
             updateSummary();
@@ -891,6 +890,22 @@
             if (!date || date > todayIso) { ErrorHandler.showError('اختار تاريخ الحصة (النهارده أو يوم فات)'); return; }
             if (!state.size) { ErrorHandler.showError('مفيش طلاب في الحصة. ضيف طلاب للمجموعة الأول.'); return; }
             const cancelled = $('f-cancelled').checked;
+            // v34: معلومات أساسية لازم تتكتب (عشان تقرير آخر الشهر لكل طالب يطلع كامل)
+            if (!cancelled) {
+                document.querySelectorAll('.gl-miss, .att-miss').forEach((el) => el.classList.remove('gl-miss', 'att-miss'));
+                const miss = [];
+                if (!$('f-content').value.trim()) { miss.push('اللي اتشرح في الحصة'); $('f-content').closest('.gl-field').classList.add('gl-miss'); }
+                if (!$('f-homework').value.trim()) { miss.push('الواجب (أو اكتب: مفيش واجب)'); $('f-homework').closest('.gl-field').classList.add('gl-miss'); }
+                const noRate = [...state.entries()].filter(([, v]) => v.attendance === 'present' && !v.rating).map(([id]) => id);
+                noRate.forEach((id) => { const r = document.querySelector(`.att-row[data-id="${CSS.escape(id)}"]`); if (r) r.classList.add('att-miss'); });
+                if (noRate.length) miss.push(`تقييم ${noRate.length === 1 ? 'طالب' : noRate.length + ' طلاب'} حاضرين`);
+                if (miss.length) {
+                    ErrorHandler.showError('قبل الحفظ لازم تكتب: ' + miss.join('، '), 6000);
+                    const first = document.querySelector('.gl-miss, .att-miss');
+                    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+            }
             const payload = {
                 group_id: groupId,
                 session_id: sessionId || undefined,
@@ -1006,6 +1021,6 @@
             } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
         });
     </script>
-    <script src="js/pwa-install.js?v=41" defer></script>
+    <script src="js/pwa-install.js?v=42" defer></script>
 </body>
 </html>

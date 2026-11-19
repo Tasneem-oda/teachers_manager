@@ -4,9 +4,9 @@
  *   - الألعاب الجاهزة
  *   - محرّر الألعاب (المدرس يعمل لعبته) + مشاركة لينك مع الطالب
  */
-import { TEMPLATES, templateOf, openGame } from './engine.js?v=41';
-import { PACKS, packGame } from './packs.js?v=41';
-import { surahList, surahAyahs, QURAN_GAMES, buildQuranGame } from './quran.js?v=41';
+import { TEMPLATES, templateOf, openGame, gi } from './engine.js?v=42';
+import { PACKS, packGame } from './packs.js?v=42';
+import { surahList, surahAyahs, QURAN_GAMES, buildQuranGame } from './quran.js?v=42';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 let api = null;
@@ -21,7 +21,7 @@ export function ensureUiCss() {
 .gx-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.6rem}
 .gx-tile{display:flex;flex-direction:column;align-items:flex-start;gap:.2rem;padding:.75rem .8rem;border:1.5px solid var(--border);border-radius:14px;background:var(--card-bg);font:inherit;text-align:start;cursor:pointer;color:var(--text-primary);min-height:84px}
 .gx-tile:hover{border-color:var(--primary)}.gx-tile.is-on{border-color:var(--primary);background:#F5F0FA;box-shadow:0 0 0 2px var(--primary) inset}
-.gx-tile .em{font-size:1.5rem}.gx-tile b{font-size:.9rem}.gx-tile small{font-size:.74rem;color:var(--text-secondary);line-height:1.5}
+.gx-tile .em{display:inline-flex;margin-bottom:.15rem}.gx-tile .em svg{display:block}.gx-tile b{font-size:.9rem}.gx-tile small{font-size:.74rem;color:var(--text-secondary);line-height:1.5}
 .gx-row{display:flex;gap:.6rem;flex-wrap:wrap;align-items:end}
 .gx-row .form-group{margin:0;flex:1 1 140px}
 .gx-row select,.gx-row input{width:100%}
@@ -29,7 +29,9 @@ export function ensureUiCss() {
 .gx-actions .btn{margin:0;display:inline-flex;align-items:center;gap:.35rem;min-height:44px}
 .gx-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.7rem}
 .gx-card{display:flex;flex-direction:column;gap:.35rem;padding:.8rem;border:1px solid var(--border);border-radius:16px;background:var(--card-bg)}
-.gx-card .hd{display:flex;align-items:center;gap:.5rem}.gx-card .em{width:42px;height:42px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-size:1.35rem;background:#F3EEF8;flex-shrink:0}
+.gx-card .hd{display:flex;align-items:center;gap:.5rem}.gx-card .em{width:42px;height:42px;display:inline-flex;flex-shrink:0}.gx-card .em svg{display:block;filter:drop-shadow(0 3px 6px rgba(41,37,45,.15))}
+.gx-help-ic{display:flex;align-items:center;gap:.6rem}.gx-help-ic svg{flex-shrink:0}
+.gx-card .ac .btn,.gx-actions .btn{display:inline-flex;align-items:center;justify-content:center;gap:.3rem}
 .gx-card b{font-size:.92rem;line-height:1.5}.gx-card small{color:var(--text-secondary);font-size:.74rem}
 .gx-card .ac{display:flex;gap:.35rem;margin-top:auto;padding-top:.3rem;flex-wrap:wrap}.gx-card .ac .btn{margin:0;min-height:38px;padding:0 .7rem;font-size:.8rem;flex:1}
 .gx-card .ac .btn.icon{flex:0 0 38px;padding:0}
@@ -78,8 +80,8 @@ export function mountQuranBuilder(box, { onPlay, onSave }) {
             <div class="form-group" style="flex:0 1 130px" data-q="levelbox"><label>الصعوبة</label><select data-q="level"><option value="easy">سهل</option><option value="medium" selected>متوسط</option><option value="hard">صعب</option></select></div>
         </div>
         <p class="gx-help" data-q="msg"></p>
-        <div class="gx-tiles" data-q="kinds" style="margin-top:.6rem">${QURAN_GAMES.map((g) => `<button type="button" class="gx-tile ${g.id === kind ? 'is-on' : ''}" data-k="${g.id}"><span class="em">${g.em}</span><b>${g.name}</b><small>${g.desc}</small></button>`).join('')}</div>
-        <div class="gx-actions"><button type="button" class="btn btn-primary" data-q="play">▶ العب دلوقتي</button>${onSave ? '<button type="button" class="btn btn-outline" data-q="save">💾 احفظها في ألعابي</button>' : ''}</div>`;
+        <div class="gx-tiles" data-q="kinds" style="margin-top:.6rem">${QURAN_GAMES.map((g) => `<button type="button" class="gx-tile ${g.id === kind ? 'is-on' : ''}" data-k="${g.id}"><span class="em">${gi(g.id, { size: 40 })}</span><b>${g.name}</b><small>${g.desc}</small></button>`).join('')}</div>
+        <div class="gx-actions"><button type="button" class="btn btn-primary" data-q="play">${gi('play', { tile: false, size: 16 })} العب دلوقتي</button>${onSave ? '<button type="button" class="btn btn-outline" data-q="save">احفظها في ألعابي</button>' : ''}</div>`;
     const q = (k) => box.querySelector(`[data-q="${k}"]`);
     let list = [];
     const msg = (t, bad) => { q('msg').textContent = t || ''; q('msg').style.color = bad ? 'var(--danger,#B3261E)' : ''; };
@@ -142,8 +144,8 @@ export function packsHtml(filterCat = '') {
     return `<div class="gx-chips" data-pack-cats>${['', ...cats].map((c) => `<button type="button" class="lib2-chip ${c === filterCat ? 'is-on' : ''}" data-pcat="${esc(c)}">${c || 'الكل'}</button>`).join('')}</div>
         <div class="gx-cards">${PACKS.filter((p) => !filterCat || p.cat === filterCat).map((p) => {
             const t = templateOf(p.template);
-            return `<div class="gx-card"><div class="hd"><span class="em">${t.em}</span><div><b>${esc(p.title)}</b><br><small>${esc(p.cat)} · ${esc(t.name)}</small></div></div>
-                <div class="ac"><button type="button" class="btn btn-primary" data-pack-play="${p.id}">▶ العب</button><button type="button" class="btn btn-ghost" data-pack-copy="${p.id}" title="انسخها لألعابي وعدّل فيها">✎ انسخ وعدّل</button></div></div>`;
+            return `<div class="gx-card"><div class="hd"><span class="em">${gi(t.id, { size: 42 })}</span><div><b>${esc(p.title)}</b><br><small>${esc(p.cat)} · ${esc(t.name)}</small></div></div>
+                <div class="ac"><button type="button" class="btn btn-primary" data-pack-play="${p.id}">${gi('play', { tile: false, size: 15 })} العب</button><button type="button" class="btn btn-ghost" data-pack-copy="${p.id}" title="انسخها لألعابي وعدّل فيها">${gi('edit', { tile: false, size: 15 })} انسخ وعدّل</button></div></div>`;
         }).join('')}</div>`;
 }
 export { packGame };
@@ -194,10 +196,10 @@ export function openEditor(game, template, onSaved) {
     else body = `<textarea data-text rows="8" placeholder="كل واحد في سطر">${esc((t.id === 'letters' ? C.words : C.items || []).join('\n'))}</textarea>`;
 
     modal(game ? 'تعديل اللعبة' : `لعبة جديدة: ${t.name}`, `
-        <p class="gx-help">${t.em} ${esc(help)}</p>
+        <p class="gx-help gx-help-ic">${gi(t.id, { size: 30 })}<span>${esc(help)}</span></p>
         <div class="form-group"><label>اسم اللعبة</label><input type="text" data-title value="${esc(g.title)}" maxlength="120" placeholder="مثلًا: مراجعة سورة النبأ"></div>
         ${body}
-        <div class="gx-actions"><button type="button" class="btn btn-outline" data-try>▶ جرّبها</button><button type="button" class="btn btn-primary" data-save>💾 احفظ</button></div>`, (m, close) => {
+        <div class="gx-actions"><button type="button" class="btn btn-outline" data-try>${gi('play', { tile: false, size: 15 })} جرّبها</button><button type="button" class="btn btn-primary" data-save>احفظ</button></div>`, (m, close) => {
         const list = m.querySelector('[data-list]');
         m.addEventListener('click', (e) => { const d = e.target.closest('[data-del]'); if (d) { const row = d.closest('[data-pair],[data-q],[data-grp],[data-tf]'); if (row && list.children.length > 1) row.remove(); } });
         const add = m.querySelector('[data-add]');
@@ -255,7 +257,7 @@ export async function shareGame(game) {
         const r = await api.hub('game_share', { id: game.id });
         game.share_code = r.share_code;
         const url = `${location.origin}/play.html?g=${r.share_code}`;
-        const wa = `https://wa.me/?text=${encodeURIComponent(`🎮 لعبة "${game.title}"\nالعب من هنا: ${url}`)}`;
+        const wa = `https://wa.me/?text=${encodeURIComponent(`لعبة "${game.title}"\nالعب من هنا: ${url}`)}`;
         modal('شارك اللعبة مع الطالب', `<p class="gx-help">الطالب يفتح اللينك ويلعب من موبايله على طول (من غير تسجيل). ينفع واجب بعد الحصة كمان.</p>
             <div class="gx-share"><input type="text" readonly value="${esc(url)}" aria-label="لينك اللعبة"><button type="button" class="btn btn-sm" data-copy>نسخ</button></div>
             <div class="gx-actions"><a class="btn btn-primary" href="${wa}" target="_blank" rel="noopener">ابعته واتساب</a></div>`, (m) => {

@@ -6,8 +6,8 @@
  * - رسالة تلقائية واحدة بالكتير في الجلسة (زي: انضم لمجموعة المدرسين بعد أول حصة)
  * - مابيظهرش أي حاجة في صفحة الحصة (المدرس بيشرح)
  */
-import { CONFIG } from './config.js?v=41';
-import { api } from './api.js?v=41';
+import { CONFIG } from './config.js?v=42';
+import { api } from './api.js?v=42';
 
 const SS_KEY = 'tm_hub_hello_v1';
 const LS_SHOWN = 'tm_journey_local_v1';
@@ -97,6 +97,26 @@ function mediaHtml(media) {
 }
 
 // ------------------------------------------------------------------ الإشعار
+// v34: الإشعار اللي المدرس قفله (✕ / تمام / بعدين) أو داس على زراره مايظهرش تاني خالص:
+// بيتسجل على الجهاز فورًا (حتى لو النت بطيء) وبيتشال من الكاش، والسيرفر بيتبلغ إنه اتقفل
+const LS_DONE = 'tm_ann_done_v1';
+const doneSet = () => { try { return new Set(JSON.parse(localStorage.getItem(LS_DONE) || '[]')); } catch (e) { return new Set(); } };
+export function isAnnDone(id) { return doneSet().has(id); }
+function markAnnDone(id) {
+    if (!id) return;
+    const s = doneSet(); s.add(id);
+    try { localStorage.setItem(LS_DONE, JSON.stringify([...s].slice(-80))); } catch (e) { /* تجاهل */ }
+    try {
+        const c = JSON.parse(sessionStorage.getItem(SS_KEY) || 'null');
+        if (c && c.data && Array.isArray(c.data.announcements)) {
+            c.data.announcements = c.data.announcements.filter((a) => a && a.id !== id);
+            sessionStorage.setItem(SS_KEY, JSON.stringify(c));
+        }
+    } catch (e) { /* تجاهل */ }
+    document.querySelectorAll(`[data-ann-id="${id}"]`).forEach((el) => el.remove());
+    api.hub('ann_dismiss', { id }).catch(() => {});
+}
+
 export function showAnnouncement(a, { onClose } = {}) {
     const [c1, c2] = COLORS[a.color] || COLORS.violet;
     const btnUrl = a.button_url ? safeUrl(a.button_url) : '';
@@ -115,10 +135,17 @@ export function showAnnouncement(a, { onClose } = {}) {
                 <button type="button" class="btn btn-ghost" data-ok>${btnUrl ? 'بعدين' : 'تمام 👍'}</button>
             </div>
         </div>`, { cls: 'an-modal', label: a.title });
-    const done = () => { close(); if (onClose) onClose(); };
+    let finished = false;
+    const finish = () => { if (finished) return; finished = true; markAnnDone(a.id); if (onClose) onClose(); };
+    const done = () => { close(); finish(); };
+    // قفل النافذة بأي طريقة (✕، تمام، الضغط برّه، Esc) = خلاص اتشاف ومايرجعش
+    new MutationObserver((_, ob) => { if (!m.isConnected) { ob.disconnect(); finish(); } }).observe(document.body, { childList: true });
     m.querySelector('.an-x').addEventListener('click', done);
     m.querySelector('[data-ok]').addEventListener('click', done);
-    m.querySelectorAll('[data-click]').forEach((el) => el.addEventListener('click', () => { api.hub('ann_click', { id: a.id }).catch(() => {}); track('announcement_click', {}); }));
+    m.querySelectorAll('[data-click]').forEach((el) => el.addEventListener('click', () => {
+        api.hub('ann_click', { id: a.id }).catch(() => {}); track('announcement_click', {});
+        if (el.classList.contains('an-cta')) { markAnnDone(a.id); setTimeout(close, 200); }
+    }));
     m.querySelectorAll('[data-yt]').forEach((b) => b.addEventListener('click', () => {
         b.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${b.dataset.yt}?autoplay=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen title="فيديو"></iframe>`;
         api.hub('ann_click', { id: a.id }).catch(() => {});
@@ -127,25 +154,28 @@ export function showAnnouncement(a, { onClose } = {}) {
     return close;
 }
 
+// شريط صغير في الرئيسية للإشعارات اللي لسه ماتفتحتش (لو كان فيه أكتر من اتنين في نفس اليوم)
 function mountBanner(list) {
     if (page() !== 'dashboard') return;
-    const a = list.find((x) => x && x.title);
+    const a = list.find((x) => x && x.title && !isAnnDone(x.id));
     const host = document.querySelector('.page-body');
     if (!a || !host || document.getElementById('an-banner')) return;
     ensureCss();
     const [c1, c2] = COLORS[a.color] || COLORS.violet;
     const el = document.createElement('div');
     el.id = 'an-banner';
+    el.dataset.annId = a.id;
     el.className = 'an-banner';
     el.style.setProperty('--a1', c1); el.style.setProperty('--a2', c2);
     el.setAttribute('role', 'button'); el.tabIndex = 0;
     el.innerHTML = `<span class="em" aria-hidden="true">${esc(a.emoji || '📣')}</span><div class="t"><b>${esc(a.title)}</b><small>${esc(String(a.body || '').split('\n')[0])}</small></div><button type="button" aria-label="إخفاء">✕</button>`;
     host.insertBefore(el, host.firstChild);
+    const open = () => { el.remove(); showAnnouncement(a); };
     el.addEventListener('click', (e) => {
-        if (e.target.closest('button')) { e.stopPropagation(); el.remove(); api.hub('ann_dismiss', { id: a.id }).catch(() => {}); return; }
-        showAnnouncement(a);
+        if (e.target.closest('button')) { e.stopPropagation(); markAnnDone(a.id); return; }
+        open();
     });
-    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') showAnnouncement(a); });
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); });
 }
 
 // ------------------------------------------------------------------ الرسايل التلقائية (رحلة المدرس)
@@ -242,7 +272,7 @@ export function openContact() {
         const it = e.target.closest('[data-ct]');
         if (!it) return;
         track('contact_click', { kind: it.dataset.ct });
-        if (it.dataset.ct === 'suggest') { close(); import('./suggestions.js?v=41').then((s) => s.openSuggestionModal && s.openSuggestionModal()).catch(() => {}); return; }
+        if (it.dataset.ct === 'suggest') { close(); import('./suggestions.js?v=42').then((s) => s.openSuggestionModal && s.openSuggestionModal()).catch(() => {}); return; }
         if (it.dataset.ct === 'community') markLocal('community', { done: 'done' });
         setTimeout(close, 300);
     });
@@ -266,19 +296,20 @@ export async function initHub() {
         } catch (e) { return; }   // workflow app-hub لسه ماتفعّلش: مفيش حاجة تظهر
     }
     if (!data) return;
-    const anns = (data.announcements || []).filter((a) => a && a.id);
-    // جاي من الجرس أو إشعار الموبايل: نفتح الإشعار ده بالذات
+    const anns = (data.announcements || []).filter((a) => a && a.id && !isAnnDone(a.id));
+    // جاي من الجرس أو إشعار الموبايل: نفتح الإشعار ده بالذات (حتى لو اتقفل قبل كده)
     if (forceAnn) {
-        const a = anns.find((x) => x.id === forceAnn);
+        const a = (data.announcements || []).find((x) => x && x.id === forceAnn);
         if (a) { showAnnouncement(a); try { history.replaceState(null, '', location.pathname); } catch (e) { /* تجاهل */ } return; }
     }
     if (onLesson()) return;
-    mountBanner(anns.filter((a) => a.seen));
     const fresh = anns.filter((a) => !a.seen && a.show_in_app !== false);
     if (fresh.length) {
         let i = 0;
-        const next = () => { if (i < fresh.length && i < 2) showAnnouncement(fresh[i++], { onClose: () => { save(); setTimeout(next, 400); } }); };
-        const save = () => { try { sessionStorage.setItem(SS_KEY, JSON.stringify({ at: Date.now(), data })); } catch (e) { /* تجاهل */ } };
+        const next = () => {
+            if (i < fresh.length && i < 2 && !document.querySelector('.modal.active')) showAnnouncement(fresh[i++], { onClose: () => setTimeout(next, 400) });
+            else if (i < fresh.length) mountBanner(fresh.slice(i));
+        };
         setTimeout(next, 900);
         return;   // رسالة واحدة في المرة: الإشعار أولى من الرسالة التلقائية
     }

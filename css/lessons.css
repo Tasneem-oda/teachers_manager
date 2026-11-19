@@ -554,3 +554,9 @@ button.sp-stat:hover { border-color: var(--primary); }
 .ls-done-report strong { color: #1E5E37; }
 .ls-done-report span { font-size: 0.86rem; color: var(--text-secondary); line-height: 1.6; }
 .ls-done-report .btn { margin: 0.3rem 0 0; min-height: 46px; background: var(--whatsapp, #25D366); border-color: var(--whatsapp, #25D366); color: #fff; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; }
+.sp-lessons-actions{display:inline-flex;gap:.5rem;flex-wrap:wrap}.sp-lessons-actions .btn{margin:0}
+/* v34: الخانات الإجبارية في تسجيل الحصة */
+.ls-req { font-size: 0.68rem; font-weight: 700; color: #B5651D; background: #FFF1E0; border-radius: 999px; padding: 0.05rem 0.45rem; margin-inline-start: 0.3rem; vertical-align: middle; }
+.ls-block.ls-miss { border-radius: 12px; box-shadow: 0 0 0 2px #E0A84F; background: #FFFBF4; }
+.ls-block.ls-miss .ls-req { background: #D9822B; color: #fff; }
+textarea[readonly]#f-homework { background: var(--bg-secondary, #F5F2F8); color: var(--text-secondary); }

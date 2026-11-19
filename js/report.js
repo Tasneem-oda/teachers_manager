@@ -5,11 +5,11 @@
  * الحضور والغياب، مستوى الحفظ/التلاوة/المراجعة، الواجبات، اللي خلصناه، والخطة الجاية.
  */
 
-import { ErrorHandler } from './utils.js?v=41';
-import { icon } from './icons.js?v=41';
-import { lessonDay, ratingFieldLabels, ratingLabel, normalizeLesson } from './lesson-utils.js?v=41';
-import { whatsappUrl, recipientChooser, lessonsText } from './billing.js?v=41';
-import { CONFIG } from './config.js?v=41';
+import { ErrorHandler } from './utils.js?v=42';
+import { icon } from './icons.js?v=42';
+import { lessonDay, ratingFieldLabels, ratingLabel, normalizeLesson } from './lesson-utils.js?v=42';
+import { whatsappUrl, recipientChooser, lessonsText, hoursText, money } from './billing.js?v=42';
+import { CONFIG } from './config.js?v=42';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -248,6 +248,13 @@ function getRefCode() {
  */
 export function packageLine(view) {
     if (!view || !view.enabled) return '';
+    // v34: الأنظمة بالفلوس
+    if (view.money) {
+        if (view.unavailable) return '';
+        if (view.mode === 'monthly') return view.balance >= 0 ? '' : `💳 ${view.headline}`;
+        if (view.mode === 'hourly') return `⏱️ الوقت من بداية المتابعة: ${hoursText(view.minutes)}${view.owedAmount > 0 ? ` · المستحق ${money(view.owedAmount)}` : ''}`;
+        return view.owedAmount > 0 ? `💳 المستحق: ${money(view.owedAmount)} (${lessonsText(view.taken)})` : '';
+    }
     const b = Number(view.balance) || 0;
     const size = Number(view.size) || 0;
     if (view.mode === 'prepaid') {

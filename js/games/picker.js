@@ -2,7 +2,8 @@
  * games/picker.js — v33: زرار "🎮 لعبة" جوه الحصة (حصة الطالب وحصة المجموعة)
  * بيتحمّل بس لما المدرس يدوس الزرار (مايأثرش على سرعة الحصة).
  */
-import { setupGamesUi, ensureUiCss, modal, mountQuranBuilder, packsHtml, packGame, openGame, templateOf } from './ui.js?v=41';
+import { setupGamesUi, ensureUiCss, modal, mountQuranBuilder, packsHtml, packGame, openGame, templateOf } from './ui.js?v=42';
+import { gi } from './gicons.js?v=42';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -19,16 +20,16 @@ export function openGamePicker(o) {
         openGame(g, { teams, onFinish: () => { if (g.id) o.api.hub('game_played', { id: g.id }).catch(() => {}); } });
     };
     const quranFirst = !o.subject || /quran|قرآن|قران/i.test(o.subject);
-    const tabs = [['mine', '⭐ ألعابي'], ['quran', '🕌 من القرآن'], ['packs', '🎁 جاهزة']];
-    if (names.length >= 2) tabs.push(['wheel', '🎡 عجلة الأسماء']);
+    const tabs = [['mine', `${gi('star', { tile: false, size: 16 })} ألعابي`], ['quran', `${gi('quran', { tile: false, size: 16 })} من القرآن`], ['packs', `${gi('gift', { tile: false, size: 16 })} جاهزة`]];
+    if (names.length >= 2) tabs.push(['wheel', `${gi('wheel', { tile: false, size: 16 })} عجلة الأسماء`]);
     const first = quranFirst ? 'quran' : 'packs';
-    modal('🎮 لعبة في الحصة', `
+    modal('لعبة في الحصة', `
         <nav class="lib2-tabs" style="margin-bottom:.8rem">${tabs.map(([id, l]) => `<button type="button" class="lib2-tab ${id === first ? 'is-on' : ''}" data-pt="${id}">${l}</button>`).join('')}</nav>
         <div data-pane="mine" ${first === 'mine' ? '' : 'hidden'}><div class="loading">جاري التحميل...</div></div>
         <div data-pane="quran" ${first === 'quran' ? '' : 'hidden'}></div>
         <div data-pane="packs" ${first === 'packs' ? '' : 'hidden'}></div>
-        ${names.length >= 2 ? `<div data-pane="wheel" hidden><p class="gx-help">العجلة هتختار طالب عشوائي من المجموعة (${names.length} طالب).</p><div class="gx-actions"><button type="button" class="btn btn-primary" data-wheel>🎡 افتح العجلة</button></div></div>` : ''}
-        <p class="gx-help" style="margin-top:.8rem">💡 ألعاب أكتر وتعمل لعبتك من <a href="games.html" target="_blank" rel="noopener">صفحة ألعاب الحصة</a>.</p>`, (m) => {
+        ${names.length >= 2 ? `<div data-pane="wheel" hidden><p class="gx-help">العجلة هتختار طالب عشوائي من المجموعة (${names.length} طالب).</p><div class="gx-actions"><button type="button" class="btn btn-primary" data-wheel>${gi('wheel', { tile: false, size: 16 })} افتح العجلة</button></div></div>` : ''}
+        <p class="gx-help" style="margin-top:.8rem">ألعاب أكتر وتعمل لعبتك من <a href="games.html" target="_blank" rel="noopener">صفحة ألعاب الحصة</a>.</p>`, (m) => {
         const pane = (id) => m.querySelector(`[data-pane="${id}"]`);
         let loadedMine = false;
         const show = (id) => {
@@ -49,7 +50,7 @@ export function openGamePicker(o) {
             loadedMine = true;
             try {
                 const games = (await o.api.hub('games_list')).games || [];
-                pane('mine').innerHTML = games.length ? `<div class="gx-cards">${games.map((g) => `<div class="gx-card"><div class="hd"><span class="em">${templateOf(g.template).em}</span><div><b>${esc(g.title)}</b><br><small>${esc(templateOf(g.template).name)}</small></div></div><div class="ac"><button type="button" class="btn btn-primary" data-my="${g.id}">▶ العب</button></div></div>`).join('')}</div>`
+                pane('mine').innerHTML = games.length ? `<div class="gx-cards">${games.map((g) => `<div class="gx-card"><div class="hd"><span class="em">${gi(templateOf(g.template).id, { size: 42 })}</span><div><b>${esc(g.title)}</b><br><small>${esc(templateOf(g.template).name)}</small></div></div><div class="ac"><button type="button" class="btn btn-primary" data-my="${g.id}">${gi('play', { tile: false, size: 15 })} العب</button></div></div>`).join('')}</div>`
                     : '<div class="lib2-empty">لسه مفيش ألعاب محفوظة. جرّب "من القرآن" أو "جاهزة".</div>';
                 pane('mine').addEventListener('click', (e) => { const b = e.target.closest('[data-my]'); if (b) play(games.find((g) => g.id === b.dataset.my)); });
             } catch (err) { pane('mine').innerHTML = '<div class="lib2-empty">ألعابك المحفوظة مش متاحة دلوقتي.</div>'; }

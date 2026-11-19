@@ -3,10 +3,10 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=41';
-import { APIUtils, Storage } from './utils.js?v=41';
-import { getFreshSession } from './session.js?v=41';
-import { currentSyncVersion, syncTrusted } from './realtime-sync.js?v=41';
+import { CONFIG } from './config.js?v=42';
+import { APIUtils, Storage } from './utils.js?v=42';
+import { getFreshSession } from './session.js?v=42';
+import { currentSyncVersion, syncTrusted } from './realtime-sync.js?v=42';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -104,7 +104,7 @@ async function apiCallNow(endpoint, method = 'GET', body = null, options = {}) {
         const quiet = isQuiet(body);   // v32/v33: مش تغيير بيانات
         if (method !== 'GET' && !isRead && !quiet && !/track-events|notifications|ai-chat|assistant|ask-sources|prepare-lesson|owner-/i.test(endpoint)) {
             ReadCache.clear();
-            import('./auto-refresh.js?v=41').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
+            import('./auto-refresh.js?v=42').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
         }
         return data;
 
@@ -144,10 +144,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 //  - الرقم ماتغيّرش والمزامنة شغالة ← الكاش صالح لحد 10 دقايق (التنقل فوري).
 //  - الرقم اتغيّر (حفظ من أي جهاز) ← الكاش بيتمسح والبيانات تيجي جديدة.
 //  - المزامنة مش متأكدة (أول تحميل / من غير نت) ← 40 ثانية بس زي الأول.
-const READ_ACTIONS = { '/app-hub': ['library', 'public_list', 'games_list'], '/groups': ['list', 'get'], '/group-session': ['prepare'], '/group-billing': ['month'], '/teacher-settings': ['get'], '/lesson-tools': ['board_list'] };
+export const MONEY_MODES = ['per_lesson', 'monthly', 'hourly'];
+const READ_ACTIONS = { '/app-hub': ['library', 'public_list', 'games_list', 'billing_money', 'billing_money_all'], '/groups': ['list', 'get'], '/group-session': ['prepare'], '/group-billing': ['month'], '/teacher-settings': ['get'], '/lesson-tools': ['board_list'] };
 const NO_READ_CACHE = /notifications|check-subscription|bootstrap-session|get-book-content|ai-chat|assistant|ask-sources|prepare-lesson|track-events|export-data/;
 // v33: طلبات مش بتغيّر بيانات المدرس (فمابنمسحش الكاش ولا بنحدّث الأجهزة التانية)
-const QUIET_ACTIONS = ['push_status', 'test', 'hello', 'ann_seen', 'ann_click', 'ann_dismiss', 'journey_mark', 'game_played', 'public_download'];
+const QUIET_ACTIONS = ['push_status', 'test', 'hello', 'ann_seen', 'ann_click', 'ann_dismiss', 'journey_mark', 'game_played', 'public_download', 'track'];
 function isQuiet(body) { return !!(body && QUIET_ACTIONS.includes(body.action) || (body && body.action === 'book_meta' && body.opened && !('category' in body) && !('pinned' in body))); }
 function isReadRequest(endpoint, method, body, options = {}) {
     const path = String(endpoint || '').split('?')[0];
@@ -272,7 +273,7 @@ export const Outbox = (() => {
     const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
     const write = (list) => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { /* تجاهل */ } emit(); };
     const emit = () => { try { window.dispatchEvent(new CustomEvent('tm:outbox', { detail: { count: read().length } })); } catch (e) { /* تجاهل */ } };
-    const toast = (msg, ok = true) => import('./utils.js?v=41').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
+    const toast = (msg, ok = true) => import('./utils.js?v=42').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
     return {
         list: read,
         count: () => read().length,
@@ -326,7 +327,7 @@ let billingDueCache = null;
 let conflictAsk = null;   // سؤال واحد لكل الأيام اللي بتتحفظ مع بعض
 async function askAllowConflict(message) {
     if (conflictAsk) return conflictAsk;
-    conflictAsk = import('./utils.js?v=41').then(({ askChoice }) => askChoice({
+    conflictAsk = import('./utils.js?v=42').then(({ askChoice }) => askChoice({
         title: '⚠️ الميعاد ده فيه حصة تانية',
         message: message || 'الميعاد ده بيتعارض مع حصة تانية متسجلة. لو ده مقصود احفظ الحصتين في نفس الميعاد، وهيظهروا في الجدول بعلامة تعارض.',
         choices: [{ label: 'احفظ الحصتين في نفس الميعاد', value: 'force' }],
@@ -373,7 +374,7 @@ async function getSessionOrRedirect({ force = false, rejected = null } = {}) {
 // (get-book-content و ask مش "حفظ": قراءة الكتب مسموحة زي ما وعدنا المدرس في شريط القراءة فقط) + أحداث التتبع
 const READ_ONLY_ALLOWED = ['/check-subscription', '/submit-suggestion', '/mark-notifications-read', '/bootstrap-session', '/initialize-teacher', '/monthly-income', '/get-book-content', '/track-events', '/update-profile', '/export-data'];
 // v27: طلبات المجموعات كلها POST، فبنسمح بالقراءة بس (عرض المجموعات/الحصة/كشف الاشتراك) في وضع القراءة فقط
-const READ_ONLY_ACTIONS = { '/app-hub': ['hello', 'ann_seen', 'ann_click', 'ann_dismiss', 'journey_mark', 'library', 'public_list', 'games_list', 'public_download', 'game_played', 'book_meta'], '/groups': ['list', 'get'], '/group-session': ['prepare'], '/group-billing': ['month'], '/teacher-settings': ['get', 'save', 'test', 'push_status'], '/delete-account': ['request', 'cancel', 'status'], '/lesson-tools': ['board_list'] };
+const READ_ONLY_ACTIONS = { '/app-hub': ['hello', 'ann_seen', 'ann_click', 'ann_dismiss', 'journey_mark', 'library', 'public_list', 'games_list', 'public_download', 'game_played', 'book_meta', 'billing_money', 'billing_money_all', 'track', 'profile_save'], '/groups': ['list', 'get'], '/group-session': ['prepare'], '/group-billing': ['month'], '/teacher-settings': ['get', 'save', 'test', 'push_status'], '/delete-account': ['request', 'cancel', 'status'], '/lesson-tools': ['board_list'] };
 function isBlockedByReadOnly(endpoint, method, body = null) {
     if (typeof window === 'undefined' || !window.__tmReadOnly) return false;
     if (String(method || 'GET').toUpperCase() === 'GET') return false;
@@ -614,7 +615,13 @@ export const api = {
      */
     async getStudentOverview(studentId, { offset = 0, limit = 20 } = {}) {
         try {
-            return await apiCall(`${CONFIG.API_ENDPOINTS.STUDENTS.OVERVIEW}?student_id=${encodeURIComponent(studentId)}&offset=${offset}&limit=${limit}`, 'GET');
+            const ov = await apiCall(`${CONFIG.API_ENDPOINTS.STUDENTS.OVERVIEW}?student_id=${encodeURIComponent(studentId)}&offset=${offset}&limit=${limit}`, 'GET');
+            // v34: نظام دفع بالفلوس (بالحصة/شهري/بالساعة): الحساب بييجي من app-hub
+            if (ov && ov.billing && MONEY_MODES.includes(ov.billing.mode)) {
+                try { ov.billing.money = await this.hub('billing_money', { student_id: studentId }); ov.billing.money.base_taken = Number(ov.billing.taken) || 0; }
+                catch (e) { ov.billing.money = { error: true }; }
+            }
+            return ov;
         } catch (error) {
             if (!isMissingWebhook(error)) throw error;
             return await legacyOverview(this, studentId, offset, limit);
@@ -852,7 +859,16 @@ export const api = {
 
     /** تعديل بيانات المدرس (الاسم/الموبايل/نوع التدريس/المادة) — n8n/update-profile.json */
     async updateProfile(data) {
-        return await apiCall(CONFIG.API_ENDPOINTS.PROFILE.UPDATE, 'POST', data);
+        // v34: بيتحفظ من app-hub (الـ workflow القديم update-profile كان بيطلع Unauthorized)، ولو app-hub لسه قديم نرجع للقديم
+        try {
+            const r = await this.hub('profile_save', data);
+            return r && r.profile ? { profile: r.profile } : r;
+        } catch (e) {
+            const code = e && e.error && e.error.code;
+            if (!(code === 'INVALID' || code === 'UNKNOWN_ACTION' || (e && (e.status === 400 || e.status === 404)))) throw e;
+            if (code === 'INVALID' && e.error && /اسمك/.test(e.error.message || '')) throw e;
+            return await apiCall(CONFIG.API_ENDPOINTS.PROFILE.UPDATE, 'POST', data);
+        }
     },
 
     /** اقتراح جديد من المدرس (n8n/submit-suggestion.json) */
@@ -865,7 +881,17 @@ export const api = {
         if (billingDueCache && (Date.now() - billingDueCache.ts) < 20000) return billingDueCache.promise;
         const promise = (async () => {
             try {
-                return await apiCall(CONFIG.API_ENDPOINTS.STUDENTS.BILLING_DUE, 'GET');
+                const due = await apiCall(CONFIG.API_ENDPOINTS.STUDENTS.BILLING_DUE, 'GET');
+                // v34: الطلاب اللي حسابهم بالفلوس: الحساب الحقيقي من app-hub (طلب واحد للكل)
+                const list = (due && due.students) || [];
+                if (list.some((s) => s.billing && MONEY_MODES.includes(s.billing.mode))) {
+                    try {
+                        const all = await this.hub('billing_money_all');
+                        const byId = new Map(((all && all.students) || []).map((x) => [String(x.id), x.money]));
+                        list.forEach((s) => { if (s.billing && MONEY_MODES.includes(s.billing.mode)) { s.billing.money = byId.get(String(s.id)) || { error: true }; if (s.billing.money) s.billing.money.base_taken = Number(s.billing.taken) || 0; } });
+                    } catch (e) { list.forEach((s) => { if (s.billing && MONEY_MODES.includes(s.billing.mode)) s.billing.money = { error: true }; }); }
+                }
+                return due;
             } catch (error) {
                 if (isMissingWebhook(error)) return null;
                 throw error;

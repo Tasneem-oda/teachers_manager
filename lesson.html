@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=41">
+    <link rel="stylesheet" href="css/style.css?v=42">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -24,10 +24,10 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=41">
-    <link rel="stylesheet" href="css/books.css?v=41">
+    <link rel="stylesheet" href="css/lessons.css?v=42">
+    <link rel="stylesheet" href="css/books.css?v=42">
     <style>body { margin: 0; }</style>
-    <link rel="stylesheet" href="css/v29.css?v=41">
+    <link rel="stylesheet" href="css/v29.css?v=42">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -56,7 +56,6 @@
                                 <div class="ls-start-links">
                                     <a id="r-link" target="_blank" rel="noopener" hidden>فتح رابط الحصة فقط</a>
                                     <button type="button" id="btn-absent-ready">الطالب غاب؟ أو عايز تأجّل الحصة؟</button>
-                                    <button type="button" id="btn-manual">تسجيل حصة تمت بدون مؤقت</button>
                                     <button type="button" id="btn-ai-ready">المساعد الذكي</button>
                                 </div>
                             </div>
@@ -94,7 +93,7 @@
                             <!-- v29: السبورة (صفحة بيضا) + تسجيل الحصة فيديو -->
                             <div class="ls-teach" id="ls-teach" hidden>
                                 <button type="button" class="btn btn-sm btn-outline" id="btn-board"></button>
-                                <button type="button" class="btn btn-sm btn-outline" id="btn-game">🎮 لعبة</button>
+                                <button type="button" class="btn btn-sm btn-outline" id="btn-game"><span class="ic-game" aria-hidden="true"></span> لعبة</button>
                                 <button type="button" class="btn btn-sm btn-outline ls-rec" id="btn-rec" hidden></button>
                                 <p class="ls-rec-warn" id="rec-warn" hidden></p>
                             </div>
@@ -112,6 +111,8 @@
                                     <div class="ls-block" id="blk-date" hidden>
                                         <label class="ls-label" for="f-date">تاريخ الحصة</label>
                                         <input type="date" id="f-date">
+                                        <label class="ls-label" for="f-duration" style="margin-top:.6rem">مدة الحصة (بالدقيقة)</label>
+                                        <input type="number" id="f-duration" min="5" max="600" step="5" inputmode="numeric" placeholder="مثلًا 60">
                                     </div>
 
                                     <div class="ls-block ls-prev" id="blk-prev" hidden>
@@ -128,13 +129,13 @@
                                     </div>
 
                                     <div class="ls-block">
-                                        <label class="ls-label" for="f-content">ماذا تم في الحصة؟</label>
+                                        <label class="ls-label" for="f-content">ماذا تم في الحصة؟ <small class="ls-req">مطلوب</small></label>
                                         <textarea id="f-content" class="ls-main" data-field="lesson_content" placeholder="اكتب باختصار ما تم شرحه أو مراجعته..."></textarea>
                                         <button type="button" class="ls-suggest" id="sug-content" hidden></button>
                                     </div>
 
                                     <div class="ls-block">
-                                        <span class="ls-label">تقييم الطالب</span>
+                                        <span class="ls-label">تقييم الطالب <small class="ls-req">مطلوب</small></span>
                                         <div class="ls-rating-row"><span class="ls-rating-name" id="lbl-memorization"></span><div class="chip-group" data-field="memorization"></div></div>
                                         <div class="ls-rating-row"><span class="ls-rating-name" id="lbl-recitation"></span><div class="chip-group" data-field="recitation"></div></div>
                                         <div class="ls-rating-row"><span class="ls-rating-name" id="lbl-revision"></span><div class="chip-group" data-field="revision"></div></div>
@@ -143,8 +144,9 @@
 
                                     <div class="ls-block ls-two">
                                         <div>
-                                            <label class="ls-label" for="f-homework">الواجب الجديد</label>
+                                            <label class="ls-label" for="f-homework">الواجب الجديد <small class="ls-req">مطلوب</small></label>
                                             <textarea id="f-homework" data-field="homework" placeholder="المطلوب من الطالب قبل الحصة الجاية"></textarea>
+                                            <label class="ls-check"><input type="checkbox" id="f-no-hw"> مفيش واجب المرة دي</label>
                                         </div>
                                         <div>
                                             <label class="ls-label" for="f-next">المخطط للحصة الجاية</label>
@@ -312,28 +314,28 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=41"></script>
+    <script type="module" src="js/config.js?v=42"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=41';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=41';
-        import { api } from './js/api.js?v=41';
-        import { ErrorHandler, Formatters, uuidv4 } from './js/utils.js?v=41';
-        import { icon } from './js/icons.js?v=41';
+        import { Auth } from './js/auth.js?v=42';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=42';
+        import { api } from './js/api.js?v=42';
+        import { ErrorHandler, Formatters, uuidv4, toLatinDigits } from './js/utils.js?v=42';
+        import { icon } from './js/icons.js?v=42';
         import {
             subjectLabel, ratingFieldLabels, RATINGS, HOMEWORK_STATUS, relativeDay, localDateISO, localTimeISO,
             formatDuration, minutesText, LessonDraft, lessonHasContent, lessonDetailsHtml, nextOccurrence, formatNextOccurrence,
             normalizeLesson, isAbsenceRow, attendanceInfo, lessonDay, deviceMsToDateISO, serverTimeToDateISO
-        } from './js/lesson-utils.js?v=41';
-        import { openAttendanceModal } from './js/attendance.js?v=41';
-        import { showTips, dismissTip } from './js/tips.js?v=41';
-        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=41';
-        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=41';
-        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=41';
-        import { openBookViewer } from './js/book-viewer.js?v=41';
-        import { openLessonReport } from './js/report.js?v=41';
-        import { isTrial, trialCardHtml, bindTrialActions } from './js/trial.js?v=41';
-        import { openWhiteboard } from './js/whiteboard.js?v=41';
-        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=41';
+        } from './js/lesson-utils.js?v=42';
+        import { openAttendanceModal } from './js/attendance.js?v=42';
+        import { showTips, dismissTip } from './js/tips.js?v=42';
+        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=42';
+        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=42';
+        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=42';
+        import { openBookViewer } from './js/book-viewer.js?v=42';
+        import { openLessonReport } from './js/report.js?v=42';
+        import { isTrial, trialCardHtml, bindTrialActions } from './js/trial.js?v=42';
+        import { openWhiteboard } from './js/whiteboard.js?v=42';
+        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=42';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'ابدأ الحصة وتابعها وسجّلها في مكان واحد', showSearch: false });
@@ -417,10 +419,11 @@
             if (!f) return;
             Object.entries(TEXT_FIELDS).forEach(([k, id]) => { $(id).value = f[k] || ''; });
             CHIP_FIELDS.forEach((k) => setChip(k, f[k] || null));
+            try { const nh = $('f-no-hw'); nh.checked = (f.homework || '') === 'لا يوجد واجب'; $('f-homework').readOnly = nh.checked; } catch (e) { /* تجاهل */ }
             if (f.performance || f.notes) $('ls-more').open = true;
             updateSuggest();
         }
-        function clearForm() { setFields(Object.fromEntries([...Object.keys(TEXT_FIELDS), ...CHIP_FIELDS].map((k) => [k, null]))); $('f-set-topic').checked = false; }
+        function clearForm() { setFields(Object.fromEntries([...Object.keys(TEXT_FIELDS), ...CHIP_FIELDS].map((k) => [k, null]))); $('f-set-topic').checked = false; const nh = $('f-no-hw'); if (nh) { nh.checked = false; $('f-homework').readOnly = false; } }
 
         // ------------------------------------------------------------ مسودة تلقائية (مابتضيعش لو الصفحة اتقفلت أو اتحدّثت)
         function scheduleDraft() {
@@ -568,6 +571,8 @@
             enterManual(d);
             editingLesson = { id: found.id, date: d };
             $('f-date').disabled = true;
+            $('f-duration').value = found.duration_minutes || '';
+            $('f-duration').placeholder = 'سيبها فاضية لو مش هتغيّرها';
             $('bar-timer').textContent = 'تعديل حصة';
             $('btn-finish').innerHTML = icon('checkCircle', { size: 17 }) + ' <span class="ls-finish-text">حفظ<span class="ls-finish-long"> التعديل</span></span>';
             $('btn-discard').textContent = 'رجوع من غير حفظ';
@@ -618,7 +623,7 @@
             mode = null;
             stopTimer();
             // v33: "الواجب بالتفصيل" (حفظ/مراجعة/تلاوة + السورة + من/إلى)
-            import('./js/hw-builder.js?v=41').then((m) => m.mountHomeworkBuilder($('f-homework'), { subject: student && student.subject })).catch(() => { /* تجاهل */ });
+            import('./js/hw-builder.js?v=42').then((m) => m.mountHomeworkBuilder($('f-homework'), { subject: student && student.subject })).catch(() => { /* تجاهل */ });
             unpublishLive();
             $('r-name').textContent = student.name || 'بدون اسم';
             const sub = [`<span>${icon('bookOpen', { size: 14 })} ${esc(subjectLabel(student.subject))}</span>`];
@@ -870,9 +875,10 @@
             openWhiteboard({ owner: { student_id: studentIdParam }, title: `سبورة ${firstName()}`, blank: true });
         });
         // v33: ألعاب الحصة (بتتحمّل بس لما المدرس يدوس)
+        try { document.querySelector('#btn-game .ic-game').innerHTML = icon('gamepad', { size: 16 }); } catch (e) { /* تجاهل */ }
         $('btn-game').addEventListener('click', async () => {
             try {
-                const m = await import('./js/games/picker.js?v=41');
+                const m = await import('./js/games/picker.js?v=42');
                 m.openGamePicker({ api, subject: student && student.subject, toast: { ok: (t) => ErrorHandler.showSuccess(t), err: (e) => ErrorHandler.showError(ErrorHandler.getErrorMessage(e)) } });
             } catch (e) { ErrorHandler.showError('الألعاب ماتحمّلتش. اتأكد من النت وجرّب تاني.'); }
         });
@@ -946,6 +952,7 @@
             $('blk-date').hidden = false;
             $('f-date').value = date || localDateISO();
             $('f-date').max = localDateISO();
+            try { const pm = plannedMinutes(); $('f-duration').value = pm || ''; } catch (e) { $('f-duration').value = ''; }
             $('btn-finish').innerHTML = icon('checkCircle', { size: 17 }) + ' <span class="ls-finish-text">حفظ<span class="ls-finish-long"> الحصة</span></span>';
             $('btn-discard').textContent = 'إلغاء';
             $('btn-absent-live').hidden = true;
@@ -1039,7 +1046,7 @@
             }
         });
 
-        $('btn-manual').addEventListener('click', () => { clearForm(); enterManual(); saveDraftNow(); });
+        // v34: "تسجيل حصة تمت بدون مؤقت" اتنقل لملف الطالب (lesson.html?manual=1)
         $('btn-ai-ready').addEventListener('click', () => openAiChat());
 
         // تسجيل غياب (قبل البدء أو بدل الحصة الجارية)
@@ -1115,7 +1122,8 @@
         $('btn-finish').addEventListener('click', async () => {
             if (saving) return;
             const fields = getFields();
-            if (!lessonHasContent(fields) && !confirm('لم يُكتب أي شيء عن الحصة. إنهاء الحصة على أي حال؟')) return;
+            // v34: معلومات أساسية إجبارية (المحتوى + التقييم + الواجب) عشان تقرير آخر الشهر يطلع كامل
+            if (!validateRequired(fields)) return;
             const payload = {
                 action: 'complete',
                 student_id: studentIdParam,
@@ -1143,6 +1151,11 @@
                     const code = saveErr && saveErr.error && saveErr.error.code;
                     if (code !== 'TIMEOUT' || !(await lessonLooksSaved(payload))) throw saveErr;
                 }
+                // v34: مدة الحصة الحقيقية (للحساب بالساعة): الحصة بالمؤقت = الوقت اللي فات، والتسجيل اليدوي = اللي المدرس كتبه
+                try {
+                    const durMin = mode === 'live' && lesson.startedAt ? Math.max(1, Math.round((Date.now() - lesson.startedAt) / 60000)) : (parseInt(toLatinDigits($('f-duration').value), 10) || 0);
+                    if (durMin > 0 && !(saveRes && saveRes.queued)) api.hub('lesson_meta', { student_id: studentIdParam, lesson_id: payload.lesson_id || undefined, key: payload.client_request_id, minutes: Math.min(600, durMin) }).catch(() => { /* تجاهل */ });
+                } catch (e) { /* تجاهل */ }
                 if (editingLesson) {
                     try { sessionStorage.removeItem('tm_income_cache_v1'); } catch (e) { /* تجاهل */ }
                     try { window.tmTrack && window.tmTrack('lesson_edited', {}); } catch (e) { /* تجاهل */ }
@@ -1191,6 +1204,28 @@
         });
 
         let discarding = false;
+
+        function validateRequired(fields) {
+            document.querySelectorAll('.ls-block.ls-miss').forEach((b) => b.classList.remove('ls-miss'));
+            const miss = [];
+            const mark = (el) => { const b = el && el.closest('.ls-block'); if (b) b.classList.add('ls-miss'); };
+            if (!fields.lesson_content) { miss.push('اللي اتعمل في الحصة'); mark($('f-content')); }
+            if (!['memorization', 'recitation', 'revision'].some((k) => fields[k])) { miss.push('تقييم الطالب'); mark(document.querySelector('[data-field="memorization"]')); }
+            if (!fields.homework) { miss.push('الواجب (أو علّم "مفيش واجب")'); mark($('f-homework')); }
+            if (!$('blk-prev-hw').hidden && !fields.homework_status) { miss.push('عمل الواجب اللي فات؟'); mark($('blk-prev-hw')); }
+            if (!miss.length) return true;
+            ErrorHandler.showError('قبل الحفظ لازم تكتب: ' + miss.join('، '), 6000);
+            const first = document.querySelector('.ls-block.ls-miss');
+            if (first) { try { $('ls-grid').dataset.view = 'now'; } catch (e) { /* تجاهل */ } first.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+            return false;
+        }
+        // "مفيش واجب": بيتكتب في خانة الواجب نفسها (فبيظهر في التقرير)
+        $('f-no-hw').addEventListener('change', (e) => {
+            const t = $('f-homework');
+            if (e.target.checked) { t.dataset.prev = t.value; t.value = 'لا يوجد واجب'; t.readOnly = true; }
+            else { t.readOnly = false; t.value = t.dataset.prev && t.dataset.prev !== 'لا يوجد واجب' ? t.dataset.prev : ''; }
+            t.dispatchEvent(new Event('input', { bubbles: true }));
+        });
 
         function draftRequestId() {
             const d = LessonDraft.load(studentIdParam) || {};
@@ -2063,6 +2098,6 @@
             }
         });
         </script>
-    <script src="js/pwa-install.js?v=41" defer></script>
+    <script src="js/pwa-install.js?v=42" defer></script>
 </body>
 </html>

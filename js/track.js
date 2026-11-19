@@ -15,9 +15,9 @@
  *   وأي event بيتعمله push في dataLayer في أي مكان في البرنامج.
  */
 
-import { CONFIG } from './config.js?v=41';
-import { APIUtils } from './utils.js?v=41';
-import { getFreshSession } from './session.js?v=41';
+import { CONFIG } from './config.js?v=42';
+import { APIUtils } from './utils.js?v=42';
+import { getFreshSession } from './session.js?v=42';
 
 const QUEUE_KEY = 'tm_track_queue_v1';
 const SESSION_KEY = 'tm_track_session';
@@ -98,7 +98,7 @@ async function refreshToken() {
 }
 
 function endpoint() {
-    try { return APIUtils.buildUrl(CONFIG.API_ENDPOINTS.TRACKING.EVENTS); } catch (e) { return null; }
+    try { return APIUtils.buildUrl(CONFIG.API_ENDPOINTS.HUB); } catch (e) { return null; }   // v34: عن طريق app-hub (track-events القديم كان بيطلع Unauthorized)
 }
 
 async function flush({ beacon = false } = {}) {
@@ -111,7 +111,7 @@ async function flush({ beacon = false } = {}) {
     // ولو الإرسال فشل بنرجّعها
     const batch = queue.splice(0, MAX_BATCH);
     persist();
-    const body = JSON.stringify({ events: batch });
+    const body = JSON.stringify({ action: 'track', events: batch });
     sending = true;
     try {
         const res = await fetch(url, {

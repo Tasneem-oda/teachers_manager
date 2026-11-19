@@ -4,11 +4,11 @@
  *  - مهلة 14 يوم: لو دخل تاني قبلها يقدر يرجّع حسابه (showDeletionScheduledGate)
  *  - بعد المهلة n8n (purge-deleted-accounts) بيمسح كل حاجة تلقائي
  */
-import { api } from './api.js?v=41';
-import { Auth } from './auth.js?v=41';
-import { ErrorHandler } from './utils.js?v=41';
-import { icon } from './icons.js?v=41';
-import { CONFIG } from './config.js?v=41';
+import { api } from './api.js?v=42';
+import { Auth } from './auth.js?v=42';
+import { ErrorHandler } from './utils.js?v=42';
+import { icon } from './icons.js?v=42';
+import { CONFIG } from './config.js?v=42';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -145,7 +145,7 @@ export function openDeleteAccount({ unlinkOnSignOut } = {}) {
         const err = body.querySelector('.ad-err');
         body.querySelector('[data-back]').addEventListener('click', step1);
         body.querySelector('[data-export]').addEventListener('click', async (e) => {
-            const { downloadAllData } = await import('./export-data.js?v=41');
+            const { downloadAllData } = await import('./export-data.js?v=42');
             downloadAllData(e.currentTarget);
         });
         body.querySelector('[data-go]').addEventListener('click', async (e) => {

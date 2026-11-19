@@ -1,11 +1,15 @@
 /**
  * games-page.js — v33: صفحة "ألعاب الحصة"
  */
-import { Auth } from './auth.js?v=41';
-import { renderSidebar, renderTopHeader } from './sidebar.js?v=41';
-import { api } from './api.js?v=41';
-import { ErrorHandler } from './utils.js?v=41';
-import { setupGamesUi, ensureUiCss, mountQuranBuilder, packsHtml, packGame, openEditor, shareGame, openGame, TEMPLATES, templateOf, modal } from './games/ui.js?v=41';
+import { Auth } from './auth.js?v=42';
+import { renderSidebar, renderTopHeader } from './sidebar.js?v=42';
+import { api } from './api.js?v=42';
+import { ErrorHandler } from './utils.js?v=42';
+import { setupGamesUi, ensureUiCss, mountQuranBuilder, packsHtml, packGame, openEditor, shareGame, openGame, TEMPLATES, templateOf, modal } from './games/ui.js?v=42';
+import { gi } from './games/gicons.js?v=42';
+
+// v34: أيقونات الصفحة نفسها (بدل الإيموجي)
+document.querySelectorAll('[data-gi]').forEach((el) => { el.innerHTML = gi(el.dataset.gi, { tile: el.dataset.tile !== '0', size: Number(el.dataset.size) || 28 }); el.style.display = 'inline-flex'; el.style.verticalAlign = 'middle'; });
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -52,19 +56,19 @@ export function initGamesPage() {
         const box = $('my-games');
         if (!hubOk) { box.innerHTML = '<div class="lib2-empty">حفظ الألعاب هيشتغل قريب إن شاء الله. جرّب الألعاب الجاهزة وألعاب القرآن دلوقتي.</div>'; return; }
         if (!games.length) {
-            box.innerHTML = `<div class="lib2-empty"><span class="em">🎲</span>لسه ماعملتش لعبة. اعمل لعبة من آيات القرآن فوق واحفظها، أو اختار قالب:</div>${templatesHtml()}`;
+            box.innerHTML = `<div class="lib2-empty"><span class="em">${gi('dice', { size: 56 })}</span>لسه ماعملتش لعبة. اعمل لعبة من آيات القرآن فوق واحفظها، أو اختار قالب:</div>${templatesHtml()}`;
             return;
         }
         box.innerHTML = `<div class="gx-cards">${games.map((g) => {
             const t = templateOf(g.template);
-            return `<div class="gx-card" data-gid="${g.id}"><div class="hd"><span class="em">${t.em}</span><div><b>${esc(g.title)}</b><br><small>${esc(t.name)}${g.plays ? ` · اتلعبت ${g.plays} مرة` : ''}</small></div></div>
-                <div class="ac"><button type="button" class="btn btn-primary" data-ga="play">▶ العب</button>
-                <button type="button" class="btn btn-ghost icon" data-ga="share" title="لينك للطالب" aria-label="لينك للطالب">🔗</button>
-                <button type="button" class="btn btn-ghost icon" data-ga="edit" title="تعديل" aria-label="تعديل">✎</button>
-                <button type="button" class="btn btn-ghost icon" data-ga="del" title="حذف" aria-label="حذف">🗑</button></div></div>`;
+            return `<div class="gx-card" data-gid="${g.id}"><div class="hd"><span class="em">${gi(t.id, { size: 42 })}</span><div><b>${esc(g.title)}</b><br><small>${esc(t.name)}${g.plays ? ` · اتلعبت ${g.plays} مرة` : ''}</small></div></div>
+                <div class="ac"><button type="button" class="btn btn-primary" data-ga="play">${gi('play', { tile: false, size: 15 })} العب</button>
+                <button type="button" class="btn btn-ghost icon" data-ga="share" title="لينك للطالب" aria-label="لينك للطالب">${gi('link', { tile: false, size: 17 })}</button>
+                <button type="button" class="btn btn-ghost icon" data-ga="edit" title="تعديل" aria-label="تعديل">${gi('edit', { tile: false, size: 17 })}</button>
+                <button type="button" class="btn btn-ghost icon" data-ga="del" title="حذف" aria-label="حذف">${gi('trash', { tile: false, size: 17 })}</button></div></div>`;
         }).join('')}</div>`;
     }
-    const templatesHtml = () => `<div class="gx-tiles" style="margin-top:.7rem">${TEMPLATES.map((t) => `<button type="button" class="gx-tile" data-new-t="${t.id}"><span class="em">${t.em}</span><b>${t.name}</b><small>${t.desc}</small></button>`).join('')}</div>`;
+    const templatesHtml = () => `<div class="gx-tiles" style="margin-top:.7rem">${TEMPLATES.map((t) => `<button type="button" class="gx-tile" data-new-t="${t.id}"><span class="em">${gi(t.id, { size: 40 })}</span><b>${t.name}</b><small>${t.desc}</small></button>`).join('')}</div>`;
 
     $('my-games').addEventListener('click', async (e) => {
         const nt = e.target.closest('[data-new-t]');

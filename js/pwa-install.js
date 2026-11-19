@@ -101,7 +101,7 @@
                 if (Date.now() - last < 6 * 3600 * 1000) return;
                 navigator.serviceWorker.ready.then((reg) => {
                     if (!reg.active) return;
-                    reg.active.postMessage({ type: 'tm:warm', pages: ['dashboard.html', 'students.html', 'student.html', 'schedule.html', 'lesson.html', 'books.html', 'settings.html', 'groups.html', 'group.html', 'group-lesson.html', 'subscription.html'] });
+                    reg.active.postMessage({ type: 'tm:warm', pages: ['dashboard.html', 'students.html', 'student.html', 'schedule.html', 'lesson.html', 'books.html', 'settings.html', 'groups.html', 'group.html', 'group-lesson.html', 'subscription.html', 'games.html', 'reader.html'] });
                     localStorage.setItem('tm_sw_warm_at_v41', String(Date.now()));
                 }).catch(() => { /* تجاهل */ });
             } catch (e) { /* تجاهل */ }

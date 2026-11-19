@@ -33,10 +33,10 @@
  * كل جزء بيفشل بصمت (من غير ما يكسر باقي الصفحة) لو لسه معمولش الإعداد بتاعه.
  * ============================================================================
  */
-import { CONFIG } from './config.js?v=41';
-import { Auth } from './auth.js?v=41';
-import { api } from './api.js?v=41';
-import { ErrorHandler } from './utils.js?v=41';
+import { CONFIG } from './config.js?v=42';
+import { Auth } from './auth.js?v=42';
+import { api } from './api.js?v=42';
+import { ErrorHandler } from './utils.js?v=42';
 
 const PROMPT_DISMISS_KEY = 'tm_notif_prompt_dismissed';
 const BADGE_CACHE_KEY = 'tm_notif_badge_cache_v1';
@@ -136,7 +136,7 @@ async function initAndLinkTeacher() {
             // v32: لو الاشتراك اتغيّر بعدين (اتلغى/رجع) السيرفر يعرف على طول
             if (ps && typeof ps.addEventListener === 'function') {
                 ps.addEventListener('change', () => {
-                    import('./push-health.js?v=41').then(async (m) => m.reportPushStatus(await m.checkPushHealth())).catch(() => { /* تجاهل */ });
+                    import('./push-health.js?v=42').then(async (m) => m.reportPushStatus(await m.checkPushHealth())).catch(() => { /* تجاهل */ });
                 });
             }
         } catch (e) { /* تجاهل */ }
@@ -153,7 +153,7 @@ async function initAndLinkTeacher() {
                         return;
                     }
                     if (data.tm_sound === true || data.tm_sound === 'true') {
-                        import('./reminder-settings.js?v=41').then((m) => m.playReminderSound()).catch(() => { /* تجاهل */ });
+                        import('./reminder-settings.js?v=42').then((m) => m.playReminderSound()).catch(() => { /* تجاهل */ });
                     }
                 } catch (e) { /* تجاهل */ }
             });
@@ -773,6 +773,13 @@ async function refreshUnreadBadge() {
 /**
  * نقطة الدخول: تُستدعى مرة واحدة من كل صفحة محمية (عبر sidebar.js)
  */
+const OS_SYNC_KEY = 'tm_os_sync_v1';
+function currentUid() { try { return (JSON.parse(localStorage.getItem('user_profile') || 'null') || {}).id || ''; } catch (e) { return ''; } }
+function pushSyncFresh() {
+    try { const s = JSON.parse(localStorage.getItem(OS_SYNC_KEY) || 'null'); return !!s && s.uid === currentUid() && Date.now() - s.at < 6 * 3600 * 1000; } catch (e) { return false; }
+}
+function markPushSynced(uid) { try { localStorage.setItem(OS_SYNC_KEY, JSON.stringify({ uid, at: Date.now() })); } catch (e) { /* تجاهل */ } }
+
 export async function initPushNotifications() {
     // مركز الإشعارات (نافذة الجرس): يشتغل دايمًا بغض النظر عن حالة إعداد
     // OneSignal أو إذن الإشعارات - لأنه بس بيعرض سجل إشعارات مخزّن عندنا
@@ -788,15 +795,23 @@ export async function initPushNotifications() {
         // v29.4: مكتبة OneSignal كبيرة وجاية من دومين تاني: بنحمّلها بعد ما الصفحة تخلص تحميل
         // (كانت بتتحمّل مع أول الصفحة وبتزاحم بيانات المدرس على نت الموبايل)
         await afterPageSettles();
+        // v34: مكتبة OneSignal تقيلة وكانت بتتحمّل مع كل صفحة (على الموبايلات الضعيفة كانت بتعلّق التطبيق).
+        // دلوقتي: الإشعارات شغالة ومربوطة من أقل من 6 ساعات على نفس الحساب؟ مش محتاجين نحمّلها في الصفحة دي.
+        const perm = typeof Notification !== 'undefined' ? Notification.permission : 'unsupported';
+        if (document.prerendering || document.visibilityState === 'hidden') return;
+        if (perm === 'denied') return;
+        if (perm === 'granted' && pushSyncFresh()) return;
+        if (perm !== 'granted' && !/^(dashboard|settings)?$/.test((location.pathname.split('/').pop() || '').replace(/\.html$/, ''))) return;
         const teacherId = await startPush();
         if (!teacherId) return; // مفيش App ID متضبط أو مفيش جلسة دخول
+        if (perm === 'granted') markPushSynced(teacherId);
 
         // بانر التفعيل بيظهر بتأخير بسيط عشان ميزاحمش تحميل باقي الصفحة،
         // ومش هيظهر أصلًا لو الإذن مفعّل/مرفوض بالفعل أو المعلم قفله قبل كده
         setTimeout(showEnablePrompt, 2000);
         // v32: فحص إن الإشعارات واصلة فعلًا (مش بس إن الإذن متاح) + إصلاح تلقائي + تبليغ السيرفر
         setTimeout(() => {
-            import('./push-health.js?v=41').then((m) => m.runPushHealth({ requestPermission })).catch(() => { /* تجاهل */ });
+            import('./push-health.js?v=42').then((m) => m.runPushHealth({ requestPermission })).catch(() => { /* تجاهل */ });
         }, 5000);
     } catch (e) {
         // فشل تفعيل الإشعارات مش المفروض يوقف استخدام باقي البرنامج
@@ -814,12 +829,19 @@ export function unlinkOnSignOut() {
     return new Promise((resolve) => {
         let done = false;
         const finish = () => { if (!done) { done = true; resolve(); } };
-        setTimeout(finish, 1500);
+        setTimeout(finish, document.getElementById('onesignal-sdk') ? 1500 : 3000);
         try {
-            if (!document.getElementById('onesignal-sdk')) { finish(); return; }
-            runWhenOneSignalReady(async (OneSignal) => {
-                try { await OneSignal.logout(); } catch (e) { /* تجاهل */ }
-                finish();
+            try { localStorage.removeItem(OS_SYNC_KEY); } catch (e) { /* تجاهل */ }
+            if (!document.getElementById('onesignal-sdk')) {
+                // v34: المكتبة ماتحمّلتش في الصفحة دي (بنحمّلها كل كام ساعة بس): نحمّلها عشان نفك ربط الجهاز
+                if (typeof Notification === 'undefined' || Notification.permission !== 'granted') { finish(); return; }
+            }
+            // بنستنى التهيئة (init + login) تخلص الأول، وبعدين نفك الربط (عشان مايحصلش login بعد الـ logout)
+            Promise.resolve(pushStarted || (document.getElementById('onesignal-sdk') ? null : startPush())).catch(() => null).then(() => {
+                runWhenOneSignalReady(async (OneSignal) => {
+                    try { await OneSignal.logout(); } catch (e) { /* تجاهل */ }
+                    finish();
+                });
             });
         } catch (e) { finish(); }
     });

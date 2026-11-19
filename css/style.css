@@ -649,3 +649,7 @@ button { font-family: inherit; }
 .bell-btn.header-contact:hover { background: #D7F0DF; }
 .sidebar-footer .sidebar-contact { color: #A8EBB3; font-weight: 700; }
 @media (max-width: 380px) { .bell-btn.header-contact span { display: none; } .bell-btn.header-contact { width: 40px; padding: 0; } }
+/* v34: شهور الاشتراك الشهري في كارت الدفع */
+.bill-months { display: flex; flex-wrap: wrap; gap: .3rem; margin: .5rem 0 .2rem; }
+.bill-month { font-size: .72rem; font-weight: 700; padding: .2rem .55rem; border-radius: 999px; background: #F3EEF8; color: var(--text-secondary); }
+.bill-month.ok { background: #E3F5EC; color: #1F6B4F; } .bill-month.part { background: #FFF4D6; color: #8C6A12; } .bill-month.no { background: #FBEAEA; color: #A12A2A; }
