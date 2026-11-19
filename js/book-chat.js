@@ -10,9 +10,9 @@
  *  - سؤال عن "الصفحة الحالية" اللي بتقرأها (PDF / PowerPoint / صورة)
  */
 
-import { CONFIG } from './config.js?v=42';
-import { icon } from './icons.js?v=42';
-import { renderMarkdown, safePrefix, extractCitationNumbers } from './md-lite.js?v=42';
+import { CONFIG } from './config.js?v=43';
+import { icon } from './icons.js?v=43';
+import { renderMarkdown, safePrefix, extractCitationNumbers } from './md-lite.js?v=43';
 
 const STORE_PREFIX = 'tm-bookchat:';
 const MAX_STORED = 30;

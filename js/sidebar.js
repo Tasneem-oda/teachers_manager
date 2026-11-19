@@ -1,15 +1,15 @@
 /**
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
-import { Auth } from './auth.js?v=42';
-import { icon } from './icons.js?v=42';
-import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=42';
-import { CONFIG } from './config.js?v=42';
-import { openSuggestionModal } from './suggestions.js?v=42';
-import { mountFloatingLesson } from './live-lesson.js?v=42';
-import { initTracking } from './track.js?v=42';
-import { askChoice } from './utils.js?v=42';
-import { priceFor, subscribeMessage, waUrl, currentUserInfo, offerActive, annualAvailable } from './pricing.js?v=42';
+import { Auth } from './auth.js?v=43';
+import { icon } from './icons.js?v=43';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=43';
+import { CONFIG } from './config.js?v=43';
+import { openSuggestionModal } from './suggestions.js?v=43';
+import { mountFloatingLesson } from './live-lesson.js?v=43';
+import { initTracking } from './track.js?v=43';
+import { askChoice } from './utils.js?v=43';
+import { priceFor, subscribeMessage, waUrl, currentUserInfo, offerActive, annualAvailable } from './pricing.js?v=43';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
@@ -38,7 +38,7 @@ let subFetchPromise = null;
 function fetchSubscriptionNow() {
     if (subFetchPromise) return subFetchPromise;
     subFetchPromise = (async () => {
-        const { api } = await import('./api.js?v=42');
+        const { api } = await import('./api.js?v=43');
         const data = await api.checkSubscription();
         try {
             sessionStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
@@ -228,11 +228,11 @@ export function renderSidebar(activeKey) {
     });
     document.getElementById('sidebar-contact').addEventListener('click', (e) => {
         e.preventDefault();
-        import('./hub.js?v=42').then((m) => m.openContact()).catch(() => { window.open(`https://wa.me/${CONFIG.SUPPORT_WHATSAPP}`, '_blank', 'noopener'); });
+        import('./hub.js?v=43').then((m) => m.openContact()).catch(() => { window.open(`https://wa.me/${CONFIG.SUPPORT_WHATSAPP}`, '_blank', 'noopener'); });
     });
     // v33: إشعاراتك من المونيتور + الرسايل التلقائية (بعد ما الصفحة تخلص تحميل، من غير ما تأخرها)
     whenActive(() => { try {
-        const startHub = () => import('./hub.js?v=42').then((m) => m.initHub()).catch(() => { /* تجاهل */ });
+        const startHub = () => import('./hub.js?v=43').then((m) => m.initHub()).catch(() => { /* تجاهل */ });
         if ('requestIdleCallback' in window) requestIdleCallback(() => setTimeout(startHub, 600), { timeout: 3000 });
         else setTimeout(startHub, 1500);
     } catch (e) { /* تجاهل */ } });
@@ -493,7 +493,7 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
     `;
 
     document.getElementById('header-contact').addEventListener('click', () => {
-        import('./hub.js?v=42').then((m) => m.openContact()).catch(() => { window.open(`https://wa.me/${CONFIG.SUPPORT_WHATSAPP}`, '_blank', 'noopener'); });
+        import('./hub.js?v=43').then((m) => m.openContact()).catch(() => { window.open(`https://wa.me/${CONFIG.SUPPORT_WHATSAPP}`, '_blank', 'noopener'); });
     });
     document.getElementById('header-install').addEventListener('click', () => openInstall());
     syncInstallEntries();
@@ -525,14 +525,14 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
 // على الموبايلات الضعيفة ده كان بيعلّق التطبيق أول ما يفتح
 function idle(fn, t) { if ('requestIdleCallback' in window) requestIdleCallback(() => fn(), { timeout: t }); else setTimeout(fn, Math.min(t, 1500)); }
 function startBackground() {
-    import('./net-status.js?v=42').then((m) => m.initNetStatus()).catch(() => { /* تجاهل */ });
+    import('./net-status.js?v=43').then((m) => m.initNetStatus()).catch(() => { /* تجاهل */ });
     idle(() => {
     // v29.7: الوقت الصح من السيرفر (لو ساعة الجهاز غلط التذكيرات وتاريخ الحصص بيمشوا على الوقت الحقيقي)
-    import('./server-time.js?v=42').then((m) => m.initServerTime()).catch(() => { /* تجاهل */ });
+    import('./server-time.js?v=43').then((m) => m.initServerTime()).catch(() => { /* تجاهل */ });
     // v30: مزامنة لحظية بين أجهزة نفس المدرس (حصة اتسجلت على اللابتوب ← الموبايل يتحدّث فورًا)
     }, 1500);
-    idle(() => import('./realtime-sync.js?v=42').then((m) => m.initRealtimeSync()).catch(() => { /* تجاهل */ }), 2500);
-    const startReminders = () => import('./local-reminders.js?v=42').then((m) => m.initLocalReminders()).catch(() => { /* تجاهل */ });
+    idle(() => import('./realtime-sync.js?v=43').then((m) => m.initRealtimeSync()).catch(() => { /* تجاهل */ }), 2500);
+    const startReminders = () => import('./local-reminders.js?v=43').then((m) => m.initLocalReminders()).catch(() => { /* تجاهل */ });
     idle(startReminders, 3500);
 
     // تفعيل إشعارات Push (تذكير الحصص اليومي) - مرة واحدة بعد رسم الهيدر
@@ -548,7 +548,7 @@ async function loadHeaderProfile() {
         const profile = Auth.cachedProfile(session.user && session.user.id) || await Auth.bootstrapSession();
         // v28: الحساب مجدول للحذف؟ نعرض "رجّع حسابي" قبل أي حاجة
         if (profile && profile.deletion_scheduled_for) {
-            try { const m = await import('./account-delete.js?v=42'); m.showDeletionScheduledGate(profile); } catch (e) { /* تجاهل */ }
+            try { const m = await import('./account-delete.js?v=43'); m.showDeletionScheduledGate(profile); } catch (e) { /* تجاهل */ }
         }
         const nameEl = document.getElementById('header-user-name');
         const avatarEl = document.getElementById('header-avatar-fallback');

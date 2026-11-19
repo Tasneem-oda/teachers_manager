@@ -2,8 +2,8 @@
  * games/picker.js — v33: زرار "🎮 لعبة" جوه الحصة (حصة الطالب وحصة المجموعة)
  * بيتحمّل بس لما المدرس يدوس الزرار (مايأثرش على سرعة الحصة).
  */
-import { setupGamesUi, ensureUiCss, modal, mountQuranBuilder, packsHtml, packGame, openGame, templateOf } from './ui.js?v=42';
-import { gi } from './gicons.js?v=42';
+import { setupGamesUi, ensureUiCss, modal, mountQuranBuilder, packsHtml, packGame, openGame, templateOf } from './ui.js?v=43';
+import { gi } from './gicons.js?v=43';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -20,7 +20,7 @@ export function openGamePicker(o) {
         openGame(g, { teams, onFinish: () => { if (g.id) o.api.hub('game_played', { id: g.id }).catch(() => {}); } });
     };
     const quranFirst = !o.subject || /quran|قرآن|قران/i.test(o.subject);
-    const tabs = [['mine', `${gi('star', { tile: false, size: 16 })} ألعابي`], ['quran', `${gi('quran', { tile: false, size: 16 })} من القرآن`], ['packs', `${gi('gift', { tile: false, size: 16 })} جاهزة`]];
+    const tabs = [['mine', `${gi('star', { tile: false, size: 16 })} ألعابي`], ['quran', `${gi('quran', { tile: false, size: 16 })} من القرآن`], ['packs', `${gi('gift', { tile: false, size: 16 })} جاهزة`], ['teachers', `${gi('globe', { tile: false, size: 16 })} ألعاب المدرسين`]];
     if (names.length >= 2) tabs.push(['wheel', `${gi('wheel', { tile: false, size: 16 })} عجلة الأسماء`]);
     const first = quranFirst ? 'quran' : 'packs';
     modal('لعبة في الحصة', `
@@ -28,14 +28,31 @@ export function openGamePicker(o) {
         <div data-pane="mine" ${first === 'mine' ? '' : 'hidden'}><div class="loading">جاري التحميل...</div></div>
         <div data-pane="quran" ${first === 'quran' ? '' : 'hidden'}></div>
         <div data-pane="packs" ${first === 'packs' ? '' : 'hidden'}></div>
+        <div data-pane="teachers" hidden><div class="loading">جاري التحميل...</div></div>
         ${names.length >= 2 ? `<div data-pane="wheel" hidden><p class="gx-help">العجلة هتختار طالب عشوائي من المجموعة (${names.length} طالب).</p><div class="gx-actions"><button type="button" class="btn btn-primary" data-wheel>${gi('wheel', { tile: false, size: 16 })} افتح العجلة</button></div></div>` : ''}
         <p class="gx-help" style="margin-top:.8rem">ألعاب أكتر وتعمل لعبتك من <a href="games.html" target="_blank" rel="noopener">صفحة ألعاب الحصة</a>.</p>`, (m) => {
         const pane = (id) => m.querySelector(`[data-pane="${id}"]`);
         let loadedMine = false;
+        let loadedPub = false;
+        // v34: ألعاب عملها مدرسين تانيين ونشروها
+        async function loadPub() {
+            loadedPub = true;
+            try {
+                const list = (await o.api.hub('games_public_list', {})).games || [];
+                pane('teachers').innerHTML = list.length ? `<div class="gx-cards">${list.map((g) => `<div class="gx-card"><div class="hd"><span class="em">${gi(templateOf(g.template).id, { size: 42 })}</span><div><b>${esc(g.title)}</b><br><small>${esc(templateOf(g.template).name)}${g.teacher_name ? ` · أ. ${esc(g.teacher_name)}` : ''}</small></div></div><div class="ac"><button type="button" class="btn btn-primary" data-pub="${g.id}">${gi('play', { tile: false, size: 15 })} العب</button></div></div>`).join('')}</div>`
+                    : '<div class="lib2-empty">لسه مفيش ألعاب منشورة من المدرسين.</div>';
+                pane('teachers').addEventListener('click', (e) => {
+                    const b = e.target.closest('[data-pub]'); if (!b) return;
+                    const g = list.find((x) => x.id === b.dataset.pub); if (!g) return;
+                    openGame({ title: g.title, template: g.template, subject: g.subject, content: g.content }, { teams, onFinish: () => { o.api.hub('game_public_played', { public_id: g.id }).catch(() => {}); } });
+                });
+            } catch (err) { pane('teachers').innerHTML = '<div class="lib2-empty">ألعاب المدرسين مش متاحة دلوقتي.</div>'; }
+        }
         const show = (id) => {
             m.querySelectorAll('[data-pt]').forEach((b) => b.classList.toggle('is-on', b.dataset.pt === id));
             m.querySelectorAll('[data-pane]').forEach((p) => { p.hidden = p.dataset.pane !== id; });
             if (id === 'mine' && !loadedMine) loadMine();
+            if (id === 'teachers' && !loadedPub) loadPub();
         };
         m.querySelectorAll('[data-pt]').forEach((b) => b.addEventListener('click', () => show(b.dataset.pt)));
         mountQuranBuilder(pane('quran'), { onPlay: play });

@@ -167,3 +167,15 @@
     /* الاسم بيظهر تحت الغلاف، فمش محتاجينه فوق الأيقونة في الشاشة الصغيرة */
     .bk-cover .ttl { display: none; }
 }
+
+/* ===== v34: ألعاب المدرسين + نشر لعبة ===== */
+.gx-pub-bar { display: flex; flex-direction: column; gap: .55rem; margin-bottom: .8rem; }
+.gx-pub-bar input[type="search"] { width: 100%; padding: .65rem .85rem; border: 1px solid var(--field-border, #D6CFDD); border-radius: 12px; font: inherit; margin: 0; box-sizing: border-box; background: var(--card-bg, #fff); }
+.gx-badge { align-self: flex-start; font-size: .72rem; font-weight: 700; padding: .2rem .6rem; border-radius: 999px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gx-badge.ok { background: #E3F5EC; color: #1F6B4F; } .gx-badge.wait { background: #FFF4D6; color: #8C6A12; } .gx-badge.no { background: #FBEAEA; color: #A12A2A; }
+.gx-desc { margin: 0; font-size: .8rem; line-height: 1.7; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.gx-by { color: var(--text-light, #8A8290); font-size: .72rem; }
+.gx-check { display: flex; align-items: center; gap: .5rem; font-size: .88rem; margin: .2rem 0 .4rem; cursor: pointer; }
+.gx-check input { width: 18px; height: 18px; margin: 0; accent-color: var(--primary); }
+.gx-modal textarea { width: 100%; box-sizing: border-box; padding: .6rem .75rem; border: 1px solid var(--field-border, #D6CFDD); border-radius: 10px; font: inherit; resize: vertical; }
+.gx-modal select { width: 100%; }
