@@ -33,10 +33,10 @@
  * كل جزء بيفشل بصمت (من غير ما يكسر باقي الصفحة) لو لسه معمولش الإعداد بتاعه.
  * ============================================================================
  */
-import { CONFIG } from './config.js?v=46';
-import { Auth } from './auth.js?v=46';
-import { api } from './api.js?v=46';
-import { ErrorHandler } from './utils.js?v=46';
+import { CONFIG } from './config.js?v=47';
+import { Auth } from './auth.js?v=47';
+import { api } from './api.js?v=47';
+import { ErrorHandler } from './utils.js?v=47';
 
 const PROMPT_DISMISS_KEY = 'tm_notif_prompt_dismissed';
 const BADGE_CACHE_KEY = 'tm_notif_badge_cache_v1';
@@ -136,7 +136,7 @@ async function initAndLinkTeacher() {
             // v32: لو الاشتراك اتغيّر بعدين (اتلغى/رجع) السيرفر يعرف على طول
             if (ps && typeof ps.addEventListener === 'function') {
                 ps.addEventListener('change', () => {
-                    import('./push-health.js?v=46').then(async (m) => m.reportPushStatus(await m.checkPushHealth())).catch(() => { /* تجاهل */ });
+                    import('./push-health.js?v=47').then(async (m) => m.reportPushStatus(await m.checkPushHealth())).catch(() => { /* تجاهل */ });
                 });
             }
         } catch (e) { /* تجاهل */ }
@@ -153,7 +153,7 @@ async function initAndLinkTeacher() {
                         return;
                     }
                     if (data.tm_sound === true || data.tm_sound === 'true') {
-                        import('./reminder-settings.js?v=46').then((m) => m.playReminderSound()).catch(() => { /* تجاهل */ });
+                        import('./reminder-settings.js?v=47').then((m) => m.playReminderSound()).catch(() => { /* تجاهل */ });
                     }
                 } catch (e) { /* تجاهل */ }
             });
@@ -174,6 +174,13 @@ function showEnablePrompt() {
         if (sessionStorage.getItem(PROMPT_DISMISS_KEY) === '1') return;
     } catch (e) { /* تجاهل */ }
 
+    // v35.3: المدرس الجديد: مانطلبش الإشعارات قبل ما يحدد أول ميعاد (مفيش حاجة نفكّره بيها لسه)،
+    // ومانظهرش البانر فوق نافذة الترحيب أو أي نافذة مفتوحة
+    try {
+        const c = JSON.parse(localStorage.getItem('tm_rem_sched_v1') || 'null');
+        if (!c || !(((c.schedules || []).length) || ((c.group_schedules || []).length))) return;
+    } catch (e) { return; }
+    if (document.querySelector('.modal.active, .tm-confirm, .onb-welcome, #tm-welcome')) { setTimeout(showEnablePrompt, 20000); return; }
     // لو المتصفح أصلاً رافض الإذن أو موافق عليه بالفعل، مفيش داعي نعرض بانر
     if (!('Notification' in window)) return;
     if (Notification.permission === 'granted' || Notification.permission === 'denied') return;
@@ -229,6 +236,7 @@ function showEnablePrompt() {
             #tm-notif-banner .tm-notif-btn-dismiss {
                 background: transparent; color: var(--text-secondary, #716A74); border: none;
                 font-size: 1.1rem; line-height: 1; cursor: pointer; padding: 0.4rem;
+                min-width: 40px; min-height: 40px; border-radius: 10px;
             }
             @media (max-width: 480px) { #tm-notif-banner .tm-notif-desc { display: none; } }
         `;
@@ -249,6 +257,8 @@ function showEnablePrompt() {
         </div>
     `;
     document.body.appendChild(banner);
+    // البانر ثابت تحت: الصفحة تاخد مسافة قدّه عشان مايغطيش آخر المحتوى
+    try { document.body.style.paddingBottom = `${banner.offsetHeight + 8}px`; } catch (e) { /* تجاهل */ }
 
     document.getElementById('tm-notif-dismiss-btn').addEventListener('click', dismissPrompt);
     document.getElementById('tm-notif-enable-btn').addEventListener('click', async () => {
@@ -259,7 +269,7 @@ function showEnablePrompt() {
 
 function dismissPrompt() {
     const banner = document.getElementById('tm-notif-banner');
-    if (banner) banner.remove();
+    if (banner) { banner.remove(); try { document.body.style.paddingBottom = ""; } catch (e) { /* تجاهل */ } }
     try {
         sessionStorage.setItem(PROMPT_DISMISS_KEY, '1');
     } catch (e) { /* تجاهل */ }
@@ -811,7 +821,7 @@ export async function initPushNotifications() {
         setTimeout(showEnablePrompt, 2000);
         // v32: فحص إن الإشعارات واصلة فعلًا (مش بس إن الإذن متاح) + إصلاح تلقائي + تبليغ السيرفر
         setTimeout(() => {
-            import('./push-health.js?v=46').then((m) => m.runPushHealth({ requestPermission })).catch(() => { /* تجاهل */ });
+            import('./push-health.js?v=47').then((m) => m.runPushHealth({ requestPermission })).catch(() => { /* تجاهل */ });
         }, 5000);
     } catch (e) {
         // فشل تفعيل الإشعارات مش المفروض يوقف استخدام باقي البرنامج

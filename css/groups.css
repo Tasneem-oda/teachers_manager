@@ -156,7 +156,7 @@
 .sp-groups a:hover { filter: brightness(0.96); }
 .lh-item .tag-group { margin-inline-start: 0.35rem; }
 
-.att-more .chip-group button { min-height: 38px; }
+.att-more .chip-group button { min-height: 44px; }
 .att-head .btn { min-height: 38px; }
 .gp-actions .btn { white-space: nowrap; }
 @media (max-width: 600px) { .gp-actions .btn { flex-basis: 100%; } }
@@ -266,7 +266,7 @@
 .att-eval-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .att-eval .att-lbl { font-size: 0.82rem; color: var(--primary); font-weight: 700; min-width: 9.5rem; }
 .att-eval .chip-group { margin: 0; }
-.att-eval .chip-group button { min-height: 36px; }
+.att-eval .chip-group button { min-height: 44px; }
 .att-eval .att-note { margin: 0 !important; }
 .att-row.is-absent .att-eval { display: none; }
 .att-row.att-miss .att-eval { outline: 2px solid #E0A84F; }

@@ -6,8 +6,8 @@
  * - رسالة تلقائية واحدة بالكتير في الجلسة (زي: انضم لمجموعة المدرسين بعد أول حصة)
  * - مابيظهرش أي حاجة في صفحة الحصة (المدرس بيشرح)
  */
-import { CONFIG } from './config.js?v=46';
-import { api } from './api.js?v=46';
+import { CONFIG } from './config.js?v=47';
+import { api } from './api.js?v=47';
 
 const SS_KEY = 'tm_hub_hello_v1';
 const LS_SHOWN = 'tm_journey_local_v1';
@@ -258,7 +258,7 @@ export function openContact() {
     const hello = wa(`السلام عليكم، أنا ${name || 'مدرس'} من مستخدمي Teachers Manager 👋\n`);
     const problem = wa(`السلام عليكم، عندي مشكلة في Teachers Manager 🙏\nالصفحة: ${page()}\nالجهاز: ${dev}\nالمشكلة: `);
     const { m, close } = modal(`
-        <span class="close-modal" role="button" tabindex="0" aria-label="إغلاق">&times;</span>
+        <button type="button" class="close-modal" aria-label="قفل">&times;</button>
         <h2 style="margin-top:0">💬 تواصل معانا</h2>
         <p style="margin:-.3rem 0 .9rem;color:var(--text-secondary);font-size:.88rem;line-height:1.7">إحنا هنا لأي سؤال أو مشكلة أو فكرة. بنرد على واتساب في أسرع وقت.</p>
         <div class="ct-list">
@@ -272,7 +272,7 @@ export function openContact() {
         const it = e.target.closest('[data-ct]');
         if (!it) return;
         track('contact_click', { kind: it.dataset.ct });
-        if (it.dataset.ct === 'suggest') { close(); import('./suggestions.js?v=46').then((s) => s.openSuggestionModal && s.openSuggestionModal()).catch(() => {}); return; }
+        if (it.dataset.ct === 'suggest') { close(); import('./suggestions.js?v=47').then((s) => s.openSuggestionModal && s.openSuggestionModal()).catch(() => {}); return; }
         if (it.dataset.ct === 'community') markLocal('community', { done: 'done' });
         setTimeout(close, 300);
     });

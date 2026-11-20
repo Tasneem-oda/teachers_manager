@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=46">
+    <link rel="stylesheet" href="css/style.css?v=47">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -24,10 +24,10 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/books.css?v=46">
-    <link rel="stylesheet" href="css/v29.css?v=46">
-    <link rel="stylesheet" href="css/v33.css?v=46">
-    <link rel="stylesheet" href="css/library.css?v=46">
+    <link rel="stylesheet" href="css/books.css?v=47">
+    <link rel="stylesheet" href="css/v29.css?v=47">
+    <link rel="stylesheet" href="css/v33.css?v=47">
+    <link rel="stylesheet" href="css/library.css?v=47">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri+Quran&display=swap" media="print" onload="this.media='all'">
 </head>
 <body>
@@ -67,7 +67,7 @@
                                 <button type="button" class="fx-ib" id="fx-view" aria-label="طريقة العرض" title="شبكة / قائمة"></button>
                                 <button type="button" class="fx-ib" id="btn-select" aria-label="تحديد أكتر من حاجة" title="تحديد"></button>
                                 <div class="fx-new">
-                                    <button type="button" class="btn btn-primary" id="btn-new" aria-haspopup="menu"><span id="ic-add-source" style="display:inline-flex"></span><span class="t">جديد</span></button>
+                                    <button type="button" class="btn btn-primary" id="btn-new" aria-haspopup="menu" aria-label="جديد: رفع كتاب أو فولدر"><span id="ic-add-source" style="display:inline-flex"></span><span class="t">جديد</span></button>
                                 </div>
                                 <button type="button" id="btn-add-source" hidden></button>
                                 <button type="button" id="btn-new-folder" hidden></button>
@@ -89,7 +89,7 @@
                         <summary><span id="ic-ask" class="icon" style="display:inline-flex;"></span> اسأل كتبك (المساعد بيدوّر في كل كتبك ويرد بالمصدر)</summary>
                         <div class="ask-row">
                             <textarea id="ask-input" placeholder="مثلًا: إيه أحكام النون الساكنة مع أمثلة من جزء عمّ؟" aria-label="سؤالك لكل مصادرك"></textarea>
-                            <button type="button" class="btn btn-primary" id="btn-ask-submit">اسأل</button>
+                            <button type="button" class="btn btn-primary" id="btn-ask-submit" aria-label="اسأل كتبك">اسأل</button>
                         </div>
                         <p style="margin:0.5rem 0 0; font-size:0.74rem; color:var(--text-light);">للسؤال عن كتاب واحد بالتحديد: افتحه واضغط "اسأل الكتاب".</p>
                         <div id="ask-result" style="display:none;">
@@ -172,7 +172,7 @@
     <!-- مودال إدارة الوصول (مين يستخدم الكتاب ده) -->
     <div class="modal" id="access-modal">
         <div class="modal-content">
-            <span class="close-modal">&times;</span>
+            <button type="button" class="close-modal" aria-label="قفل">&times;</button>
             <h2>إدارة الاستخدام</h2>
             <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:-0.5rem;" id="access-book-title"></p>
             <div class="form-group">
@@ -192,7 +192,7 @@
     <!-- مودال عرض مقتطف المصدر (بديل لو الكتاب مش متاح للفتح) -->
     <div class="modal" id="source-view-modal">
         <div class="modal-content">
-            <span class="close-modal">&times;</span>
+            <button type="button" class="close-modal" aria-label="قفل">&times;</button>
             <h2 id="source-view-title">المصدر</h2>
             <p style="white-space:pre-wrap; line-height:1.7; font-size:0.9rem;" id="source-view-text"></p>
         </div>
@@ -202,11 +202,11 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=46"></script>
+    <script type="module" src="js/config.js?v=47"></script>
     <script type="module">
-        import { initBooksPage } from './js/books-page.js?v=46';
+        import { initBooksPage } from './js/books-page.js?v=47';
         window.booksPage = initBooksPage();
     </script>
-    <script src="js/pwa-install.js?v=46" defer></script>
+    <script src="js/pwa-install.js?v=47" defer></script>
 </body>
 </html>

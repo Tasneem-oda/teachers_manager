@@ -4,11 +4,11 @@
  *  - مهلة 14 يوم: لو دخل تاني قبلها يقدر يرجّع حسابه (showDeletionScheduledGate)
  *  - بعد المهلة n8n (purge-deleted-accounts) بيمسح كل حاجة تلقائي
  */
-import { api } from './api.js?v=46';
-import { Auth } from './auth.js?v=46';
-import { ErrorHandler } from './utils.js?v=46';
-import { icon } from './icons.js?v=46';
-import { CONFIG } from './config.js?v=46';
+import { api } from './api.js?v=47';
+import { Auth } from './auth.js?v=47';
+import { ErrorHandler } from './utils.js?v=47';
+import { icon } from './icons.js?v=47';
+import { CONFIG } from './config.js?v=47';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -63,7 +63,7 @@ export function openDeleteAccount({ unlinkOnSignOut } = {}) {
     const modal = document.createElement('div');
     modal.className = 'modal active ad-modal';
     modal.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-label="حذف الحساب">
-        <span class="close-modal" data-x>&times;</span>
+        <button type="button" class="close-modal" data-x aria-label="قفل">&times;</button>
         <div class="ad-body"></div>
     </div>`;
     document.body.appendChild(modal);
@@ -145,7 +145,7 @@ export function openDeleteAccount({ unlinkOnSignOut } = {}) {
         const err = body.querySelector('.ad-err');
         body.querySelector('[data-back]').addEventListener('click', step1);
         body.querySelector('[data-export]').addEventListener('click', async (e) => {
-            const { downloadAllData } = await import('./export-data.js?v=46');
+            const { downloadAllData } = await import('./export-data.js?v=47');
             downloadAllData(e.currentTarget);
         });
         body.querySelector('[data-go]').addEventListener('click', async (e) => {

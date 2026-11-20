@@ -16,8 +16,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=46">
-    <link rel="stylesheet" href="css/lessons.css?v=46">
+    <link rel="stylesheet" href="css/style.css?v=47">
+    <link rel="stylesheet" href="css/lessons.css?v=47">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -29,7 +29,7 @@
         /* ============ جدولي: الحصص + المواعيد الشخصية ============ */
         :root {
             --lesson-bg: #EEE9F3; --lesson-border: #4B3A5A; --lesson-text: #2E2140;
-            --now: #D9534F;
+            --now: #B3261E;
             --sticky-top: 0px;
         }
         .cal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
@@ -66,7 +66,7 @@
             display: flex; flex-direction: column; align-items: center; gap: 1px; cursor: pointer; font: inherit; color: var(--text-primary);
             min-width: 0;
         }
-        .day-strip .ds-name { font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap; }
+        .day-strip .ds-name { font-size: 0.78rem; color: var(--text-secondary); white-space: nowrap; }
         .day-strip .ds-num { font-size: 1.05rem; font-weight: 700; line-height: 1.2; }
         .day-strip .ds-dots { display: flex; gap: 3px; height: 6px; margin-top: 2px; }
         .day-strip .ds-dots i { width: 6px; height: 6px; border-radius: 50%; display: block; }
@@ -183,7 +183,7 @@
             .seg button { padding: 0.45rem 0.75rem; }
             .ag-item { grid-template-columns: 4.1rem 1fr; }
             .ag-item .ag-tag { display: none; }
-            .day-strip .ds-name { font-size: 0.66rem; }
+            .day-strip .ds-name { font-size: 0.75rem; }
         }
         /* v30: حصتين في نفس الميعاد — شكل مختلف وواضح */
         :root { --cf-border: #C0392B; --cf-bg: #FDECEA; --cf-text: #8E2A1F; }
@@ -195,7 +195,7 @@
         .wk-block.is-conflict { border-style: dashed !important; border-width: 2px !important; background-image: repeating-linear-gradient(135deg, rgba(192,57,43,0.16) 0 6px, transparent 6px 12px) !important; box-shadow: 0 0 0 1px rgba(192,57,43,0.45); }
         .wk-block.is-conflict b { color: var(--cf-text); }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=46">
+    <link rel="stylesheet" href="css/v29.css?v=47">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -257,7 +257,7 @@
     <!-- اختيار نوع الإضافة -->
     <div class="modal ev-modal" id="chooser-modal">
         <div class="modal-content">
-            <span class="close-modal" data-close>&times;</span>
+            <button type="button" class="close-modal" data-close aria-label="قفل">&times;</button>
             <h2 style="margin-top:0;">تضيف إيه؟</h2>
             <div class="add-chooser">
                 <button type="button" data-choose="lesson"><i style="background:var(--lesson-bg); color:var(--lesson-text);">📚</i><span><b>حصة لطالب</b><small>ميعاد ثابت لطالب من طلابك</small></span></button>
@@ -269,7 +269,7 @@
     <!-- إضافة / تعديل (حصة أو موعد شخصي) -->
     <div class="modal ev-modal" id="item-modal">
         <div class="modal-content">
-            <span class="close-modal" data-close>&times;</span>
+            <button type="button" class="close-modal" data-close aria-label="قفل">&times;</button>
             <h2 id="item-title" style="margin-top:0;">إضافة</h2>
             <form id="item-form" novalidate>
                 <div class="type-seg" id="type-seg">
@@ -359,20 +359,20 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=46"></script>
+    <script type="module" src="js/config.js?v=47"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=46';
-        import { api } from './js/api.js?v=46';
-        import { ErrorHandler, Formatters, uuidv4, askChoice } from './js/utils.js?v=46';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=46';
-        import { icon } from './js/icons.js?v=46';
-        import { mountTimePicker, refreshTimePicker, mountDayChips } from './js/form-widgets.js?v=46';
+        import { Auth } from './js/auth.js?v=47';
+        import { api } from './js/api.js?v=47';
+        import { ErrorHandler, Formatters, uuidv4, askChoice } from './js/utils.js?v=47';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=47';
+        import { icon } from './js/icons.js?v=47';
+        import { mountTimePicker, refreshTimePicker, mountDayChips } from './js/form-widgets.js?v=47';
         import {
             DAY_NAMES, DAY_SHORT, EVENT_COLORS, isoDate, parseDate, weekStart, addDays, sameDay, weekDays,
             minutesToTime, formatClock12, formatRange, durationText, formatDayDate, occursOn,
             lessonItem, eventItem, itemsOn, layoutLanes, findConflicts, dayConflicts
-        } from './js/calendar-utils.js?v=46';
-        import { groupTitle, membersText } from './js/groups-utils.js?v=46';
+        } from './js/calendar-utils.js?v=47';
+        import { groupTitle, membersText } from './js/groups-utils.js?v=47';
 
         renderSidebar('schedule');
         renderTopHeader({ title: 'جدولي', subtitle: 'حصصك ومواعيدك في مكان واحد' });
@@ -1009,7 +1009,7 @@
             if (!authInfo) return;
             await loadData();
             // v29.8: لو اتسجّل موعد من جهاز تاني (أو المدرس رجع للبرنامج) الجدول يتحدّث لوحده
-            import('./js/auto-refresh.js?v=46').then((m) => m.onAppResume(refreshSilently)).catch(() => { /* تجاهل */ });
+            import('./js/auto-refresh.js?v=47').then((m) => m.onAppResume(refreshSilently)).catch(() => { /* تجاهل */ });
             const addStudent = new URLSearchParams(location.search).get('add_student');
             if (addStudent) openItemModal({ type: 'lesson', date: selected });
             if (new URLSearchParams(location.search).get('add') === 'event') openItemModal({ type: 'event', date: selected });
@@ -1017,6 +1017,6 @@
             setInterval(() => { if (!document.querySelector('.modal.active')) render(); }, 60000);
         })();
     </script>
-    <script src="js/pwa-install.js?v=46" defer></script>
+    <script src="js/pwa-install.js?v=47" defer></script>
 </body>
 </html>

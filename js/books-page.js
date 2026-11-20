@@ -11,17 +11,17 @@
  *   - رفع كتاب جديد ومعالجته في المتصفح مع نسبة تقدّم حقيقية، إعادة المعالجة، إدارة الوصول، و"اسأل كتبك"
  */
 
-import { CONFIG } from './config.js?v=46';
-import { Auth } from './auth.js?v=46';
-import { renderSidebar, renderTopHeader } from './sidebar.js?v=46';
-import { icon } from './icons.js?v=46';
-import { api } from './api.js?v=46';
-import { ErrorHandler, Formatters } from './utils.js?v=46';
-import { detectFileType, processBook } from './book-processor.js?v=46';
-import { openBookViewer } from './book-viewer.js?v=46';
-import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=46';
-import { CATS, catOf, guessCategory, FOLDER_COLORS, folderColor, FOLDER_ICONS, FOLDER_SUGGESTIONS } from './lib-meta.js?v=46';
-import * as Drive from './gdrive.js?v=46';
+import { CONFIG } from './config.js?v=47';
+import { Auth } from './auth.js?v=47';
+import { renderSidebar, renderTopHeader } from './sidebar.js?v=47';
+import { icon } from './icons.js?v=47';
+import { api } from './api.js?v=47';
+import { ErrorHandler, Formatters } from './utils.js?v=47';
+import { detectFileType, processBook } from './book-processor.js?v=47';
+import { openBookViewer } from './book-viewer.js?v=47';
+import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=47';
+import { CATS, catOf, guessCategory, FOLDER_COLORS, folderColor, FOLDER_ICONS, FOLDER_SUGGESTIONS } from './lib-meta.js?v=47';
+import * as Drive from './gdrive.js?v=47';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => Formatters.escapeHtml(String(s == null ? '' : s));
@@ -775,7 +775,7 @@ export function initBooksPage() {
         const m = document.createElement('div');
         m.className = 'modal active';
         m.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-label="${esc(title)}" style="max-width:460px">
-            <span class="close-modal" role="button" tabindex="0" aria-label="إغلاق">&times;</span><h2 style="margin-top:0">${esc(title)}</h2>${inner}</div>`;
+            <button type="button" class="close-modal" aria-label="قفل">&times;</button><h2 style="margin-top:0">${esc(title)}</h2>${inner}</div>`;
         const close = () => { m.remove(); document.removeEventListener('keydown', onKey); };
         const onKey = (e) => { if (e.key === 'Escape') close(); };
         m.querySelector('.close-modal').addEventListener('click', close);

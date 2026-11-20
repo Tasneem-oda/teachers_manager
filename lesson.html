@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=46">
+    <link rel="stylesheet" href="css/style.css?v=47">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -24,10 +24,10 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=46">
-    <link rel="stylesheet" href="css/books.css?v=46">
+    <link rel="stylesheet" href="css/lessons.css?v=47">
+    <link rel="stylesheet" href="css/books.css?v=47">
     <style>body { margin: 0; }</style>
-    <link rel="stylesheet" href="css/v29.css?v=46">
+    <link rel="stylesheet" href="css/v29.css?v=47">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -314,28 +314,28 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=46"></script>
+    <script type="module" src="js/config.js?v=47"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=46';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=46';
-        import { api } from './js/api.js?v=46';
-        import { ErrorHandler, Formatters, uuidv4, toLatinDigits } from './js/utils.js?v=46';
-        import { icon } from './js/icons.js?v=46';
+        import { Auth } from './js/auth.js?v=47';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=47';
+        import { api } from './js/api.js?v=47';
+        import { ErrorHandler, Formatters, uuidv4, toLatinDigits, askChoice } from './js/utils.js?v=47';
+        import { icon } from './js/icons.js?v=47';
         import {
             subjectLabel, ratingFieldLabels, RATINGS, HOMEWORK_STATUS, relativeDay, localDateISO, localTimeISO,
             formatDuration, minutesText, LessonDraft, lessonHasContent, lessonDetailsHtml, nextOccurrence, formatNextOccurrence,
             normalizeLesson, isAbsenceRow, attendanceInfo, lessonDay, deviceMsToDateISO, serverTimeToDateISO
-        } from './js/lesson-utils.js?v=46';
-        import { openAttendanceModal } from './js/attendance.js?v=46';
-        import { showTips, dismissTip } from './js/tips.js?v=46';
-        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=46';
-        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=46';
-        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=46';
-        import { openBookViewer } from './js/book-viewer.js?v=46';
-        import { openLessonReport } from './js/report.js?v=46';
-        import { isTrial, trialCardHtml, bindTrialActions } from './js/trial.js?v=46';
-        import { openWhiteboard } from './js/whiteboard.js?v=46';
-        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=46';
+        } from './js/lesson-utils.js?v=47';
+        import { openAttendanceModal } from './js/attendance.js?v=47';
+        import { showTips, dismissTip } from './js/tips.js?v=47';
+        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=47';
+        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=47';
+        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=47';
+        import { openBookViewer } from './js/book-viewer.js?v=47';
+        import { openLessonReport } from './js/report.js?v=47';
+        import { isTrial, trialCardHtml, bindTrialActions } from './js/trial.js?v=47';
+        import { openWhiteboard } from './js/whiteboard.js?v=47';
+        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=47';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'ابدأ الحصة وتابعها وسجّلها في مكان واحد', showSearch: false });
@@ -623,7 +623,7 @@
             mode = null;
             stopTimer();
             // v33: "الواجب بالتفصيل" (حفظ/مراجعة/تلاوة + السورة + من/إلى)
-            import('./js/hw-builder.js?v=46').then((m) => m.mountHomeworkBuilder($('f-homework'), { subject: student && student.subject })).catch(() => { /* تجاهل */ });
+            import('./js/hw-builder.js?v=47').then((m) => m.mountHomeworkBuilder($('f-homework'), { subject: student && student.subject })).catch(() => { /* تجاهل */ });
             unpublishLive();
             $('r-name').textContent = student.name || 'بدون اسم';
             const sub = [`<span>${icon('bookOpen', { size: 14 })} ${esc(subjectLabel(student.subject))}</span>`];
@@ -878,7 +878,7 @@
         try { document.querySelector('#btn-game .ic-game').innerHTML = icon('gamepad', { size: 16 }); } catch (e) { /* تجاهل */ }
         $('btn-game').addEventListener('click', async () => {
             try {
-                const m = await import('./js/games/picker.js?v=46');
+                const m = await import('./js/games/picker.js?v=47');
                 m.openGamePicker({ api, subject: student && student.subject, toast: { ok: (t) => ErrorHandler.showSuccess(t), err: (e) => ErrorHandler.showError(ErrorHandler.getErrorMessage(e)) } });
             } catch (e) { ErrorHandler.showError('الألعاب ماتحمّلتش. اتأكد من النت وجرّب تاني.'); }
         });
@@ -1019,7 +1019,8 @@
             const other = LiveLesson.list().find((l) => String(l.studentId) !== String(studentIdParam));
             if (other) {
                 const mins = Math.max(1, Math.round((Date.now() - other.startedAt) / 60000));
-                if (!confirm(`في حصة شغالة مع ${other.name || 'طالب تاني'} من ${mins} دقيقة ولسه ماتقفلتش.\nتبدأ حصة ${student.name || 'الطالب ده'}؟ (الحصة التانية هتفضل مفتوحة في النافذة العائمة)`)) return;
+                const go = await askChoice({ title: 'في حصة تانية شغالة', message: `في حصة شغالة مع ${other.name || 'طالب تاني'} من ${mins} دقيقة ولسه ماتقفلتش. لو بدأت حصة ${student.name || 'الطالب ده'}، الحصة التانية هتفضل مفتوحة في النافذة العائمة.`, choices: [{ label: 'ابدأ الحصة دي', value: 'go' }], cancelLabel: 'رجوع' });
+                if (go !== 'go') return;
             }
             // الرابط بيتفتح مباشرة مع الضغطة (بعد أي انتظار المتصفح بيمنع النوافذ الجديدة)
             if (student.lesson_link) { try { window.open(student.lesson_link, '_blank', 'noopener'); } catch (e) { /* تجاهل */ } }
@@ -1089,14 +1090,14 @@
                 return;
             }
             if (mode === 'manual') {
-                if (lessonHasContent(getFields()) && !confirm('إلغاء تسجيل الحصة؟ المكتوب مش هيتحفظ.')) return;
+                if (lessonHasContent(getFields()) && (await askChoice({ title: 'إلغاء تسجيل الحصة؟', message: 'المكتوب مش هيتحفظ.', choices: [{ label: 'أيوه، الغِ', value: 'yes', danger: true }], cancelLabel: 'لأ، كمّل' })) !== 'yes') return;
                 LessonDraft.clear(studentIdParam);
                 clearForm();
                 showReady();
                 return;
             }
             if (discarding) return;
-            if (!confirm('حذف الحصة الجارية؟ مش هتتسجل ولا هتتحسب في عدد الحصص.')) return;
+            if ((await askChoice({ title: 'حذف الحصة الجارية؟', message: 'مش هتتسجل ولا هتتحسب في عدد الحصص.', choices: [{ label: 'أيوه، احذفها', value: 'yes', danger: true }], cancelLabel: 'لأ، رجوع' })) !== 'yes') return;
             discarding = true;
             try {
                 if (lesson.id) await api.saveLesson({ action: 'discard', student_id: studentIdParam, lesson_id: lesson.id });
@@ -1181,7 +1182,7 @@
                 // v33: الواجب اللي فات (نصه) + حالة الباقة بعد الحصة دي ← تقرير ولي الأمر
                 const prevL = lastLesson();
                 lastSaved = { fields: { ...fields }, date: payload.local_date || localDateISO(), lessonId: payload.lesson_id || null, recordingUrl: '', lessonNumber: (ov && ov.stats && !ov.legacy) ? lessonsCount() + 1 : null, queued: !!(saveRes && saveRes.queued),
-                    prevHomework: prevL && prevL.homework ? String(prevL.homework) : '', billing: absenceValue ? null : projectedBilling() };
+                    prevHomework: prevL && prevL.homework ? String(prevL.homework) : '', billing: projectedBilling() };
                 // v29: الحصة خلصت والتسجيل شغال: نوقفه وننزّل الفيديو
                 if (recorder && recorder.recording) stopRecording(payload.lesson_id || null);
                 LessonDraft.clear(studentIdParam);
@@ -2098,6 +2099,6 @@
             }
         });
         </script>
-    <script src="js/pwa-install.js?v=46" defer></script>
+    <script src="js/pwa-install.js?v=47" defer></script>
 </body>
 </html>

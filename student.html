@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=46">
+    <link rel="stylesheet" href="css/style.css?v=47">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -24,8 +24,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=46">
-    <link rel="stylesheet" href="css/groups.css?v=46">
+    <link rel="stylesheet" href="css/lessons.css?v=47">
+    <link rel="stylesheet" href="css/groups.css?v=47">
     <style>
         .loading { text-align: center; padding: 2rem; color: var(--primary); }
         .empty-state { text-align: center; padding: 2rem; color: var(--text-secondary); }
@@ -51,7 +51,7 @@
         .e-guard { background: #FAFAF7; border: 1px dashed #E2DCCB; border-radius: 12px; padding: 0.7rem 0.8rem 0.1rem; margin-bottom: 1rem; }
         .e-guard > p { margin: 0 0 0.5rem; font-size: 0.82rem; color: var(--text-secondary); }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=46">
+    <link rel="stylesheet" href="css/v29.css?v=47">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -77,8 +77,8 @@
                         <div class="sp-cta">
                             <a class="btn" id="btn-lesson" href="#"></a>
                             <div class="sp-cta-row">
-                                <button class="btn btn-sm btn-ghost" id="btn-prepare-lesson" type="button"></button>
-                                <button class="btn btn-sm btn-ghost" id="btn-open-student-appts" type="button"></button>
+                                <button class="btn btn-sm btn-prepare" id="btn-prepare-lesson" type="button" aria-label="حضّرلي الحصة بالذكاء الاصطناعي"></button>
+                                <button class="btn btn-sm btn-ghost" id="btn-open-student-appts" type="button" aria-label="مواعيد الطالب"></button>
                             </div>
                         </div>
                     </div>
@@ -169,7 +169,7 @@
                     <!-- مودال "حضّرلي الحصة" -->
                     <div class="modal" id="prepare-lesson-modal">
                         <div class="modal-content">
-                            <span class="close-modal">&times;</span>
+                            <button type="button" class="close-modal" aria-label="قفل">&times;</button>
                             <h2>🎯 اقتراح للحصة</h2>
                             <div id="prepare-lesson-body"><div class="loading">جاري تجهيز الحصة...</div></div>
                         </div>
@@ -247,23 +247,23 @@
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=46"></script>
+    <script type="module" src="js/config.js?v=47"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=46';
-        import { api } from './js/api.js?v=46';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=46';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=46';
-        import { icon } from './js/icons.js?v=46';
-        import { openStudentAppointments } from './js/student-appointments.js?v=46';
-        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=46';
-        import { openAttendanceModal } from './js/attendance.js?v=46';
-        import { openMonthlyReport, openLessonReport } from './js/report.js?v=46';
-        import { isTrial, trialCardHtml, bindTrialActions } from './js/trial.js?v=46';
-        import { showTips } from './js/tips.js?v=46';
-        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone, hoursText, monthLabel } from './js/billing.js?v=46';
-        import { groupTitle, groupColorClass } from './js/groups-utils.js?v=46';
-        import { confirmDeleteStudent, confirmRemoveFromGroup, setStudentStatus } from './js/student-actions.js?v=46';
-        import { openRecordingLinkModal } from './js/recording.js?v=46';
+        import { Auth } from './js/auth.js?v=47';
+        import { api } from './js/api.js?v=47';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=47';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=47';
+        import { icon } from './js/icons.js?v=47';
+        import { openStudentAppointments } from './js/student-appointments.js?v=47';
+        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=47';
+        import { openAttendanceModal } from './js/attendance.js?v=47';
+        import { openMonthlyReport, openLessonReport } from './js/report.js?v=47';
+        import { isTrial, trialCardHtml, bindTrialActions } from './js/trial.js?v=47';
+        import { showTips } from './js/tips.js?v=47';
+        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone, hoursText, monthLabel } from './js/billing.js?v=47';
+        import { groupTitle, groupColorClass } from './js/groups-utils.js?v=47';
+        import { confirmDeleteStudent, confirmRemoveFromGroup, setStudentStatus } from './js/student-actions.js?v=47';
+        import { openRecordingLinkModal } from './js/recording.js?v=47';
 
         renderSidebar('students');
         renderTopHeader({ title: 'ملف الطالب', subtitle: 'كل ما يخص الطالب في مكان واحد' });
@@ -301,7 +301,7 @@
                 if (['overview', 'lessons', 'billing', 'notes', 'info'].includes(hashTab)) switchTab(hashTab);
                 // v30: حصة/دفعة اتسجلت من جهاز تاني (أو المدرس رجع للبرنامج): الملف يتحدّث لوحده
                 // (مش وقت تعديل البيانات أو الملاحظات، ولا بعد "عرض المزيد" عشان مانرجّعش القايمة لأولها)
-                import('./js/auto-refresh.js?v=46').then((m) => m.onAppResume(async () => {
+                import('./js/auto-refresh.js?v=47').then((m) => m.onAppResume(async () => {
                     const tab = document.querySelector('.sp-tab.active');
                     if (tab && ['info', 'notes'].includes(tab.dataset.tab)) return;
                     if (lessons.length > PAGE) return;
@@ -375,15 +375,14 @@
 
             const phoneOk = !!normalizePhone(student.phone);
             const btns = [];
-            btns.push(`<a class="sp-icon-btn wa" ${phoneOk ? `href="${esc(whatsappUrl(student.phone, ''))}" target="_blank" rel="noopener"` : 'aria-disabled="true"'} title="واتساب" aria-label="واتساب">${icon('messageCircle', { size: 18 })}</a>`);
-            btns.push(`<a class="sp-icon-btn" ${student.phone ? `href="tel:${esc(String(student.phone).replace(/[^\d+]/g, ''))}"` : 'aria-disabled="true"'} title="اتصال" aria-label="اتصال">${icon('phone', { size: 18 })}</a>`);
-            btns.push(`<a class="sp-icon-btn" ${student.lesson_link ? `href="${esc(student.lesson_link)}" target="_blank" rel="noopener"` : 'aria-disabled="true"'} title="رابط الحصة" aria-label="رابط الحصة">${icon('link', { size: 18 })}</a>`);
-            btns.push(`<button type="button" class="sp-icon-btn" id="hdr-edit" title="تعديل البيانات" aria-label="تعديل البيانات">${icon('edit', { size: 18 })}</button>`);
-            // v28: حذف الطالب ظاهر في رأس الملف
-            btns.push(`<button type="button" class="sp-icon-btn sp-del" id="hdr-delete" title="حذف الطالب" aria-label="حذف الطالب">${icon('trash', { size: 18 })}</button>`);
+            // v35.3: كل أيقونة تحتها اسمها، والحذف اتنقل لتبويب "البيانات" (بعيد عن التعديل)
+            const lab = (t) => `<span class="sp-ib-l">${t}</span>`;
+            btns.push(`<a class="sp-icon-btn sp-ib wa" ${phoneOk ? `href="${esc(whatsappUrl(student.phone, ''))}" target="_blank" rel="noopener"` : 'aria-disabled="true"'} title="واتساب" aria-label="واتساب">${icon('messageCircle', { size: 18 })}${lab('واتساب')}</a>`);
+            btns.push(`<a class="sp-icon-btn sp-ib" ${student.phone ? `href="tel:${esc(String(student.phone).replace(/[^\d+]/g, ''))}"` : 'aria-disabled="true"'} title="اتصال" aria-label="اتصال">${icon('phone', { size: 18 })}${lab('اتصال')}</a>`);
+            btns.push(`<a class="sp-icon-btn sp-ib" ${student.lesson_link ? `href="${esc(student.lesson_link)}" target="_blank" rel="noopener"` : 'aria-disabled="true"'} title="رابط الحصة" aria-label="رابط الحصة">${icon('link', { size: 18 })}${lab('اللينك')}</a>`);
+            btns.push(`<button type="button" class="sp-icon-btn sp-ib" id="hdr-edit" title="تعديل البيانات" aria-label="تعديل البيانات">${icon('edit', { size: 18 })}${lab('تعديل')}</button>`);
             $('sp-contact').innerHTML = btns.join('');
             $('hdr-edit').addEventListener('click', openEdit);
-            $('hdr-delete').addEventListener('click', deleteThisStudent);
 
             // v34: تسجيل حصة فاتت (من غير مؤقت) وتعديل الحصص بقوا هنا في ملف الطالب
             const man = $('btn-add-manual');
@@ -867,6 +866,6 @@
 
         window.openBillingSetup = () => openBillingSetup({ student, view: billView }, billingCtx.onChange);
     </script>
-    <script src="js/pwa-install.js?v=46" defer></script>
+    <script src="js/pwa-install.js?v=47" defer></script>
 </body>
 </html>

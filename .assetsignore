@@ -8,3 +8,6 @@
 wrangler.jsonc
 node_modules
 .git
+# v35.3: صفحات الاختبار (أي ملف html بيبدأ بـ _)
+_*.html
+tests

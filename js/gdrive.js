@@ -7,7 +7,7 @@
  * • فتح الكتاب: المتصفح بيحمّله من الدرايف مباشرة (التوكن عند المدرس بس، مش بيروح للسيرفر).
  * • محتاج CONFIG.GOOGLE_DRIVE.CLIENT_ID (OAuth Client ID من Google Cloud). لو فاضي: الخاصية مخفية والكتب على تخزين البرنامج زي الأول.
  */
-import { CONFIG } from './config.js?v=46';
+import { CONFIG } from './config.js?v=47';
 
 const SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const LS = 'tm_gdrive_v1';
