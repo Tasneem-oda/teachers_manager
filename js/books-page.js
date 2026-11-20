@@ -11,17 +11,17 @@
  *   - رفع كتاب جديد ومعالجته في المتصفح مع نسبة تقدّم حقيقية، إعادة المعالجة، إدارة الوصول، و"اسأل كتبك"
  */
 
-import { CONFIG } from './config.js?v=45';
-import { Auth } from './auth.js?v=45';
-import { renderSidebar, renderTopHeader } from './sidebar.js?v=45';
-import { icon } from './icons.js?v=45';
-import { api } from './api.js?v=45';
-import { ErrorHandler, Formatters } from './utils.js?v=45';
-import { detectFileType, processBook } from './book-processor.js?v=45';
-import { openBookViewer } from './book-viewer.js?v=45';
-import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=45';
-import { CATS, catOf, guessCategory, FOLDER_COLORS, folderColor, FOLDER_ICONS, FOLDER_SUGGESTIONS } from './lib-meta.js?v=45';
-import * as Drive from './gdrive.js?v=45';
+import { CONFIG } from './config.js?v=46';
+import { Auth } from './auth.js?v=46';
+import { renderSidebar, renderTopHeader } from './sidebar.js?v=46';
+import { icon } from './icons.js?v=46';
+import { api } from './api.js?v=46';
+import { ErrorHandler, Formatters } from './utils.js?v=46';
+import { detectFileType, processBook } from './book-processor.js?v=46';
+import { openBookViewer } from './book-viewer.js?v=46';
+import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=46';
+import { CATS, catOf, guessCategory, FOLDER_COLORS, folderColor, FOLDER_ICONS, FOLDER_SUGGESTIONS } from './lib-meta.js?v=46';
+import * as Drive from './gdrive.js?v=46';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => Formatters.escapeHtml(String(s == null ? '' : s));
@@ -467,7 +467,7 @@ export function initBooksPage() {
         if (isFileDrag(e)) {
             e.preventDefault();
             const files = [...(e.dataTransfer.files || [])];
-            if (files.length) openUpload(files[0], files.length > 1 ? files.length : 0);
+            if (files.length) openUpload(files);
             return;
         }
         const t = dropTarget(e);
@@ -577,7 +577,12 @@ export function initBooksPage() {
         else if (action === 'open') openBook(book);
         else if (action === 'ask') openBook(book, { chat: true });
         else if (action === 'reprocess') startProcessing(book, null);
-        else if (action === 'cancel') { const live = active.get(book.id); if (live) live.ctl.abort(); }
+        else if (action === 'cancel') {
+            const live = active.get(book.id);
+            if (!live) return;
+            const yes = await askConfirm({ title: 'توقف التحليل؟', text: `"${book.title}" هيفضل في مكتبتك، بس تحليله هيقف. تقدر تكمّله بعدين من "إعادة المعالجة".`, ok: 'أيوه، وقّف', cancel: 'لأ، كمّل' });
+            if (yes && active.get(book.id)) live.ctl.abort();
+        }
     }
 
     function renameItem(k) {
@@ -1015,189 +1020,401 @@ export function initBooksPage() {
         } catch (err) { ErrorHandler.showError(`"${book.title}": ${ErrorHandler.getErrorMessage(err)}`); return false; }
     }
 
-    // ------------------------------------------------------------------ رفع مصدر جديد
+    // ------------------------------------------------------------------ v35.2: الرفع — نافذة اختيار الملفات + لوحة الرفع (نسبة/سرعة/وقت باقي) + التحليل
     const MAX_BYTES = CONFIG.BOOKS_SETTINGS.MAX_FILE_MB * 1024 * 1024;
     const DRIVE_MAX_BYTES = 300 * 1024 * 1024;
-    $('upload-cat').innerHTML = '<option value="">تلقائي (من الاسم)</option>' + CATS.map((c) => `<option value="${c.id}">${c.em} ${c.label}</option>`).join('');
     const useDriveUpload = () => driveReady() && Drive.driveConnected() && (document.querySelector('input[name="upload-store"]:checked') || {}).value === 'drive';
+    const fmtSize = (b) => (b >= 1048576 ? `${(b / 1048576).toFixed(b >= 10485760 ? 0 : 1)} ميجا` : `${Math.max(1, Math.round(b / 1024))} ك.ب`);
+    const fmtTime = (s) => (!isFinite(s) || s <= 0 ? '' : s < 60 ? `${Math.ceil(s)} ثانية` : `${Math.ceil(s / 60)} دقيقة`);
+    const TYPE_SHORT = { pdf: 'PDF', docx: 'DOC', pptx: 'PPT', txt: 'TXT', image: 'IMG' };
 
+    /** نافذة تأكيد (بدل confirm() اللي شكلها مش مفهوم على الموبايل) */
+    function askConfirm({ title, text, ok = 'أيوه', cancel = 'لأ', danger = true, icon: ic = '⚠️' }) {
+        return new Promise((resolve) => {
+            const el = document.createElement('div');
+            el.className = 'tm-confirm';
+            el.setAttribute('role', 'alertdialog');
+            el.setAttribute('aria-modal', 'true');
+            el.innerHTML = `<div><h3>${ic} ${esc(title)}</h3><p>${esc(text)}</p><div class="row">
+                <button type="button" class="btn btn-outline" data-c="0">${esc(cancel)}</button>
+                <button type="button" class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-c="1">${esc(ok)}</button></div></div>`;
+            const done = (v) => { el.remove(); document.removeEventListener('keydown', onKey, true); resolve(v); };
+            const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); done(false); } };
+            el.addEventListener('click', (e) => { const b = e.target.closest('[data-c]'); if (b) done(b.dataset.c === '1'); else if (e.target === el) done(false); });
+            document.addEventListener('keydown', onKey, true);
+            document.body.appendChild(el);
+            el.querySelector('[data-c="0"]').focus();
+        });
+    }
+
+    // ---------- نافذة اختيار الملفات
+    let picked = [];   // {id, file, type, title, cat, err}
+    let pickSeq = 0;
+    $('upload-cat').innerHTML = '<option value="">تلقائي من الاسم</option>' + CATS.map((c) => `<option value="${c.id}">${c.em} ${c.label}</option>`).join('');
     function folderOptions() {
         const out = ['<option value="">🏠 أول المكتبة</option>'];
         const walk = (id, depth) => sortFolders(kidsOf(id)).forEach((f) => { out.push(`<option value="${f.id}">${'— '.repeat(depth)}${esc(f.icon || '📁')} ${esc(f.name)}</option>`); walk(f.id, depth + 1); });
         walk(null, 0);
         return out.join('');
     }
-    function openUpload(file = null, more = 0, folderId) {
-        $('upload-form').reset();
-        pickedAny = null; $('upload-file-input').required = true;
-        $('upload-detected').textContent = '';
-        $('upload-progress').classList.remove('is-on');
-        $('upload-submit-btn').disabled = false;
-        const fsel = $('upload-folder');
-        fsel.innerHTML = folderOptions();
-        fsel.value = folderId !== undefined ? (folderId || '') : (curFolder() || '');
-        fsel.closest('div').hidden = !hubOk;
-        $('upload-cat').closest('div').hidden = !hubOk;
-        // مكان الحفظ: الدرايف لو متوصّل
+    const maxFor = () => (useDriveUpload() ? DRIVE_MAX_BYTES : MAX_BYTES);
+    function validate(p) {
+        if (!p.type) return 'نوع الملف ده مش مدعوم';
+        if (p.file.size > maxFor()) return useDriveUpload() ? 'أكبر من ٣٠٠ ميجا — قسّمه لأجزاء' : `أكبر من ${CONFIG.BOOKS_SETTINGS.MAX_FILE_MB} ميجا${driveReady() && Drive.driveConnected() ? ' — اختار "جوجل درايف" تحت' : ' — قسّمه أو اضغطه'}`;
+        if (!p.file.size) return 'الملف فاضي';
+        return '';
+    }
+    function addFiles(list) {
+        const arr = [...(list || [])];
+        for (const f of arr) {
+            if (picked.some((p) => p.file.name === f.name && p.file.size === f.size)) continue;
+            const type = detectFileType(f);
+            const title = f.name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').trim().slice(0, 200);
+            picked.push({ id: ++pickSeq, file: f, type, title, cat: guessCategory(title) || '' });
+        }
+        renderPicked();
+    }
+    function renderPicked() {
+        picked.forEach((p) => { p.err = validate(p); });
+        const box = $('up-files');
+        box.innerHTML = picked.map((p) => `<div class="up-file ${p.err ? 'bad' : ''}" data-pid="${p.id}">
+            <span class="up-fic ${p.err ? 'bad' : p.type}">${esc(TYPE_SHORT[p.type] || '؟')}</span>
+            <div class="up-fmain">
+                <input type="text" value="${esc(p.title)}" maxlength="200" aria-label="اسم الكتاب" data-ptitle ${p.err ? 'disabled' : ''}>
+                <div class="up-fmeta"><span>${esc(fmtSize(p.file.size))}</span><span>·</span><span>${esc(TYPE_LABEL[p.type] || p.file.name.split('.').pop())}</span>
+                    ${p.err ? `<span class="err">${esc(p.err)}</span>` : `<select data-pcat aria-label="التصنيف"><option value="">تصنيف تلقائي</option>${CATS.map((c) => `<option value="${c.id}" ${p.cat === c.id ? 'selected' : ''}>${c.em} ${c.label}</option>`).join('')}</select>`}</div>
+            </div>
+            <button type="button" class="up-frm" data-prm aria-label="شيل ${esc(p.title)}" title="شيل">✕</button>
+        </div>`).join('');
+        const ok = picked.filter((p) => !p.err);
+        $('upload-modal').classList.toggle('has-files', picked.length > 0);
+        $('up-opts').hidden = !picked.length || !hubOk;
+        $('upload-cat').closest('.up-opt').hidden = ok.length > 1;   // لأكتر من ملف: التصنيف من كل ملف
+        const total = ok.reduce((n, p) => n + p.file.size, 0);
+        $('up-sum').textContent = picked.length ? `${ok.length} ملف · ${fmtSize(total)}${picked.length > ok.length ? ` · ${picked.length - ok.length} مش هيترفع` : ''}` : '';
+        const btn = $('upload-submit-btn');
+        btn.disabled = !ok.length;
+        btn.textContent = ok.length > 1 ? `ارفع ${ok.length} ملفات` : 'ارفع';
+        $('up-limit').textContent = useDriveUpload() ? 'تقدر تختار أكتر من ملف · لحد ٣٠٠ ميجا للملف على جوجل درايف' : `تقدر تختار أكتر من ملف · لحد ${CONFIG.BOOKS_SETTINGS.MAX_FILE_MB} ميجا للملف`;
+    }
+    $('up-files').addEventListener('input', (e) => { const r = e.target.closest('[data-pid]'); const p = r && picked.find((x) => String(x.id) === r.dataset.pid); if (p && e.target.matches('[data-ptitle]')) p.title = e.target.value; });
+    $('up-files').addEventListener('change', (e) => { const r = e.target.closest('[data-pid]'); const p = r && picked.find((x) => String(x.id) === r.dataset.pid); if (p && e.target.matches('[data-pcat]')) p.cat = e.target.value; });
+    $('up-files').addEventListener('click', (e) => { const b = e.target.closest('[data-prm]'); if (!b) return; picked = picked.filter((x) => String(x.id) !== b.closest('[data-pid]').dataset.pid); renderPicked(); });
+    $('upload-file-input').addEventListener('change', (e) => { addFiles(e.target.files); e.target.value = ''; });
+    $('upload-any-btn').addEventListener('click', () => { $('upload-file-any').value = ''; $('upload-file-any').click(); });
+    $('upload-file-any').addEventListener('change', (e) => { addFiles(e.target.files); e.target.value = ''; });
+    document.querySelectorAll('input[name="upload-store"]').forEach((r) => r.addEventListener('change', renderPicked));
+    const drop = $('up-drop');
+    drop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('upload-file-input').click(); } });
+    ['dragenter', 'dragover'].forEach((ev) => $('upload-modal').addEventListener(ev, (e) => { if ([...(e.dataTransfer.types || [])].includes('Files')) { e.preventDefault(); drop.classList.add('over'); } }));
+    $('upload-modal').addEventListener('dragleave', (e) => { if (!$('upload-modal').contains(e.relatedTarget)) drop.classList.remove('over'); });
+    $('upload-modal').addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); addFiles(e.dataTransfer.files); });
+
+    function openUpload(files = null, _more = 0, folderId) {
+        picked = [];
+        $('upload-folder').innerHTML = folderOptions();
+        $('upload-folder').value = folderId !== undefined ? (folderId || '') : (curFolder() || '');
+        $('upload-cat').value = '';
         const st = $('upload-storage');
         st.hidden = !(driveReady() && Drive.driveConnected());
         if (!st.hidden) {
             document.querySelector(`input[name="upload-store"][value="${Drive.drivePreferred() ? 'drive' : 'app'}"]`).checked = true;
-            $('upload-drive-email').textContent = Drive.driveEmail() ? `على ${Drive.driveEmail()}` : 'الملف ملكك وعلى مساحتك';
+            $('upload-drive-email').textContent = Drive.driveEmail() ? `على ${Drive.driveEmail()} · لحد ٣٠٠ ميجا` : 'الملف ملكك وعلى مساحتك';
+            $('upload-app-limit').textContent = `لحد ${CONFIG.BOOKS_SETTINGS.MAX_FILE_MB} ميجا للملف`;
         }
-        $('upload-modal').classList.add('active');
-        if (file) {
-            pickedAny = file;
-            try { const dt = new DataTransfer(); dt.items.add(file); $('upload-file-input').files = dt.files; } catch (er) { /* تجاهل */ }
-            $('upload-file-input').required = false;
-            showPicked(file);
-            if (more > 1) ErrorHandler.showSuccess(`هنرفع "${file.name}" الأول (كتاب واحد في المرة عشان المعالجة)، وبعدها افلت الباقي.`, 5000);
+        const m = $('upload-modal');
+        m.classList.add('active'); m.setAttribute('aria-hidden', 'false');
+        if (files) addFiles(files instanceof File ? [files] : files); else renderPicked();
+        setTimeout(() => drop.focus({ preventScroll: true }), 60);
+    }
+    async function closeUpload({ force = false } = {}) {
+        if (!force && picked.some((p) => !p.err)) {
+            const yes = await askConfirm({ title: 'تقفل من غير ما ترفع؟', text: `اخترت ${picked.filter((p) => !p.err).length} ملف ولسه مارفعتهمش.`, ok: 'أيوه، اقفل', cancel: 'لأ، كمّل', icon: '📁' });
+            if (!yes) return;
         }
+        picked = [];
+        const m = $('upload-modal');
+        m.classList.remove('active'); m.setAttribute('aria-hidden', 'true');
     }
+    $('up-close').addEventListener('click', () => closeUpload());
+    $('up-cancel').addEventListener('click', () => closeUpload());
+    $('upload-modal').addEventListener('mousedown', (e) => { if (e.target === $('upload-modal')) closeUpload(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('upload-modal').classList.contains('active') && !document.querySelector('.tm-confirm')) closeUpload(); });
 
-    // v29.2: الملف ممكن ييجي من الاختيار العادي أو من زرار "اختاره من الملفات" (لموبايلات سامسونج)
-    let pickedAny = null;
-    const pickedFile = () => pickedAny || $('upload-file-input').files[0];
-    $('upload-any-btn').addEventListener('click', () => { $('upload-file-any').value = ''; $('upload-file-any').click(); });
-    $('upload-file-any').addEventListener('change', (e) => {
-        const f = e.target.files[0]; if (!f) return;
-        pickedAny = f;
-        try { const dt = new DataTransfer(); dt.items.add(f); $('upload-file-input').files = dt.files; } catch (er) { /* متصفح قديم: pickedAny كفاية */ }
-        $('upload-file-input').required = false;
-        showPicked(f);
-    });
-    $('upload-file-input').addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        pickedAny = null;
-        showPicked(file);
-    });
-    function showPicked(file) {
-        const type = detectFileType(file);
-        $('upload-detected').textContent = type ? `النوع: ${TYPE_LABEL[type]} · ${(file.size / 1048576).toFixed(1)} MB` : 'نوع الملف غير مدعوم';
-        $('upload-detected').style.color = type ? 'var(--text-secondary)' : 'var(--danger)';
-        if (!$('upload-title-input').value) $('upload-title-input').value = file.name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ');
-        if (!$('upload-cat').value) { const g = guessCategory($('upload-title-input').value); if (g) $('upload-cat').value = g; }
-    }
-
-    $('upload-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const file = pickedFile();
-        const title = $('upload-title-input').value.trim();
-        const submitBtn = $('upload-submit-btn');
-        const progress = $('upload-progress');
-        const progressText = $('upload-progress-text');
-        const category = $('upload-cat').value || guessCategory(title) || '';
+    $('upload-submit-btn').addEventListener('click', () => {
+        const ok = picked.filter((p) => !p.err);
+        if (!ok.length) return;
         const folderId = $('upload-folder').value || '';
+        const oneCat = ok.length === 1 ? ($('upload-cat').value || ok[0].cat) : '';
         const toDrive = useDriveUpload();
+        ok.forEach((p) => enqueue({ file: p.file, type: p.type, title: (p.title || p.file.name).trim().slice(0, 200) || p.file.name, category: (ok.length === 1 ? oneCat : p.cat) || guessCategory(p.title) || '', folderId, toDrive }));
+        closeUpload({ force: true });
+    });
 
-        if (!file) { ErrorHandler.showError('من فضلك اختار ملفًا'); return; }
-        const fileType = detectFileType(file);
-        if (!fileType) { ErrorHandler.showError('نوع الملف غير مدعوم. المدعوم: PDF، Word (.docx)، PowerPoint (.pptx)، نص (.txt)، أو صورة (JPG/PNG).'); return; }
-        if (file.size > (toDrive ? DRIVE_MAX_BYTES : MAX_BYTES)) { ErrorHandler.showError(toDrive ? 'الملف أكبر من 300 ميجا. قسّمه لأجزاء.' : `حجم الملف أكبر من ${CONFIG.BOOKS_SETTINGS.MAX_FILE_MB} ميجا. قسّمه لأجزاء أو اضغطه${driveReady() ? '، أو ارفعه على جوجل درايف بتاعك' : ''}.`); return; }
-        if (active.size > 0) { ErrorHandler.showError('في كتاب بيتعالج حاليًا. استنى لحد ما يخلص.'); return; }
-
-        let bookId = null;
-        try {
-            submitBtn.disabled = true;
-            progress.classList.add('is-on');
-
-            progressText.textContent = 'جاري إنشاء المصدر...';
-            let createRes;
-            try {
-                createRes = await api.createBookSource(title, file.name, fileType);
-            } catch (err) {
-                throw new Error('تعذّر إضافة الكتاب: ' + ErrorHandler.getErrorMessage(err));
+    // ---------- لوحة الرفع (طابور: ملف ورا التاني — رفع وبعده تحليل)
+    const queue = [];   // {qid, file, type, title, category, folderId, toDrive, state, pct, loaded, speed, eta, msg, error, ctl, bookId, drivePath}
+    let qSeq = 0;
+    let running = false;
+    const qBusy = () => queue.some((q) => ['wait', 'create', 'upload', 'process'].includes(q.state));
+    function enqueue(item) {
+        queue.push({ qid: ++qSeq, state: 'wait', pct: 0, ...item });
+        $('uq').hidden = false; $('uq').classList.remove('min'); $('uq-min').textContent = '▾';
+        renderQueue();
+        runQueue();
+    }
+    function itemStatus(q) {
+        if (q.state === 'wait') return ['مستني دوره...', ''];
+        if (q.state === 'create') return ['بيجهّز الملف...', ''];
+        if (q.state === 'upload') return [`${q.toDrive ? 'بيترفع على جوجل درايف' : 'بيترفع'} ${q.pct}%`, [`${fmtSize(q.loaded || 0)} من ${fmtSize(q.file.size)}`, q.speed ? `${fmtSize(q.speed)}/ث` : '', q.eta ? `باقي ${fmtTime(q.eta)}` : ''].filter(Boolean).join(' · ')];
+        if (q.state === 'process') return [`بيتحلّل ${q.pct}%`, q.msg || ''];
+        if (q.state === 'done') return [q.msg || 'خلص ✓ وجاهز في مكتبتك', ''];
+        if (q.state === 'cancel') return ['اتلغى', q.msg || ''];
+        return [q.error || 'ماكملش', ''];
+    }
+    function itemRow(q) {
+        const [a, b] = itemStatus(q);
+        const cls = q.state === 'done' ? 'ok' : q.state === 'fail' ? 'bad' : q.state === 'cancel' ? 'cancel' : '';
+        const active = ['wait', 'create', 'upload', 'process'].includes(q.state);
+        const bar = active ? `<div class="uq-prog ${q.state === 'process' ? 'proc' : ''} ${q.state === 'wait' || q.state === 'create' ? 'wait' : ''}" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${q.pct}"><i style="width:${q.pct}%"></i></div>` : '';
+        const acts = active ? `<button type="button" data-uq="cancel" aria-label="إلغاء ${esc(q.title)}" title="إلغاء">✕</button>`
+            : q.state === 'fail' ? `<button type="button" data-uq="retry" aria-label="حاول تاني" title="حاول تاني">↻</button><button type="button" data-uq="drop" aria-label="شيل" title="شيل">✕</button>`
+            : q.state === 'done' ? `<span class="uq-done" aria-hidden="true">✓</span>` : `<button type="button" data-uq="drop" aria-label="شيل" title="شيل">✕</button>`;
+        return `<div class="uq-it" data-qid="${q.qid}" data-state="${q.state}"><span class="up-fic ${q.type}">${esc(TYPE_SHORT[q.type] || '')}</span>
+            <div class="uq-main"><div class="uq-name" title="${esc(q.title)}">${esc(q.title)}</div>${bar}<div class="uq-st ${cls}"><span>${esc(a)}</span>${b ? `<span>· ${esc(b)}</span>` : ''}</div></div>
+            <div class="uq-act">${acts}</div></div>`;
+    }
+    function renderQueue() {
+        if (!queue.length) { $('uq').hidden = true; return; }
+        $('uq-list').innerHTML = queue.map(itemRow).join('');
+        updateQueueHead();
+    }
+    function updateQueueHead() {
+        const act = queue.filter((q) => ['wait', 'create', 'upload', 'process'].includes(q.state));
+        const done = queue.filter((q) => q.state === 'done').length;
+        const fail = queue.filter((q) => q.state === 'fail').length;
+        // النسبة الكلية: الرفع نص الشغل والتحليل النص التاني
+        const part = (q) => (q.state === 'done' || q.state === 'cancel' || q.state === 'fail' ? 100 : q.state === 'upload' ? q.pct / 2 : q.state === 'process' ? 50 + q.pct / 2 : 0);
+        const overall = Math.round(queue.reduce((n, q) => n + part(q), 0) / queue.length);
+        $('uq-bar').style.width = `${act.length ? overall : 100}%`;
+        if (act.length) {
+            const cur = act.find((q) => q.state !== 'wait');
+            $('uq-title').textContent = `${cur && cur.state === 'process' ? 'بيتحلّل' : 'جاري الرفع'} · ${done + 1} من ${queue.length}`;
+            $('uq-sub').textContent = `${overall}% · خلّي الصفحة مفتوحة لحد ما يخلص`;
+        } else {
+            $('uq-title').textContent = fail ? `خلص · ${fail} ماكملش` : `خلص رفع ${done} ${done === 1 ? 'ملف' : 'ملفات'} ✓`;
+            $('uq-sub').textContent = fail ? 'اضغط ↻ عشان تحاول تاني' : 'الكتب جاهزة في مكتبتك';
+        }
+        $('uq-close').title = act.length ? 'إلغاء الكل' : 'قفل';
+    }
+    /** تحديث صف واحد بس (من غير ما الليستة كلها تترسم كل ثانية) */
+    function updateItem(q) {
+        const row = document.querySelector(`.uq-it[data-qid="${q.qid}"]`);
+        if (!row) { renderQueue(); return; }
+        const fresh = document.createElement('div'); fresh.innerHTML = itemRow(q);
+        const nr = fresh.firstElementChild;
+        if (row.dataset.state === q.state) {
+            // نفس الحالة: نحدّث النسبة والنص بس (الأزرار تفضل زي ما هي عشان الضغطة ماتضيعش)
+            const bar = row.querySelector('.uq-prog i'); const nb = nr.querySelector('.uq-prog i');
+            if (bar && nb) { bar.style.width = nb.style.width; row.querySelector('.uq-prog').setAttribute('aria-valuenow', String(q.pct)); }
+            row.querySelector('.uq-st').outerHTML = nr.querySelector('.uq-st').outerHTML;
+            row.querySelector('.uq-name').textContent = q.title;
+        } else row.replaceWith(nr);
+        updateQueueHead();
+    }
+    $('uq-min').addEventListener('click', () => { const m = $('uq').classList.toggle('min'); $('uq-min').textContent = m ? '▴' : '▾'; $('uq-min').setAttribute('aria-label', m ? 'تكبير' : 'تصغير'); });
+    $('uq-close').addEventListener('click', async () => {
+        if (qBusy()) {
+            const n = queue.filter((q) => ['wait', 'create', 'upload', 'process'].includes(q.state)).length;
+            const yes = await askConfirm({ title: 'توقف كل الرفع؟', text: `في ${n} ملف لسه بيترفع أو بيتحلّل. الملفات اللي مارفعتش هتتلغي، واللي بيتحلّل هيقف وتقدر تكمّله بعدين.`, ok: 'أيوه، وقّف الكل', cancel: 'لأ، كمّل' });
+            if (!yes) return;
+            queue.forEach((q) => { if (['wait', 'create', 'upload', 'process'].includes(q.state)) cancelItem(q); });
+        }
+        queue.length = 0; renderQueue();
+    });
+    $('uq-list').addEventListener('click', async (e) => {
+        const b = e.target.closest('[data-uq]'); if (!b) return;
+        const q = queue.find((x) => String(x.qid) === b.closest('[data-qid]').dataset.qid); if (!q) return;
+        const act = b.dataset.uq;
+        if (act === 'drop') { queue.splice(queue.indexOf(q), 1); renderQueue(); return; }
+        if (act === 'retry') {
+            // الملف اترفع قبل كده والتحليل بس اللي فشل: نكمّل التحليل من غير ما نرفع تاني
+            const bk = q.retryProcessOnly && books.find((x) => x.id === q.doneBookId);
+            if (bk) {
+                Object.assign(q, { state: 'process', pct: 0, error: '', msg: 'بيبدأ...', bookId: bk.id }); updateItem(q);
+                const r = await startProcessing(bk, q.file, { onProgress: (i) => { q.pct = Math.round(i.percent || 0); q.msg = i.message || ''; updateItem(q); }, quiet: true });
+                Object.assign(q, r.ok ? { state: 'done', pct: 100, msg: 'جاهز ✓ في مكتبتك', retryProcessOnly: false } : r.aborted ? { state: 'cancel', msg: 'التحليل وقف' } : { state: 'fail', error: `التحليل ماكملش: ${r.error}` });
+                q.bookId = null; updateItem(q); return;
             }
-            bookId = createRes.book_id;
-            let storagePath = createRes.storage_path;
+            Object.assign(q, { state: 'wait', pct: 0, loaded: 0, error: '', msg: '', speed: 0, eta: 0, retryProcessOnly: false }); renderQueue(); runQueue(); return;
+        }
+        if (act === 'cancel') {
+            const texts = {
+                wait: ['تشيله من الرفع؟', `"${q.title}" لسه مابدأش يترفع.`, 'أيوه، شيله'],
+                create: ['توقف الرفع؟', `هنوقف رفع "${q.title}".`, 'أيوه، وقّف'],
+                upload: ['توقف الرفع؟', `"${q.title}" اترفع منه ${q.pct}%. لو وقّفت، اللي اترفع هيتمسح ومش هيتحفظ في مكتبتك.`, 'أيوه، وقّف الرفع'],
+                process: ['توقف التحليل؟', `"${q.title}" اترفع خلاص وهيفضل في مكتبتك، بس تحليله هيقف (والسؤال من الكتاب مش هيشتغل لحد ما تكمّله). تقدر تكمّله بعدين من "إعادة المعالجة".`, 'أيوه، وقّف التحليل']
+            }[q.state];
+            if (!texts) return;
+            const yes = await askConfirm({ title: texts[0], text: texts[1], ok: texts[2], cancel: 'لأ، كمّل' });
+            if (yes && ['wait', 'create', 'upload', 'process'].includes(q.state)) cancelItem(q);
+        }
+    });
+    function cancelItem(q) {
+        if (q.state === 'wait') { q.state = 'cancel'; updateItem(q); return; }
+        q.cancelled = true;
+        if (q.ctl) q.ctl.abort();
+        if (q.state === 'process') { const live = q.bookId && active.get(q.bookId); if (live) live.ctl.abort(); }
+    }
 
-            if (toDrive) {
-                // v35: الملف على درايف المدرس، وقاعدة البيانات فيها مكانه بس
-                progressText.textContent = 'جاري الرفع على جوجل درايف...';
-                let drivePath = null;
+    async function runQueue() {
+        if (running) return;
+        running = true;
+        try {
+            for (;;) {
+                const q = queue.find((x) => x.state === 'wait');
+                if (!q) break;
+                await uploadOne(q);
+            }
+        } finally {
+            running = false;
+            if (!qBusy()) keepScreenOn(false);
+            renderQueue();
+        }
+    }
+
+    async function uploadOne(q) {
+        q.ctl = new AbortController();
+        q.cancelled = false;
+        q.bookId = null; q.drivePath = null;
+        await keepScreenOn(true);
+        const cleanup = async () => {
+            if (q.drivePath) await Drive.deleteFromDrive(q.drivePath);
+            if (q.bookId) { try { await api.deleteBook(q.bookId); } catch (e) { /* تجاهل */ } books = books.filter((b) => b.id !== q.bookId); }
+        };
+        try {
+            q.state = 'create'; q.pct = 0; updateItem(q);
+            const createRes = await api.createBookSource(q.title, q.file.name, q.type);
+            q.bookId = createRes.book_id;
+            if (q.cancelled) throw { aborted: true };
+            // ---- الرفع مع النسبة والسرعة والوقت الباقي
+            q.state = 'upload'; updateItem(q);
+            const t0 = Date.now();
+            let lastPaint = 0;
+            const onProgress = (loaded, total) => {
+                q.loaded = loaded;
+                q.pct = Math.min(99, Math.floor((loaded / Math.max(1, total)) * 100));
+                const secs = (Date.now() - t0) / 1000;
+                q.speed = secs > 0.5 ? loaded / secs : 0;
+                q.eta = q.speed ? (total - loaded) / q.speed : 0;
+                if (Date.now() - lastPaint > 250) { lastPaint = Date.now(); updateItem(q); }
+            };
+            let storagePath = createRes.storage_path;
+            if (q.toDrive) {
                 try {
-                    drivePath = await Drive.uploadToDrive(file, { name: file.name, onProgress: (l, t) => { progressText.textContent = `جاري الرفع على جوجل درايف... ${Math.round((l / Math.max(1, t)) * 100)}%`; } });
-                    await api.setBookStorage(bookId, drivePath, { file_size: file.size });
-                    storagePath = drivePath;
+                    q.drivePath = await Drive.uploadToDrive(q.file, { name: q.file.name, onProgress, signal: q.ctl.signal });
+                    await api.setBookStorage(q.bookId, q.drivePath, { file_size: q.file.size });
+                    storagePath = q.drivePath;
                 } catch (err) {
-                    if (drivePath) await Drive.deleteFromDrive(drivePath);
-                    if (file.size > MAX_BYTES) throw new Error('الرفع على جوجل درايف ماكملش: ' + ErrorHandler.getErrorMessage(err));
-                    ErrorHandler.showError('مقدرناش نحفظه على جوجل درايف دلوقتي، فهيترفع على تخزين البرنامج. ' + ErrorHandler.getErrorMessage(err), 7000);
-                    progressText.textContent = 'جاري رفع الملف...';
-                    await api.uploadBookFile(createRes.storage_path, file);
+                    if (err && err.aborted) throw err;
+                    if (q.drivePath) { await Drive.deleteFromDrive(q.drivePath); q.drivePath = null; }
+                    if (q.file.size > MAX_BYTES) throw err;
+                    // الدرايف رفض (مساحة/صلاحية): نكمّل على تخزين البرنامج
+                    q.toDrive = false; q.pct = 0; updateItem(q);
+                    ErrorHandler.showError(`"${q.title}": مقدرناش نحفظه على جوجل درايف (${ErrorHandler.getErrorMessage(err)})، فهيترفع على تخزين البرنامج.`, 7000);
+                    await api.uploadBookFileWithProgress(createRes.storage_path, q.file, { onProgress, signal: q.ctl.signal });
                 }
             } else {
-                progressText.textContent = 'جاري رفع الملف...';
-                try {
-                    await api.uploadBookFile(createRes.storage_path, file);
-                } catch (err) {
-                    throw new Error('تعذّر رفع الملف: ' + ErrorHandler.getErrorMessage(err) + ' — اتأكد من النت وجرّب تاني.');
-                }
+                await api.uploadBookFileWithProgress(createRes.storage_path, q.file, { onProgress, signal: q.ctl.signal });
             }
-
-            $('upload-modal').classList.remove('active');
-            const book = { id: bookId, title, file_name: file.name, file_type: fileType, storage_path: storagePath, status: 'uploading', updated_at: new Date().toISOString(), created_at: new Date().toISOString(), progress: 0, category: category || null, folder_id: folderId || null };
+            q.pct = 100; q.loaded = q.file.size; updateItem(q);
+            const book = { id: q.bookId, title: q.title, file_name: q.file.name, file_type: q.type, storage_path: storagePath, status: 'uploading', updated_at: new Date().toISOString(), created_at: new Date().toISOString(), progress: 0, category: q.category || null, folder_id: q.folderId || null };
             books.unshift(book);
-            if (hubOk && (category || folderId)) {
-                (async () => {
-                    try {
-                        if (category) await api.hub('book_meta', { book_id: bookId, category });
-                        if (folderId) await api.hub('book_move', { book_id: bookId, folder_id: folderId });
-                    } catch (er) { /* تجاهل */ }
-                })();
+            q.drivePath = null;   // اترفع واتسجّل: مانمسحوش لو التحليل اتلغى
+            const doneId = q.bookId; q.bookId = null;
+            if (hubOk && (q.category || q.folderId)) {
+                try {
+                    if (q.category) await api.hub('book_meta', { book_id: doneId, category: q.category });
+                    if (q.folderId) await api.hub('book_move', { book_id: doneId, folder_id: q.folderId });
+                } catch (er) { /* الكتاب نفسه سليم */ }
             }
-            startProcessing(book, file);   // بيشتغل في الخلفية (مع شريط تقدّم في بطاقة الكتاب)
-        } catch (error) {
-            if (bookId) {
-                try { await api.deleteBook(bookId); } catch (cleanupErr) { /* تجاهل */ }
-                await loadBooks();
-            }
-            ErrorHandler.showError(error.message || ErrorHandler.getErrorMessage(error), 9000);
-        } finally {
-            submitBtn.disabled = false;
-            progress.classList.remove('is-on');
+            renderAll();
+            // ---- التحليل
+            q.state = 'process'; q.pct = 0; q.msg = 'بيبدأ...'; q.bookId = doneId; updateItem(q);
+            const r = await startProcessing(book, q.file, { onProgress: (i) => { q.pct = Math.max(0, Math.min(100, Math.round(i.percent || 0))); q.msg = i.message || ''; updateItem(q); }, quiet: true });
+            if (r.aborted) { q.state = 'cancel'; q.msg = 'الكتاب في مكتبتك، والتحليل وقف (تقدر تكمّله من "إعادة المعالجة")'; }
+            else if (r.error) { q.state = 'fail'; q.error = `اترفع بس التحليل ماكملش: ${r.error}`; q.retryProcessOnly = true; q.doneBookId = doneId; }
+            else { q.state = 'done'; q.pct = 100; q.msg = r.failedPages ? `جاهز ✓ (${r.failedPages} صفحة ماتقرتش)` : 'جاهز ✓ في مكتبتك'; }
+            q.bookId = null;
+            updateItem(q);
+        } catch (err) {
+            const aborted = !!(err && err.aborted) || q.cancelled;
+            await cleanup();
+            q.state = aborted ? 'cancel' : 'fail';
+            q.error = aborted ? '' : (err && err.message) || ErrorHandler.getErrorMessage(err);
+            q.msg = aborted ? 'اتلغى ومااتحفظش حاجة' : '';
+            q.bookId = null;
+            updateItem(q);
+            renderAll();
         }
-    });
+    }
 
-    // ------------------------------------------------------------------ المعالجة
+    // ------------------------------------------------------------------ المعالجة (التحليل)
+    // الخروج من الصفحة والرفع/التحليل شغال: المتصفح بيسأل
     window.addEventListener('beforeunload', (e) => {
-        if (active.size > 0) { e.preventDefault(); e.returnValue = ''; }
+        if (active.size > 0 || qBusy()) { e.preventDefault(); e.returnValue = ''; }
     });
+    // الضغط على أي لينك جوه البرنامج (القايمة، المصحف...) والرفع شغال: نسأل الأول
+    document.addEventListener('click', async (e) => {
+        const a = e.target.closest && e.target.closest('a[href]');
+        if (!a || a.target === '_blank' || e.ctrlKey || e.metaKey || e.shiftKey || e.button > 0) return;
+        if (!(active.size > 0 || qBusy())) return;
+        const href = a.getAttribute('href') || '';
+        if (href.startsWith('#') || href.startsWith('javascript:')) return;
+        e.preventDefault(); e.stopPropagation();
+        const yes = await askConfirm({ title: 'الرفع لسه شغال', text: 'لو خرجت من الصفحة دي، الرفع أو التحليل اللي شغال هيقف. تخرج برضه؟', ok: 'أيوه، اخرج', cancel: 'لأ، استنى' });
+        if (yes) { queue.forEach((q) => { if (['wait', 'create', 'upload', 'process'].includes(q.state)) cancelItem(q); }); setTimeout(() => { location.href = a.href; }, 150); }
+    }, true);
 
-    async function startProcessing(book, file) {
-        if (active.size > 0) { ErrorHandler.showError('في كتاب بيتعالج حاليًا. استنى لحد ما يخلص وبعدين كمّل.'); return; }
+    /**
+     * تحليل الكتاب (استخراج النص + OCR للمصوّر + الفهرسة)
+     * @returns {Promise<{ok?:boolean, aborted?:boolean, error?:string, failedPages?:number}>}
+     */
+    async function startProcessing(book, file, { onProgress = null, quiet = false } = {}) {
+        if (active.size > 0) { if (!quiet) ErrorHandler.showError('في كتاب بيتعالج حاليًا. استنى لحد ما يخلص وبعدين كمّل.'); return { error: 'في كتاب تاني بيتحلّل' }; }
         const ctl = new AbortController();
         const live = { ctl, percent: 1, message: 'جاري البدء...', stage: 'start' };
         active.set(book.id, live);
         renderBooks();
         await keepScreenOn(true);
-        ErrorHandler.showSuccess('خلي الصفحة دي مفتوحة والشاشة منوّرة لحد ما التحليل يخلص ✓', 6000);
+        if (!quiet) ErrorHandler.showSuccess('خلي الصفحة دي مفتوحة والشاشة منوّرة لحد ما التحليل يخلص ✓', 6000);
+        let out = {};
         try {
             const res = await processBook({
                 api, book, file, signal: ctl.signal,
                 onProgress: (i) => {
                     live.percent = i.percent; live.message = i.message; live.stage = i.stage;
                     updateProgressUI(book.id);
+                    if (onProgress) onProgress(i);
                 }
             });
-            if (res.failedPages > 0) {
-                ErrorHandler.showSuccess(`تم تحليل "${book.title}"، لكن تعذّرت قراءة ${res.failedPages} صفحة (ممكن تعيد المعالجة لتحسين النتيجة).`, 7000);
-            } else {
-                ErrorHandler.showSuccess(res.isScanned ? `تم تحليل الكتاب المصوّر "${book.title}" (اتقرأت ${res.ocrPages} صفحة) ✓` : `تم تحليل "${book.title}" ✓`);
+            out = { ok: true, failedPages: res.failedPages || 0 };
+            if (!quiet) {
+                if (res.failedPages > 0) ErrorHandler.showSuccess(`تم تحليل "${book.title}"، لكن تعذّرت قراءة ${res.failedPages} صفحة (ممكن تعيد المعالجة لتحسين النتيجة).`, 7000);
+                else ErrorHandler.showSuccess(res.isScanned ? `تم تحليل الكتاب المصوّر "${book.title}" (اتقرأت ${res.ocrPages} صفحة) ✓` : `تم تحليل "${book.title}" ✓`);
             }
         } catch (err) {
-            if (err && err.aborted) ErrorHandler.showSuccess('تم إلغاء المعالجة. تقدر تعيدها في أي وقت.');
-            else ErrorHandler.showError((err && err.message) || 'تعذّرت معالجة الكتاب', 9000);
+            if (err && err.aborted) { out = { aborted: true }; if (!quiet) ErrorHandler.showSuccess('تم إلغاء المعالجة. تقدر تعيدها في أي وقت.'); }
+            else { out = { error: (err && err.message) || 'تعذّرت معالجة الكتاب' }; if (!quiet) ErrorHandler.showError(out.error, 9000); }
         } finally {
             active.delete(book.id);
-            if (!active.size) keepScreenOn(false);
+            if (!active.size && !qBusy()) keepScreenOn(false);
             await loadBooks();
         }
+        return out;
     }
 
     // الموبايل بيوقف الصفحة لما الشاشة تقفل أو المدرس يروح لواتساب، والتحليل يقف معاها.
-    // Wake Lock بيخلي الشاشة منورة طول التحليل (لو المتصفح بيدعمه)
+    // Wake Lock بيخلي الشاشة منورة طول الرفع والتحليل (لو المتصفح بيدعمه)
     let wakeLock = null;
     async function keepScreenOn(on) {
         try {
@@ -1210,7 +1427,7 @@ export function initBooksPage() {
         } catch (e) { /* تجاهل */ }
     }
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && active.size) keepScreenOn(true);   // القفل بيتفك لما الصفحة تستخبى
+        if (document.visibilityState === 'visible' && (active.size || qBusy())) keepScreenOn(true);   // القفل بيتفك لما الصفحة تستخبى
     });
 
     // ------------------------------------------------------------------ إدارة الوصول

@@ -6,10 +6,10 @@
  * (أبطأ شوية لأنها طلب لكل طالب، فبتشتغل لما المدرس يضغط بس).
  */
 
-import { api } from './api.js?v=45';
-import { Formatters, ErrorHandler } from './utils.js?v=45';
-import { icon } from './icons.js?v=45';
-import { lessonsText, money } from './billing.js?v=45';
+import { api } from './api.js?v=46';
+import { Formatters, ErrorHandler } from './utils.js?v=46';
+import { icon } from './icons.js?v=46';
+import { lessonsText, money } from './billing.js?v=46';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 const CACHE_KEY = 'tm_income_cache_v1';

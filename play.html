@@ -24,8 +24,8 @@
     <div class="pl-brand">لعبة من مدرسك عن طريق <a href="https://teachers-manager.online" target="_blank" rel="noopener">Teachers Manager</a></div>
     <script>window.__tmNoSupabase = true;</script>
     <script type="module">
-        import { CONFIG } from './js/config.js?v=45';
-        import { openGame } from './js/games/engine.js?v=45';
+        import { CONFIG } from './js/config.js?v=46';
+        import { openGame } from './js/games/engine.js?v=46';
         const msg = document.getElementById('msg');
         const code = new URLSearchParams(location.search).get('g') || '';
         const fail = (t, d) => { msg.innerHTML = `<h1>${t}</h1><p>${d || ''}</p><button type="button" onclick="location.reload()">جرّب تاني</button>`; };

@@ -3,8 +3,8 @@
  * (أسماء المواد، التقييمات بالعربي، التواريخ النسبية، أقرب موعد قادم، مسودة الحصة)
  */
 
-import { Formatters } from './utils.js?v=45';
-import { appParts, clockOffset } from './server-time.js?v=45';
+import { Formatters } from './utils.js?v=46';
+import { appParts, clockOffset } from './server-time.js?v=46';
 
 export const SUBJECTS = {
     quran: 'القرآن الكريم',

@@ -3,11 +3,11 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=45';
-import { APIUtils, Storage } from './utils.js?v=45';
-import { getFreshSession } from './session.js?v=45';
-import { Resume, affectedBySleep, waitAfterResume } from './resume.js?v=45';
-import { currentSyncVersion, syncTrusted } from './realtime-sync.js?v=45';
+import { CONFIG } from './config.js?v=46';
+import { APIUtils, Storage } from './utils.js?v=46';
+import { getFreshSession } from './session.js?v=46';
+import { Resume, affectedBySleep, waitAfterResume } from './resume.js?v=46';
+import { currentSyncVersion, syncTrusted } from './realtime-sync.js?v=46';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -166,7 +166,7 @@ async function apiCallOnce(endpoint, method = 'GET', body = null, options = {}) 
         const quiet = isQuiet(body);   // v32/v33: مش تغيير بيانات
         if (method !== 'GET' && !isRead && !quiet && !/track-events|notifications|ai-chat|assistant|ask-sources|prepare-lesson|owner-/i.test(endpoint)) {
             ReadCache.clear();
-            import('./auto-refresh.js?v=45').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
+            import('./auto-refresh.js?v=46').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
         }
         return data;
 
@@ -342,7 +342,7 @@ export const Outbox = (() => {
     const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
     const write = (list) => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { /* تجاهل */ } emit(); };
     const emit = () => { try { window.dispatchEvent(new CustomEvent('tm:outbox', { detail: { count: read().length } })); } catch (e) { /* تجاهل */ } };
-    const toast = (msg, ok = true) => import('./utils.js?v=45').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
+    const toast = (msg, ok = true) => import('./utils.js?v=46').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
     return {
         list: read,
         count: () => read().length,
@@ -396,7 +396,7 @@ let billingDueCache = null;
 let conflictAsk = null;   // سؤال واحد لكل الأيام اللي بتتحفظ مع بعض
 async function askAllowConflict(message) {
     if (conflictAsk) return conflictAsk;
-    conflictAsk = import('./utils.js?v=45').then(({ askChoice }) => askChoice({
+    conflictAsk = import('./utils.js?v=46').then(({ askChoice }) => askChoice({
         title: '⚠️ الميعاد ده فيه حصة تانية',
         message: message || 'الميعاد ده بيتعارض مع حصة تانية متسجلة. لو ده مقصود احفظ الحصتين في نفس الميعاد، وهيظهروا في الجدول بعلامة تعارض.',
         choices: [{ label: 'احفظ الحصتين في نفس الميعاد', value: 'force' }],
@@ -1241,6 +1241,41 @@ export const api = {
     // رفع ملف الكتاب مباشرة إلى Supabase Storage من المتصفح (بدون ما يمر
     // على n8n كبايتات خام) - أسرع وأبسط، وبيستخدم صلاحيات RLS الخاصة
     // بالمعلم نفسه (كل معلم بيشوف/يرفع في مجلده بس).
+    /**
+     * v35.2: رفع ملف الكتاب لتخزين البرنامج مع نسبة تقدّم حقيقية وإمكانية الإلغاء (XHR لأن fetch مابيدّيش نسبة الرفع)
+     * @param {{onProgress?:(loaded:number,total:number)=>void, signal?:AbortSignal}} o
+     */
+    async uploadBookFileWithProgress(storagePath, file, { onProgress, signal } = {}) {
+        let session = null;
+        try { session = await getFreshSession(); } catch (e) { session = null; }
+        if (!session || !session.access_token) return this.uploadBookFile(storagePath, file);
+        const url = `${CONFIG.SUPABASE_URL}/storage/v1/object/${CONFIG.BOOKS_SETTINGS.BUCKET}/${String(storagePath).split('/').map(encodeURIComponent).join('/')}`;
+        return new Promise((resolve, reject) => {
+            const x = new XMLHttpRequest();
+            x.open('POST', url);
+            x.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
+            x.setRequestHeader('apikey', CONFIG.SUPABASE_ANON_KEY);
+            x.setRequestHeader('x-upsert', 'false');
+            x.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+            x.upload.onprogress = (e) => { if (onProgress && e.lengthComputable) onProgress(e.loaded, e.total); };
+            x.onload = () => {
+                if (x.status >= 200 && x.status < 300) { if (onProgress) onProgress(file.size, file.size); resolve(storagePath); return; }
+                let msg = '';
+                try { const j = JSON.parse(x.responseText); msg = j.message || j.error || ''; } catch (e) { /* تجاهل */ }
+                if (x.status === 413 || /too large|exceeded/i.test(msg)) reject({ error: { code: 'TOO_LARGE', message: 'الملف أكبر من المسموح في تخزين البرنامج.' } });
+                else if (/exists|duplicate/i.test(msg)) resolve(storagePath);
+                else reject({ error: { code: 'UPLOAD_FAILED', message: `الرفع ماكملش (${x.status})${msg ? `: ${msg}` : ''}` }, status: x.status });
+            };
+            x.onerror = () => reject({ error: { code: 'NETWORK', message: 'النت قطع أثناء الرفع.' } });
+            x.ontimeout = () => reject({ error: { code: 'TIMEOUT', message: 'الرفع اتأخر أوي. اتأكد من النت.' } });
+            if (signal) {
+                if (signal.aborted) { reject({ error: { code: 'ABORTED', message: 'اتلغى' }, aborted: true }); return; }
+                signal.addEventListener('abort', () => { try { x.abort(); } catch (e) { /* تجاهل */ } reject({ error: { code: 'ABORTED', message: 'اتلغى' }, aborted: true }); }, { once: true });
+            }
+            x.send(file);
+        });
+    },
+
     async uploadBookFile(storagePath, file) {
         try { await getFreshSession(); } catch (e) { /* المكتبة هتحاول بنفسها */ }
         const { error: uploadError } = await window.supabaseClient.storage
@@ -1254,7 +1289,7 @@ export const api = {
     // download: true أو اسم ملف → الرابط بيفرض تنزيل الملف بدل فتحه في المتصفح
     async getBookFileUrl(storagePath, { expiresIn = 3600, download = false } = {}) {
         // v35: كتاب على جوجل درايف المدرس
-        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=45'); return g.driveFileUrl(storagePath, { download: false }); }
+        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=46'); return g.driveFileUrl(storagePath, { download: false }); }
         // v30: الرابط الموقّع بيتحفظ لحد ما يقرب يخلص (فتح نفس الكتاب تاني بيبقى فوري)
         const ck = `${storagePath}|${download ? String(download) : ''}`;
         const hit = signedUrlCache.get(ck);
@@ -1271,7 +1306,7 @@ export const api = {
 
     // تحميل بايتات الملف الأصلي للعرض/إعادة الفهرسة، مع تقدّم التحميل
     async fetchBookFile(storagePath, { onProgress, signal } = {}) {
-        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=45'); return g.fetchFromDrive(storagePath, { onProgress, signal }); }
+        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=46'); return g.fetchFromDrive(storagePath, { onProgress, signal }); }
         const url = await this.getBookFileUrl(storagePath, { expiresIn: 3600 });
         let res;
         try {
@@ -1313,7 +1348,7 @@ export const api = {
     },
 
     async deleteBookFile(storagePath) {
-        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=45'); return g.deleteFromDrive(storagePath); }
+        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=46'); return g.deleteFromDrive(storagePath); }
         try { await getFreshSession(); } catch (e) { /* تجاهل */ }
         try {
             await window.supabaseClient.storage.from(CONFIG.BOOKS_SETTINGS.BUCKET).remove([storagePath]);
