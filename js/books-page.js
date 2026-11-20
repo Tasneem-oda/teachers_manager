@@ -11,17 +11,17 @@
  *   - رفع كتاب جديد ومعالجته في المتصفح مع نسبة تقدّم حقيقية، إعادة المعالجة، إدارة الوصول، و"اسأل كتبك"
  */
 
-import { CONFIG } from './config.js?v=48';
-import { Auth } from './auth.js?v=48';
-import { renderSidebar, renderTopHeader } from './sidebar.js?v=48';
-import { icon } from './icons.js?v=48';
-import { api } from './api.js?v=48';
-import { ErrorHandler, Formatters } from './utils.js?v=48';
-import { detectFileType, processBook } from './book-processor.js?v=48';
-import { openBookViewer } from './book-viewer.js?v=48';
-import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=48';
-import { CATS, catOf, guessCategory, FOLDER_COLORS, folderColor, FOLDER_ICONS, FOLDER_SUGGESTIONS } from './lib-meta.js?v=48';
-import * as Drive from './gdrive.js?v=48';
+import { CONFIG } from './config.js?v=49';
+import { Auth } from './auth.js?v=49';
+import { renderSidebar, renderTopHeader } from './sidebar.js?v=49';
+import { icon } from './icons.js?v=49';
+import { api } from './api.js?v=49';
+import { ErrorHandler, Formatters } from './utils.js?v=49';
+import { detectFileType, processBook } from './book-processor.js?v=49';
+import { openBookViewer } from './book-viewer.js?v=49';
+import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=49';
+import { CATS, catOf, guessCategory, FOLDER_COLORS, folderColor, FOLDER_ICONS, FOLDER_SUGGESTIONS } from './lib-meta.js?v=49';
+import * as Drive from './gdrive.js?v=49';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => Formatters.escapeHtml(String(s == null ? '' : s));
@@ -115,7 +115,7 @@ export function initBooksPage() {
             <div class="book-progress" data-progress-for="${b.id}">
                 <div class="book-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
                 <div class="book-progress-text">${esc(msg)} ${pct ? `(${pct}%)` : ''}</div>
-                ${live ? `<div class="book-progress-actions"><button type="button" class="btn btn-muted" data-action="cancel" style="padding:0.3rem 0.7rem; font-size:0.74rem;">إلغاء</button></div>` : ''}
+                ${live ? `<button type="button" class="fx-mini" data-action="cancel" title="إيقاف التحليل" aria-label="إيقاف التحليل">✕</button>` : ''}
             </div>`;
     }
 
@@ -216,17 +216,21 @@ export function initBooksPage() {
         return { folders: sortFolders(kidsOf(id)), books: sortBooks(booksIn(id)) };
     }
 
+    // v35.4: كل العناصر بنفس الهيكل والمقاس (أيقونة ← اسم سطرين ← تفاصيل ← سطر حالة ثابت) عشان الشبكة تبقى على استقامة واحدة
+    const fmtDate = (v) => { const t = Date.parse(v || ''); return t ? new Date(t).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Africa/Cairo' }) : '—'; };
     function folderTile(f) {
         const [l, d] = shade(f.color);
         const n = countDeep(f.id);
         const sub = kidsOf(f.id).length;
         const k = `f:${f.id}`;
         const where = query && parentOf(f) ? pathOf(parentOf(f)).map((x) => x.name).join(' ‹ ') : '';
+        const meta = [sub ? `${sub} فولدر` : '', n ? `${n} كتاب` : (sub ? '' : 'فاضي')].filter(Boolean).join(' · ');
         return `<div class="fx-tile fx-folder ${selected.has(k) ? 'is-sel' : ''}" data-k="${k}" data-drop-f="${f.id}" tabindex="0" role="button" draggable="${hubOk}" aria-label="فولدر ${esc(f.name)}، فيه ${n} كتاب">
             <span class="fx-check" aria-hidden="true">✓</span>
-            <div class="fx-ico"><div class="fx-folder-ic" style="--fl:${l};--fd:${d}"><span class="em">${esc(f.icon && f.icon !== '📁' ? f.icon : '')}</span><span class="cnt">${n || ''}</span></div></div>
-            <div class="fx-txt"><div class="fx-name">${esc(f.name)}</div>
-                <div class="fx-meta">${[sub ? `${sub} فولدر` : '', n ? `${n} كتاب` : (sub ? '' : 'فاضي'), where].filter(Boolean).join(' · ')}</div></div>
+            <div class="fx-ico"><div class="fx-folder-ic" style="--fl:${l};--fd:${d}"><span class="em">${esc(f.icon && f.icon !== '📁' ? f.icon : '')}</span></div></div>
+            <div class="fx-txt"><div class="fx-name" title="${esc(f.name)}">${esc(f.name)}</div><div class="fx-meta">${esc(where ? `📁 ${where}` : meta)}</div></div>
+            <div class="fx-col c-type">فولدر</div><div class="fx-col c-size">${esc(meta || '—')}</div><div class="fx-col c-date">${esc(fmtDate(f.created_at))}</div>
+            <div class="fx-foot"></div>
             <button type="button" class="fx-more" data-more aria-label="خيارات ${esc(f.name)}">${icon('moreV', { size: 16 })}</button>
         </div>`;
     }
@@ -240,41 +244,45 @@ export function initBooksPage() {
         const canOpen = !!b.storage_path && st !== 'uploading' && !uploadBroken && !active.has(b.id);
         const pub = pubMap[b.id];
         const k = `b:${b.id}`;
-        let extra = '';
-        if (st === 'processing' || (st === 'uploading' && live)) extra = progressHtml(b, live);
-        else if (st === 'failed') extra = `<div class="fx-st bad">${esc(b.error_message || 'تعذّر التحليل')}</div><button type="button" class="btn btn-sm" data-action="reprocess">${icon('refresh', { size: 13 })} إعادة المعالجة</button>`;
-        else if (uploadBroken) extra = '<div class="fx-st bad">الرفع ماكملش. امسحه وارفعه تاني.</div>';
-        else if (st === 'stalled') extra = '<div class="fx-st bad">المعالجة وقفت</div><button type="button" class="btn btn-sm" data-action="reprocess">كمّل المعالجة</button>';
-        else if (st !== 'ready') extra = `<div class="fx-st">${STATUS_LABELS[st] || esc(st)}</div>`;
-        const meta = [typeLabel(b)];
-        if (st === 'ready' && b.page_count) meta.push(`${b.page_count} ${unit}`);
-        if (b.is_scanned) meta.push('مصوّر');
-        if (query || loc.s) { const p = pathOf(b.folder_id).map((x) => x.name).join(' ‹ '); if (p) meta.push(`📁 ${p}`); }
+        // سطر الحالة (ارتفاعه ثابت في كل البطاقات)
+        let foot = '';
+        if (st === 'processing' || (st === 'uploading' && live)) foot = progressHtml(b, live);
+        else if (st === 'failed') foot = `<span class="fx-fs bad" title="${esc(b.error_message || '')}">تعذّر التحليل</span><button type="button" class="fx-mini" data-action="reprocess" title="إعادة المعالجة" aria-label="إعادة معالجة ${esc(b.title)}">${icon('refresh', { size: 14 })}</button>`;
+        else if (uploadBroken) foot = '<span class="fx-fs bad">الرفع ماكملش — امسحه وارفعه تاني</span>';
+        else if (st === 'stalled') foot = `<span class="fx-fs bad">المعالجة وقفت</span><button type="button" class="fx-mini" data-action="reprocess" title="كمّل المعالجة" aria-label="كمّل معالجة ${esc(b.title)}">${icon('refresh', { size: 14 })}</button>`;
+        else if (st !== 'ready') foot = `<span class="fx-fs">${STATUS_LABELS[st] || esc(st)}</span>`;
+        else if (pub && pub.status === 'rejected') foot = `<span class="fx-fs bad" title="${esc(pub.note || '')}">ماتنشرش${pub.note ? `: ${esc(pub.note)}` : ''}</span>`;
+        const size = st === 'ready' && b.page_count ? `${b.page_count} ${unit}` : '';
+        const meta = [typeLabel(b), size, b.is_scanned ? 'مصوّر' : ''].filter(Boolean);
+        const where = query || loc.s ? pathOf(b.folder_id).map((x) => x.name).join(' ‹ ') : '';
         const badges = [
-            b.pinned ? '<span class="fx-badge">📌</span>' : '',
+            b.pinned ? '<span class="fx-badge" title="مثبّت">📌</span>' : '',
             Drive.isGdrivePath(b.storage_path) ? '<span class="fx-badge drive" title="على جوجل درايف بتاعك">☁️</span>' : '',
-            pub && pub.status === 'approved' ? '<span class="fx-badge pub">🌍 منشور</span>' : '',
-            pub && pub.status === 'pending' ? '<span class="fx-badge pend">⏳ بيتراجع</span>' : '',
-            b.public_book_id ? '<span class="fx-badge">🌍</span>' : '',
+            pub && pub.status === 'approved' ? '<span class="fx-badge pub" title="منشور في المكتبة العامة">🌍</span>' : '',
+            pub && pub.status === 'pending' ? '<span class="fx-badge pend" title="طلب النشر بيتراجع">⏳</span>' : '',
+            b.public_book_id ? '<span class="fx-badge" title="من المكتبة العامة">🌍</span>' : '',
             b.student_ids && b.student_ids.length ? `<span class="fx-badge" title="لطلاب محددين">👤${b.student_ids.length}</span>` : ''
         ].join('');
         return `<div class="fx-tile fx-book ${selected.has(k) ? 'is-sel' : ''} ${canOpen ? 'is-openable' : ''}" data-k="${k}" data-book-id="${b.id}" tabindex="0" role="button" draggable="${hubOk}" aria-label="${esc(b.title)}">
             <span class="fx-check" aria-hidden="true">✓</span>
             <div class="fx-badges">${badges}</div>
-            <div class="fx-ico"><div class="fx-book-ic" style="--cv:${c.cv}">${c.em}<span class="ty">${esc(typeLabel(b))}</span></div></div>
-            <div class="fx-txt"><div class="fx-name" title="${esc(b.title)}">${esc(b.title)}</div>
-                <div class="fx-meta">${meta.map(esc).join(' · ')}</div>
-                ${pub && pub.status === 'rejected' ? `<div class="fx-st bad">ماتنشرش${pub.note ? `: ${esc(pub.note)}` : ''}</div>` : ''}
-                ${extra}</div>
+            <div class="fx-ico"><div class="fx-book-ic" style="--cv:${c.cv}"><span class="em">${c.em}</span><span class="ty">${esc(TYPE_LABEL[b.file_type] === 'PowerPoint' ? 'PPT' : typeLabel(b))}</span></div></div>
+            <div class="fx-txt"><div class="fx-name" title="${esc(b.title)}">${esc(b.title)}</div><div class="fx-meta">${esc(where ? `📁 ${where}` : meta.join(' · '))}</div></div>
+            <div class="fx-col c-type">${esc(typeLabel(b))}</div><div class="fx-col c-size">${esc(size || '—')}</div><div class="fx-col c-date">${esc(fmtDate(b.created_at))}</div>
+            <div class="fx-foot ${foot ? 'on' : ''}">${foot}</div>
             <button type="button" class="fx-more" data-more aria-label="خيارات ${esc(b.title)}">${icon('moreV', { size: 16 })}</button>
         </div>`;
     }
 
     function mushafTile() {
         return `<a class="fx-tile mushaf" href="mushaf.html" aria-label="المصحف الشريف">
-            <div class="fx-ico"><div class="fx-book-ic"><span>المصحف<br>الشريف</span></div></div>
-            <div class="fx-txt"><div class="fx-name">المصحف الشريف</div><div class="fx-meta">مصحف المدينة · حفص · ٦٠٤ صفحة</div></div></a>`;
+            <div class="fx-ico"><div class="fx-book-ic"><span class="ms-t">۞</span></div></div>
+            <div class="fx-txt"><div class="fx-name">المصحف الشريف</div><div class="fx-meta">مصحف المدينة · حفص</div></div>
+            <div class="fx-col c-type">مصحف</div><div class="fx-col c-size">604 صفحة</div><div class="fx-col c-date">—</div>
+            <div class="fx-foot"></div>
+        </a>`;
     }
+    const listHead = () => `<div class="fx-lhead" aria-hidden="true"><span class="h-name">الاسم</span><span class="c-type">النوع</span><span class="c-size">الحجم</span><span class="c-date">اتضاف</span><span class="h-act"></span></div>`;
 
     function renderBooks() {
         const section = $('books-section');
@@ -296,6 +304,7 @@ export function initBooksPage() {
             return;
         }
         let html = '';
+        if (layout === 'list' && (v.folders.length || v.books.length || atRoot)) html += listHead();
         if (v.folders.length) html += `<div class="fx-sec">الفولدرات</div><div class="fx-grid">${v.folders.map(folderTile).join('')}</div>`;
         if (v.books.length || atRoot) html += `${v.folders.length || atRoot ? `<div class="fx-sec">${atRoot ? 'الكتب والملفات' : 'الملفات'}</div>` : ''}<div class="fx-grid">${atRoot ? mushafTile() : ''}${v.books.map(bookTile).join('')}</div>`;
         if (!v.folders.length && !v.books.length) {

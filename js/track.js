@@ -15,9 +15,9 @@
  *   وأي event بيتعمله push في dataLayer في أي مكان في البرنامج.
  */
 
-import { CONFIG } from './config.js?v=48';
-import { APIUtils } from './utils.js?v=48';
-import { getFreshSession } from './session.js?v=48';
+import { CONFIG } from './config.js?v=49';
+import { APIUtils } from './utils.js?v=49';
+import { getFreshSession } from './session.js?v=49';
 
 const QUEUE_KEY = 'tm_track_queue_v1';
 const SESSION_KEY = 'tm_track_session';
