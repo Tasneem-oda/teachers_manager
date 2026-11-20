@@ -6,14 +6,14 @@
  * لو فيه حصة جارية (lessonId) بتتحوّل هي نفسها لغياب بدل ما يتعمل صف جديد.
  */
 
-import { api } from './api.js?v=47';
-import { Formatters, ErrorHandler } from './utils.js?v=47';
-import { uuidv4 } from './utils.js?v=47';
-import { icon } from './icons.js?v=47';
-import { localDateISO, addDaysISO as addDaysFromToday } from './lesson-utils.js?v=47';
-import { whatsappUrl } from './billing.js?v=47';
-import { saveWithConflictCheck } from './groups-utils.js?v=47';
-import { DAY_NAMES, formatClock12, timeToMinutes } from './calendar-utils.js?v=47';
+import { api } from './api.js?v=48';
+import { Formatters, ErrorHandler } from './utils.js?v=48';
+import { uuidv4 } from './utils.js?v=48';
+import { icon } from './icons.js?v=48';
+import { localDateISO, addDaysISO as addDaysFromToday } from './lesson-utils.js?v=48';
+import { whatsappUrl } from './billing.js?v=48';
+import { saveWithConflictCheck } from './groups-utils.js?v=48';
+import { DAY_NAMES, formatClock12, timeToMinutes } from './calendar-utils.js?v=48';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 

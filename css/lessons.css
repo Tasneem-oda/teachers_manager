@@ -603,3 +603,8 @@ textarea[readonly]#f-homework { background: var(--bg-secondary, #F5F2F8); color:
 .btn.btn-prepare { background: linear-gradient(135deg, #F6EEFB, #FCF5E6); border: 1px solid #E0CFEE; color: var(--primary); font-weight: 700; }
 .btn.btn-prepare svg { color: #B07D1F; }
 .btn.btn-prepare:hover { border-color: var(--primary); }
+/* v35.3.1: أزرار صغيرة كانت صعبة اللمس + أسماء أيقونات رأس ملف الطالب 12px */
+.lh-same { min-height: 44px; padding: 0 1rem; font-size: .88rem; display: inline-flex; align-items: center; gap: .3rem; }
+.ls-discard { min-height: 44px; padding: 0 1rem; display: inline-flex; align-items: center; justify-content: center; }
+.sp-ib-l { font-size: .75rem; }
+.sp-icon-btn.sp-ib { min-height: 54px; }

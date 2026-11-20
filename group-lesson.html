@@ -16,9 +16,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=47">
-    <link rel="stylesheet" href="css/lessons.css?v=47">
-    <link rel="stylesheet" href="css/groups.css?v=47">
+    <link rel="stylesheet" href="css/style.css?v=48">
+    <link rel="stylesheet" href="css/lessons.css?v=48">
+    <link rel="stylesheet" href="css/groups.css?v=48">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -26,8 +26,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/books.css?v=47">
-    <link rel="stylesheet" href="css/v29.css?v=47">
+    <link rel="stylesheet" href="css/books.css?v=48">
+    <link rel="stylesheet" href="css/v29.css?v=48">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -149,23 +149,23 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=47"></script>
+    <script type="module" src="js/config.js?v=48"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=47';
-        import { api } from './js/api.js?v=47';
-        import { ErrorHandler, Formatters, askChoice, uuidv4 } from './js/utils.js?v=47';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=47';
-        import { icon } from './js/icons.js?v=47';
-        import { RATINGS, HOMEWORK_STATUS, ratingFieldLabels, formatLessonDate, localDateISO } from './js/lesson-utils.js?v=47';
-        import { whatsappUrl, parentPhone } from './js/billing.js?v=47';
-        import { formatClock12, timeToMinutes } from './js/calendar-utils.js?v=47';
-        import { groupTitle, membersText, sessionShareText } from './js/groups-utils.js?v=47';
-        import { mountGroupAi } from './js/group-ai.js?v=47';
-        import { buildLessonReport, fullDate } from './js/report.js?v=47';
-        import { openBookViewer } from './js/book-viewer.js?v=47';
-        import { LiveLesson, clockText, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=47';
-        import { openWhiteboard } from './js/whiteboard.js?v=47';
-        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=47';
+        import { Auth } from './js/auth.js?v=48';
+        import { api } from './js/api.js?v=48';
+        import { ErrorHandler, Formatters, askChoice, uuidv4 } from './js/utils.js?v=48';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=48';
+        import { icon } from './js/icons.js?v=48';
+        import { RATINGS, HOMEWORK_STATUS, ratingFieldLabels, formatLessonDate, localDateISO } from './js/lesson-utils.js?v=48';
+        import { whatsappUrl, parentPhone } from './js/billing.js?v=48';
+        import { formatClock12, timeToMinutes } from './js/calendar-utils.js?v=48';
+        import { groupTitle, membersText, sessionShareText } from './js/groups-utils.js?v=48';
+        import { mountGroupAi } from './js/group-ai.js?v=48';
+        import { buildLessonReport, fullDate } from './js/report.js?v=48';
+        import { openBookViewer } from './js/book-viewer.js?v=48';
+        import { LiveLesson, clockText, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=48';
+        import { openWhiteboard } from './js/whiteboard.js?v=48';
+        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=48';
 
         const $ = (id) => document.getElementById(id);
         const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
@@ -394,7 +394,7 @@
         try { document.querySelector('#btn-game .ic-game').innerHTML = icon('gamepad', { size: 16 }); } catch (e) { /* تجاهل */ }
         $('btn-game').addEventListener('click', async () => {
             try {
-                const m = await import('./js/games/picker.js?v=47');
+                const m = await import('./js/games/picker.js?v=48');
                 const names = ((prep && prep.members) || []).filter((x) => !x.left_at).map((x) => String(x.name || '').split(' ')[0]);
                 m.openGamePicker({ api, teams: names.length >= 4, names, subject: prep && prep.group && prep.group.subject, toast: { ok: (t) => ErrorHandler.showSuccess(t), err: (e) => ErrorHandler.showError(ErrorHandler.getErrorMessage(e)) } });
             } catch (e) { ErrorHandler.showError('الألعاب ماتحمّلتش. اتأكد من النت وجرّب تاني.'); }
@@ -1021,6 +1021,6 @@
             } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
         });
     </script>
-    <script src="js/pwa-install.js?v=47" defer></script>
+    <script src="js/pwa-install.js?v=48" defer></script>
 </body>
 </html>

@@ -5,10 +5,10 @@
  * • كل صفحة بتتحفظ تلقائيًا لكل طالب/مجموعة (lesson-tools)، وترجع زي ما هي الحصة الجاية.
  * • تقدر تصدّر الصفحة صورة وتبعتها للطالب.
  */
-import { api } from './api.js?v=47';
-import { ErrorHandler } from './utils.js?v=47';
-import { icon } from './icons.js?v=47';
-import { W, InkLayer, InkController, ToolDock, handleInkKey, BOARD_BGS, boardBgSvg, isDarkBg, renderItem, LaserPointer, confirmIn } from './annotate.js?v=47';
+import { api } from './api.js?v=48';
+import { ErrorHandler } from './utils.js?v=48';
+import { icon } from './icons.js?v=48';
+import { W, InkLayer, InkController, ToolDock, handleInkKey, BOARD_BGS, boardBgSvg, isDarkBg, renderItem, LaserPointer, confirmIn } from './annotate.js?v=48';
 
 const RATIO = 0.625;   // 16:10
 const H = W * RATIO;
