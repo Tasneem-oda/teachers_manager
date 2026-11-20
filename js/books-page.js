@@ -11,17 +11,17 @@
  *   - رفع كتاب جديد ومعالجته في المتصفح مع نسبة تقدّم حقيقية، إعادة المعالجة، إدارة الوصول، و"اسأل كتبك"
  */
 
-import { CONFIG } from './config.js?v=50';
-import { Auth } from './auth.js?v=50';
-import { renderSidebar, renderTopHeader } from './sidebar.js?v=50';
-import { icon } from './icons.js?v=50';
-import { api } from './api.js?v=50';
-import { ErrorHandler, Formatters } from './utils.js?v=50';
-import { detectFileType, processBook } from './book-processor.js?v=50';
-import { openBookViewer } from './book-viewer.js?v=50';
-import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=50';
-import { CATS, catOf, guessCategory, FOLDER_COLORS, folderColor, FOLDER_ICONS, FOLDER_SUGGESTIONS } from './lib-meta.js?v=50';
-import * as Drive from './gdrive.js?v=50';
+import { CONFIG } from './config.js?v=51';
+import { Auth } from './auth.js?v=51';
+import { renderSidebar, renderTopHeader } from './sidebar.js?v=51';
+import { icon } from './icons.js?v=51';
+import { api } from './api.js?v=51';
+import { ErrorHandler, Formatters } from './utils.js?v=51';
+import { detectFileType, processBook } from './book-processor.js?v=51';
+import { openBookViewer } from './book-viewer.js?v=51';
+import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=51';
+import { CATS, catOf, guessCategory, FOLDER_COLORS, folderColor, FOLDER_ICONS, FOLDER_SUGGESTIONS } from './lib-meta.js?v=51';
+import * as Drive from './gdrive.js?v=51';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => Formatters.escapeHtml(String(s == null ? '' : s));

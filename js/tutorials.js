@@ -8,7 +8,7 @@
  * • صفحة "الشروحات" (learn.html) فيها كل الفيديوهات مترتبة.
  * • القايمة بتتحفظ على الجهاز 6 ساعات (مابتتطلبش من السيرفر في كل صفحة).
  */
-import { api } from './api.js?v=50';
+import { api } from './api.js?v=51';
 
 const LS = 'tm_tutorials_v1';
 const SEEN = 'tm_tutorials_seen_v1';

@@ -33,10 +33,10 @@
  * كل جزء بيفشل بصمت (من غير ما يكسر باقي الصفحة) لو لسه معمولش الإعداد بتاعه.
  * ============================================================================
  */
-import { CONFIG } from './config.js?v=50';
-import { Auth } from './auth.js?v=50';
-import { api } from './api.js?v=50';
-import { ErrorHandler } from './utils.js?v=50';
+import { CONFIG } from './config.js?v=51';
+import { Auth } from './auth.js?v=51';
+import { api } from './api.js?v=51';
+import { ErrorHandler } from './utils.js?v=51';
 
 const PROMPT_DISMISS_KEY = 'tm_notif_prompt_dismissed';
 const BADGE_CACHE_KEY = 'tm_notif_badge_cache_v1';
@@ -136,7 +136,7 @@ async function initAndLinkTeacher() {
             // v32: لو الاشتراك اتغيّر بعدين (اتلغى/رجع) السيرفر يعرف على طول
             if (ps && typeof ps.addEventListener === 'function') {
                 ps.addEventListener('change', () => {
-                    import('./push-health.js?v=50').then(async (m) => m.reportPushStatus(await m.checkPushHealth())).catch(() => { /* تجاهل */ });
+                    import('./push-health.js?v=51').then(async (m) => m.reportPushStatus(await m.checkPushHealth())).catch(() => { /* تجاهل */ });
                 });
             }
         } catch (e) { /* تجاهل */ }
@@ -153,7 +153,7 @@ async function initAndLinkTeacher() {
                         return;
                     }
                     if (data.tm_sound === true || data.tm_sound === 'true') {
-                        import('./reminder-settings.js?v=50').then((m) => m.playReminderSound()).catch(() => { /* تجاهل */ });
+                        import('./reminder-settings.js?v=51').then((m) => m.playReminderSound()).catch(() => { /* تجاهل */ });
                     }
                 } catch (e) { /* تجاهل */ }
             });
@@ -821,7 +821,7 @@ export async function initPushNotifications() {
         setTimeout(showEnablePrompt, 2000);
         // v32: فحص إن الإشعارات واصلة فعلًا (مش بس إن الإذن متاح) + إصلاح تلقائي + تبليغ السيرفر
         setTimeout(() => {
-            import('./push-health.js?v=50').then((m) => m.runPushHealth({ requestPermission })).catch(() => { /* تجاهل */ });
+            import('./push-health.js?v=51').then((m) => m.runPushHealth({ requestPermission })).catch(() => { /* تجاهل */ });
         }, 5000);
     } catch (e) {
         // فشل تفعيل الإشعارات مش المفروض يوقف استخدام باقي البرنامج
