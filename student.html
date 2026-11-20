@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=39">
+    <link rel="stylesheet" href="css/style.css?v=51">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -24,8 +24,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=39">
-    <link rel="stylesheet" href="css/groups.css?v=39">
+    <link rel="stylesheet" href="css/lessons.css?v=51">
+    <link rel="stylesheet" href="css/groups.css?v=51">
     <style>
         .loading { text-align: center; padding: 2rem; color: var(--primary); }
         .empty-state { text-align: center; padding: 2rem; color: var(--text-secondary); }
@@ -51,7 +51,8 @@
         .e-guard { background: #FAFAF7; border: 1px dashed #E2DCCB; border-radius: 12px; padding: 0.7rem 0.8rem 0.1rem; margin-bottom: 1rem; }
         .e-guard > p { margin: 0 0 0.5rem; font-size: 0.82rem; color: var(--text-secondary); }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=39">
+    <link rel="stylesheet" href="css/v29.css?v=51">
+    <link rel="stylesheet" href="css/ui.css?v=51">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -77,8 +78,8 @@
                         <div class="sp-cta">
                             <a class="btn" id="btn-lesson" href="#"></a>
                             <div class="sp-cta-row">
-                                <button class="btn btn-sm btn-ghost" id="btn-prepare-lesson" type="button"></button>
-                                <button class="btn btn-sm btn-ghost" id="btn-open-student-appts" type="button"></button>
+                                <button class="btn btn-sm btn-prepare" id="btn-prepare-lesson" type="button" aria-label="حضّرلي الحصة بالذكاء الاصطناعي"></button>
+                                <button class="btn btn-sm btn-ghost" id="btn-open-student-appts" type="button" aria-label="مواعيد الطالب"></button>
                             </div>
                         </div>
                     </div>
@@ -116,7 +117,10 @@
                     <section class="sp-panel" id="tab-lessons">
                         <div class="sp-lessons-bar">
                             <span class="muted" id="att-summary"></span>
-                            <button type="button" class="btn btn-sm btn-ghost" id="btn-add-absence">+ سجّل غياب</button>
+                            <span class="sp-lessons-actions">
+                                <a class="btn btn-sm" id="btn-add-manual" href="#">+ سجّل حصة تمت (بدون مؤقت)</a>
+                                <button type="button" class="btn btn-sm btn-ghost" id="btn-add-absence">+ سجّل غياب</button>
+                            </span>
                         </div>
                         <div id="lessons-list"></div>
                         <div class="more-wrap"><button type="button" class="btn btn-ghost btn-sm" id="btn-more-lessons" hidden>عرض حصص أقدم</button></div>
@@ -166,7 +170,7 @@
                     <!-- مودال "حضّرلي الحصة" -->
                     <div class="modal" id="prepare-lesson-modal">
                         <div class="modal-content">
-                            <span class="close-modal">&times;</span>
+                            <button type="button" class="close-modal" aria-label="قفل">&times;</button>
                             <h2>🎯 اقتراح للحصة</h2>
                             <div id="prepare-lesson-body"><div class="loading">جاري تجهيز الحصة...</div></div>
                         </div>
@@ -244,23 +248,23 @@
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=39"></script>
+    <script type="module" src="js/config.js?v=51"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=39';
-        import { api } from './js/api.js?v=39';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=39';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=39';
-        import { icon } from './js/icons.js?v=39';
-        import { openStudentAppointments } from './js/student-appointments.js?v=39';
-        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=39';
-        import { openAttendanceModal } from './js/attendance.js?v=39';
-        import { openMonthlyReport, openLessonReport } from './js/report.js?v=39';
-        import { isTrial, trialCardHtml, bindTrialActions } from './js/trial.js?v=39';
-        import { showTips } from './js/tips.js?v=39';
-        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone } from './js/billing.js?v=39';
-        import { groupTitle, groupColorClass } from './js/groups-utils.js?v=39';
-        import { confirmDeleteStudent, confirmRemoveFromGroup, setStudentStatus } from './js/student-actions.js?v=39';
-        import { openRecordingLinkModal } from './js/recording.js?v=39';
+        import { Auth } from './js/auth.js?v=51';
+        import { api } from './js/api.js?v=51';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=51';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=51';
+        import { icon } from './js/icons.js?v=51';
+        import { openStudentAppointments } from './js/student-appointments.js?v=51';
+        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=51';
+        import { openAttendanceModal } from './js/attendance.js?v=51';
+        import { openMonthlyReport, openLessonReport } from './js/report.js?v=51';
+        import { isTrial, trialCardHtml, bindTrialActions } from './js/trial.js?v=51';
+        import { showTips } from './js/tips.js?v=51';
+        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone, hoursText, monthLabel } from './js/billing.js?v=51';
+        import { groupTitle, groupColorClass } from './js/groups-utils.js?v=51';
+        import { confirmDeleteStudent, confirmRemoveFromGroup, setStudentStatus } from './js/student-actions.js?v=51';
+        import { openRecordingLinkModal } from './js/recording.js?v=51';
 
         renderSidebar('students');
         renderTopHeader({ title: 'ملف الطالب', subtitle: 'كل ما يخص الطالب في مكان واحد' });
@@ -298,7 +302,7 @@
                 if (['overview', 'lessons', 'billing', 'notes', 'info'].includes(hashTab)) switchTab(hashTab);
                 // v30: حصة/دفعة اتسجلت من جهاز تاني (أو المدرس رجع للبرنامج): الملف يتحدّث لوحده
                 // (مش وقت تعديل البيانات أو الملاحظات، ولا بعد "عرض المزيد" عشان مانرجّعش القايمة لأولها)
-                import('./js/auto-refresh.js?v=39').then((m) => m.onAppResume(async () => {
+                import('./js/auto-refresh.js?v=51').then((m) => m.onAppResume(async () => {
                     const tab = document.querySelector('.sp-tab.active');
                     if (tab && ['info', 'notes'].includes(tab.dataset.tab)) return;
                     if (lessons.length > PAGE) return;
@@ -372,16 +376,18 @@
 
             const phoneOk = !!normalizePhone(student.phone);
             const btns = [];
-            btns.push(`<a class="sp-icon-btn wa" ${phoneOk ? `href="${esc(whatsappUrl(student.phone, ''))}" target="_blank" rel="noopener"` : 'aria-disabled="true"'} title="واتساب" aria-label="واتساب">${icon('messageCircle', { size: 18 })}</a>`);
-            btns.push(`<a class="sp-icon-btn" ${student.phone ? `href="tel:${esc(String(student.phone).replace(/[^\d+]/g, ''))}"` : 'aria-disabled="true"'} title="اتصال" aria-label="اتصال">${icon('phone', { size: 18 })}</a>`);
-            btns.push(`<a class="sp-icon-btn" ${student.lesson_link ? `href="${esc(student.lesson_link)}" target="_blank" rel="noopener"` : 'aria-disabled="true"'} title="رابط الحصة" aria-label="رابط الحصة">${icon('link', { size: 18 })}</a>`);
-            btns.push(`<button type="button" class="sp-icon-btn" id="hdr-edit" title="تعديل البيانات" aria-label="تعديل البيانات">${icon('edit', { size: 18 })}</button>`);
-            // v28: حذف الطالب ظاهر في رأس الملف
-            btns.push(`<button type="button" class="sp-icon-btn sp-del" id="hdr-delete" title="حذف الطالب" aria-label="حذف الطالب">${icon('trash', { size: 18 })}</button>`);
+            // v35.3: كل أيقونة تحتها اسمها، والحذف اتنقل لتبويب "البيانات" (بعيد عن التعديل)
+            const lab = (t) => `<span class="sp-ib-l">${t}</span>`;
+            btns.push(`<a class="sp-icon-btn sp-ib wa" ${phoneOk ? `href="${esc(whatsappUrl(student.phone, ''))}" target="_blank" rel="noopener"` : 'aria-disabled="true"'} title="واتساب" aria-label="واتساب">${icon('messageCircle', { size: 18 })}${lab('واتساب')}</a>`);
+            btns.push(`<a class="sp-icon-btn sp-ib" ${student.phone ? `href="tel:${esc(String(student.phone).replace(/[^\d+]/g, ''))}"` : 'aria-disabled="true"'} title="اتصال" aria-label="اتصال">${icon('phone', { size: 18 })}${lab('اتصال')}</a>`);
+            btns.push(`<a class="sp-icon-btn sp-ib" ${student.lesson_link ? `href="${esc(student.lesson_link)}" target="_blank" rel="noopener"` : 'aria-disabled="true"'} title="رابط الحصة" aria-label="رابط الحصة">${icon('link', { size: 18 })}${lab('اللينك')}</a>`);
+            btns.push(`<button type="button" class="sp-icon-btn sp-ib" id="hdr-edit" title="تعديل البيانات" aria-label="تعديل البيانات">${icon('edit', { size: 18 })}${lab('تعديل')}</button>`);
             $('sp-contact').innerHTML = btns.join('');
             $('hdr-edit').addEventListener('click', openEdit);
-            $('hdr-delete').addEventListener('click', deleteThisStudent);
 
+            // v34: تسجيل حصة فاتت (من غير مؤقت) وتعديل الحصص بقوا هنا في ملف الطالب
+            const man = $('btn-add-manual');
+            if (man) man.href = `lesson.html?student_id=${encodeURIComponent(studentId)}&manual=1`;
             const btn = $('btn-lesson');
             btn.href = `lesson.html?student_id=${encodeURIComponent(studentId)}`;
             if (ov.in_progress) { btn.className = 'btn sp-live'; btn.innerHTML = icon('play', { size: 16 }) + ' استكمل الحصة الجارية'; }
@@ -427,7 +433,7 @@
             const last = lastRaw ? normalizeLesson(lastRaw) : null;
             $('ov-last').innerHTML = last
                 ? `<div class="x-card-title"><h3>${icon('clipboard', { size: 17 })} آخر حصة · ${esc(relativeDay(last.lesson_date))}</h3>
-                        <button type="button" class="x-link" data-goto-tab="lessons">كل الحصص</button></div>
+                        <span style="display:inline-flex;gap:.6rem">${last.id && !last.group_session_id ? `<a class="x-link" href="lesson.html?student_id=${encodeURIComponent(studentId)}&edit_lesson=${encodeURIComponent(last.id)}">${icon('edit', { size: 13 })} تعديل</a>` : ''}<button type="button" class="x-link" data-goto-tab="lessons">كل الحصص</button></span></div>
                    ${lessonDetailsHtml(last, student.subject, icon, { highlightNext: true })}`
                 : `<div class="x-card-title"><h3>${icon('clipboard', { size: 17 })} آخر حصة</h3></div>
                    <div class="x-empty">لم تُسجَّل أي حصة بعد.<br><a href="lesson.html?student_id=${encodeURIComponent(studentId)}">ابدأ أول حصة</a></div>`;
@@ -449,7 +455,16 @@
             // تبويب الدفع
             const main = $('bill-main');
             main.innerHTML = billingCardHtml(billView, { compact: false });
-            if (billView.enabled) {
+            if (billView.enabled && billView.money) {
+                const MODE = { monthly: 'مبلغ شهري ثابت', hourly: 'بالساعة', per_lesson: 'بالحصة' }[billView.mode];
+                main.firstElementChild.insertAdjacentHTML('beforeend', `
+                    <div class="bill-summary">
+                        <div><span>${billView.mode === 'hourly' ? 'الوقت من بداية المتابعة' : billView.mode === 'monthly' ? 'شهور المتابعة' : 'الحصص من بداية المتابعة'}</span><strong>${billView.mode === 'hourly' ? esc(hoursText(billView.minutes)) : billView.mode === 'monthly' ? (billView.months || []).length : billView.taken}</strong></div>
+                        <div><span>المطلوب</span><strong>${esc(money(billView.due || 0))}</strong></div>
+                        <div><span>المدفوع</span><strong>${esc(money(billView.paidAmount || 0))}</strong></div>
+                    </div>
+                    <p class="muted" style="font-size:.8rem;margin:.4rem 0 0">نظام الدفع: ${esc(MODE)}${billView.mode === 'hourly' ? ' — المدة بتتحسب من المؤقت، وفي التسجيل اليدوي من خانة "مدة الحصة".' : ''}</p>`);
+            } else if (billView.enabled) {
                 main.firstElementChild.insertAdjacentHTML('beforeend', `
                     <div class="bill-summary">
                         <div><span>تمت منذ بداية المتابعة</span><strong>${billView.taken}</strong></div>
@@ -461,15 +476,15 @@
             bindBillingActions(main, billingCtx);
 
             const hist = $('bill-history');
-            const payments = ov.payments || [];
+            const payments = billView.money ? (billView.payments || []) : (ov.payments || []);
             if (!billView.available || !payments.length) { hist.hidden = true; return; }
             hist.hidden = false;
             hist.innerHTML = `<div class="x-card-title"><h3>${icon('list', { size: 17 })} سجل الدفعات والتعديلات</h3></div>` + payments.map((p) => {
                 const n = Number(p.lessons_count) || 0;
                 const cls = n > 0 ? 'pay-plus' : n < 0 ? 'pay-minus' : '';
-                const title = n > 0 ? `+ ${lessonsText(n)}` : n < 0 ? `− ${lessonsText(n)}` : 'بداية المتابعة';
+                const title = billView.money && p.amount != null ? `+ ${money(p.amount)}${p.period ? ` · ${monthLabel(p.period)}` : ''}` : n > 0 ? `+ ${lessonsText(n)}` : n < 0 ? `− ${lessonsText(n)}` : 'بداية المتابعة';
                 const meta = [Formatters.formatDate(p.created_at)];
-                if (p.amount != null && Number(p.amount) > 0) meta.push(money(p.amount));
+                if (!billView.money && p.amount != null && Number(p.amount) > 0) meta.push(money(p.amount));
                 if (p.note) meta.push(p.note);
                 return `<div class="pay-item ${cls}"><div class="pay-main"><strong>${esc(title)}</strong><small>${esc(meta.join(' · '))}</small></div>
                     <button type="button" class="pay-del" data-del-payment="${esc(p.id)}" title="حذف" aria-label="حذف">${icon('trash', { size: 16 })}</button></div>`;
@@ -478,7 +493,8 @@
                 if (!confirm('حذف هذا القيد من سجل الدفع؟')) return;
                 b.disabled = true;
                 try {
-                    await api.studentBilling(studentId, 'delete_payment', { payment_id: b.dataset.delPayment });
+                    if (billView.money) await api.hub('pay_delete', { id: b.dataset.delPayment });
+                    else await api.studentBilling(studentId, 'delete_payment', { payment_id: b.dataset.delPayment });
                     // فلوس الشهر في الرئيسية تتحسب من جديد (وإلا الدفعة المحذوفة تفضل ظاهرة)
                     try { sessionStorage.removeItem('tm_income_cache_v1'); } catch (er) { /* تجاهل */ }
                     api.clearBillingDueCache();
@@ -550,7 +566,9 @@
                 date: String(l.lesson_date || '').slice(0, 10),
                 recordingUrl: l.recording_url || '',
                 lessonNumber: Number(b.dataset.reportNum) || null,
-                groupName: l.group_session_id ? groupTitle(l.group_name || '') : ''
+                groupName: l.group_session_id ? groupTitle(l.group_name || '') : '',
+                // v33: الواجب اللي كان مطلوب في الحصة اللي قبلها (الأقدم)
+                prevHomework: (() => { const idx = Number(b.dataset.reportIdx); for (let k = idx + 1; k < lessons.length; k++) { const p = normalizeLesson(lessons[k]); if (p.status === 'cancelled') continue; return p.homework || ''; } return ''; })()
             });
         });
 
@@ -849,6 +867,6 @@
 
         window.openBillingSetup = () => openBillingSetup({ student, view: billView }, billingCtx.onChange);
     </script>
-    <script src="js/pwa-install.js?v=39" defer></script>
+    <script src="js/pwa-install.js?v=51" defer></script>
 </body>
 </html>

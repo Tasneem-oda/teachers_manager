@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-NXC2WZMT');</script>
+    <!-- End Google Tag Manager -->
+    <meta charset="UTF-8">
+    <script>/* v29.5: الانتقال الناعم بين الصفحات لو اتلغى (تحويل سريع) مايتسجلش كخطأ */(function(){function q(t){if(!t)return;["ready","finished","updateCallbackDone"].forEach(function(k){try{t[k]&&t[k].catch(function(){})}catch(e){}})}addEventListener("pagereveal",function(e){q(e.viewTransition)});addEventListener("pageswap",function(e){var t=e.viewTransition;q(t);try{var to=e.activation&&e.activation.entry&&e.activation.entry.url;if(t&&(!to||new URL(to).origin!==location.origin))t.skipTransition()}catch(x){}})})();</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>الشروحات - Teachers Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
+    <link rel="stylesheet" href="css/style.css?v=51">
+    <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
+    <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4B3A5A">
+    <link rel="stylesheet" href="css/v29.css?v=51">
+    <link rel="stylesheet" href="css/v33.css?v=51">
+    <link rel="stylesheet" href="css/library.css?v=51">
+    <link rel="stylesheet" href="css/ui.css?v=51">
+</head>
+<body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NXC2WZMT"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+    <div class="app-shell">
+        <div id="sidebar-root"></div>
+        <main class="main-content">
+            <div id="top-header-root"></div>
+            <script>/* v29.5: الشريط الجانبي/السفلي والهيدر بيظهروا فورًا من آخر نسخة محفوظة (قبل ما ملفات الصفحة تتحمّل) */(function(){try{var c=JSON.parse(localStorage.getItem('tm_shell_v1')||'null');if(!c||!c.nav)return;var p=(location.pathname.split('/').pop()||'dashboard').replace(/\.html$/,'')||'dashboard';var s=document.getElementById('sidebar-root');if(s&&!s.firstChild){s.innerHTML=c.nav;var k=(c.active&&c.active[p])||p,a=s.querySelectorAll('.sidebar-nav a[data-key]');for(var i=0;i<a.length;i++){if(a[i].getAttribute('data-key')===k)a[i].classList.add('active');if(k==='groups'&&a[i].getAttribute('data-key')==='students')a[i].classList.add('active-mobile');}s.setAttribute('data-shell','1');}var h=document.getElementById('top-header-root');if(h&&!h.firstChild&&c.header&&c.header[p]){h.innerHTML=c.header[p];h.setAttribute('data-shell','1');}}catch(e){}})();</script>
+            <div class="page-body">
+                <!-- v35: الشروحات — فيديوهات يوتيوب من صاحبة البرنامج (بتتضاف من المونيتور) -->
+                <div class="ln-top">
+                    <label class="fx-search ln-search"><span aria-hidden="true">🔍</span><input type="search" id="ln-q" placeholder="ابحث في الشروحات..." aria-label="ابحث في الشروحات"></label>
+                    <div class="lib2-cats" id="ln-places" role="toolbar" aria-label="الأماكن"></div>
+                </div>
+                <div id="ln-player" class="ln-player" hidden></div>
+                <div id="ln-list"><div class="loading">جاري التحميل...</div></div>
+            </div>
+        </main>
+    </div>
+    <style>
+        .ln-top{display:flex;flex-direction:column;gap:.6rem;margin-bottom:1rem}
+        .ln-search{max-width:420px}
+        .ln-player{background:#1E1726;border-radius:18px;overflow:hidden;margin-bottom:1.2rem;box-shadow:0 12px 30px rgba(30,20,40,.2)}
+        .ln-player .v{aspect-ratio:16/9;max-height:68vh;width:100%;background:#000;position:relative}
+        .ln-player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+        .ln-player .t{color:#fff;padding:.7rem 1rem;display:flex;gap:.6rem;align-items:flex-start}
+        .ln-player .t b{display:block;font-size:1rem}.ln-player .t p{margin:.2rem 0 0;color:#CFC5D8;font-size:.85rem;line-height:1.7}
+        .ln-player .t button{margin-inline-start:auto;border:0;background:rgba(255,255,255,.12);color:#fff;border-radius:10px;width:34px;height:34px;cursor:pointer}
+        .ln-sec{margin:0 0 1.2rem}.ln-sec h3{font-size:1rem;margin:0 0 .6rem;display:flex;align-items:center;gap:.4rem}
+        .ln-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:.8rem}
+        .ln-card{border:1px solid var(--border);background:var(--card-bg);border-radius:14px;overflow:hidden;cursor:pointer;text-align:start;padding:0;font:inherit;color:inherit;display:flex;flex-direction:column;transition:box-shadow .15s,transform .12s}
+        .ln-card:hover{box-shadow:0 8px 22px rgba(40,25,60,.12);transform:translateY(-1px)}
+        .ln-card .th{position:relative;aspect-ratio:16/9;background:#2A2133}
+        .ln-card img{width:100%;height:100%;object-fit:cover;display:block}
+        .ln-card .pl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+        .ln-card .pl span{width:46px;height:46px;border-radius:50%;background:rgba(229,57,53,.92);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+        .ln-card .seen{position:absolute;top:6px;inset-inline-start:6px;background:rgba(0,0,0,.65);color:#C5E1A5;font-size:.7rem;font-weight:700;border-radius:999px;padding:1px 8px}
+        .ln-card .bd{padding:.6rem .7rem}.ln-card b{font-size:.9rem;line-height:1.5;display:block}.ln-card small{color:var(--text-light);font-size:.74rem}
+        .ln-empty{text-align:center;padding:2.5rem 1rem;color:var(--text-secondary);background:var(--card-bg);border:1px dashed var(--border);border-radius:16px;line-height:1.9}
+    </style>
+    <div id="error-toast" style="display:none;"></div>
+    <div id="success-toast" style="display:none;"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+    <script type="module" src="js/config.js?v=51"></script>
+    <script type="module">
+        import { Auth } from './js/auth.js?v=51';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=51';
+        import { getVideos, PLACES, placeLabel, youtubeId, thumb } from './js/tutorials.js?v=51';
+        renderSidebar('learn');
+        renderTopHeader({ title: 'الشروحات', subtitle: 'فيديوهات قصيرة بتشرح كل جزء في البرنامج', showSearch: false });
+        const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const $ = (id) => document.getElementById(id);
+        let items = [], place = '', q = '';
+        const seen = () => { try { return new Set(JSON.parse(localStorage.getItem('tm_tutorials_seen_v1') || '[]')); } catch (e) { return new Set(); } };
+        function play(v) {
+            const id = youtubeId(v.youtube_id || v.url);
+            const box = $('ln-player');
+            box.hidden = false;
+            box.innerHTML = `<div class="v"><iframe src="https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&playsinline=1&autoplay=1" title="${esc(v.title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>
+                <div class="t"><div><b>${esc(v.title)}</b>${v.description ? `<p>${esc(v.description)}</p>` : ''}</div><button type="button" aria-label="قفل الفيديو" data-close>✕</button></div>`;
+            box.querySelector('[data-close]').onclick = () => { box.hidden = true; box.innerHTML = ''; };
+            box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            try { const s = seen(); s.add(v.id || id); localStorage.setItem('tm_tutorials_seen_v1', JSON.stringify([...s].slice(-300))); } catch (e) { /* تجاهل */ }
+            import('./js/api.js?v=51').then((m) => m.api.hub('video_seen', { id: v.id }, { priority: 'low' })).catch(() => {});
+            render();
+        }
+        function render() {
+            const used = PLACES.filter((p) => items.some((v) => (v.places || []).includes(p[0])));
+            $('ln-places').innerHTML = `<button type="button" class="lib2-chip ${!place ? 'is-on' : ''}" data-p="">الكل (${items.length})</button>` + used.map((p) => `<button type="button" class="lib2-chip ${place === p[0] ? 'is-on' : ''}" data-p="${p[0]}">${esc(p[1])}</button>`).join('');
+            $('ln-places').hidden = used.length < 2;
+            if (!items.length) { $('ln-list').innerHTML = '<div class="ln-empty"><span style="font-size:2.4rem;display:block">🎬</span>الشروحات لسه بتتجهّز وهتنزل هنا قريب إن شاء الله.</div>'; return; }
+            const s = seen();
+            const ql = q.toLowerCase();
+            const match = (v) => (!place || (v.places || []).includes(place)) && (!ql || `${v.title} ${v.description || ''}`.toLowerCase().includes(ql));
+            const card = (v) => { const id = youtubeId(v.youtube_id || v.url); return `<button type="button" class="ln-card" data-v="${esc(v.id || id)}"><div class="th"><img src="${thumb(id)}" alt="" loading="lazy"><div class="pl"><span>▶</span></div>${s.has(v.id || id) ? '<span class="seen">✓ اتفرجت</span>' : ''}</div><div class="bd"><b>${esc(v.title)}</b><small>${esc((v.places || []).map(placeLabel).join(' · '))}${v.duration ? ` · ${esc(v.duration)}` : ''}</small></div></button>`; };
+            const groups = place || q ? [[null, items.filter(match)]] : PLACES.map((p) => [p, items.filter((v) => (v.places || [])[0] === p[0])]).filter((g) => g[1].length);
+            const others = place || q ? [] : items.filter((v) => !(v.places || []).length);
+            if (others.length) groups.push([['', 'شروحات تانية'], others]);
+            const html = groups.filter((g) => g[1].length).map(([p, list]) => `<section class="ln-sec">${p ? `<h3>▶ ${esc(p[1])}</h3>` : ''}<div class="ln-grid">${list.sort((a, b) => (a.sort || 0) - (b.sort || 0)).map(card).join('')}</div></section>`).join('');
+            $('ln-list').innerHTML = html || '<div class="ln-empty">مفيش نتايج.</div>';
+        }
+        $('ln-places').addEventListener('click', (e) => { const b = e.target.closest('[data-p]'); if (b) { place = b.dataset.p; render(); } });
+        $('ln-q').addEventListener('input', (e) => { q = e.target.value.trim(); render(); });
+        $('ln-list').addEventListener('click', (e) => { const c = e.target.closest('[data-v]'); if (!c) return; const v = items.find((x) => (x.id || youtubeId(x.youtube_id || x.url)) === c.dataset.v); if (v) play(v); });
+        (async () => {
+            const a = await Auth.requireAuth(); if (!a) return;
+            items = await getVideos({ fresh: true });
+            render();
+            const want = new URLSearchParams(location.search).get('v');
+            if (want) { const v = items.find((x) => x.id === want || youtubeId(x.youtube_id || x.url) === want); if (v) play(v); }
+        })();
+    </script>
+    <script src="js/pwa-install.js?v=51" defer></script>
+</body>
+</html>

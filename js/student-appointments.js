@@ -11,11 +11,11 @@
  * من غير أي تعديل أو إضافة على أي workflow في n8n.
  */
 
-import { api } from './api.js?v=39';
-import { ErrorHandler, Formatters, uuidv4, askChoice } from './utils.js?v=39';
-import { icon } from './icons.js?v=39';
-import { mountTimePicker, refreshTimePicker, mountDayChips, weekIndex } from './form-widgets.js?v=39';
-import { parseDate, isoDate } from './calendar-utils.js?v=39';
+import { api } from './api.js?v=51';
+import { ErrorHandler, Formatters, uuidv4, askChoice } from './utils.js?v=51';
+import { icon } from './icons.js?v=51';
+import { mountTimePicker, refreshTimePicker, mountDayChips, weekIndex } from './form-widgets.js?v=51';
+import { parseDate, isoDate } from './calendar-utils.js?v=51';
 
 const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const RECURRENCE_LABELS = { weekly: 'أسبوعيًا', daily: 'يوميًا', monthly: 'شهريًا', none: 'مرة واحدة' };
@@ -40,7 +40,7 @@ function injectMarkup() {
     wrap.innerHTML = `
         <div class="modal" id="sapp-list-modal">
             <div class="modal-content">
-                <span class="close-modal">&times;</span>
+                <button type="button" class="close-modal" aria-label="قفل">&times;</button>
                 <h2 id="sapp-list-title">مواعيد الطالب</h2>
                 <div id="sapp-next" class="sapp-next" hidden></div>
                 <div style="margin-bottom: 1rem;">
@@ -56,7 +56,7 @@ function injectMarkup() {
 
         <div class="modal" id="sapp-form-modal">
             <div class="modal-content">
-                <span class="close-modal">&times;</span>
+                <button type="button" class="close-modal" aria-label="قفل">&times;</button>
                 <h2 id="sapp-form-title">إضافة موعد</h2>
                 <form id="sapp-form" novalidate>
                     <input type="hidden" id="sapp-id">

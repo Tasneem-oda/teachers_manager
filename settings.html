@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=39">
+    <link rel="stylesheet" href="css/style.css?v=51">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -26,34 +26,78 @@
     <meta name="theme-color" content="#4B3A5A">
     <style>
         body { margin: 0; }
-        .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
-        .settings-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 2rem; margin-bottom: 1.5rem; }
-        @media (max-width: 480px) {
-            .settings-section { padding: 1.25rem; }
-        }
-        .settings-section h2 { color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; font-size: 1.2rem; }
-        .form-group { margin-bottom: 1.5rem; }
-        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-primary); }
-        .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--field-border); border-radius: 8px; font-family: inherit; font-size: 1rem; margin-bottom: 0; background-color: #fff; }
-        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); }
-        .info-text { color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem; }
-        /* v25: كان فيه margin-right: 0.5rem فالأزرار كانت بادئة 8px جوه عن حافة الخانات */
-        .btn { padding: 0.75rem 1.5rem; margin: 0; }
+        /* v34: إعادة تصميم الإعدادات بنفس روح باقي البرنامج (كروت + أيقونات ملوّنة + قائمة أقسام) */
+        .st-wrap { max-width: 1060px; display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+        .st-hero { grid-column: 1 / -1; display: flex; align-items: center; gap: 1rem; padding: 1.1rem 1.25rem; border-radius: 18px; color: #fff;
+            background: linear-gradient(135deg, var(--primary, #4B3A5A), #7A5C93); box-shadow: 0 10px 30px rgba(75,58,90,.18); }
+        .st-avatar { width: 58px; height: 58px; border-radius: 16px; background: rgba(255,255,255,.18); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 800; flex-shrink: 0; }
+        .st-hero h1 { margin: 0; font-size: 1.2rem; color: #fff; }
+        .st-hero p { margin: .15rem 0 0; opacity: .85; font-size: .85rem; direction: ltr; text-align: right; }
+        .st-hero .st-chip { margin-inline-start: auto; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.25); padding: .35rem .8rem; border-radius: 999px; font-size: .8rem; white-space: nowrap; color: #fff; text-decoration: none; }
+        .st-nav { position: sticky; top: 84px; display: flex; flex-direction: column; gap: .2rem; background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: .5rem; }
+        .st-nav a { display: flex; align-items: center; gap: .6rem; padding: .6rem .7rem; border-radius: 10px; color: var(--text-primary); text-decoration: none; font-weight: 600; font-size: .9rem; }
+        .st-nav a:hover, .st-nav a.on { background: var(--bg-secondary, #F5F2F8); color: var(--primary); }
+        .st-ic { width: 34px; height: 34px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .st-ic.v { background: #EFE8F5; color: #5B3F7A; } .st-ic.b { background: #E4EEFA; color: #1F5AA6; } .st-ic.g { background: #E3F5EC; color: #1F6B4F; }
+        .st-ic.o { background: #FFF1E0; color: #B5651D; } .st-ic.t { background: #E0F4F2; color: #0F6E6A; } .st-ic.r { background: #FBEAEA; color: #A12A2A; } .st-ic.y { background: #FFF6D8; color: #8C6A12; }
+        .st-main { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+        .settings-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 18px; padding: 1.25rem 1.35rem; scroll-margin-top: 90px; box-shadow: 0 1px 2px rgba(41,37,45,.04); }
+        .st-head { display: flex; align-items: center; gap: .75rem; margin: 0 0 1rem; }
+        .st-head h2 { margin: 0; font-size: 1.05rem; color: var(--text-primary); border: 0; padding: 0; }
+        .st-head small { display: block; color: var(--text-secondary); font-size: .8rem; font-weight: 400; margin-top: .1rem; }
+        .st-head .icon svg { display: block; }
+        .st-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .9rem 1rem; }
+        .st-grid .full { grid-column: 1 / -1; }
+        .form-group { margin: 0; }
+        .form-group label { display: block; margin-bottom: .4rem; font-weight: 600; font-size: .88rem; color: var(--text-primary); }
+        .form-group input, .form-group select { width: 100%; padding: .7rem .8rem; border: 1px solid var(--field-border); border-radius: 12px; font-family: inherit; font-size: .98rem; margin-bottom: 0; background-color: var(--card-bg, #fff); min-height: 46px; box-sizing: border-box; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(91,63,122,.12); }
+        .form-group input:disabled { background: var(--bg-secondary, #F5F2F8); color: var(--text-secondary); }
+        .info-text { color: var(--text-secondary); font-size: .8rem; margin-top: .35rem; line-height: 1.7; }
+        .st-actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1rem; align-items: center; }
+        .btn { padding: .7rem 1.3rem; margin: 0; min-height: 44px; border-radius: 12px; }
         .btn-danger { background: var(--danger); color: white; }
         .btn-danger:hover { background: #8E3F3F; }
         .btn-outline-danger { background: var(--card-bg); color: var(--danger); border: 1px solid var(--danger-border); }
-        .set-toggle { display: flex !important; align-items: flex-start; gap: 0.7rem; padding: 0.7rem 0; border-bottom: 1px solid var(--border); cursor: pointer; }
-        .set-toggle:last-of-type { border-bottom: 0; }
-        .set-toggle input { width: 22px; height: 22px; margin: 0.15rem 0 0; flex-shrink: 0; accent-color: var(--primary); }
-        .set-toggle span { display: flex; flex-direction: column; gap: 0.2rem; }
-        .set-toggle small { color: var(--text-secondary); font-size: 0.84rem; font-weight: 400; line-height: 1.6; }
-        .rm-saved { font-size: 0.8rem; color: var(--success-text, #2E7D32); min-height: 1.1em; margin: 0.3rem 0 0; }
         .btn-outline-danger:hover { background: #FBEAEA; }
-        .action-row { display: flex; gap: 1rem; }
-        .success-message { background: #E8F5E9; color: var(--success-text); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; display: none; }
-        .error-message { background: #FFEBEE; color: var(--danger); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; display: none; }
+        .set-toggle { display: flex !important; align-items: center; gap: .8rem; padding: .85rem 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+        .set-toggle:last-of-type { border-bottom: 0; }
+        .set-toggle span { display: flex; flex-direction: column; gap: .2rem; flex: 1; }
+        .set-toggle small { color: var(--text-secondary); font-size: .8rem; font-weight: 400; line-height: 1.6; }
+        /* مفتاح تشغيل/إيقاف بدل الـ checkbox */
+        .set-toggle input { appearance: none; -webkit-appearance: none; width: 46px; height: 26px; border-radius: 999px; background: #D8D2DE; position: relative; flex-shrink: 0; margin: 0; cursor: pointer; transition: background .2s; order: 2; }
+        .set-toggle input::after { content: ''; position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: transform .2s; }
+        .set-toggle input:checked { background: var(--primary, #5B3F7A); }
+        .set-toggle input:checked::after { transform: translateX(-20px); }
+        .rm-saved { font-size: .8rem; color: var(--success-text, #2E7D32); min-height: 1.1em; margin: .3rem 0 0; }
+        .st-row { display: flex; align-items: center; gap: .8rem; padding: .85rem 0; border-top: 1px solid var(--border); flex-wrap: wrap; }
+        .st-row:first-of-type { border-top: 0; padding-top: 0; }
+        .st-row .tx { flex: 1; min-width: 200px; }
+        .st-row .tx b { display: block; font-size: .93rem; }
+        .st-row .tx small { color: var(--text-secondary); font-size: .8rem; line-height: 1.6; }
+        .st-push { display: flex; gap: .7rem; align-items: flex-start; padding: .8rem .9rem; border-radius: 14px; background: var(--bg-secondary, #F7F4FA); margin-bottom: .8rem; }
+        #push-status { margin: 0; font-size: .88rem; flex: 1; }
+        .st-danger { border-color: #F0D5D5; }
+        .st-danger .st-head h2 { color: var(--danger); }
+        .success-message { background: #E8F5E9; color: var(--success-text); padding: .8rem 1rem; border-radius: 12px; margin-bottom: 1rem; display: none; }
+        .error-message { background: #FFEBEE; color: var(--danger); padding: .8rem 1rem; border-radius: 12px; margin-bottom: 1rem; display: none; }
+        @media (max-width: 900px) {
+            .st-wrap { grid-template-columns: minmax(0, 1fr); }
+            .st-nav { position: static; flex-direction: row; overflow-x: auto; scrollbar-width: none; padding: .35rem; gap: .3rem; }
+            .st-nav::-webkit-scrollbar { display: none; }
+            .st-nav a { white-space: nowrap; padding: .45rem .7rem; font-size: .84rem; }
+            .st-nav a .st-ic { width: 28px; height: 28px; }
+        }
+        @media (max-width: 560px) {
+            .st-grid { grid-template-columns: minmax(0, 1fr); }
+            .settings-section { padding: 1rem; border-radius: 16px; }
+            .st-hero { padding: .9rem 1rem; }
+            .st-hero .st-chip { display: none; }
+            .st-actions .btn { flex: 1; }
+        }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=39">
+    <link rel="stylesheet" href="css/v29.css?v=51">
+    <link rel="stylesheet" href="css/ui.css?v=51">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -66,143 +110,120 @@
     <div id="top-header-root"></div>
             <script>/* v29.5: الشريط الجانبي/السفلي والهيدر بيظهروا فورًا من آخر نسخة محفوظة (قبل ما ملفات الصفحة تتحمّل) */(function(){try{var c=JSON.parse(localStorage.getItem('tm_shell_v1')||'null');if(!c||!c.nav)return;var p=(location.pathname.split('/').pop()||'dashboard').replace(/\.html$/,'')||'dashboard';var s=document.getElementById('sidebar-root');if(s&&!s.firstChild){s.innerHTML=c.nav;var k=(c.active&&c.active[p])||p,a=s.querySelectorAll('.sidebar-nav a[data-key]');for(var i=0;i<a.length;i++){if(a[i].getAttribute('data-key')===k)a[i].classList.add('active');if(k==='groups'&&a[i].getAttribute('data-key')==='students')a[i].classList.add('active-mobile');}s.setAttribute('data-shell','1');}var h=document.getElementById('top-header-root');if(h&&!h.firstChild&&c.header&&c.header[p]){h.innerHTML=c.header[p];h.setAttribute('data-shell','1');}}catch(e){}})();</script>
     <div class="page-body">
-    <div class="container" style="max-width: 800px; margin: 0; padding: 0;">
-        <!-- Profile Settings -->
-        <div class="settings-section">
-            <h2><span id="ic-profile" class="icon"></span> ملف شخصي</h2>
-            <div class="success-message" id="profile-success">تم حفظ التغييرات بنجاح</div>
+    <div class="st-wrap">
+        <div class="st-hero">
+            <div class="st-avatar" id="st-avatar">؟</div>
+            <div style="min-width:0"><h1 id="st-name">حسابي</h1><p id="st-email"></p></div>
+            <a class="st-chip" href="subscription.html" id="st-plan">اشتراكك</a>
+        </div>
+        <nav class="st-nav" aria-label="أقسام الإعدادات">
+            <a href="#sec-profile" class="on"><span class="st-ic v" id="nic-profile"></span> الملف الشخصي</a>
+            <a href="#sec-notif"><span class="st-ic b" id="nic-notif"></span> الإشعارات والتذكير</a>
+            <a href="#wa-section"><span class="st-ic g" id="nic-wa"></span> رسايل واتساب</a>
+            <a href="#sec-security"><span class="st-ic o" id="nic-security"></span> الأمان</a>
+            <a href="#sec-app"><span class="st-ic t" id="nic-app"></span> التطبيق وبياناتك</a>
+            <a href="#sec-account"><span class="st-ic r" id="nic-account"></span> الحساب</a>
+        </nav>
+        <div class="st-main">
+        <!-- الملف الشخصي -->
+        <section class="settings-section" id="sec-profile">
+            <div class="st-head"><span class="st-ic v icon" id="ic-profile"></span><h2>الملف الشخصي<small>اسمك ورقمك ومادتك (بتظهر في التقارير ورسايل ولي الأمر)</small></h2></div>
+            <div class="success-message" id="profile-success">تم حفظ التغييرات بنجاح ✓</div>
             <div class="error-message" id="profile-error"></div>
-            
             <form id="profile-form">
-                <div class="form-group">
-                    <label for="name">الاسم الكامل</label>
-                    <input type="text" id="name" name="name" required>
+                <div class="st-grid">
+                    <div class="form-group"><label for="name">الاسم الكامل</label><input type="text" id="name" name="name" required autocomplete="name"></div>
+                    <div class="form-group"><label for="phone">رقم الموبايل</label><input type="tel" id="phone" name="phone" inputmode="tel" autocomplete="tel"></div>
+                    <div class="form-group full"><label for="email">البريد الإلكتروني</label><input type="email" id="email" name="email" disabled><div class="info-text">الإيميل ثابت (هو اللي بتدخل بيه).</div></div>
+                    <div class="form-group"><label for="teaching-type">نوع التدريس</label>
+                        <select id="teaching-type" name="teaching_type">
+                            <option value="private">دروس خصوصية</option><option value="group">مجموعات</option><option value="online">أونلاين</option><option value="offline">حضوري</option><option value="hybrid">مختلط</option>
+                        </select></div>
+                    <div class="form-group"><label for="subject">المادة الأساسية</label>
+                        <select id="subject" name="subject">
+                            <option value="quran">القرآن الكريم</option><option value="arabic">اللغة العربية</option><option value="english">اللغة الإنجليزية</option><option value="math">الرياضيات</option><option value="science">العلوم</option><option value="programming">البرمجة</option><option value="other">أخرى</option>
+                        </select></div>
+                    <div class="info-text full" style="margin-top:-.4rem">المادة بتظهر تلقائيًا لما تضيف طالب جديد، وبتغيّر أسماء التقييم (الحفظ والتلاوة للقرآن).</div>
                 </div>
-
-                <div class="form-group">
-                    <label for="email">البريد الإلكتروني</label>
-                    <input type="email" id="email" name="email" disabled>
-                    <div class="info-text">لا يمكن تغيير البريد الإلكتروني</div>
-                </div>
-
-                <div class="form-group">
-                    <label for="phone">رقم الهاتف</label>
-                    <input type="tel" id="phone" name="phone">
-                </div>
-
-                <div class="form-group">
-                    <label for="teaching-type">نوع التدريس</label>
-                    <select id="teaching-type" name="teaching_type">
-                        <option value="private">دروس خصوصية</option>
-                        <option value="group">مجموعات</option>
-                        <option value="online">أونلاين</option>
-                        <option value="offline">حضوري</option>
-                        <option value="hybrid">مختلط</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="subject">المادة الأساسية</label>
-                    <select id="subject" name="subject">
-                        <option value="quran">القرآن الكريم</option>
-                        <option value="arabic">اللغة العربية</option>
-                        <option value="english">اللغة الإنجليزية</option>
-                        <option value="math">الرياضيات</option>
-                        <option value="science">العلوم</option>
-                        <option value="programming">البرمجة</option>
-                        <option value="other">أخرى</option>
-                    </select>
-                    <div class="info-text">بتظهر تلقائيًا لما تضيف طالب جديد، وبتغيّر أسماء التقييم (الحفظ والتلاوة للقرآن).</div>
-                </div>
-
-                <button type="submit" class="btn" id="profile-save">حفظ التغييرات</button>
+                <div class="st-actions"><button type="submit" class="btn" id="profile-save">حفظ التغييرات</button></div>
             </form>
-        </div>
+        </section>
 
-        <!-- Password & Security -->
-        <div class="settings-section">
-            <h2><span id="ic-security" class="icon"></span> الأمان</h2>
-            <div class="success-message" id="password-success">تم تغيير كلمة المرور بنجاح</div>
-            <div class="error-message" id="password-error"></div>
-            
-            <form id="password-form">
-                <div class="form-group">
-                    <label for="current-password">كلمة المرور الحالية</label>
-                    <input type="password" id="current-password" name="current_password" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="new-password">كلمة المرور الجديدة</label>
-                    <input type="password" id="new-password" name="new_password" required>
-                    <div class="info-text">يجب أن تكون 8 أحرف على الأقل</div>
-                </div>
-
-                <div class="form-group">
-                    <label for="confirm-password">تأكيد كلمة المرور</label>
-                    <input type="password" id="confirm-password" name="confirm_password" required>
-                </div>
-
-                <button type="submit" class="btn">تحديث كلمة المرور</button>
-            </form>
-        </div>
-
-        <!-- Notification Settings -->
-        <div class="settings-section">
-            <h2><span id="ic-notif" class="icon"></span> الإشعارات</h2>
-            <div class="form-group">
-                <p style="margin:0 0 0.4rem; font-weight:600;">تنبيهات الحصص على الموبايل</p>
-                <div class="info-text">كل يوم الساعة 5 الصبح يوصلك تنبيه بحصص النهارده، وتقدر تختار تحت تذكير قبل كل حصة. على الآيفون لازم تكون مثبّت البرنامج على الشاشة الرئيسية الأول.</div>
-                <p id="push-status" style="margin:0.6rem 0; font-size:0.9rem;"></p>
+        <!-- الإشعارات -->
+        <section class="settings-section" id="sec-notif">
+            <div class="st-head"><span class="st-ic b icon" id="ic-notif"></span><h2>الإشعارات والتذكير<small>تنبيه الصبح بحصص اليوم + تذكير قبل كل حصة</small></h2></div>
+            <div class="st-push">
+                <p id="push-status"></p>
+                <button type="button" class="btn btn-sm" id="btn-enable-push">تفعيل التنبيهات</button>
             </div>
-            <button type="button" class="btn" id="btn-enable-push">تفعيل التنبيهات</button>
-            <!-- v28: مواعيد التذكير (قبل الحصة / وقتها / بصوت) -->
-            <div id="reminder-controls" class="rm-wrap" style="margin-top:1.2rem;"><p class="info-text">جاري تحميل إعدادات التذكير...</p></div>
-        </div>
+            <div class="info-text" style="margin:0 0 .6rem">كل يوم الساعة 5 الصبح يوصلك تنبيه بحصص النهارده. على الآيفون لازم تثبّت البرنامج على الشاشة الرئيسية الأول.</div>
+            <div id="reminder-controls" class="rm-wrap"><p class="info-text">جاري تحميل إعدادات التذكير...</p></div>
+        </section>
 
-        <!-- v28: رسايل واتساب للطالب وولي الأمر -->
-        <div class="settings-section" id="wa-section">
-            <h2><span id="ic-wa" class="icon"></span> رسايل واتساب</h2>
+        <!-- رسايل واتساب -->
+        <section class="settings-section" id="wa-section">
+            <div class="st-head"><span class="st-ic g icon" id="ic-wa"></span><h2>رسايل واتساب<small>رسايل جاهزة للطالب وولي الأمر</small></h2></div>
             <label class="set-toggle"><input type="checkbox" id="s-send-link"> <span><b>ابعت لينك الحصة للطالب لما أبدأ الحصة</b><small>بيظهر زرار "ابعت اللينك على واتساب" أول ما تبدأ حصة طالب عنده لينك ورقم.</small></span></label>
-            <label class="set-toggle"><input type="checkbox" id="s-report"> <span><b>تقرير الحصة لولي الأمر بعد كل حصة</b><small>بعد ما تحفظ الحصة يظهر زرار "ابعت التقرير" جاهز من اللي سجّلته (المحتوى والتقييم والواجب).</small></span></label>
+            <label class="set-toggle"><input type="checkbox" id="s-report"> <span><b>تقرير الحصة لولي الأمر بعد كل حصة</b><small>بعد ما تحفظ الحصة يظهر زرار "ابعت التقرير" جاهز من اللي سجّلته.</small></span></label>
             <p class="rm-saved" id="wa-saved" aria-live="polite"></p>
-        </div>
+        </section>
 
-        <!-- v27: تثبيت التطبيق (بيشتغل على أي متصفح: لو مفيش تثبيت مباشر بيظهر الشرح خطوة بخطوة) -->
-        <div class="settings-section tm-install-entry" id="install-section" hidden>
-            <h2><span id="ic-install" class="icon"></span> تثبيت التطبيق</h2>
-            <p class="info-text" style="margin:0 0 1rem;">خلّي Teachers Manager على الشاشة الرئيسية للموبايل أو الكمبيوتر: يفتح بضغطة زي أي تطبيق، ويوصلك تنبيه بحصص كل يوم.</p>
-            <button type="button" class="btn" id="btn-install-app">ثبّت التطبيق</button>
-        </div>
+        <!-- الأمان -->
+        <section class="settings-section" id="sec-security">
+            <div class="st-head"><span class="st-ic o icon" id="ic-security"></span><h2>الأمان<small>كلمة السر بتاعة حسابك</small></h2></div>
+            <div class="success-message" id="password-success">تم تغيير كلمة المرور بنجاح ✓</div>
+            <div class="error-message" id="password-error"></div>
+            <form id="password-form">
+                <div class="st-grid">
+                    <div class="form-group full"><label for="current-password">كلمة المرور الحالية</label><input type="password" id="current-password" name="current_password" required autocomplete="current-password"></div>
+                    <div class="form-group"><label for="new-password">كلمة المرور الجديدة</label><input type="password" id="new-password" name="new_password" required autocomplete="new-password"><div class="info-text">8 حروف على الأقل</div></div>
+                    <div class="form-group"><label for="confirm-password">تأكيد كلمة المرور</label><input type="password" id="confirm-password" name="confirm_password" required autocomplete="new-password"></div>
+                </div>
+                <div class="st-actions"><button type="submit" class="btn">تحديث كلمة المرور</button></div>
+            </form>
+        </section>
 
-        <!-- v29: نسخة من كل البيانات -->
-        <div class="settings-section" id="export-section">
-            <h2><span id="ic-export" class="icon"></span> نسخة من بياناتك</h2>
-            <p class="info-text" style="margin:0 0 1rem;">نزّل كل بياناتك في ملف واحد: الطلاب والحصص والدفعات والمواعيد والمجموعات والملاحظات. كل جدول بيتفتح في Excel أو Google Sheets.</p>
-            <button type="button" class="btn btn-outline" id="btn-export">نزّل كل بياناتك (Excel)</button>
-        </div>
-
-        <!-- v25: الخروج العادي (زرار الخروج اتشال من هيدر الموبايل) -->
-        <div class="settings-section">
-            <h2><span id="ic-account" class="icon"></span> الحساب</h2>
-            <p class="info-text" style="margin:0 0 1rem;">بياناتك وطلابك بيفضلوا محفوظين. تقدر تدخل تاني في أي وقت بنفس الإيميل.</p>
-            <button type="button" class="btn btn-outline-danger" id="btn-logout">تسجيل الخروج من الجهاز ده</button>
-        </div>
-
-        <!-- Danger Zone -->
-        <div class="settings-section" style="border-color: var(--danger);">
-            <h2 style="color: var(--danger);">منطقة الخطر</h2>
-            
-            <div style="margin-bottom: 1.5rem;">
-                <h4 style="color: var(--text-primary);">تسجيل الخروج من جميع الأجهزة</h4>
-                <p style="color: var(--text-secondary); font-size: 0.9rem;">سيتم تسجيل خروجك من جميع الأجهزة والمتصفحات</p>
-                <button type="button" class="btn btn-danger" onclick="logoutAllDevices()">تسجيل الخروج من الجميع</button>
+        <!-- التطبيق والبيانات -->
+        <section class="settings-section" id="sec-app">
+            <div class="st-head"><span class="st-ic t icon" id="ic-export"></span><h2>التطبيق وبياناتك</h2></div>
+            <div class="st-row tm-install-entry" id="install-section" hidden>
+                <span class="st-ic y icon" id="ic-install"></span>
+                <div class="tx"><b>ثبّت التطبيق على جهازك</b><small>يفتح بضغطة زي أي تطبيق، ويوصلك تنبيه بحصص كل يوم.</small></div>
+                <button type="button" class="btn btn-sm" id="btn-install-app">ثبّت التطبيق</button>
             </div>
-
-            <div>
-                <h4 style="color: var(--text-primary);">حذف الحساب</h4>
-                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">حسابك وكل بيانات طلابك بيتمسحوا نهائيًا. عندك 14 يوم بعد الطلب تقدر ترجّع فيهم حسابك لو غيّرت رأيك.</p>
-                <button type="button" class="btn btn-danger" id="btn-delete-account">حذف حسابي</button>
+            <div class="st-row">
+                <span class="st-ic y icon" aria-hidden="true">▶</span>
+                <div class="tx"><b>الشروحات</b><small>فيديوهات قصيرة بتشرح كل جزء في البرنامج.</small></div>
+                <a class="btn btn-sm btn-outline" href="learn.html">افتح الشروحات</a>
             </div>
+            <div class="st-row" id="drive-section" hidden>
+                <span class="st-ic t icon" aria-hidden="true">☁️</span>
+                <div class="tx"><b>كتبك على جوجل درايف</b><small id="drive-state">الكتب اللي بترفعها تتحفظ على جوجل درايف بتاعك بدل تخزين البرنامج.</small></div>
+                <button type="button" class="btn btn-sm btn-outline" id="btn-drive">وصّل جوجل درايف</button>
+            </div>
+            <div class="st-row" id="export-section">
+                <span class="st-ic t icon" id="ic-export2"></span>
+                <div class="tx"><b>نسخة من كل بياناتك</b><small>الطلاب والحصص والدفعات والمواعيد والمجموعات والملاحظات في ملف Excel.</small></div>
+                <button type="button" class="btn btn-sm btn-outline" id="btn-export">نزّل الملف</button>
+            </div>
+        </section>
+
+        <!-- الحساب -->
+        <section class="settings-section st-danger" id="sec-account">
+            <div class="st-head"><span class="st-ic r icon" id="ic-account"></span><h2>الحساب<small>بياناتك وطلابك بيفضلوا محفوظين لما تخرج</small></h2></div>
+            <div class="st-row">
+                <div class="tx"><b>تسجيل الخروج من الجهاز ده</b><small>تقدر تدخل تاني في أي وقت بنفس الإيميل.</small></div>
+                <button type="button" class="btn btn-sm btn-outline-danger" id="btn-logout">خروج</button>
+            </div>
+            <div class="st-row">
+                <div class="tx"><b>الخروج من كل الأجهزة</b><small>لو دخلت من جهاز مش بتاعك ونسيت تخرج.</small></div>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="logoutAllDevices()">خروج من الكل</button>
+            </div>
+            <div class="st-row">
+                <div class="tx"><b>حذف الحساب</b><small>حسابك وكل بيانات طلابك بيتمسحوا نهائيًا. عندك 14 يوم بعد الطلب ترجّع فيهم حسابك.</small></div>
+                <button type="button" class="btn btn-sm btn-danger" id="btn-delete-account">حذف حسابي</button>
+            </div>
+        </section>
         </div>
     </div>
     </div>
@@ -210,40 +231,49 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=39"></script>
+    <script type="module" src="js/config.js?v=51"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=39';
-        import { Storage, ErrorHandler, toLatinDigits } from './js/utils.js?v=39';
-        import { api } from './js/api.js?v=39';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=39';
-        import { icon } from './js/icons.js?v=39';
-        import { CONFIG } from './js/config.js?v=39';
-        import { requestPermission, unlinkOnSignOut } from './js/notifications.js?v=39';
-        import { mountReminderControls } from './js/reminder-settings.js?v=39';
-        import { openDeleteAccount } from './js/account-delete.js?v=39';
+        import { Auth } from './js/auth.js?v=51';
+        import { Storage, ErrorHandler, toLatinDigits } from './js/utils.js?v=51';
+        import { api } from './js/api.js?v=51';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=51';
+        import { icon } from './js/icons.js?v=51';
+        import { CONFIG } from './js/config.js?v=51';
+        import { requestPermission, unlinkOnSignOut } from './js/notifications.js?v=51';
+        import { mountReminderControls } from './js/reminder-settings.js?v=51';
+        import { openDeleteAccount } from './js/account-delete.js?v=51';
 
-        function renderPushStatus() {
+        // v32: الحالة الحقيقية (الجهاز متسجل فعلًا عند خدمة الإشعارات) مش بس "الإذن متاح"
+        let pushHealth = null;
+        async function renderPushStatus() {
             const el = document.getElementById('push-status');
             const btn = document.getElementById('btn-enable-push');
             if (!el || !btn) return;
-            if (!('Notification' in window)) {
-                el.textContent = 'المتصفح ده مش بيدعم التنبيهات. على الآيفون: ثبّت البرنامج على الشاشة الرئيسية وافتحه من هناك.';
-                btn.hidden = true;
-                return;
+            el.textContent = 'جاري التأكد من الإشعارات على الجهاز ده...';
+            btn.hidden = true;
+            try {
+                const ph = await import('./js/push-health.js?v=51');
+                pushHealth = await ph.checkPushHealth({ waitSdkMs: 10000 });
+                const t = ph.healthText(pushHealth);
+                el.innerHTML = `<b>${t.title}</b>${t.desc ? `<br><small>${t.desc}</small>` : ''}`;
+                el.style.color = t.ok ? 'var(--success-text, #2E7D32)' : '';
+                btn.hidden = !!t.ok;
+                btn.textContent = t.label || 'فعّل الإشعارات';
+                ph.reportPushStatus(pushHealth);
+            } catch (e) {
+                el.textContent = 'مقدرناش نتأكد من حالة الإشعارات دلوقتي.';
             }
-            const p = Notification.permission;
-            el.textContent = p === 'granted' ? '✓ التنبيهات مفعّلة على الجهاز ده'
-                : p === 'denied' ? 'التنبيهات مقفولة من إعدادات المتصفح. افتح إعدادات الموقع (علامة القفل جنب الرابط) ← الإشعارات ← سماح.'
-                : 'التنبيهات لسه مش مفعّلة على الجهاز ده.';
-            btn.hidden = p === 'granted';
         }
         document.getElementById('btn-enable-push').addEventListener('click', async (e) => {
             const b = e.currentTarget;
             if (b.disabled) return;
             const label = b.textContent;
             b.disabled = true;
-            b.textContent = 'جاري التفعيل...';
-            try { await requestPermission(); } finally { b.disabled = false; b.textContent = label; }
+            b.textContent = 'لحظة...';
+            try {
+                const ph = await import('./js/push-health.js?v=51');
+                await ph.fixNow(pushHealth || { state: 'default', p: ph.devicePlatform() }, requestPermission);
+            } finally { b.disabled = false; b.textContent = label; }
             renderPushStatus();
         });
         renderPushStatus();
@@ -254,8 +284,21 @@
         document.getElementById('ic-notif').innerHTML = icon('bell', { size: 18 });
         document.getElementById('ic-account').innerHTML = icon('logout', { size: 18 });
         document.getElementById('ic-export').innerHTML = icon('download', { size: 18 });
+        document.getElementById('ic-export2').innerHTML = icon('fileText', { size: 17 });
+        [['nic-profile', 'userCheck'], ['nic-notif', 'bell'], ['nic-wa', 'messageCircle'], ['nic-security', 'lock'], ['nic-app', 'download'], ['nic-account', 'logout']]
+            .forEach(([id, n]) => { const el = document.getElementById(id); if (el) el.innerHTML = icon(n, { size: 16 }); });
+        // القائمة الجانبية: القسم الظاهر بيتعلّم
+        try {
+            const links = [...document.querySelectorAll('.st-nav a')];
+            const io = new IntersectionObserver((ents) => ents.forEach((en) => {
+                if (!en.isIntersecting) return;
+                links.forEach((a) => a.classList.toggle('on', a.getAttribute('href') === '#' + en.target.id));
+            }), { rootMargin: '-30% 0px -60% 0px' });
+            links.forEach((a) => { const t = document.querySelector(a.getAttribute('href')); if (t) io.observe(t); });
+            links.forEach((a) => a.addEventListener('click', (e) => { const t = document.querySelector(a.getAttribute('href')); if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }));
+        } catch (e) { /* تجاهل */ }
         document.getElementById('btn-export').addEventListener('click', async (e) => {
-            const { downloadAllData } = await import('./js/export-data.js?v=39');
+            const { downloadAllData } = await import('./js/export-data.js?v=51');
             downloadAllData(e.currentTarget);
         });
         document.getElementById('ic-install').innerHTML = icon('download', { size: 18 });
@@ -268,7 +311,7 @@
         };
         syncInstallSection();
         window.addEventListener('tm:install-state', syncInstallSection);
-        renderTopHeader({ title: 'الإعدادات', subtitle: 'إدارة ملفك الشخصي وأمان حسابك', showSearch: false });
+        renderTopHeader({ title: 'الإعدادات', subtitle: 'حسابك والإشعارات ورسايل واتساب', showSearch: false });
 
         // Check auth
         let profile = null;
@@ -292,6 +335,12 @@
             } catch (e) { /* تجاهل */ }
             
             // Populate form
+            try {
+                const nm = (profile && profile.name) || 'حسابي';
+                document.getElementById('st-name').textContent = nm;
+                document.getElementById('st-avatar').textContent = nm.trim().charAt(0) || '؟';
+                document.getElementById('st-email').textContent = (profile && profile.email) || (authInfo.session && authInfo.session.user && authInfo.session.user.email) || '';
+            } catch (e) { /* تجاهل */ }
             if (profile) {
                 document.getElementById('name').value = profile.name || '';
                 document.getElementById('email').value = profile.email || (authInfo.session && authInfo.session.user && authInfo.session.user.email) || '';
@@ -330,6 +379,7 @@
                 const fresh = { ...(profile || {}), ...data, ...((saved && saved.profile) || {}) };
                 profile = fresh;
                 Storage.set('user_profile', fresh);
+                try { document.getElementById('st-name').textContent = fresh.name; document.getElementById('st-avatar').textContent = fresh.name.trim().charAt(0); const hn = document.getElementById('header-user-name'); if (hn) hn.textContent = fresh.name; } catch (e) { /* تجاهل */ }
                 try { sessionStorage.removeItem('tm_profile_cache_v1'); } catch (e) { /* تجاهل */ }
                 try { localStorage.setItem('tm_teacher_subject', data.subject); } catch (e) { /* تجاهل */ }
                 document.getElementById('profile-success').style.display = 'block';
@@ -439,6 +489,25 @@
             rep.addEventListener('change', () => save({ report_after_lesson: rep.checked }));
         })();
     </script>
-    <script src="js/pwa-install.js?v=39" defer></script>
+    <script src="js/pwa-install.js?v=51" defer></script>
+    <script type="module">
+        // v35: ربط جوجل درايف (للكتب) من الإعدادات
+        import * as Drive from './js/gdrive.js?v=51';
+        const row = document.getElementById('drive-section');
+        const btn = document.getElementById('btn-drive');
+        const st = document.getElementById('drive-state');
+        const paint = () => {
+            if (Drive.driveConnected()) { st.textContent = `متوصّل${Drive.driveEmail() ? ` بـ ${Drive.driveEmail()}` : ''} — ${Drive.drivePreferred() ? 'الكتب الجديدة بتترفع عليه' : 'الكتب الجديدة على تخزين البرنامج'}.`; btn.textContent = 'افصل الدرايف'; }
+            else { st.textContent = 'الكتب اللي بترفعها تتحفظ على جوجل درايف بتاعك بدل تخزين البرنامج. البرنامج بيشوف بس الملفات اللي رفعها هو.'; btn.textContent = 'وصّل جوجل درايف'; }
+        };
+        if (Drive.driveAvailable()) {
+            row.hidden = false; paint();
+            btn.addEventListener('click', async () => {
+                if (Drive.driveConnected()) { if (confirm('تفصل جوجل درايف؟ الكتب اللي عليه هتحتاج توصّله تاني عشان تفتحها.')) { Drive.disconnectDrive(); paint(); } return; }
+                btn.disabled = true;
+                try { await Drive.connectDrive(); paint(); } catch (e) { alert((e && e.error && e.error.message) || 'مقدرناش نوصّل جوجل درايف.'); } finally { btn.disabled = false; }
+            });
+        }
+    </script>
 </body>
 </html>

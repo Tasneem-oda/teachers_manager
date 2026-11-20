@@ -554,3 +554,57 @@ button.sp-stat:hover { border-color: var(--primary); }
 .ls-done-report strong { color: #1E5E37; }
 .ls-done-report span { font-size: 0.86rem; color: var(--text-secondary); line-height: 1.6; }
 .ls-done-report .btn { margin: 0.3rem 0 0; min-height: 46px; background: var(--whatsapp, #25D366); border-color: var(--whatsapp, #25D366); color: #fff; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; }
+.sp-lessons-actions{display:inline-flex;gap:.5rem;flex-wrap:wrap}.sp-lessons-actions .btn{margin:0}
+/* v34: الخانات الإجبارية في تسجيل الحصة */
+.ls-req { font-size: 0.68rem; font-weight: 700; color: #B5651D; background: #FFF1E0; border-radius: 999px; padding: 0.05rem 0.45rem; margin-inline-start: 0.3rem; vertical-align: middle; }
+.ls-block.ls-miss { border-radius: 12px; box-shadow: 0 0 0 2px #E0A84F; background: #FFFBF4; }
+.ls-block.ls-miss .ls-req { background: #D9822B; color: #fff; }
+textarea[readonly]#f-homework { background: var(--bg-secondary, #F5F2F8); color: var(--text-secondary); }
+
+/* ---------------- v35.3: أحجام اللمس + ترتيب الحصة الجارية على الموبايل ---------------- */
+.chip-group button { min-height: 44px; min-width: 52px; padding: 0 14px; font-size: .95rem; }
+@media (max-width: 640px) {
+    .ls-rating-row .chip-group button { min-height: 44px; min-width: 0; padding: 0 .1rem; font-size: .82rem; }
+}
+.lb-hint-x { min-width: 40px; min-height: 40px; align-items: center; justify-content: center; border-radius: 10px; }
+.lb-hint-x:hover { background: var(--bg-secondary); }
+.ls-req { font-size: .75rem; color: #8A5A00; background: #FFF1E0; }
+/* "الطالب غاب؟" مش خطأ: رمادي هادي، والأحمر للحذف بس */
+.ls-start-links #btn-absent-ready { color: var(--text-secondary); border-color: var(--secondary-btn-border); }
+.ls-start-links #btn-absent-ready:hover { color: var(--text-primary); border-color: var(--text-secondary); }
+/* شرائح معلومات الحصة بتنزل سطر جديد بدل ما تطلع برّه الشاشة */
+.ls-info { flex-wrap: wrap; }
+@media (max-width: 768px) {
+    .ls-info { flex-wrap: wrap; overflow: visible; margin-inline: 0; padding-inline: 0; }
+    /* الخانات اللي المدرس بيكتب فيها تيجي قبل الأدوات والإعلانات (أقل scroll وهو بيدرّس) */
+    #state-live.active { display: flex; flex-direction: column; }
+    #state-live > .ls-bar { order: 1; }
+    #state-live > #ls-info { order: 2; }
+    #state-live > #ls-send-link { order: 3; }
+    #state-live > #ls-bill-alert { order: 4; }
+    #state-live > #ls-seg { order: 5; }
+    #state-live > #ls-grid { order: 6; }
+    #state-live > #ls-teach { order: 7; margin-top: .6rem; }
+    #state-live > #ls-books { order: 8; }
+    #state-live > * { order: 9; }
+    #ls-bill-alert > * { padding: .45rem .7rem; font-size: .8rem; margin-bottom: .5rem; }
+}
+/* v35.3: تبويبات ملف الطالب في سطر واحد بيتسحب، والإحصائيات عمود واحد على الشاشات الضيقة */
+@media (max-width: 480px) {
+    .sp-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .sp-tab { padding: .6rem .55rem; font-size: .86rem; flex-shrink: 0; }
+}
+@media (max-width: 340px) { #sp-stats { grid-template-columns: 1fr; } }
+/* v35.3: أيقونات رأس ملف الطالب تحتها اسمها */
+.sp-icon-btn.sp-ib { flex-direction: column; width: auto; min-width: 52px; height: auto; min-height: 50px; padding: .35rem .4rem; gap: 2px; border-radius: 12px; }
+.sp-ib-l { font-size: .68rem; font-weight: 600; line-height: 1.2; color: var(--text-secondary); white-space: nowrap; }
+.sp-icon-btn.wa .sp-ib-l { color: inherit; }
+/* "حضّرلي الحصة" ميزة بالذكاء الاصطناعي: لون مميز عن "المواعيد" */
+.btn.btn-prepare { background: linear-gradient(135deg, #F6EEFB, #FCF5E6); border: 1px solid #E0CFEE; color: var(--primary); font-weight: 700; }
+.btn.btn-prepare svg { color: #B07D1F; }
+.btn.btn-prepare:hover { border-color: var(--primary); }
+/* v35.3.1: أزرار صغيرة كانت صعبة اللمس + أسماء أيقونات رأس ملف الطالب 12px */
+.lh-same { min-height: 44px; padding: 0 1rem; font-size: .88rem; display: inline-flex; align-items: center; gap: .3rem; }
+.ls-discard { min-height: 44px; padding: 0 1rem; display: inline-flex; align-items: center; justify-content: center; }
+.sp-ib-l { font-size: .75rem; }
+.sp-icon-btn.sp-ib { min-height: 54px; }

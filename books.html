@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=39">
+    <link rel="stylesheet" href="css/style.css?v=51">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -24,8 +24,12 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/books.css?v=39">
-    <link rel="stylesheet" href="css/v29.css?v=39">
+    <link rel="stylesheet" href="css/books.css?v=51">
+    <link rel="stylesheet" href="css/v29.css?v=51">
+    <link rel="stylesheet" href="css/v33.css?v=51">
+    <link rel="stylesheet" href="css/library.css?v=51">
+    <link rel="stylesheet" href="css/ui.css?v=51">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri+Quran&display=swap" media="print" onload="this.media='all'">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -37,77 +41,141 @@
         <main class="main-content">
             <div id="top-header-root"></div>
             <script>/* v29.5: الشريط الجانبي/السفلي والهيدر بيظهروا فورًا من آخر نسخة محفوظة (قبل ما ملفات الصفحة تتحمّل) */(function(){try{var c=JSON.parse(localStorage.getItem('tm_shell_v1')||'null');if(!c||!c.nav)return;var p=(location.pathname.split('/').pop()||'dashboard').replace(/\.html$/,'')||'dashboard';var s=document.getElementById('sidebar-root');if(s&&!s.firstChild){s.innerHTML=c.nav;var k=(c.active&&c.active[p])||p,a=s.querySelectorAll('.sidebar-nav a[data-key]');for(var i=0;i<a.length;i++){if(a[i].getAttribute('data-key')===k)a[i].classList.add('active');if(k==='groups'&&a[i].getAttribute('data-key')==='students')a[i].classList.add('active-mobile');}s.setAttribute('data-shell','1');}var h=document.getElementById('top-header-root');if(h&&!h.firstChild&&c.header&&c.header[p]){h.innerHTML=c.header[p];h.setAttribute('data-shell','1');}}catch(e){}})();</script>
-            <div class="page-body">
+            <div class="page-body lib2 lib3">
+                <!-- v35: المكتبة زي فولدرات الكمبيوتر: فولدرات جوه فولدرات، سحب وإفلات، كليك يمين، عرض شبكة/قائمة -->
+                <nav class="lib2-tabs" role="tablist" aria-label="أقسام المكتبة">
+                    <button type="button" class="lib2-tab is-on" role="tab" aria-selected="true" data-tab="mine">📚 كتبي <span class="n" id="n-mine"></span></button>
+                    <button type="button" class="lib2-tab" role="tab" aria-selected="false" data-tab="public">🌍 المكتبة العامة <span class="n" id="n-public"></span></button>
+                    <a class="lib2-tab" href="mushaf.html">📖 المصحف الشريف</a>
+                    <a class="lib2-tab" href="games.html">🎮 ألعاب الحصة</a>
+                </nav>
 
-                <div class="card lib-intro">
-                    <div class="lib-intro-text">
-                        <h2>مصادر التدريس الخاصة بك</h2>
-                        <p>ارفع كتبك وملفاتك (حتى الكتب المصوّرة والممسوحة ضوئيًا)، افتحها كاملة، واسأل المساعد عنها.</p>
+                <section id="tab-mine" role="tabpanel">
+                    <div class="fx" id="fx">
+                        <aside class="fx-side" id="fx-side" aria-label="الفولدرات"></aside>
+                        <div class="fx-main" id="fx-main">
+                            <div class="fx-bar">
+                                <button type="button" class="fx-ib" id="fx-up" aria-label="الفولدر اللي فوق" title="رجوع للفولدر اللي فوق (Backspace)"></button>
+                                <div class="fx-crumbs" id="fx-crumbs" aria-label="مكانك في المكتبة"></div>
+                                <label class="fx-search"><span id="ic-search" style="display:inline-flex;color:var(--text-light)"></span>
+                                    <input type="search" id="lib-search" placeholder="ابحث في كل كتبك وفولدراتك..." aria-label="ابحث في كتبك" autocomplete="off"></label>
+                                <div class="fx-tools">
+                                <select class="fx-sort" id="lib-sort" aria-label="الترتيب">
+                                    <option value="name">بالاسم</option>
+                                    <option value="recent">الأحدث</option>
+                                    <option value="opened">آخر ما فتحته</option>
+                                    <option value="type">بالنوع</option>
+                                </select>
+                                <button type="button" class="fx-ib" id="fx-view" aria-label="طريقة العرض" title="شبكة / قائمة"></button>
+                                <button type="button" class="fx-ib" id="btn-select" aria-label="تحديد أكتر من حاجة" title="تحديد"></button>
+                                <div class="fx-new">
+                                    <button type="button" class="btn btn-primary" id="btn-new" aria-haspopup="menu" aria-label="جديد: رفع كتاب أو فولدر"><span id="ic-add-source" style="display:inline-flex"></span><span class="t">جديد</span></button>
+                                </div>
+                                </div>
+                                <button type="button" id="btn-add-source" hidden></button>
+                                <button type="button" id="btn-new-folder" hidden></button>
+                            </div>
+                            <div id="books-section" aria-live="polite"><div class="loading">جاري التحميل...</div></div>
+                            <p class="fx-status" id="fx-status"></p>
+                            <div class="fx-selbar" id="lib-selbar" hidden>
+                                <strong id="sel-count">0 مختار</strong>
+                                <button type="button" class="btn btn-sm" id="sel-move">📁 نقل</button>
+                                <button type="button" class="btn btn-sm" id="sel-del">🗑 حذف</button>
+                                <button type="button" class="btn btn-sm" id="sel-all">تحديد الكل</button>
+                                <button type="button" class="btn btn-sm" id="sel-cancel">إلغاء</button>
+                            </div>
+                            <div class="fx-drop" id="fx-drop"><span style="font-size:2rem">📥</span><span id="fx-drop-t">افلت الملف هنا عشان يترفع</span></div>
+                        </div>
                     </div>
-                    <button type="button" class="btn btn-primary" id="btn-add-source">
-                        <span id="ic-add-source" class="icon" style="display:inline-flex; vertical-align:-3px;"></span>
-                        إضافة مصدر
-                    </button>
-                </div>
 
-                <div class="card ask-card">
-                    <h3 style="margin:0 0 0.7rem; display:flex; align-items:center; gap:0.4rem;">
-                        <span id="ic-ask" class="icon" style="display:inline-flex;"></span> اسأل مصادرك
-                    </h3>
-                    <div class="ask-row">
-                        <textarea id="ask-input" placeholder="مثلاً: اشرحلي الفرق بين present perfect و past simple بطريقة مناسبة لطالب مستوى A2" aria-label="سؤالك لكل مصادرك"></textarea>
-                        <button type="button" class="btn btn-primary" id="btn-ask-submit">اسأل</button>
-                    </div>
-                    <p style="margin:0.5rem 0 0; font-size:0.74rem; color:var(--text-light);">للسؤال عن كتاب واحد بالتحديد: افتحه واضغط "اسأل الكتاب".</p>
-                    <div id="ask-result" style="display:none;">
-                        <div class="ask-answer bc-md" id="ask-answer-text"></div>
-                        <div class="ask-sources-list" id="ask-sources-list"></div>
-                    </div>
-                </div>
+                    <details class="card lib2-ask" id="ask-card" style="margin-top:1rem">
+                        <summary><span id="ic-ask" class="icon" style="display:inline-flex;"></span> اسأل كتبك (المساعد بيدوّر في كل كتبك ويرد بالمصدر)</summary>
+                        <div class="ask-row">
+                            <textarea id="ask-input" placeholder="مثلًا: إيه أحكام النون الساكنة مع أمثلة من جزء عمّ؟" aria-label="سؤالك لكل مصادرك"></textarea>
+                            <button type="button" class="btn btn-primary" id="btn-ask-submit" aria-label="اسأل كتبك">اسأل</button>
+                        </div>
+                        <p style="margin:0.5rem 0 0; font-size:0.74rem; color:var(--text-light);">للسؤال عن كتاب واحد بالتحديد: افتحه واضغط "اسأل الكتاب".</p>
+                        <div id="ask-result" style="display:none;">
+                            <div class="ask-answer bc-md" id="ask-answer-text"></div>
+                            <div class="ask-sources-list" id="ask-sources-list"></div>
+                        </div>
+                    </details>
+                </section>
 
-                <div id="books-section">
-                    <div class="loading">جاري التحميل...</div>
-                </div>
+                <section id="tab-public" role="tabpanel" hidden>
+                    <a class="mushaf-hero" href="mushaf.html">
+                        <span class="cv">المصحف<br>الشريف</span>
+                        <span><b>المصحف الشريف — مصحف المدينة</b><p>برواية حفص عن عاصم · ٦٠٤ صفحة زي المطبوع بالظبط · فهرس السور والأجزاء وعلامات</p></span>
+                        <span class="go">افتح المصحف ←</span>
+                    </a>
+                    <div class="lib2-pubnote">
+                        <p>🌍 <b>المكتبة العامة</b>: كتب رفعها مدرسين زيّك واتراجعت قبل ما تتنشر. ضيف أي كتاب لمكتبتك بضغطة وافتحه في الحصة على طول.<br>
+                        عندك كتاب مفيد؟ اضغط كليك يمين (أو <b>⋮</b>) على الكتاب في "كتبي" واختار <b>"انشره للمدرسين"</b>.</p>
+                    </div>
+                    <div class="lib2-cats" id="pub-cats" role="toolbar" aria-label="تصنيف المكتبة العامة"></div>
+                    <div id="pub-section"><div class="loading">جاري التحميل...</div></div>
+                </section>
 
             </div>
         </main>
     </div>
 
-    <!-- مودال إضافة مصدر جديد -->
-    <div class="modal" id="upload-modal">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <h2>إضافة مصدر جديد</h2>
-            <form id="upload-form">
-                <p class="upload-hint">المدعوم: PDF · Word (.docx) · PowerPoint (.pptx) · نص (.txt) · صور (JPG / PNG).<br>الكتب المصوّرة والممسوحة ضوئيًا بتتقرأ بالذكاء الاصطناعي تلقائيًا (ممكن ياخد دقائق حسب عدد الصفحات).</p>
-                <div class="form-group">
-                    <label for="upload-file-input">اختار الملف *</label>
-                    <input type="file" id="upload-file-input" accept="application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,text/plain,.txt,text/markdown,.md,image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" required>
-                    <!-- v29.2: بعض موبايلات سامسونج بتفتح معرض الصور بس. الزرار ده بيفتح مدير الملفات بكل الأنواع -->
-                    <input type="file" id="upload-file-any" accept="*/*" hidden>
-                    <small id="upload-detected" style="display:block; margin-top:0.35rem; font-size:0.78rem;"></small>
-                    <button type="button" class="upload-any-btn" id="upload-any-btn">📄 ملف الـ PDF مش ظاهر؟ اختاره من الملفات</button>
+    <!-- v35.2: نافذة رفع الكتب (أكتر من ملف، سحب وإفلات، اسم وتصنيف لكل ملف، مكان الحفظ) -->
+    <div class="modal up-modal" id="upload-modal" aria-hidden="true">
+        <div class="modal-content up-box" role="dialog" aria-modal="true" aria-labelledby="up-title">
+            <header class="up-head">
+                <div><h2 id="up-title" data-tutorial="books:upload">رفع كتب وملفات</h2><p>PDF · Word · PowerPoint · نص · صور — الكتب المصوّرة بتتقرأ بالذكاء الاصطناعي تلقائيًا</p></div>
+                <button type="button" class="up-x" id="up-close" aria-label="قفل">✕</button>
+            </header>
+            <div class="up-body">
+                <label class="up-drop" id="up-drop" tabindex="0">
+                    <input type="file" id="upload-file-input" multiple accept="application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,text/plain,.txt,text/markdown,.md,image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp">
+                    <span class="up-drop-ic" aria-hidden="true">
+                        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5"/><path d="M7.5 9.5 12 5l4.5 4.5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+                    </span>
+                    <b>اسحب الملفات هنا أو <u>اختارها من جهازك</u></b>
+                    <small id="up-limit">تقدر تختار أكتر من ملف مرة واحدة</small>
+                </label>
+                <input type="file" id="upload-file-any" accept="*/*" multiple hidden>
+                <button type="button" class="up-any" id="upload-any-btn">📄 ملف الـ PDF مش ظاهر؟ اختاره من مدير الملفات</button>
+
+                <div class="up-files" id="up-files" aria-live="polite"></div>
+
+                <div class="up-opts" id="up-opts" hidden>
+                    <div class="up-opt"><label for="upload-folder">📁 يتحط في</label><select id="upload-folder"></select></div>
+                    <div class="up-opt"><label for="upload-cat">🏷️ التصنيف</label><select id="upload-cat"></select></div>
                 </div>
-                <div class="form-group">
-                    <label for="upload-title-input">اسم الكتاب/المصدر *</label>
-                    <input type="text" id="upload-title-input" placeholder="مثلاً: Oxford English Grammar" required maxlength="200">
+                <div class="up-store" id="upload-storage" hidden>
+                    <span class="up-store-t">هيتحفظ فين؟</span>
+                    <div class="fx-storage-opt">
+                        <label><input type="radio" name="upload-store" value="drive" checked><span>☁️ جوجل درايف بتاعك<small id="upload-drive-email">الملف ملكك وعلى مساحتك</small></span></label>
+                        <label><input type="radio" name="upload-store" value="app"><span>🗄️ تخزين البرنامج<small id="upload-app-limit">لحد ٥٠ ميجا للملف</small></span></label>
+                    </div>
                 </div>
-                <div class="upload-progress" id="upload-progress" aria-live="polite">
-                    <div class="book-progress-bar"><i style="width:100%; opacity:.35"></i></div>
-                    <p class="upload-progress-text" id="upload-progress-text"></p>
-                </div>
-                <div style="display:flex; gap:0.5rem; margin-top:1rem; flex-wrap:wrap;">
-                    <button type="submit" class="btn" id="upload-submit-btn">رفع المصدر</button>
-                    <button type="button" class="btn btn-outline close-modal">إلغاء</button>
-                </div>
-            </form>
+            </div>
+            <footer class="up-foot">
+                <span class="up-sum" id="up-sum"></span>
+                <button type="button" class="btn btn-outline" id="up-cancel">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="upload-submit-btn" disabled>ارفع</button>
+            </footer>
         </div>
     </div>
+
+    <!-- v35.2: لوحة الرفع (زي جوجل درايف): نسبة الرفع والسرعة والوقت الباقي، وبعدها التحليل -->
+    <section class="uq" id="uq" hidden aria-label="الرفع الحالي">
+        <header class="uq-head">
+            <div class="uq-ttl"><b id="uq-title">جاري الرفع</b><small id="uq-sub"></small></div>
+            <button type="button" class="uq-b" id="uq-min" aria-label="تصغير" title="تصغير">▾</button>
+            <button type="button" class="uq-b" id="uq-close" aria-label="قفل" title="قفل">✕</button>
+        </header>
+        <div class="uq-bar"><i id="uq-bar"></i></div>
+        <div class="uq-list" id="uq-list"></div>
+    </section>
 
     <!-- مودال إدارة الوصول (مين يستخدم الكتاب ده) -->
     <div class="modal" id="access-modal">
         <div class="modal-content">
-            <span class="close-modal">&times;</span>
+            <button type="button" class="close-modal" aria-label="قفل">&times;</button>
             <h2>إدارة الاستخدام</h2>
             <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:-0.5rem;" id="access-book-title"></p>
             <div class="form-group">
@@ -127,7 +195,7 @@
     <!-- مودال عرض مقتطف المصدر (بديل لو الكتاب مش متاح للفتح) -->
     <div class="modal" id="source-view-modal">
         <div class="modal-content">
-            <span class="close-modal">&times;</span>
+            <button type="button" class="close-modal" aria-label="قفل">&times;</button>
             <h2 id="source-view-title">المصدر</h2>
             <p style="white-space:pre-wrap; line-height:1.7; font-size:0.9rem;" id="source-view-text"></p>
         </div>
@@ -137,11 +205,11 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=39"></script>
+    <script type="module" src="js/config.js?v=51"></script>
     <script type="module">
-        import { initBooksPage } from './js/books-page.js?v=39';
+        import { initBooksPage } from './js/books-page.js?v=51';
         window.booksPage = initBooksPage();
     </script>
-    <script src="js/pwa-install.js?v=39" defer></script>
+    <script src="js/pwa-install.js?v=51" defer></script>
 </body>
 </html>

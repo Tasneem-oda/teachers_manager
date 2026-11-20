@@ -156,7 +156,7 @@
 .sp-groups a:hover { filter: brightness(0.96); }
 .lh-item .tag-group { margin-inline-start: 0.35rem; }
 
-.att-more .chip-group button { min-height: 38px; }
+.att-more .chip-group button { min-height: 44px; }
 .att-head .btn { min-height: 38px; }
 .gp-actions .btn { white-space: nowrap; }
 @media (max-width: 600px) { .gp-actions .btn { flex-basis: 100%; } }
@@ -261,3 +261,14 @@
 .gr-month { display: flex; gap: 0.4rem; margin: 0.2rem 0 0.8rem; flex-wrap: wrap; }
 .gr-section + .gr-section { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
 .gr-section h3 { margin: 0 0 0.3rem; font-size: 1rem; }
+/* v34: تقييم كل طالب ظاهر على طول (المدرسين ماكانوش واخدين بالهم إنه موجود) */
+.att-eval { margin-top: 0.55rem; padding: 0.55rem 0.65rem; border-radius: 10px; background: var(--bg-secondary, #F7F4FA); display: grid; gap: 0.45rem; }
+.att-eval-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.att-eval .att-lbl { font-size: 0.82rem; color: var(--primary); font-weight: 700; min-width: 9.5rem; }
+.att-eval .chip-group { margin: 0; }
+.att-eval .chip-group button { min-height: 44px; }
+.att-eval .att-note { margin: 0 !important; }
+.att-row.is-absent .att-eval { display: none; }
+.att-row.att-miss .att-eval { outline: 2px solid #E0A84F; }
+@media (max-width: 560px) { .att-eval .att-lbl { min-width: 0; width: 100%; } }
+.gl-field.gl-miss textarea,.gl-field.gl-miss input{border-color:#D9822B!important;box-shadow:0 0 0 3px rgba(217,130,43,.18)}

@@ -36,8 +36,10 @@ function close() {
 export function showTips(tips, opts = {}) {
     if (tipsOff() || current) return;
     // الاختيار بيتم بعد التأخير عشان العناصر تكون ظهرت فعلًا (مثلًا بعد ما شاشة التحميل تختفي)
-    setTimeout(() => {
+    setTimeout(function tryShow() {
         if (current || tipsOff()) return;
+        // v35.3: مانظهرش تلميح فوق نافذة الترحيب أو أي نافذة مفتوحة (بنستنى لحد ما تتقفل)
+        if (document.querySelector('.modal.active, .tm-confirm, #tm-notif-banner')) { setTimeout(tryShow, 4000); return; }
         const done = seen();
         const tip = tips.find((t) => !done.has(t.id) && isVisible(document.querySelector(t.target)));
         if (!tip) return;

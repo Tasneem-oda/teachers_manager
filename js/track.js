@@ -15,9 +15,9 @@
  *   وأي event بيتعمله push في dataLayer في أي مكان في البرنامج.
  */
 
-import { CONFIG } from './config.js?v=39';
-import { APIUtils } from './utils.js?v=39';
-import { getFreshSession } from './session.js?v=39';
+import { CONFIG } from './config.js?v=51';
+import { APIUtils } from './utils.js?v=51';
+import { getFreshSession } from './session.js?v=51';
 
 const QUEUE_KEY = 'tm_track_queue_v1';
 const SESSION_KEY = 'tm_track_session';
@@ -98,7 +98,7 @@ async function refreshToken() {
 }
 
 function endpoint() {
-    try { return APIUtils.buildUrl(CONFIG.API_ENDPOINTS.TRACKING.EVENTS); } catch (e) { return null; }
+    try { return APIUtils.buildUrl(CONFIG.API_ENDPOINTS.HUB); } catch (e) { return null; }   // v34: عن طريق app-hub (track-events القديم كان بيطلع Unauthorized)
 }
 
 async function flush({ beacon = false } = {}) {
@@ -111,7 +111,7 @@ async function flush({ beacon = false } = {}) {
     // ولو الإرسال فشل بنرجّعها
     const batch = queue.splice(0, MAX_BATCH);
     persist();
-    const body = JSON.stringify({ events: batch });
+    const body = JSON.stringify({ action: 'track', events: batch });
     sending = true;
     try {
         const res = await fetch(url, {
@@ -211,7 +211,10 @@ function trackClicks() {
         if (!el) return;
         const key = el.getAttribute('data-track') || el.id || '';
         // ضغط متكرر بسرعة على نفس الحاجة = المدرس متضايق ومش فاهم ليه مفيش حاجة بتحصل
-        const sig = key || `${el.tagName}.${(el.className || '').toString().split(' ')[0]}`;
+        // v35: الألعاب وأزرار الزيادة/النقصان الضغط السريع فيها طبيعي — مش عصبية
+        if (el.closest('.gm, [data-step], .stepper, .qty')) return;
+        const label = String(el.getAttribute('aria-label') || el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 28);
+        const sig = key || `${el.tagName}.${(el.className || '').toString().split(' ')[0]}${label ? ` «${label}»` : ''}${el.disabled || el.getAttribute('aria-busy') === 'true' ? ' (مقفول)' : ''}`;
         const now = Date.now();
         if (sig === last.key && now - last.t < 1200) { last.n++; } else { last = { key: sig, n: 1, t: now }; }
         last.t = now;

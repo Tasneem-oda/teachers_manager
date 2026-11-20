@@ -1,15 +1,15 @@
 /**
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
-import { Auth } from './auth.js?v=39';
-import { icon } from './icons.js?v=39';
-import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=39';
-import { CONFIG } from './config.js?v=39';
-import { openSuggestionModal } from './suggestions.js?v=39';
-import { mountFloatingLesson } from './live-lesson.js?v=39';
-import { initTracking } from './track.js?v=39';
-import { askChoice } from './utils.js?v=39';
-import { priceFor, subscribeMessage, waUrl, currentUserInfo, offerActive, annualAvailable } from './pricing.js?v=39';
+import { Auth } from './auth.js?v=51';
+import { icon } from './icons.js?v=51';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=51';
+import { CONFIG } from './config.js?v=51';
+import { openSuggestionModal } from './suggestions.js?v=51';
+import { mountFloatingLesson } from './live-lesson.js?v=51';
+import { initTracking } from './track.js?v=51';
+import { askChoice } from './utils.js?v=51';
+import { priceFor, subscribeMessage, waUrl, currentUserInfo, offerActive, annualAvailable } from './pricing.js?v=51';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
@@ -18,6 +18,7 @@ const NAV_ITEMS = [
     { key: 'groups', href: 'groups.html', icon: 'group', label: 'المجموعات', desktopOnly: true },
     { key: 'schedule', href: 'schedule.html', icon: 'calendar', label: 'جدولي' },
     { key: 'books', href: 'books.html', icon: 'bookOpen', label: 'مكتبتي' },
+    { key: 'games', href: 'games.html', icon: 'gamepad', label: 'ألعاب الحصة', desktopOnly: true },
     { key: 'settings', href: 'settings.html', icon: 'gear', label: 'الإعدادات' }
 ];
 
@@ -37,7 +38,7 @@ let subFetchPromise = null;
 function fetchSubscriptionNow() {
     if (subFetchPromise) return subFetchPromise;
     subFetchPromise = (async () => {
-        const { api } = await import('./api.js?v=39');
+        const { api } = await import('./api.js?v=51');
         const data = await api.checkSubscription();
         try {
             sessionStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
@@ -117,19 +118,61 @@ export function saveShellHeader() {
 }
 export function clearShell() { try { localStorage.removeItem(SHELL_KEY); } catch (e) { /* تجاهل */ } }
 
+// ------------------------------------------------------------------ v34: تنقل أسرع
+// - الصفحة لسه "بتتجهز في الخلفية" (prerender): مانشغّلش التتبع والإشعارات إلا لما المدرس يفتحها فعلًا
+export function whenActive(fn) {
+    if (document.prerendering) document.addEventListener('prerenderingchange', () => fn(), { once: true });
+    else fn();
+}
+const samePage = (a) => { try { const u = new URL(a.href, location.href); return u.origin === location.origin && u.pathname.replace(/\.html$/, '') === location.pathname.replace(/\.html$/, '') && !u.search; } catch (e) { return false; } };
+let navGuard = false;
+function installNavGuard() {
+    if (navGuard) return; navGuard = true;
+    // الضغط على الصفحة اللي انت فيها: مفيش إعادة تحميل (بنطلع لأول الصفحة بس)
+    document.addEventListener('click', (e) => {
+        const a = e.target.closest && e.target.closest('.sidebar-nav a[href], .sidebar-logo');
+        if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button > 0) return;
+        if (a.matches('a[href]') && samePage(a) && !location.search) {
+            e.preventDefault();
+            try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (er) { window.scrollTo(0, 0); }
+        }
+    }, true);
+    // الصفحات الرئيسية بتتجهز في الخلفية أول ما المدرس يقرّب منها (لمس/ماوس) فالفتح يبقى فوري
+    try {
+        if (HTMLScriptElement.supports && HTMLScriptElement.supports('speculationrules') && !document.querySelector('script[data-tm-spec]')) {
+            const conn = navigator.connection || {};
+            if (!conn.saveData && !/2g/.test(conn.effectiveType || '')) {
+                const urls = NAV_ITEMS.map((i) => i.href).filter((h) => !location.pathname.endsWith(h));
+                const sc = document.createElement('script');
+                sc.type = 'speculationrules';
+                sc.dataset.tmSpec = '1';
+                sc.textContent = JSON.stringify({
+                    prerender: [{ source: 'list', urls, eagerness: 'moderate' }],
+                    prefetch: [{ source: 'list', urls, eagerness: 'conservative' }]
+                });
+                document.head.appendChild(sc);
+            }
+        }
+    } catch (e) { /* متصفح قديم */ }
+}
+const cleanNav = (html) => { const t = document.createElement('div'); t.innerHTML = html; t.querySelectorAll('.active, .active-mobile').forEach((el) => el.classList.remove('active', 'active-mobile')); return t.innerHTML.replace(/\s+/g, ' ').trim(); };
+
 export function renderSidebar(activeKey) {
-    try { initTracking(); } catch (e) { /* التتبع إضافي: لو فشل الصفحة تكمّل عادي */ }
+    whenActive(() => { try { initTracking(); } catch (e) { /* التتبع إضافي: لو فشل الصفحة تكمّل عادي */ } });
+    // v35: فيديوهات الشرح للصفحة دي (زرار صغير "▶ شرح" لو فيه فيديو مكانه هنا)
+    whenActive(() => { if (CONFIG.TUTORIALS && CONFIG.TUTORIALS.ENABLED === false) return; setTimeout(() => import('./tutorials.js?v=51').then((m) => m.initTutorials(pageKey())).catch(() => { /* إضافي */ }), 1800); });
+    installNavGuard();
     const root = document.getElementById('sidebar-root');
     if (!root) return;
 
     const navHtml = NAV_ITEMS.map(item => `
-        <a href="${item.href}" data-key="${item.key}" class="${[item.key === activeKey ? 'active' : '', item.desktopOnly ? 'nav-desktop-only' : '', item.key === 'students' && activeKey === 'groups' ? 'active-mobile' : ''].filter(Boolean).join(' ')}">
+        <a href="${item.href}" data-key="${item.key}" class="${[item.key === activeKey ? 'active' : '', item.desktopOnly ? 'nav-desktop-only' : '', (item.key === 'students' && activeKey === 'groups') || (item.key === 'books' && activeKey === 'games') ? 'active-mobile' : ''].filter(Boolean).join(' ')}">
             <span class="icon">${icon(item.icon, { size: 19 })}</span>
             <span class="label">${item.label}</span>
         </a>
     `).join('');
 
-    root.innerHTML = `
+    const html = `
         <aside class="sidebar">
             <div class="sidebar-logo">
                 <div class="logo-icon">${icon('graduationCap', { size: 22 })}</div>
@@ -144,6 +187,14 @@ export function renderSidebar(activeKey) {
                     <span class="icon">${icon('download', { size: 19 })}</span>
                     <span class="label">ثبّت التطبيق</span>
                 </a>
+                <a href="#" id="sidebar-contact" class="sidebar-contact">
+                    <span class="icon">${icon('headset', { size: 19 })}</span>
+                    <span class="label">تواصل مع المطوّر</span>
+                </a>
+                <a href="learn.html" id="sidebar-learn" data-key="learn" class="${activeKey === 'learn' ? 'active' : ''}">
+                    <span class="icon">${icon('play', { size: 19 })}</span>
+                    <span class="label">الشروحات</span>
+                </a>
                 <a href="#" id="sidebar-suggest">
                     <span class="icon">${icon('lightbulb', { size: 19 })}</span>
                     <span class="label">عندك اقتراح؟</span>
@@ -155,6 +206,19 @@ export function renderSidebar(activeKey) {
             </div>
         </aside>
     `;
+    // v34: الشريط اترسم من النسخة المحفوظة ونفس الشكل؟ نسيبه زي ما هو (مفيش وميض ولا إعادة رسم) ونغيّر الصفحة المختارة بس
+    const shellOk = root.dataset.shell === '1' && root.querySelector('.sidebar') && cleanNav(root.innerHTML) === cleanNav(html);
+    if (shellOk) {
+        root.querySelectorAll('.sidebar-nav a[data-key]').forEach((a) => {
+            const k = a.dataset.key;
+            a.classList.toggle('active', k === activeKey);
+            a.classList.toggle('active-mobile', (k === 'students' && activeKey === 'groups') || (k === 'books' && activeKey === 'games'));
+        });
+        const inst = document.getElementById('sidebar-install'); if (inst) inst.hidden = true;
+    } else {
+        root.innerHTML = html;
+    }
+    root.removeAttribute('data-shell');
 
     saveShellNav(root, activeKey);
 
@@ -168,6 +232,16 @@ export function renderSidebar(activeKey) {
         e.preventDefault();
         openSuggestionModal();
     });
+    document.getElementById('sidebar-contact').addEventListener('click', (e) => {
+        e.preventDefault();
+        import('./hub.js?v=51').then((m) => m.openContact()).catch(() => { window.open(`https://wa.me/${CONFIG.SUPPORT_WHATSAPP}`, '_blank', 'noopener'); });
+    });
+    // v33: إشعاراتك من المونيتور + الرسايل التلقائية (بعد ما الصفحة تخلص تحميل، من غير ما تأخرها)
+    whenActive(() => { try {
+        const startHub = () => import('./hub.js?v=51').then((m) => m.initHub()).catch(() => { /* تجاهل */ });
+        if ('requestIdleCallback' in window) requestIdleCallback(() => setTimeout(startHub, 600), { timeout: 3000 });
+        else setTimeout(startHub, 1500);
+    } catch (e) { /* تجاهل */ } });
 
     document.getElementById('sidebar-logout').addEventListener('click', async (e) => {
         e.preventDefault();
@@ -239,7 +313,7 @@ const WHATSAPP_NUMBER = CONFIG.SUPPORT_WHATSAPP;
 export function trialEndLabel(sub) {
     try {
         if (sub && sub.trial_ends_at) {
-            return new Date(sub.trial_ends_at).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' });
+            return new Date(sub.trial_ends_at).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Cairo' });
         }
     } catch (e) { /* تجاهل */ }
     return CONFIG.PRICING.FREE_UNTIL_LABEL;
@@ -329,8 +403,9 @@ export async function renderTrialBanner(containerId = 'trial-banner-root', { pro
         if (state.locked) { root.innerHTML = ''; return; }
 
         if (state.kind === 'trial' && state.daysLeft !== null) {
+            // v35.3: لحد آخر 7 أيام البانر سطر صغير (كان بياخد ربع الشاشة على الموبايل)
             root.innerHTML = `
-                <div class="trial-banner">
+                <div class="trial-banner ${state.daysLeft > 7 ? 'compact' : ''}">
                     <div class="trial-banner-icon">${icon('sparkles', { size: 20 })}</div>
                     <div class="trial-banner-text">
                         <strong>${progress ? escapeBannerText(progress) : 'البرنامج مجاني ليك دلوقتي'}</strong>
@@ -404,27 +479,30 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
                 <button type="button" class="bell-btn header-install tm-install-entry" id="header-install" title="ثبّت التطبيق" aria-label="ثبّت التطبيق" hidden>
                     ${icon('download', { size: 17 })}<span>ثبّت</span>
                 </button>
-                <button type="button" class="bell-btn" id="header-suggest" title="عندك اقتراح؟" aria-label="عندك اقتراح؟">
-                    ${icon('lightbulb', { size: 18 })}
+                <button type="button" class="bell-btn header-contact" id="header-contact" title="تواصل مع المطوّر" aria-label="تواصل مع المطوّر">
+                    ${icon('headset', { size: 18 })}<span>تواصل</span>
                 </button>
-                <button type="button" class="bell-btn" id="header-bell" title="الإشعارات">
+                <button type="button" class="bell-btn" id="header-bell" title="الإشعارات" aria-label="الإشعارات">
                     ${icon('bell', { size: 18 })}
                 </button>
                 <button type="button" class="bell-btn mobile-only-flex" id="header-logout-mobile" title="تسجيل الخروج">
                     ${icon('logout', { size: 18 })}
                 </button>
-                <div class="header-avatar">
+                <a class="bell-btn header-help" href="learn.html" title="الشروحات" aria-label="فيديوهات الشرح">${icon('play', { size: 16 })}</a>
+                <a class="header-avatar" href="settings.html" title="حسابك والإعدادات" aria-label="حسابك والإعدادات">
                     <div class="avatar-fallback" id="header-avatar-fallback">؟</div>
                     <div>
                         <p class="name" id="header-user-name">...</p>
                         <p class="role">معلم</p>
                     </div>
-                </div>
+                </a>
             </div>
         </header>
     `;
 
-    document.getElementById('header-suggest').addEventListener('click', () => openSuggestionModal());
+    document.getElementById('header-contact').addEventListener('click', () => {
+        import('./hub.js?v=51').then((m) => m.openContact()).catch(() => { window.open(`https://wa.me/${CONFIG.SUPPORT_WHATSAPP}`, '_blank', 'noopener'); });
+    });
     document.getElementById('header-install').addEventListener('click', () => openInstall());
     syncInstallEntries();
 
@@ -448,13 +526,22 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
     loadHeaderProfile();
 
     // v29.5: حالة النت + تذكير الحصص من على الجهاز (بيشتغل من غير نت)
-    import('./net-status.js?v=39').then((m) => m.initNetStatus()).catch(() => { /* تجاهل */ });
+    whenActive(startBackground);
+}
+
+// v34: المهام اللي في الخلفية بتبدأ واحدة ورا التانية بعد ما الصفحة تترسم (مش كلها في نفس اللحظة):
+// على الموبايلات الضعيفة ده كان بيعلّق التطبيق أول ما يفتح
+function idle(fn, t) { if ('requestIdleCallback' in window) requestIdleCallback(() => fn(), { timeout: t }); else setTimeout(fn, Math.min(t, 1500)); }
+function startBackground() {
+    import('./net-status.js?v=51').then((m) => m.initNetStatus()).catch(() => { /* تجاهل */ });
+    idle(() => {
     // v29.7: الوقت الصح من السيرفر (لو ساعة الجهاز غلط التذكيرات وتاريخ الحصص بيمشوا على الوقت الحقيقي)
-    import('./server-time.js?v=39').then((m) => m.initServerTime()).catch(() => { /* تجاهل */ });
+    import('./server-time.js?v=51').then((m) => m.initServerTime()).catch(() => { /* تجاهل */ });
     // v30: مزامنة لحظية بين أجهزة نفس المدرس (حصة اتسجلت على اللابتوب ← الموبايل يتحدّث فورًا)
-    import('./realtime-sync.js?v=39').then((m) => m.initRealtimeSync()).catch(() => { /* تجاهل */ });
-    const startReminders = () => import('./local-reminders.js?v=39').then((m) => m.initLocalReminders()).catch(() => { /* تجاهل */ });
-    if ('requestIdleCallback' in window) requestIdleCallback(startReminders, { timeout: 3000 }); else setTimeout(startReminders, 1200);
+    }, 1500);
+    idle(() => import('./realtime-sync.js?v=51').then((m) => m.initRealtimeSync()).catch(() => { /* تجاهل */ }), 2500);
+    const startReminders = () => import('./local-reminders.js?v=51').then((m) => m.initLocalReminders()).catch(() => { /* تجاهل */ });
+    idle(startReminders, 3500);
 
     // تفعيل إشعارات Push (تذكير الحصص اليومي) - مرة واحدة بعد رسم الهيدر
     // عشان زرار الجرس (header-bell) يكون موجود في الصفحة قبل ما نربطه بالحدث
@@ -469,7 +556,7 @@ async function loadHeaderProfile() {
         const profile = Auth.cachedProfile(session.user && session.user.id) || await Auth.bootstrapSession();
         // v28: الحساب مجدول للحذف؟ نعرض "رجّع حسابي" قبل أي حاجة
         if (profile && profile.deletion_scheduled_for) {
-            try { const m = await import('./account-delete.js?v=39'); m.showDeletionScheduledGate(profile); } catch (e) { /* تجاهل */ }
+            try { const m = await import('./account-delete.js?v=51'); m.showDeletionScheduledGate(profile); } catch (e) { /* تجاهل */ }
         }
         const nameEl = document.getElementById('header-user-name');
         const avatarEl = document.getElementById('header-avatar-fallback');

@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=39">
+    <link rel="stylesheet" href="css/style.css?v=51">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -27,7 +27,10 @@
     <style>
         body { margin: 0; }
         .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 2rem; margin-top: 2rem; max-width: 640px; margin-inline: auto; }
-        .pricing-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: 12px; padding: 2rem; text-align: center; transition: 0.3s; }
+        .pricing-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: 12px; padding: 2rem; text-align: center; transition: 0.3s; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
+        .pricing-card > .btn, .pricing-card > a.btn, .pricing-card > .whatsapp-btn { margin-top: auto; }
+        .pricing-card .features-list { margin-bottom: 1.5rem; }
+        .pricing-card .plan-badge { align-self: center; }
         .pricing-card:hover { box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); transform: translateY(-4px); }
         .pricing-card.active { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(75, 58, 90, 0.1); }
         .pricing-card h3 { color: var(--primary); margin-top: 0; }
@@ -57,11 +60,11 @@
         .period-toggle { display: flex; justify-content: center; gap: 0.35rem; background: var(--card-bg); border: 1px solid var(--border); border-radius: 999px; padding: 0.3rem; width: fit-content; margin: 0 auto; }
         .period-toggle button { border: 0; background: transparent; border-radius: 999px; padding: 0.55rem 1.2rem; font: inherit; font-weight: 700; color: var(--text-secondary); cursor: pointer; min-height: 42px; }
         .period-toggle button.on { background: var(--primary); color: #fff; }
-        .period-toggle .save { background: #E8F5E9; color: var(--success-text); font-size: 0.72rem; padding: 0.1rem 0.45rem; border-radius: 999px; margin-inline-start: 0.3rem; }
+        .period-toggle .save { background: #E8F5E9; color: var(--success-text); font-size: 0.78rem; padding: 0.1rem 0.45rem; border-radius: 999px; margin-inline-start: 0.3rem; }
         .period-toggle button.on .save { background: rgba(255,255,255,0.2); color: #fff; }
         .price s { font-size: 1.1rem; color: #A39BA6; font-weight: 600; margin-inline-end: 0.4rem; }
         .price-note { color: var(--success-text); font-weight: 700; font-size: 0.86rem; margin: -0.4rem 0 0.4rem; }
-        .price-off { display: inline-block; background: #C59A4A; color: #fff; font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 999px; margin-inline-start: 0.35rem; vertical-align: middle; }
+        .price-off { display: inline-block; background: #1F6B4F; color: #fff; font-size: 0.8rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 999px; margin-inline-start: 0.35rem; vertical-align: middle; }
         .pricing-card.muted { opacity: 0.75; }
         .price-table { max-width: 640px; margin: 2rem auto 0; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
         .price-table h3 { margin: 0; padding: 0.9rem 1rem; color: var(--primary); font-size: 1rem; border-bottom: 1px solid var(--border); }
@@ -79,7 +82,8 @@
             .pricing-card { padding: 1.5rem; }
         }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=39">
+    <link rel="stylesheet" href="css/v29.css?v=51">
+    <link rel="stylesheet" href="css/ui.css?v=51">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -139,13 +143,13 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=39"></script>
+    <script type="module" src="js/config.js?v=51"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=39';
-        import { renderSidebar, renderTopHeader, computeSubscriptionState, daysLabel, getSubscriptionCached, trialEndLabel } from './js/sidebar.js?v=39';
-        import { icon } from './js/icons.js?v=39';
-        import { CONFIG } from './js/config.js?v=39';
-        import { offerActive, offerDaysLeft, annualAvailable, priceFor, planById, money, subscribeMessage, waUrl, currentUserInfo } from './js/pricing.js?v=39';
+        import { Auth } from './js/auth.js?v=51';
+        import { renderSidebar, renderTopHeader, computeSubscriptionState, daysLabel, getSubscriptionCached, trialEndLabel } from './js/sidebar.js?v=51';
+        import { icon } from './js/icons.js?v=51';
+        import { CONFIG } from './js/config.js?v=51';
+        import { offerActive, offerDaysLeft, annualAvailable, priceFor, planById, money, subscribeMessage, waUrl, currentUserInfo } from './js/pricing.js?v=51';
 
         renderSidebar('settings');
         renderTopHeader({ title: 'الاشتراك', subtitle: 'باقات تطبيق Teachers Manager', showSearch: false });
@@ -270,7 +274,7 @@
                     // v29.2: اسم الباقة اللي المدرس مشترك فيها (البداية / الاحترافية)
                     const myPlan = CONFIG.PRICING.PLANS.find((p) => p.id === (sub && sub.plan));
                     const planLabel = myPlan ? `باقة "${myPlan.name}"` : 'الباقة';
-                    const endLabel = sub && sub.paid_until ? new Date(sub.paid_until).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+                    const endLabel = sub && sub.paid_until ? new Date(sub.paid_until).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Cairo' }) : '';
                     statusBanner.innerHTML = state.daysLeft !== null
                         ? icon('checkCircle', { size: 16 }) + ` أنت مشترك في ${planLabel} لحد ${endLabel} (متبقٍ ${daysLabel(state.daysLeft)})`
                         : icon('checkCircle', { size: 16 }) + ` أنت مشترك في ${planLabel}`;
@@ -297,6 +301,6 @@
             }
         });
     </script>
-    <script src="js/pwa-install.js?v=39" defer></script>
+    <script src="js/pwa-install.js?v=51" defer></script>
 </body>
 </html>

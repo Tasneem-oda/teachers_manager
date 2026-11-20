@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="noindex, nofollow">
+    <title>الكتاب - Teachers Manager</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="css/style.css?v=51">
+    <link rel="stylesheet" href="css/books.css?v=51">
+    <link rel="stylesheet" href="css/v29.css?v=51">
+    <link rel="stylesheet" href="css/v33.css?v=51">
+    <link rel="stylesheet" href="css/ui.css?v=51">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4B3A5A">
+    <style>body{margin:0;background:#E6E2E9}</style>
+</head>
+<body>
+    <!-- v34: الكتاب في تاب لوحده في المتصفح (بكل أدوات الشرح ولوحة التحكم) -->
+    <div class="bv-standalone-loading" id="rd-msg"><div class="bv-spinner" aria-hidden="true"></div><p>جاري فتح الكتاب...</p></div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+    <script type="module" src="js/config.js?v=51"></script>
+    <script type="module">
+        import { Auth } from './js/auth.js?v=51';
+        import { api } from './js/api.js?v=51';
+        import { openBookViewer } from './js/book-viewer.js?v=51';
+        const msg = document.getElementById('rd-msg');
+        const qs = new URLSearchParams(location.search);
+        const bookId = qs.get('book') || '';
+        const fail = (t) => { msg.innerHTML = `<p style="font-size:1.05rem;color:#4B3A5A;font-weight:700">${t}</p><a class="btn" href="books.html">روح لمكتبتي</a>`; };
+        (async () => {
+            const authInfo = await Auth.requireAuth();
+            if (!authInfo) return;
+            let book = null;
+            try { book = JSON.parse(localStorage.getItem('tm_reader_book_' + bookId) || 'null'); } catch (e) { book = null; }
+            if (!book || book.id !== bookId) {
+                try {
+                    const r = await api.listBooks();
+                    book = ((r && r.books) || []).find((b) => String(b.id) === bookId) || null;
+                } catch (e) { book = null; }
+            }
+            if (!book || !book.storage_path) { fail('الكتاب ده مش موجود في مكتبتك.'); return; }
+            document.title = `${book.title} - Teachers Manager`;
+            msg.remove();
+            const owner = {};
+            if (qs.get('student_id')) owner.student_id = qs.get('student_id');
+            if (qs.get('group_id')) owner.group_id = qs.get('group_id');
+            openBookViewer({ api, book, standalone: true, owner, ownerName: qs.get('name') || '', startPage: Number(qs.get('page')) || 1 });
+            try { window.tmTrack && window.tmTrack('book_reader_opened', {}); } catch (e) { /* تجاهل */ }
+        })();
+    </script>
+</body>
+</html>

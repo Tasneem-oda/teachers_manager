@@ -10,9 +10,9 @@
  *   postpaid : الدفع بعد عدد حصص (مثلًا كل 4 حصص) → التذكير لما المستحق يوصل للعدد ده
  */
 
-import { api } from './api.js?v=39';
-import { Formatters, ErrorHandler, toLatinDigits } from './utils.js?v=39';
-import { icon } from './icons.js?v=39';
+import { api } from './api.js?v=51';
+import { Formatters, ErrorHandler, toLatinDigits } from './utils.js?v=51';
+import { icon } from './icons.js?v=51';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 
@@ -37,10 +37,69 @@ function firstName(name) {
 }
 
 // ------------------------------------------------------------------ الحساب
+export const MONEY_MODES = ['per_lesson', 'monthly', 'hourly'];
+export const MODE_LABELS = { prepaid: 'باقة حصص مقدمة', postpaid: 'الدفع بعد عدد حصص', per_lesson: 'بالحصة', monthly: 'مبلغ شهري ثابت', hourly: 'بالساعة' };
+const MONTHS_AR = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+export function monthLabel(ym) { const [y, m] = String(ym || '').split('-').map(Number); return m ? `${MONTHS_AR[m - 1]} ${y}` : ''; }
+export function hoursText(min) {
+    const m = Math.round(Number(min) || 0);
+    const h = Math.floor(m / 60), r = m % 60;
+    if (!h) return `${r} دقيقة`;
+    const hs = h === 1 ? 'ساعة' : h === 2 ? 'ساعتين' : `${h} ساعات`;
+    return r ? `${hs} و${r} دقيقة` : hs;
+}
+
+/** v34: الحساب بالفلوس (بالحصة / شهري ثابت / بالساعة) — الأرقام من app-hub (billing.money) */
+function computeMoney(b, view) {
+    const m = b.money || {};
+    view.money = true;
+    if (m.error || m.due_amount == null) {
+        Object.assign(view, { status: 'ok', headline: 'الحساب مش متاح دلوقتي', detail: 'محتاج تحديث app-hub على الخادم (v34)', progress: 0, balance: 0, owed: 0, owedAmount: 0, needsReminder: false, unavailable: true });
+        return view;
+    }
+    // الحصة الجارية (قبل ما تتسجل): بنزوّدها على الحساب
+    const extra = Math.max(0, (Number(b.taken) || 0) - (Number(m.base_taken) || 0));
+    const price = m.lesson_price != null ? Number(m.lesson_price) : null;
+    const rate = m.hourly_rate != null ? Number(m.hourly_rate) : null;
+    const fee = m.monthly_fee != null ? Number(m.monthly_fee) : null;
+    let due = Number(m.due_amount) || 0;
+    let minutes = Number(m.taken_minutes) || 0;
+    if (extra && view.mode === 'per_lesson') due += extra * (price || 0);
+    if (extra && view.mode === 'hourly') { minutes += extra * (Number(m.default_minutes) || 60); due = Math.round((minutes / 60) * (rate || 0) * 100) / 100; }
+    const paidAmount = Number(m.paid_amount) || 0;
+    const bal = Math.round((paidAmount - due) * 100) / 100;
+    Object.assign(view, {
+        price, rate, fee, minutes, due, paidAmount, balance: bal, owedAmount: Math.max(0, -bal), creditAmount: Math.max(0, bal),
+        owed: Math.max(0, -bal), remaining: Math.max(0, bal), taken: (Number(m.taken_lessons) || 0) + extra, since: m.since,
+        months: m.months || [], thisMonth: m.this_month, thisMonthPaid: Number(m.this_month_paid) || 0, payments: m.payments || [],
+        lastPayment: (m.payments || []).find((x) => x.amount != null) || null, countUnexcused: m.count_unexcused_absence !== false, absencesCounted: 0
+    });
+    view.paid = paidAmount; view.adjusted = 0;
+    if (view.mode === 'monthly') {
+        const left = Math.max(0, (fee || 0) - view.thisMonthPaid);
+        view.monthLeft = left;
+        view.progress = fee ? Math.min(1, view.thisMonthPaid / fee) : 1;
+        if (!fee) { view.status = 'ok'; view.headline = 'اكتب المبلغ الشهري'; view.detail = 'من إعدادات الدفع'; }
+        else if (bal >= 0) { view.status = 'ok'; view.headline = `${monthLabel(view.thisMonth)}: مدفوع ✓`; view.detail = bal > 0 ? `مدفوع مقدمًا ${money(bal)}` : `الاشتراك ${money(fee)} في الشهر`; }
+        else if (left > 0 && view.owedAmount <= left) { view.status = 'due'; view.headline = `اشتراك ${monthLabel(view.thisMonth)}: باقي ${money(left)}`; view.detail = `الاشتراك ${money(fee)} في الشهر`; }
+        else { view.status = 'due'; view.headline = `مستحق: ${money(view.owedAmount)}`; view.detail = 'فيه شهور لسه ما اتدفعتش'; }
+    } else {
+        const unit = view.mode === 'hourly' ? `${hoursText(minutes)} × ${money(rate || 0)} للساعة` : `${lessonsText(view.taken)} × ${money(price || 0)}`;
+        view.progress = due ? Math.min(1, paidAmount / due) : 1;
+        if ((view.mode === 'hourly' && !rate) || (view.mode === 'per_lesson' && !price)) { view.status = 'ok'; view.headline = view.mode === 'hourly' ? 'اكتب سعر الساعة' : 'اكتب سعر الحصة'; view.detail = 'من إعدادات الدفع'; }
+        else if (bal > 0) { view.status = 'ok'; view.headline = `مدفوع مقدمًا: ${money(bal)}`; view.detail = unit; }
+        else if (bal === 0) { view.status = 'ok'; view.headline = 'لا يوجد مستحق'; view.detail = unit; }
+        else { view.status = 'due'; view.headline = `مستحق: ${money(view.owedAmount)}`; view.detail = unit; }
+    }
+    view.needsReminder = view.status === 'due';
+    return view;
+}
+
 export function computeBilling(billing) {
     const b = billing || {};
     const view = { available: !!b.available, enabled: !!(b.available && b.mode), mode: b.mode || null };
     if (!view.enabled) return view;
+    if (MONEY_MODES.includes(view.mode)) return computeMoney(b, view);
 
     const size = Math.max(1, parseInt(b.package_size, 10) || 1);
     const price = b.lesson_price != null && b.lesson_price !== '' ? Number(b.lesson_price) : null;
@@ -114,6 +173,7 @@ export function computeBilling(billing) {
 // شارة قصيرة للهيدر (مثلًا: "باقي 3 من 8")
 export function billingBadge(view) {
     if (!view || !view.enabled) return null;
+    if (view.money) return { text: view.headline, status: view.status };
     if (view.mode === 'prepaid' && view.balance > 1 && view.used != null) return { text: `باقي ${view.balance} من ${view.size}`, status: view.status };
     return { text: view.headline, status: view.status };
 }
@@ -124,6 +184,15 @@ export function billingBadge(view) {
  */
 export function liveBillingInfo(view) {
     if (!view || !view.enabled) return null;
+    if (view.money) {
+        if (view.unavailable) return null;
+        // view هنا محسوب "بعد الحصة دي" في صفحة الحصة؟ لأ: ده الحساب الحالي
+        if (view.mode === 'monthly') return view.status === 'due' ? { status: 'due', title: view.headline, sub: view.detail, actions: true } : { status: 'ok', title: view.headline, sub: view.detail, actions: false };
+        const add = view.mode === 'hourly' ? (view.rate || 0) * ((view.minutesPlanned || 60) / 60) : (view.price || 0);
+        const after = view.balance - add;
+        if (after >= 0) return { status: 'ok', title: view.balance > 0 ? `مدفوع مقدمًا ${money(view.balance)}` : 'مفيش مستحق', sub: `بعد الحصة دي ${after > 0 ? `يفضل له ${money(after)}` : 'الحساب يبقى صفر'}`, actions: false };
+        return { status: view.balance < 0 ? 'due' : 'low', title: view.balance < 0 ? `عليه ${money(-view.balance)}` : 'الحصة دي مش مدفوعة', sub: `بعد الحصة دي يكون عليه ${money(-after)}`, actions: true };
+    }
     const amt = (n) => (view.price ? ` (${money(view.price * n)})` : '');
     const b = view.balance;
     if (view.mode === 'prepaid') {
@@ -161,6 +230,7 @@ export function buildReminder(view, student, tone = 'friendly') {
     if (!view || !view.enabled) return '';
     const name = firstName(student && student.name);
     const hi = name ? `أهلًا ${name} 🌷` : 'أهلًا 🌷';
+    if (view.money) return buildMoneyReminder(view, hi, tone);
     const renew = view.renewAmount ? ` (${money(view.renewAmount)})` : '';
     const owedAmt = view.owedAmount ? ` (${money(view.owedAmount)})` : '';
 
@@ -193,6 +263,35 @@ export function buildReminder(view, student, tone = 'friendly') {
     if (view.owed === 0) return `${hi}\nتذكير بسيط: مفيش أي مستحق حاليًا. شكرًا جدًا 🙏`;
     if (tone === 'short') return `تذكير: تم ${lessonsText(view.owed)} من آخر دفعة${owedAmt}. شكرًا 🙏`;
     return `${hi}\nتذكير بسيط بحساب الحصص: تم ${lessonsText(view.owed)} من آخر دفعة${owedAmt}.\nالدفع يكون في أي وقت مناسب خلال الأسبوع ده.\nشكرًا جدًا 🙏`;
+}
+
+function buildMoneyReminder(view, hi, tone) {
+    const owed = view.owedAmount;
+    if (tone === 'statement') {
+        const lines = [hi, 'ملخص الحساب من بداية المتابعة:'];
+        if (view.mode === 'monthly') {
+            (view.months || []).slice(0, 6).forEach((mo) => lines.push(`• ${monthLabel(mo.month)}: ${Number(mo.paid) >= (view.fee || 0) ? 'مدفوع ✓' : (Number(mo.paid) > 0 ? `مدفوع ${money(mo.paid)} من ${money(view.fee)}` : `لسه (${money(view.fee)})`)}`));
+        } else if (view.mode === 'hourly') {
+            lines.push(`• الوقت: ${hoursText(view.minutes)} (${lessonsText(view.taken)})`);
+            lines.push(`• سعر الساعة: ${money(view.rate)}`);
+        } else {
+            lines.push(`• الحصص: ${view.taken}`);
+            lines.push(`• سعر الحصة: ${money(view.price)}`);
+        }
+        lines.push(`• المطلوب: ${money(view.due)}`);
+        lines.push(`• المدفوع: ${money(view.paidAmount)}`);
+        lines.push(owed > 0 ? `• المتبقي: ${money(owed)}` : view.balance > 0 ? `• مدفوع مقدمًا: ${money(view.balance)}` : '• لا يوجد مستحق حاليًا');
+        lines.push('شكرًا جدًا 🙏');
+        return lines.join('\n');
+    }
+    if (owed <= 0) return `${hi}\nتذكير بسيط: مفيش أي مستحق حاليًا. شكرًا جدًا 🙏`;
+    if (view.mode === 'monthly') {
+        const left = view.monthLeft || 0;
+        const msg = left > 0 && owed <= left ? `اشتراك شهر ${monthLabel(view.thisMonth)} (${money(left)})` : `المستحق ${money(owed)}`;
+        return tone === 'short' ? `تذكير: ${msg}. شكرًا 🙏` : `${hi}\nتذكير بسيط بـ${msg}.\nالدفع في أي وقت مناسب خلال الأسبوع ده.\nشكرًا جدًا 🙏`;
+    }
+    const what = view.mode === 'hourly' ? `${hoursText(view.minutes)} حصص` : lessonsText(view.taken);
+    return tone === 'short' ? `تذكير: المستحق ${money(owed)}. شكرًا 🙏` : `${hi}\nتذكير بسيط بالحساب: المستحق ${money(owed)} (${what} من بداية المتابعة، بعد خصم المدفوع).\nالدفع في أي وقت مناسب خلال الأسبوع ده.\nشكرًا جدًا 🙏`;
 }
 
 // رقم مصري محلي (01xxxxxxxxx) بيتحوّل لـ 201xxxxxxxxx، وأي رقم دولي بيتقبل زي ما هو
@@ -267,6 +366,7 @@ export function billingCardHtml(view, opts = {}) {
         </div>`;
     }
     const pct = Math.round(Math.max(0, Math.min(1, view.progress || 0)) * 100);
+    if (view.money) return moneyCardHtml(view, pct, opts);
     const modeText = view.mode === 'prepaid' ? `باقة ${lessonsText(view.size)}` : `الدفع كل ${lessonsText(view.size)}`;
     const last = view.lastPayment ? `آخر دفعة: ${Formatters.formatDate(view.lastPayment.created_at)}` : 'لا توجد دفعات بعد';
     return `<div class="bill-card bill-${view.status}">
@@ -283,6 +383,30 @@ export function billingCardHtml(view, opts = {}) {
             <button type="button" class="btn btn-sm" data-bill-act="pay">${icon('plus', { size: 14 })} سجّل دفعة</button>
             <button type="button" class="btn btn-sm ${view.needsReminder ? 'bill-remind-hot' : 'btn-ghost'}" data-bill-act="remind">${icon('messageCircle', { size: 14 })} رسالة تذكير</button>
             ${opts.compact ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-bill-act="adjust">${icon('minus', { size: 14 })} تعديل الرصيد</button>`}
+        </div>
+    </div>`;
+}
+
+function moneyCardHtml(view, pct, opts) {
+    const modeText = view.mode === 'monthly' ? `شهري ${view.fee ? money(view.fee) : ''}` : view.mode === 'hourly' ? `بالساعة ${view.rate ? money(view.rate) : ''}` : `بالحصة ${view.price ? money(view.price) : ''}`;
+    const last = view.lastPayment ? `آخر دفعة: ${money(view.lastPayment.amount)} · ${Formatters.formatDate(view.lastPayment.created_at)}` : 'لا توجد دفعات بعد';
+    const meta = view.mode === 'monthly' ? '' : view.mode === 'hourly' ? ` · ${hoursText(view.minutes)} من بداية المتابعة` : ` · ${lessonsText(view.taken)} من بداية المتابعة`;
+    const months = view.mode === 'monthly' && !opts.compact && (view.months || []).length ? `<div class="bill-months">${view.months.slice(0, 6).map((mo) => {
+        const paid = Number(mo.paid) || 0; const full = view.fee ? paid >= view.fee : paid > 0;
+        return `<span class="bill-month ${full ? 'ok' : paid ? 'part' : 'no'}" title="${esc(monthLabel(mo.month))}">${esc(monthLabel(mo.month).split(' ')[0])}${full ? ' ✓' : paid ? ` ${money(paid)}` : ''}</span>`;
+    }).join('')}</div>` : '';
+    return `<div class="bill-card bill-${view.status}">
+        <div class="bill-top">
+            <div><div class="bill-headline">${esc(view.headline)}</div><div class="bill-detail">${esc(view.detail || '')}</div></div>
+            <span class="bill-mode">${esc(modeText)}</span>
+        </div>
+        <div class="bill-bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div>
+        ${months}
+        <div class="bill-meta">${esc(last)}${opts.compact ? '' : esc(meta)}</div>
+        <div class="bill-actions">
+            <button type="button" class="btn btn-sm" data-bill-act="pay">${icon('plus', { size: 14 })} سجّل دفعة</button>
+            <button type="button" class="btn btn-sm ${view.needsReminder ? 'bill-remind-hot' : 'btn-ghost'}" data-bill-act="remind">${icon('messageCircle', { size: 14 })} رسالة تذكير</button>
+            ${opts.compact ? '' : `<button type="button" class="btn btn-sm btn-ghost" data-bill-act="settings">${icon('gear', { size: 14 })} نظام الدفع</button>`}
         </div>
     </div>`;
 }
@@ -335,6 +459,29 @@ async function submitBilling(m, btn, studentId, action, data, onChange, successM
         if (onChange) onChange();
     } catch (e) {
         err.textContent = ErrorHandler.getErrorMessage(e);
+        err.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = label;
+    }
+}
+
+/** v34: حفظ الأنظمة بالفلوس (app-hub) */
+async function submitMoney(m, btn, action, data, onChange, successMsg) {
+    const err = m.$('.bm-error');
+    err.style.display = 'none';
+    btn.disabled = true;
+    const label = btn.textContent;
+    btn.textContent = 'جاري الحفظ...';
+    try {
+        await api.hub(action, data);
+        try { sessionStorage.removeItem('tm_income_cache_v1'); } catch (e) { /* تجاهل */ }
+        api.clearBillingDueCache();
+        m.close();
+        ErrorHandler.showSuccess(successMsg);
+        if (onChange) onChange();
+    } catch (e) {
+        const code = e && e.error && e.error.code;
+        err.textContent = code === 'INVALID' && /معروف/.test((e.error && e.error.message) || '') ? 'الأنظمة الجديدة (شهري/بالساعة/بالحصة) محتاجة تحديث app-hub وقاعدة البيانات (v34).' : ErrorHandler.getErrorMessage(e);
         err.style.display = 'block';
         btn.disabled = false;
         btn.textContent = label;
@@ -402,23 +549,33 @@ export function openBillingSetup(state, onChange) {
                     <span><strong>باقة مقدمة</strong><small>يدفع عدد حصص مقدمًا (مثلًا 8 حصص في الشهر)</small></span></label>
                 <label class="bm-option"><input type="radio" name="bm-mode" value="postpaid" ${mode === 'postpaid' ? 'checked' : ''}>
                     <span><strong>الدفع بعد الحصص</strong><small>يدفع بعد ما يخلص عدد حصص (مثلًا كل 4 حصص)</small></span></label>
+                <label class="bm-option"><input type="radio" name="bm-mode" value="monthly" ${mode === 'monthly' ? 'checked' : ''}>
+                    <span><strong>مبلغ شهري ثابت</strong><small>نفس المبلغ كل شهر مهما كان عدد الحصص</small></span></label>
+                <label class="bm-option"><input type="radio" name="bm-mode" value="hourly" ${mode === 'hourly' ? 'checked' : ''}>
+                    <span><strong>بالساعة</strong><small>حسب الوقت الحقيقي اللي الطالب أخده (من المؤقت أو المدة اللي تكتبها)</small></span></label>
+                <label class="bm-option"><input type="radio" name="bm-mode" value="per_lesson" ${mode === 'per_lesson' ? 'checked' : ''}>
+                    <span><strong>بالحصة (حساب بالفلوس)</strong><small>كل حصة بسعرها، وتسجّل أي مبلغ يدفعه وقت ما يدفع</small></span></label>
             </div>
         </div>
         <div class="bm-grid">
-            <div class="bm-field"><label for="bm-size" id="bm-size-label">عدد حصص الباقة</label>
+            <div class="bm-field" data-for="pkg"><label for="bm-size" id="bm-size-label">عدد حصص الباقة</label>
                 <input type="number" id="bm-size" min="1" max="200" inputmode="numeric" value="${esc(view.size || 8)}"></div>
-            <div class="bm-field"><label for="bm-price">سعر الحصة <small>(اختياري)</small></label>
+            <div class="bm-field" data-for="pkg per_lesson"><label for="bm-price">سعر الحصة <small data-opt>(اختياري)</small></label>
                 <input type="number" id="bm-price" min="0" step="any" inputmode="decimal" value="${view.price != null ? esc(view.price) : ''}" placeholder="مثلًا 100"></div>
+            <div class="bm-field" data-for="monthly"><label for="bm-fee">المبلغ الشهري</label>
+                <input type="number" id="bm-fee" min="0" step="any" inputmode="decimal" value="${view.fee != null ? esc(view.fee) : ''}" placeholder="مثلًا 600"></div>
+            <div class="bm-field" data-for="hourly"><label for="bm-rate">سعر الساعة</label>
+                <input type="number" id="bm-rate" min="0" step="any" inputmode="decimal" value="${view.rate != null ? esc(view.rate) : ''}" placeholder="مثلًا 150"></div>
         </div>
         <label class="bm-check">
             <input type="checkbox" id="bm-unexcused" ${view.enabled && view.countUnexcused === false ? '' : 'checked'}>
             <span>الغياب بدون عذر يتحسب من الحصص <small>(الغياب بعذر مش بيتحسب)</small></span>
         </label>
-        ${firstTime ? `<label class="bm-check" id="bm-all-wrap" hidden>
+        ${firstTime ? `<label class="bm-check" id="bm-all-wrap" data-for="pkg" hidden>
             <input type="checkbox" id="bm-all">
             <span id="bm-all-text">طبّق نفس النظام على باقي الطلاب</span>
         </label>` : ''}
-        ${firstTime ? `<div class="bm-field bm-opening">
+        ${firstTime ? `<div class="bm-field bm-opening" data-for="pkg">
             <label for="bm-opening" id="bm-opening-label"></label>
             <input type="number" id="bm-opening" min="0" max="500" inputmode="numeric" value="0">
             <small class="bm-hint">الحصص القديمة مش هتتحسب في الرصيد — العدّ بيبدأ من دلوقتي.</small>
@@ -431,6 +588,9 @@ export function openBillingSetup(state, onChange) {
     `);
     const sync = () => {
         const md = m.el.querySelector('input[name="bm-mode"]:checked').value;
+        const grp = MONEY_MODES.includes(md) ? md : 'pkg';
+        m.el.querySelectorAll('[data-for]').forEach((el) => { const show = el.dataset.for.split(' ').includes(grp); el.style.display = show ? '' : 'none'; });
+        const opt = m.el.querySelector('[data-opt]'); if (opt) opt.hidden = md === 'per_lesson';
         m.$('#bm-size-label').textContent = md === 'prepaid' ? 'عدد حصص الباقة' : 'الدفع كل كام حصة؟';
         const ol = m.$('#bm-opening-label');
         if (ol) ol.textContent = md === 'prepaid' ? 'كام حصة فاضلة للطالب في الباقة الحالية؟' : 'كام حصة اتعملت ولسه ما اتدفعتش؟';
@@ -450,6 +610,17 @@ export function openBillingSetup(state, onChange) {
     }
     m.$('#bm-save').addEventListener('click', (e) => {
         const md = m.el.querySelector('input[name="bm-mode"]:checked').value;
+        if (MONEY_MODES.includes(md)) {
+            const num = (id) => { const v = toLatinDigits(m.$(id).value).trim(); return v === '' ? '' : String(Number(v)); };
+            const data = { mode: md, count_unexcused_absence: m.$('#bm-unexcused').checked };
+            const need = md === 'monthly' ? ['#bm-fee', 'monthly_fee', 'اكتب المبلغ الشهري'] : md === 'hourly' ? ['#bm-rate', 'hourly_rate', 'اكتب سعر الساعة'] : ['#bm-price', 'lesson_price', 'اكتب سعر الحصة'];
+            const val = num(need[0]);
+            if (!val || Number(val) <= 0) { const er = m.$('.bm-error'); er.textContent = need[2]; er.style.display = 'block'; return; }
+            data[need[1]] = val;
+            try { (window.dataLayer = window.dataLayer || []).push({ event: 'billing_enabled', billing_mode: md, students_count: 1 }); } catch (er) { /* تجاهل */ }
+            submitMoney(m, e.currentTarget, 'billing_save', { student_id: student.id, ...data }, onChange, 'تم حفظ نظام الدفع');
+            return;
+        }
         const size = parseInt(m.$('#bm-size').value, 10);
         if (!size || size < 1 || size > 200) { const er = m.$('.bm-error'); er.textContent = 'عدد الحصص لازم يكون رقم من 1 إلى 200'; er.style.display = 'block'; return; }
         const data = { billing_mode: md, package_size: size, lesson_price: m.$('#bm-price').value, count_unexcused_absence: m.$('#bm-unexcused').checked };
@@ -474,6 +645,7 @@ export function openBillingSetup(state, onChange) {
 
 export function openPaymentModal(state, onChange) {
     const { student, view } = state;
+    if (view.money) return openMoneyPayment(state, onChange);
     const count = view.size || 1;
     const m = openModal('تسجيل دفعة', `
         <div class="bm-error" role="alert"></div>
@@ -506,6 +678,38 @@ export function openPaymentModal(state, onChange) {
         if (!c || c < 1) { const er = m.$('.bm-error'); er.textContent = 'اكتب عدد الحصص المدفوعة'; er.style.display = 'block'; return; }
         submitBilling(m, e.currentTarget, student.id, 'add_payment',
             { lessons_count: c, amount: m.$('#bm-amount').value, note: m.$('#bm-note').value }, onChange, 'تم تسجيل الدفعة');
+    });
+}
+
+function openMoneyPayment(state, onChange) {
+    const { student, view } = state;
+    const months = view.mode === 'monthly' ? (view.months || []) : [];
+    const firstUnpaid = months.slice().reverse().find((mo) => (Number(mo.paid) || 0) < (view.fee || 0));
+    const suggest = view.mode === 'monthly' ? (view.fee ? Math.max(0, view.fee - (firstUnpaid ? Number(firstUnpaid.paid) || 0 : 0)) : '') : (view.owedAmount || '');
+    const next = (() => { const [y, mo] = String(view.thisMonth || '').split('-').map(Number); if (!mo) return null; const d = new Date(y, mo, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; })();
+    const opts = months.slice().reverse().map((mo) => mo.month).concat(next ? [next] : []);
+    const m = openModal('تسجيل دفعة', `
+        <div class="bm-error" role="alert"></div>
+        <div class="bm-grid">
+            <div class="bm-field"><label for="bm-amount">المبلغ</label>
+                <input type="number" id="bm-amount" min="1" step="any" inputmode="decimal" value="${esc(suggest || '')}"></div>
+            ${view.mode === 'monthly' ? `<div class="bm-field"><label for="bm-period">عن شهر</label>
+                <select id="bm-period">${opts.map((o) => `<option value="${esc(o)}" ${firstUnpaid && o === firstUnpaid.month ? 'selected' : (!firstUnpaid && o === next ? 'selected' : '')}>${esc(monthLabel(o))}</option>`).join('')}</select></div>` : ''}
+        </div>
+        <div class="bm-field"><label for="bm-note">ملاحظة <small>(اختياري)</small></label>
+            <input type="text" id="bm-note" maxlength="300" placeholder="مثلًا: تحويل فودافون كاش"></div>
+        <p class="bm-hint">${view.owedAmount > 0 ? `المستحق دلوقتي: ${money(view.owedAmount)}` : view.balance > 0 ? `مدفوع مقدمًا: ${money(view.balance)}` : 'مفيش مستحق دلوقتي'}</p>
+        <div class="bm-buttons">
+            <button type="button" class="btn" id="bm-save">حفظ الدفعة</button>
+            <button type="button" class="btn btn-ghost" data-close>إلغاء</button>
+        </div>
+    `);
+    m.$('#bm-save').addEventListener('click', (e) => {
+        const a = Number(toLatinDigits(m.$('#bm-amount').value));
+        if (!a || a <= 0) { const er = m.$('.bm-error'); er.textContent = 'اكتب المبلغ'; er.style.display = 'block'; return; }
+        const data = { student_id: student.id, amount: String(a), note: m.$('#bm-note').value };
+        if (m.$('#bm-period')) data.period = m.$('#bm-period').value;
+        submitMoney(m, e.currentTarget, 'pay_add', data, onChange, 'تم تسجيل الدفعة');
     });
 }
 

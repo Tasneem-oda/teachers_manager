@@ -10,12 +10,12 @@
  * + زر شات صغير بيفتح نافذة أسئلة عن الكتاب ده بالذات، والاستشهادات فيها بتفتح مكانها هنا.
  */
 
-import { icon } from './icons.js?v=39';
-import { CONFIG } from './config.js?v=39';
-import { loadPdfJs, pdfDocumentParams, loadDocxPreview, loadPptxPreview, loadJsZip, loadStyle, CDN, repairPdfBytes } from './book-libs.js?v=39';
-import { detectDir } from './book-chunker.js?v=39';
-import { BookChat } from './book-chat.js?v=39';
-import { PresentTools } from './present-tools.js?v=39';
+import { icon } from './icons.js?v=51';
+import { CONFIG } from './config.js?v=51';
+import { loadPdfJs, pdfDocumentParams, loadDocxPreview, loadPptxPreview, loadJsZip, loadStyle, CDN, repairPdfBytes } from './book-libs.js?v=51';
+import { detectDir } from './book-chunker.js?v=51';
+import { BookChat } from './book-chat.js?v=51';
+import { PresentTools } from './present-tools.js?v=51';
 
 const ZOOM_STEPS = [0.5, 0.67, 0.8, 1, 1.25, 1.5, 2, 2.5, 3];
 const TYPE_LABEL = { pdf: 'PDF', docx: 'Word', pptx: 'PowerPoint', txt: 'نص', image: 'صورة' };
@@ -132,8 +132,9 @@ export class BookViewer {
      * @param {{student_id?:string, group_id?:string}} [o.owner] v29: صاحب الرسم على الكتاب والسبورة (طالب/مجموعة)
      * @param {string} [o.ownerName] v29: اسم الطالب/المجموعة (عنوان السبورة)
      */
-    constructor({ api, book, opener, onClose, startPage, onPageChange, owner, ownerName }) {
+    constructor({ api, book, opener, onClose, startPage, onPageChange, owner, ownerName, standalone }) {
         this.api = api;
+        this.standalone = !!standalone;   // v34: صفحة reader.html (الكتاب في تاب لوحده)
         this.book = book;
         this.owner = owner || {};
         this.ownerName = ownerName || '';
@@ -152,8 +153,10 @@ export class BookViewer {
         this.textState = null;
         this._popHandled = false;
 
+        Shelf.beforeOpen(this);
         this._build();
         this._bindEvents();
+        Shelf.add(this);
         this.chat = new BookChat({
             api, book, host: this.root,
             getPageContext: () => ({ page: this.page, supported: this._supportsPageContext() }),
@@ -202,8 +205,14 @@ export class BookViewer {
                         <button type="button" class="bv-btn" data-act="download" aria-label="تحميل الملف الأصلي" title="تحميل الملف الأصلي">${icon('download', { size: 16 })}</button>
                     </div>
                     <button type="button" class="bv-btn bv-chat-btn" data-act="chat" aria-label="اسأل الكتاب" title="اسأل الكتاب">${icon('messageSquare', { size: 16 })}<span>اسأل الكتاب</span></button>
+                    <div class="bv-group bv-multi">
+                        <button type="button" class="bv-btn" data-act="another" aria-label="افتح كتاب كمان" title="افتح كتاب كمان جنبه">${icon('plus', { size: 16 })}<span class="bv-multi-t">كتاب كمان</span></button>
+                        <button type="button" class="bv-btn" data-act="split" aria-label="الكتابين جنب بعض" title="الكتابين جنب بعض" hidden>${icon('grid', { size: 16 })}</button>
+                        ${this.standalone ? '' : `<button type="button" class="bv-btn" data-act="newtab" aria-label="افتح في تاب جديد" title="افتح الكتاب في تاب جديد في المتصفح (بكل الأدوات)">${icon('externalLink', { size: 16 })}</button>`}
+                    </div>
                 </div>
             </header>
+            <nav class="bv-tabs" hidden aria-label="الكتب المفتوحة"></nav>
             <div class="bv-stage" tabindex="0">
                 <div class="bv-content"></div>
                 <div class="bv-state" hidden></div>
@@ -225,9 +234,8 @@ export class BookViewer {
         this.modeBtn = this.root.querySelector('.bv-mode');
         this.chatBtn = this.root.querySelector('.bv-chat-btn');
 
-        this._prevOverflow = document.body.style.overflow;
-        document.body.style.overflow = 'hidden';
         document.body.appendChild(this.root);
+        this.root.addEventListener('pointerdown', () => { if (Shelf.split && Shelf.active !== this) Shelf.focus(this); }, true);
     }
 
     _bindEvents() {
@@ -249,6 +257,16 @@ export class BookViewer {
             else if (act === 'chat') this.chat.toggle();
             else if (act === 'retry') this.load();
             else if (act === 'text-fallback') this.showTextMode();
+            else if (act === 'another') Shelf.pick(this);
+            else if (act === 'newtab') this.openInNewTab();
+            else if (act === 'split') Shelf.toggleSplit();
+        });
+        this.root.querySelector('.bv-tabs').addEventListener('click', (e) => {
+            const x = e.target.closest('[data-tab-close]');
+            if (x) { e.stopPropagation(); const v = Shelf.byId(x.dataset.tabClose); if (v) v.close(); return; }
+            const t = e.target.closest('[data-tab]');
+            if (t) { const v = Shelf.byId(t.dataset.tab); if (v) Shelf.activate(v); return; }
+            if (e.target.closest('[data-tab-add]')) Shelf.pick(this);
         });
         this.pageInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') { e.preventDefault(); this.goToPage(parseInt(this.pageInput.value, 10) || this.page); this.stage.focus({ preventScroll: true }); }
@@ -258,7 +276,7 @@ export class BookViewer {
         this.pageInput.addEventListener('blur', () => { this.pageInput.value = String(this.page); });
 
         this._onKey = (e) => {
-            if (this.closed) return;
+            if (this.closed || this.root.hidden || Shelf.active !== this) return;
             const tag = (e.target && e.target.tagName) || '';
             const typing = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable);
             // v29: أدوات الشرح الأول (Esc بيقفل الأداة/الزوم قبل ما يقفل الكتاب)
@@ -298,12 +316,14 @@ export class BookViewer {
         };
         this.stage.addEventListener('scroll', this._onScroll, { passive: true });
 
-        // زر الرجوع في الموبايل يقفل العارض بدل ما يخرج من الصفحة
-        try {
-            history.pushState({ bookViewer: this.book.id }, '');
-            this._onPop = () => { this._popHandled = true; this.close(); };
-            window.addEventListener('popstate', this._onPop);
-        } catch (e) { /* تجاهل */ }
+        // زر الرجوع في الموبايل يقفل العارض بدل ما يخرج من الصفحة (كتاب واحد بس بيسجّل: الرجوع بيقفل كل الكتب المفتوحة)
+        if (!this.standalone && !Shelf.list.length) {
+            try {
+                history.pushState({ bookViewer: this.book.id }, '');
+                this._onPop = () => { Shelf.list.slice().forEach((v) => { v._popHandled = true; v.close(); }); };
+                window.addEventListener('popstate', this._onPop);
+            } catch (e) { /* تجاهل */ }
+        }
     }
 
     // ------------------------------------------------------------------ الحالات (تحميل / خطأ)
@@ -1059,6 +1079,18 @@ export class BookViewer {
         return true;
     }
 
+    // ------------------------------------------------------------------ v34: الكتاب في تاب لوحده في المتصفح
+    openInNewTab() {
+        const q = new URLSearchParams({ book: this.book.id });
+        if (this.page > 1) q.set('page', String(this.page));
+        if (this.owner.student_id) q.set('student_id', this.owner.student_id);
+        if (this.owner.group_id) q.set('group_id', this.owner.group_id);
+        if (this.ownerName) q.set('name', this.ownerName);
+        try { localStorage.setItem('tm_reader_book_' + this.book.id, JSON.stringify(this.book)); } catch (e) { /* تجاهل */ }
+        const w = window.open('reader.html?' + q.toString(), '_blank');
+        if (w) { try { window.tmTrack && window.tmTrack('book_new_tab', {}); } catch (e) { /* تجاهل */ } }
+    }
+
     // ------------------------------------------------------------------ الإغلاق
     close() {
         if (this.closed) return;
@@ -1073,15 +1105,121 @@ export class BookViewer {
         if (this.tools) { this.tools.destroy(); this.tools = null; }
         this._destroyAdapter();
         this.root.remove();
-        document.body.style.overflow = this._prevOverflow;
-        // لو اتقفل بزر ✕ مش بزر الرجوع: نشيل الـ state اللي ضفناه في history
-        if (!this._popHandled) { try { if (history.state && history.state.bookViewer === this.book.id) history.back(); } catch (e) { /* تجاهل */ } }
+        Shelf.remove(this);
+        // لو اتقفل بزر ✕ مش بزر الرجوع: نشيل الـ state اللي ضفناه في history (لما آخر كتاب يتقفل)
+        if (!this._popHandled && !Shelf.list.length) { try { if (history.state && history.state.bookViewer) history.back(); } catch (e) { /* تجاهل */ } }
+        if (this._onPop && Shelf.list.length) { const next = Shelf.list[0]; next._onPop = this._onPop; this._onPop = null; window.addEventListener('popstate', next._onPop); }
+        if (this.standalone) { try { window.close(); } catch (e) { /* تجاهل */ } setTimeout(() => { if (!window.closed) location.href = 'books.html'; }, 150); }
         if (this.opener && this.opener.focus && document.contains(this.opener)) { try { this.opener.focus({ preventScroll: true }); } catch (e) { /* تجاهل */ } }
         this.onClose();
     }
 }
 
-/** اختصار: فتح عارض كتاب */
+// ------------------------------------------------------------------ v34: أكتر من كتاب مفتوح في نفس الوقت
+// تبويبات فوق الكتاب (تنقل بينهم بضغطة) + "جنب بعض" على الشاشات الكبيرة
+const escH = (x) => String(x == null ? '' : x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+export const Shelf = {
+    list: [], active: null, split: false, _overflow: null,
+    byId(id) { return this.list.find((v) => v._sid === id) || null; },
+    beforeOpen(v) {
+        v._sid = 'b' + Math.random().toString(36).slice(2, 9);
+        if (!this.list.length) { this._overflow = document.body.style.overflow; document.body.style.overflow = 'hidden'; }
+    },
+    add(v) {
+        this.list.push(v);
+        if (this.split && this.list.length > 2) this.split = false;
+        this.activate(v);
+    },
+    remove(v) {
+        this.list = this.list.filter((x) => x !== v);
+        if (this.list.length < 2) this.split = false;
+        if (!this.list.length) { document.body.style.overflow = this._overflow || ''; this.active = null; return; }
+        if (this.active === v) this.activate(this.list[this.list.length - 1]);
+        else this.render();
+    },
+    focus(v) { this.active = v; this.render(false); },
+    activate(v) {
+        const prev = this.active;
+        this.active = v;
+        if (this.split && prev && prev !== v && !prev.closed) this._pair = [prev, v];
+        this.render();
+    },
+    toggleSplit() {
+        if (this.list.length < 2) return;
+        this.split = !this.split;
+        if (this.split) {
+            const other = this.list.filter((x) => x !== this.active).pop();
+            this._pair = [other, this.active];
+        }
+        this.render();
+        try { window.tmTrack && window.tmTrack('book_split', { on: this.split }); } catch (e) { /* تجاهل */ }
+    },
+    render(relayout = true) {
+        const many = this.list.length > 1;
+        const canSplit = many && window.matchMedia('(min-width: 1000px)').matches;
+        if (this.split && !canSplit) this.split = false;
+        const pair = this.split ? (this._pair || []).filter((x) => x && !x.closed && this.list.includes(x)) : [];
+        if (this.split && pair.length < 2) this.split = false;
+        this.list.forEach((v) => {
+            const shown = this.split ? pair.includes(v) : v === this.active;
+            v.root.hidden = !shown;
+            v.root.classList.toggle('bv-split', this.split && shown);
+            v.root.classList.toggle('bv-split-a', this.split && pair[0] === v);
+            v.root.classList.toggle('bv-split-b', this.split && pair[1] === v);
+            v.root.classList.toggle('bv-focus', this.split && v === this.active);
+            const tabs = v.root.querySelector('.bv-tabs');
+            if (tabs) {
+                tabs.hidden = !many;
+                tabs.innerHTML = many ? this.list.map((x) => `<button type="button" class="bv-tab ${x === this.active ? 'on' : ''}" data-tab="${x._sid}" title="${escH(x.book.title)}"><span>${escH(x.book.title)}</span><i data-tab-close="${x._sid}" role="button" aria-label="اقفل ${escH(x.book.title)}">×</i></button>`).join('') + '<button type="button" class="bv-tab add" data-tab-add title="افتح كتاب كمان">+</button>' : '';
+            }
+            const sb = v.root.querySelector('[data-act="split"]');
+            if (sb) { sb.hidden = !canSplit; sb.classList.toggle('is-active', this.split); }
+        });
+        if (relayout) this.list.forEach((v) => { if (!v.root.hidden && v._onResize) v._onResize(); });
+    },
+    /** اختيار كتاب تاني من مكتبة المدرس */
+    async pick(from) {
+        const host = from.root;
+        const old = host.querySelector('.bv-pick'); if (old) { old.remove(); return; }
+        const box = document.createElement('div');
+        box.className = 'bv-pick';
+        box.innerHTML = `<div class="bv-pick-card" role="dialog" aria-label="افتح كتاب كمان"><div class="bv-pick-hd"><b>افتح كتاب كمان</b><button type="button" class="bv-btn" data-x aria-label="إغلاق">×</button></div>
+            <input type="search" class="bv-pick-q" placeholder="دوّر باسم الكتاب..."><div class="bv-pick-list"><p class="bv-pick-empty">جاري تحميل كتبك...</p></div></div>`;
+        host.appendChild(box);
+        const close = () => box.remove();
+        box.addEventListener('mousedown', (e) => { if (e.target === box) close(); });
+        box.querySelector('[data-x]').addEventListener('click', close);
+        let books = [];
+        try {
+            const r = await from.api.listBooks();
+            books = (Array.isArray(r) ? r : (r && r.books) || []).filter((b) => b && b.storage_path && (!b.status || b.status === 'ready'));
+        } catch (e) { books = []; }
+        const listEl = box.querySelector('.bv-pick-list');
+        const draw = (q) => {
+            const qq = String(q || '').trim();
+            const open = new Set(this.list.map((v) => v.book.id));
+            const items = books.filter((b) => !qq || String(b.title || '').includes(qq)).slice(0, 60);
+            listEl.innerHTML = items.length ? items.map((b) => `<button type="button" class="bv-pick-item" data-bid="${escH(b.id)}">${icon('bookOpen', { size: 16 })}<span>${escH(b.title)}</span>${open.has(b.id) ? '<small>مفتوح</small>' : ''}</button>`).join('')
+                : '<p class="bv-pick-empty">مفيش كتب تانية. ارفع كتبك من "مكتبتي".</p>';
+        };
+        draw('');
+        box.querySelector('.bv-pick-q').addEventListener('input', (e) => draw(e.target.value));
+        listEl.addEventListener('click', (e) => {
+            const it = e.target.closest('[data-bid]'); if (!it) return;
+            const b = books.find((x) => String(x.id) === it.dataset.bid);
+            close();
+            const existing = this.list.find((v) => v.book.id === b.id);
+            if (existing) { this.activate(existing); return; }
+            openBookViewer({ api: from.api, book: b, owner: from.owner, ownerName: from.ownerName, standalone: from.standalone });
+            try { window.tmTrack && window.tmTrack('book_second_opened', { n: this.list.length }); } catch (er) { /* تجاهل */ }
+        });
+    }
+};
+window.addEventListener('resize', () => { if (Shelf.list.length > 1) Shelf.render(); });
+
+/** اختصار: فتح عارض كتاب (لو الكتاب ده مفتوح بالفعل بنرجع له) */
 export function openBookViewer(opts) {
+    const same = opts && opts.book && Shelf.list.find((v) => v.book.id === opts.book.id && !v.closed);
+    if (same) { Shelf.activate(same); return same; }
     return new BookViewer(opts);
 }

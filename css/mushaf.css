@@ -1,0 +1,69 @@
+/* v35: المصحف الشريف */
+:root { --ms-paper: #FFFBF0; --ms-ink: #1B1B1B; --ms-frame: #C9A55A; --ms-green: #1F4D3A; --ms-bg: #EFE9DC; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--ms-bg); font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif; overscroll-behavior: none; }
+.ms-root { position: fixed; inset: 0; display: flex; flex-direction: column; color: var(--ms-ink); background: radial-gradient(circle at 50% 0%, #F7F1E3, var(--ms-bg) 70%); user-select: none; -webkit-user-select: none; }
+.ms-bar, .ms-foot { display: flex; align-items: center; gap: 6px; padding: 6px 10px; padding-top: max(6px, env(safe-area-inset-top)); background: var(--ms-green); color: #F7EBD0; flex-shrink: 0; }
+.ms-foot { padding-bottom: max(6px, env(safe-area-inset-bottom)); justify-content: center; gap: 14px; }
+.ms-sp { flex: 1; }
+.ms-ib { min-width: 40px; height: 40px; border: 0; border-radius: 12px; background: rgba(255,255,255,.1); color: inherit; font: inherit; font-size: 1.15rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.ms-ib:hover { background: rgba(255,255,255,.2); }
+.ms-ib.on { background: #C9A55A; color: #1F4D3A; }
+.ms-title { border: 0; background: transparent; color: inherit; font: inherit; text-align: start; cursor: pointer; display: flex; flex-direction: column; line-height: 1.3; padding: 2px 6px; border-radius: 10px; }
+.ms-title b { font-size: 1rem; } .ms-title small { opacity: .8; font-size: .76rem; }
+.ms-go { font-size: .85rem; display: inline-flex; align-items: center; gap: 6px; }
+.ms-go input { width: 64px; height: 40px; border-radius: 10px; border: 0; text-align: center; font: inherit; font-weight: 700; color: var(--ms-green); background: #F7EBD0; }
+.ms-stage { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; outline: none; min-height: 0; padding: 8px; }
+.ms-spread { display: flex; flex-direction: row; gap: 0; align-items: stretch; justify-content: center; filter: drop-shadow(0 8px 24px rgba(60,40,10,.18)); }
+.ms-in-l { animation: msInL .22s ease-out; } .ms-in-r { animation: msInR .22s ease-out; }
+@keyframes msInL { from { opacity: .3; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+@keyframes msInR { from { opacity: .3; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+.ms-page { width: var(--pw); height: var(--ph); background: var(--ms-paper); padding: calc(var(--pw) * .035); position: relative; }
+.ms-page.odd { border-radius: 4px 14px 14px 4px; } .ms-page.even { border-radius: 14px 4px 4px 14px; }
+.ms-spread .ms-page + .ms-page { box-shadow: inset -10px 0 18px -12px rgba(0,0,0,.25); }
+.ms-frame { height: 100%; border: 2px solid var(--ms-frame); outline: 1px solid var(--ms-frame); outline-offset: 3px; border-radius: 6px; display: flex; flex-direction: column; padding: calc(var(--pw) * .025) calc(var(--pw) * .03) 4px; }
+.ms-body { flex: 1; display: flex; flex-direction: column; justify-content: space-between; min-height: 0; direction: rtl; }
+.ms-body.qcf { font-size: calc(var(--pw) * .056); line-height: 1; }
+.ms-line { overflow: hidden; display: flex; justify-content: space-between; align-items: center; white-space: nowrap; flex: 1; min-height: 0; color: var(--ms-ink); }
+.ms-line.ms-center { justify-content: center; gap: .18em; }
+.ms-w { display: inline-block; cursor: default; }
+.ms-w.ms-end { color: #8A6A1E; }
+.ms-head { justify-content: center; position: relative; }
+.ms-hframe { font-size: 1.15em; color: var(--ms-green); }
+.ms-hname { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Amiri Quran', serif; font-size: .55em; color: var(--ms-green); pointer-events: none; opacity: 0; }
+.ms-head-tx .ms-hname { position: static; opacity: 1; font-size: 1.1em; border: 2px solid var(--ms-frame); border-radius: 10px; padding: .1em 1.4em; background: linear-gradient(90deg, transparent, #F3E7C6, transparent); }
+.ms-body.tx { font-family: 'Amiri Quran', 'Traditional Arabic', serif; font-size: calc(var(--pw) * .047); line-height: 2.05; justify-content: flex-start; overflow: auto; text-align: justify; }
+.ms-tx { margin: 0; text-align: justify; text-align-last: center; }
+.ms-num { color: #8A6A1E; font-size: .85em; white-space: nowrap; }
+.ms-basm-tx { text-align: center; margin: .1em 0; }
+.ms-pno { text-align: center; font-size: calc(var(--pw) * .032); color: #6B5420; font-weight: 700; padding-top: 2px; }
+.ms-load, .ms-err { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #6B5420; font-family: 'IBM Plex Sans Arabic', sans-serif; font-size: .95rem; }
+.ms-spin { width: 34px; height: 34px; border-radius: 50%; border: 3px solid #E8D9B0; border-top-color: var(--ms-green); animation: msSpin 1s linear infinite; }
+@keyframes msSpin { to { transform: rotate(360deg); } }
+.ms-btn { border: 0; border-radius: 10px; padding: 8px 18px; background: var(--ms-green); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.ms-note { margin: 4px 0 0; text-align: center; font: 600 .7rem 'IBM Plex Sans Arabic', sans-serif; color: #8A6A1E; }
+.ms-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 48px; height: 96px; border: 0; border-radius: 14px; background: rgba(31,77,58,.08); color: var(--ms-green); font-size: 2rem; cursor: pointer; z-index: 2; }
+.ms-nav:hover { background: rgba(31,77,58,.18); }
+.ms-next { left: 8px; } .ms-prev { right: 8px; }
+@media (max-width: 999px) { .ms-nav { display: none; } }
+.ms-drawer { position: absolute; inset-block: 0; inset-inline-end: 0; width: min(380px, 92vw); background: #FFFDF6; z-index: 10; display: flex; flex-direction: column; box-shadow: 0 0 40px rgba(0,0,0,.25); }
+.ms-drawer[hidden] { display: none; }
+.ms-dhead { display: flex; align-items: center; gap: 8px; padding: 10px; padding-top: max(10px, env(safe-area-inset-top)); background: var(--ms-green); color: #F7EBD0; }
+.ms-dtabs { display: flex; gap: 4px; flex: 1; }
+.ms-dtabs button { flex: 1; border: 0; border-radius: 10px; padding: 8px 4px; background: rgba(255,255,255,.1); color: inherit; font: inherit; font-weight: 700; cursor: pointer; }
+.ms-dtabs button.on { background: #F7EBD0; color: var(--ms-green); }
+.ms-dsearch { margin: 10px; height: 42px; border-radius: 12px; border: 1px solid #E6D9B6; padding: 0 12px; font: inherit; font-size: 16px; background: #fff; }
+.ms-dlist { flex: 1; overflow: auto; padding: 0 8px 16px; }
+.ms-di { width: 100%; display: flex; align-items: center; gap: 10px; border: 0; background: transparent; padding: 10px 8px; border-bottom: 1px solid #F0E6CC; font: inherit; color: var(--ms-ink); cursor: pointer; text-align: start; border-radius: 10px; }
+.ms-di:hover, .ms-di.on { background: #F5EBD0; }
+.ms-dn { min-width: 34px; height: 34px; border-radius: 50%; background: #F3E7C6; color: var(--ms-green); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: .85rem; }
+.ms-dt { flex: 1; font-weight: 600; } .ms-dt small { font-weight: 400; color: #7A6A4A; }
+.ms-di > small { color: #7A6A4A; }
+.ms-empty { text-align: center; color: #7A6A4A; padding: 24px; line-height: 1.8; }
+.ms-pop { position: absolute; top: calc(56px + env(safe-area-inset-top)); inset-inline-end: 10px; z-index: 11; background: #FFFDF6; border-radius: 14px; padding: 12px 14px; box-shadow: 0 10px 30px rgba(0,0,0,.2); display: flex; flex-direction: column; gap: 10px; font-size: .9rem; min-width: 250px; }
+.ms-pop[hidden] { display: none; }
+.ms-pop label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+.ms-night { --ms-paper: #1C1A16; --ms-ink: #EDE3C8; --ms-bg: #0F0E0C; --ms-frame: #7A6330; }
+.ms-night .ms-pno, .ms-night .ms-num, .ms-night .ms-w.ms-end { color: #C9A55A; }
+.ms-night .ms-hframe, .ms-night .ms-hname { color: #C9A55A; }
+.ms-night.ms-root { background: #0F0E0C; }

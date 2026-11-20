@@ -16,9 +16,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=39">
-    <link rel="stylesheet" href="css/lessons.css?v=39">
-    <link rel="stylesheet" href="css/groups.css?v=39">
+    <link rel="stylesheet" href="css/style.css?v=51">
+    <link rel="stylesheet" href="css/lessons.css?v=51">
+    <link rel="stylesheet" href="css/groups.css?v=51">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -26,7 +26,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/v29.css?v=39">
+    <link rel="stylesheet" href="css/v29.css?v=51">
+    <link rel="stylesheet" href="css/ui.css?v=51">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -188,7 +189,7 @@
     <!-- إضافة طلاب -->
     <div class="modal" id="add-modal">
         <div class="modal-content" style="max-width:520px;">
-            <span class="close-modal" data-close="add-modal">&times;</span>
+            <button type="button" class="close-modal" data-close="add-modal" aria-label="قفل">&times;</button>
             <h2>إضافة طلاب للمجموعة</h2>
             <div id="add-picker"></div>
             <div style="display:flex; gap:0.75rem; margin-top:1rem;">
@@ -201,7 +202,7 @@
     <!-- v27: تسجيل دفعة اشتراك -->
     <div class="modal" id="pay-modal">
         <div class="modal-content" style="max-width:420px;">
-            <span class="close-modal" data-close="pay-modal">&times;</span>
+            <button type="button" class="close-modal" data-close="pay-modal" aria-label="قفل">&times;</button>
             <h2 id="pay-title">تسجيل دفع</h2>
             <p class="muted" id="pay-sub" style="margin:-0.4rem 0 1rem; font-size:0.88rem;"></p>
             <div class="form-group"><label for="pay-amount">المبلغ (جنيه)</label><input type="number" id="pay-amount" min="1" step="1" inputmode="decimal"></div>
@@ -215,7 +216,7 @@
     <!-- v27: مبلغ خاص لطالب -->
     <div class="modal" id="fee-modal">
         <div class="modal-content" style="max-width:420px;">
-            <span class="close-modal" data-close="fee-modal">&times;</span>
+            <button type="button" class="close-modal" data-close="fee-modal" aria-label="قفل">&times;</button>
             <h2 id="fee-title">مبلغ خاص</h2>
             <p class="muted" style="margin:-0.4rem 0 1rem; font-size:0.88rem;">لو الطالب ليه خصم (أخوات مثلًا) أو معفي. اكتب 0 لو معفي.</p>
             <div class="form-group"><label for="fee-amount">المبلغ الشهري (جنيه)</label><input type="number" id="fee-amount" min="0" step="1" inputmode="decimal"></div>
@@ -230,19 +231,19 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=39"></script>
+    <script type="module" src="js/config.js?v=51"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=39';
-        import { api } from './js/api.js?v=39';
-        import { ErrorHandler, Formatters, askChoice } from './js/utils.js?v=39';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=39';
-        import { icon } from './js/icons.js?v=39';
-        import { subjectLabel, formatLessonDate } from './js/lesson-utils.js?v=39';
-        import { computeBilling, billingBadge, whatsappUrl, parentPhone } from './js/billing.js?v=39';
-        import { parseDate, formatClock12, timeToMinutes, lessonItem, findConflicts } from './js/calendar-utils.js?v=39';
-        import { groupTitle, groupColorClass, membersText, scheduleSummary, subjectOptionsHtml, mountScheduleEditor, mountStudentPicker, quickCreateStudent, sessionShareText, GROUP_COLORS, GROUP_COLOR_LABELS, saveWithConflictCheck, todayScheduleTime, monthLabel, shiftMonth, currentMonthKey } from './js/groups-utils.js?v=39';
-        import { money } from './js/billing.js?v=39';
-        import { openMonthlyReport, openGroupMonthlyReport, fullDate } from './js/report.js?v=39';
+        import { Auth } from './js/auth.js?v=51';
+        import { api } from './js/api.js?v=51';
+        import { ErrorHandler, Formatters, askChoice } from './js/utils.js?v=51';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=51';
+        import { icon } from './js/icons.js?v=51';
+        import { subjectLabel, formatLessonDate } from './js/lesson-utils.js?v=51';
+        import { computeBilling, billingBadge, whatsappUrl, parentPhone } from './js/billing.js?v=51';
+        import { parseDate, formatClock12, timeToMinutes, lessonItem, findConflicts } from './js/calendar-utils.js?v=51';
+        import { groupTitle, groupColorClass, membersText, scheduleSummary, subjectOptionsHtml, mountScheduleEditor, mountStudentPicker, quickCreateStudent, sessionShareText, GROUP_COLORS, GROUP_COLOR_LABELS, saveWithConflictCheck, todayScheduleTime, monthLabel, shiftMonth, currentMonthKey } from './js/groups-utils.js?v=51';
+        import { money } from './js/billing.js?v=51';
+        import { openMonthlyReport, openGroupMonthlyReport, fullDate } from './js/report.js?v=51';
 
         const $ = (id) => document.getElementById(id);
         const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
@@ -277,7 +278,7 @@
             const tab = (location.hash || '').replace('#', '');
             if (['members', 'sessions', 'schedule', 'settings', 'billing', 'reports'].includes(tab)) showTab(tab);
             // v30: تحديث تلقائي (حصة اتسجلت من جهاز تاني…) — مش وقت تعديل المواعيد أو الإعدادات
-            import('./js/auto-refresh.js?v=39').then((m) => m.onAppResume(async () => {
+            import('./js/auto-refresh.js?v=51').then((m) => m.onAppResume(async () => {
                 if (['schedule', 'settings'].includes(currentTab)) return;
                 const d = await api.getGroup(groupId);
                 if (d) { detail = d; render(); }
@@ -763,6 +764,6 @@
         }));
         document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => $(b.dataset.close).classList.remove('active')));
     </script>
-    <script src="js/pwa-install.js?v=39" defer></script>
+    <script src="js/pwa-install.js?v=51" defer></script>
 </body>
 </html>

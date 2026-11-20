@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="robots" content="noindex, nofollow">
+    <title>لعبة من مدرسك 🎮</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;800&display=swap">
+    <meta name="theme-color" content="#1E1726">
+    <style>
+        html,body{margin:0;background:#1E1726;color:#fff;font-family:'IBM Plex Sans Arabic',Tahoma,Arial,sans-serif;min-height:100vh}
+        .pl-msg{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;gap:10px}
+        .pl-msg h1{font-size:1.4rem;margin:0}.pl-msg p{opacity:.8;line-height:1.8;margin:0;max-width:360px}
+        .pl-msg button{background:#F2C14E;color:#2B2433;border:0;border-radius:12px;padding:12px 28px;font:inherit;font-weight:800;font-size:1rem;cursor:pointer}
+        .pl-brand{position:fixed;bottom:8px;left:0;right:0;text-align:center;font-size:.72rem;opacity:.55;z-index:9800;pointer-events:none}
+        .pl-brand a{color:#fff;pointer-events:auto}
+    </style>
+</head>
+<body>
+    <div class="pl-msg" id="msg"><h1>⏳ جاري تحميل اللعبة...</h1></div>
+    <div class="pl-brand">لعبة من مدرسك عن طريق <a href="https://teachers-manager.online" target="_blank" rel="noopener">Teachers Manager</a></div>
+    <script>window.__tmNoSupabase = true;</script>
+    <script type="module">
+        import { CONFIG } from './js/config.js?v=51';
+        import { openGame } from './js/games/engine.js?v=51';
+        const msg = document.getElementById('msg');
+        const code = new URLSearchParams(location.search).get('g') || '';
+        const fail = (t, d) => { msg.innerHTML = `<h1>${t}</h1><p>${d || ''}</p><button type="button" onclick="location.reload()">جرّب تاني</button>`; };
+        if (!/^[0-9a-f]{6,20}$/i.test(code)) fail('اللينك ده مش كامل 🤔', 'اطلب من مدرسك يبعته تاني.');
+        else {
+            try {
+                const r = await fetch(`${CONFIG.N8N_WEBHOOK_BASE}${CONFIG.API_ENDPOINTS.GAME_PUBLIC}?code=${encodeURIComponent(code.toLowerCase())}`);
+                const j = await r.json().catch(() => null);
+                if (!r.ok || !j || !j.success) fail('اللعبة دي مش موجودة 😕', 'ممكن المدرس يكون مسحها. اطلب منه لينك جديد.');
+                else {
+                    msg.innerHTML = `<h1>🎮 ${String(j.data.title || '').replace(/[<>&]/g, '')}</h1><p>جاهز؟</p><button type="button" id="go">يلا نلعب ▶</button>`;
+                    document.getElementById('go').addEventListener('click', () => {
+                        msg.hidden = true;
+                        openGame(j.data, { embedded: true });
+                    });
+                }
+            } catch (e) { fail('مفيش نت؟ 📶', 'اتأكد من الإنترنت وجرّب تاني.'); }
+        }
+    </script>
+</body>
+</html>

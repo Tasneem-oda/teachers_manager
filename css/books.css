@@ -346,3 +346,35 @@ mark.bv-mark { background: rgba(197, 154, 74, 0.45); color: inherit; border-radi
 
 /* v29.2: زرار اختيار الملف من مدير الملفات (موبايلات سامسونج بتفتح المعرض بس) */
 .form-group .upload-any-btn { display: block; width: auto; min-height: 0; margin-top: 0.5rem; background: none; border: 0; padding: 0.2rem 0; color: var(--primary); text-decoration: underline; font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; text-align: start; box-shadow: none; }
+
+/* ===== v34: أكتر من كتاب مفتوح (تبويبات + جنب بعض) ===== */
+.bv[hidden] { display: none !important; }
+.bv-tabs { display: flex; gap: 0.3rem; padding: 0.35rem 0.6rem 0; background: #D9D3DE; overflow-x: auto; scrollbar-width: none; flex-shrink: 0; order: -1; padding-top: calc(0.35rem + env(safe-area-inset-top, 0px)); }
+.bv-tabs::-webkit-scrollbar { display: none; }
+.bv-tabs[hidden] { display: none; }
+.bv-tab { display: inline-flex; align-items: center; gap: 0.4rem; max-width: 220px; padding: 0.4rem 0.7rem; border: 0; border-radius: 10px 10px 0 0; background: rgba(255,255,255,.55); color: var(--text-primary); font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; flex-shrink: 0; }
+.bv-tab span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bv-tab.on { background: var(--card-bg, #fff); color: var(--primary); box-shadow: 0 -2px 6px rgba(41,37,45,.06); }
+.bv-tab i { font-style: normal; width: 20px; height: 20px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; line-height: 1; color: var(--text-light, #8A8290); }
+.bv-tab i:hover { background: rgba(0,0,0,.08); color: var(--danger, #A12A2A); }
+.bv-tab.add { padding: 0.4rem 0.75rem; font-size: 1rem; background: transparent; }
+.bv:has(.bv-tabs:not([hidden])) .bv-header { padding-top: 0.5rem; }
+.bv-multi .bv-btn span.bv-multi-t { margin-inline-start: 0.25rem; font-size: 0.8rem; }
+@media (max-width: 760px) { .bv-multi .bv-multi-t { display: none; } }
+.bv.bv-split { inset: 0 auto 0 auto; width: 50vw; border-inline: 1px solid #CFC7D6; }
+.bv.bv-split-a { right: 0; left: auto; }
+.bv.bv-split-b { left: 0; right: auto; }
+.bv.bv-split:not(.bv-focus) .bv-header { opacity: 0.82; }
+.bv.bv-split.bv-focus { box-shadow: inset 0 3px 0 var(--primary, #5B3F7A); }
+.bv.bv-split .bv-title p { display: none; }
+.bv-pick { position: absolute; inset: 0; z-index: 50; background: rgba(28,22,34,.45); display: flex; align-items: flex-start; justify-content: center; padding: 8vh 1rem 1rem; }
+.bv-pick-card { width: min(460px, 100%); max-height: 76vh; display: flex; flex-direction: column; gap: 0.6rem; background: var(--card-bg, #fff); border-radius: 18px; padding: 1rem; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+.bv-pick-hd { display: flex; align-items: center; justify-content: space-between; }
+.bv-pick-q { width: 100%; padding: 0.65rem 0.8rem; border: 1px solid var(--field-border, #D6CFDD); border-radius: 12px; font: inherit; box-sizing: border-box; margin: 0; }
+.bv-pick-list { overflow: auto; display: flex; flex-direction: column; gap: 0.3rem; }
+.bv-pick-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.65rem 0.75rem; border: 1px solid var(--border, #EAE5EE); border-radius: 12px; background: var(--card-bg, #fff); font: inherit; text-align: start; cursor: pointer; color: var(--text-primary); }
+.bv-pick-item:hover { border-color: var(--primary); }
+.bv-pick-item span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bv-pick-item small { color: var(--primary); font-size: 0.72rem; }
+.bv-pick-empty { color: var(--text-secondary); font-size: 0.85rem; text-align: center; margin: 1rem 0; }
+.bv-standalone-loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 0.8rem; color: var(--text-secondary); font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif; }

@@ -1,0 +1,13 @@
+# ملفات مش لازم تتنشر على الموقع (Cloudflare Workers Assets)
+# ملفات الشرح فيها تفاصيل داخلية (SQL، أسماء الجداول، خطوات التشغيل) وكانت متاحة لأي حد على الرابط
+*.md
+.env
+.env.*
+.gitignore
+.assetsignore
+wrangler.jsonc
+node_modules
+.git
+# v35.3: صفحات الاختبار (أي ملف html بيبدأ بـ _)
+_*.html
+tests

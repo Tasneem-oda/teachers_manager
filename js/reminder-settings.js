@@ -4,9 +4,9 @@
  *  - mountReminderSetupCard: كارت في الرئيسية بيسأل المدرس مرة واحدة (3 أسئلة سريعة)
  *  - playReminderSound: جرس التذكير لما البرنامج يكون مفتوح
  */
-import { api } from './api.js?v=39';
-import { ErrorHandler } from './utils.js?v=39';
-import { icon } from './icons.js?v=39';
+import { api } from './api.js?v=51';
+import { ErrorHandler } from './utils.js?v=51';
+import { icon } from './icons.js?v=51';
 
 export const BEFORE_OPTIONS = [
     { value: null, label: 'لأ' },
@@ -97,8 +97,23 @@ export function mountReminderControls(root, settings) {
         if (t) {
             t.disabled = true;
             try {
-                await api.testReminder();
-                ErrorHandler.showSuccess('اتبعت تنبيه تجربة. لو ماوصلش خلال دقيقة، اتأكد إن الإشعارات مفعّلة فوق.', 6000);
+                const res = await api.testReminder();
+                const push = res && res.push;
+                if (push && push.delivered === false) {
+                    // v32: OneSignal نفسه قال إن الجهاز مش مشترك ← نصلّح على طول بدل "استنى دقيقة"
+                    ErrorHandler.showError(push.status === 'not_subscribed'
+                        ? 'التنبيه ماوصلش: الجهاز ده مش متسجل لاستقبال الإشعارات. بنصلّحه دلوقتي...'
+                        : 'خدمة الإشعارات رفضت الإرسال دلوقتي. جرّب كمان شوية.', 7000);
+                    if (push.status === 'not_subscribed') {
+                        const ph = await import('./push-health.js?v=51');
+                        const { requestPermission } = await import('./notifications.js?v=51');
+                        const h = await ph.checkPushHealth({ waitSdkMs: 8000 });
+                        const after = await ph.fixNow(h.state === 'subscribed' ? { ...h, state: 'not-subscribed' } : h, requestPermission);
+                        if (after.state === 'subscribed') ErrorHandler.showSuccess('اتصلّحت ✓ جرّب التنبيه تاني.', 6000);
+                    }
+                } else {
+                    ErrorHandler.showSuccess('اتبعت تنبيه تجربة ✓ لو ماظهرش خلال دقيقة، افتح "التنبيه بيوصل من غير صوت؟" تحت.', 7000);
+                }
             } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
             finally { setTimeout(() => { t.disabled = false; }, 4000); }
         }

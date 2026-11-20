@@ -16,9 +16,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=39">
-    <link rel="stylesheet" href="css/lessons.css?v=39">
-    <link rel="stylesheet" href="css/groups.css?v=39">
+    <link rel="stylesheet" href="css/style.css?v=51">
+    <link rel="stylesheet" href="css/lessons.css?v=51">
+    <link rel="stylesheet" href="css/groups.css?v=51">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -82,8 +82,43 @@
         @media (max-width: 480px) {
             .filters-row select { max-width: 100%; flex: 1; }
         }
+        /* ---------- v35.3: قايمة أخف وأوضح ---------- */
+        .add-wrap { position: relative; }
+        .add-menu { position: absolute; inset-inline-end: 0; top: calc(100% + 6px); z-index: 60; min-width: 250px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 16px 40px rgba(20,14,26,.2); padding: .35rem; display: flex; flex-direction: column; }
+        .add-menu[hidden] { display: none; }
+        .add-menu button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; border: 0; background: transparent; border-radius: 10px; padding: .6rem .75rem; font: inherit; font-weight: 700; font-size: .92rem; color: var(--text-primary); cursor: pointer; text-align: start; min-height: 48px; }
+        .add-menu button:hover, .add-menu button:focus-visible { background: var(--bg-secondary); outline: none; }
+        .add-menu small { font-weight: 400; font-size: .76rem; color: var(--text-light); }
+        .filters-row { gap: .5rem; margin-bottom: 1rem; flex-wrap: nowrap; }
+        .filters-row #sort-students { max-width: 150px; flex: 0 0 auto; }
+        .filters-row #student-search { min-width: 0 !important; }
+        @media (max-width: 480px) { .filters-row #sort-students { max-width: 108px; padding-inline: .4rem; font-size: .85rem; } .filters-row #filter-subject { max-width: 110px; } }
+        .st-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: -.2rem 0 1rem; padding-bottom: 2px; }
+        .st-tabs::-webkit-scrollbar { display: none; }
+        .st-tab { flex-shrink: 0; white-space: nowrap; }
+        .student-card { padding: .9rem 1rem; }
+        .student-card .sc-top { display: flex; align-items: flex-start; gap: .5rem; }
+        .student-card .sc-top .student-name { flex: 1; min-width: 0; margin: 0; font-size: 1.02rem; overflow-wrap: anywhere; }
+        .sc-more { width: 36px; height: 36px; border: 0; border-radius: 10px; background: transparent; color: var(--text-light); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .sc-more:hover { background: var(--bg-secondary); color: var(--text-primary); }
+        .sc-lines { display: flex; flex-direction: column; gap: .15rem; margin: .35rem 0 .1rem; }
+        .sc-lines .student-info { margin: 0; font-size: .84rem; }
+        .sc-lines .student-info.next { color: var(--primary); font-weight: 600; }
+        .student-actions { margin-top: .7rem; }
+        .student-actions .btn-wa { flex: 0 0 42px; padding: 0; color: var(--whatsapp); border-color: #BFE0CB; }
+        .sc-menu { position: fixed; z-index: 9500; min-width: 190px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 16px 40px rgba(20,14,26,.22); padding: .35rem; display: flex; flex-direction: column; }
+        .sc-menu button { display: flex; align-items: center; gap: .5rem; min-height: 44px; padding: 0 .7rem; border: 0; background: transparent; border-radius: 9px; font: inherit; font-size: .9rem; cursor: pointer; text-align: start; color: var(--text-primary); }
+        .sc-menu button:hover { background: var(--bg-secondary); }
+        .sc-menu button.danger { color: var(--danger); }
+        @media (max-width: 600px) {
+            .student-card { padding: .75rem .85rem; border-radius: 12px; }
+            .students-grid { gap: .6rem !important; }
+            .student-actions { margin-top: .55rem; }
+            .student-actions .btn { min-height: 40px; font-size: .84rem; }
+        }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=39">
+    <link rel="stylesheet" href="css/v29.css?v=51">
+    <link rel="stylesheet" href="css/ui.css?v=51">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -104,16 +139,25 @@
                 </nav>
                 <div class="flex" style="margin-bottom: 1.5rem;">
                     <h1 class="page-title-dup" style="margin:0;">قائمة الطلاب</h1>
-                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-                    <button class="btn btn-outline" id="btn-add-bulk">إضافة أكثر من طالب</button>
-                    <button class="btn btn-outline" id="btn-add-trial">🎯 حصة تجريبية</button>
-                    <button class="btn" id="btn-add-new"><span id="ic-add-btn" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> طالب جديد</button>
+                    <!-- v35.3: زرار إضافة واحد بقايمة (كانوا 3 أزرار في سطرين على الموبايل) -->
+                    <div class="add-wrap">
+                        <button class="btn" id="btn-add-menu" type="button" aria-haspopup="menu" aria-expanded="false"><span id="ic-add-btn" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> إضافة</button>
+                        <div class="add-menu" id="add-menu" role="menu" hidden>
+                            <button type="button" role="menuitem" id="btn-add-new">👤 طالب جديد<small>الاسم بس يكفي</small></button>
+                            <button type="button" role="menuitem" id="btn-add-bulk">👥 أكتر من طالب<small>الصق الأسامي من الورق مرة واحدة</small></button>
+                            <button type="button" role="menuitem" id="btn-add-trial">🎯 حصة تجريبية<small>طالب جديد بيجرّب الأول</small></button>
+                        </div>
                     </div>
                 </div>
 
                 <div class="filters-row">
-                    <input type="search" id="student-search" placeholder="ابحث باسم الطالب أو رقمه…" aria-label="ابحث عن طالب" autocomplete="off" style="flex:1; min-width:180px; max-width:320px; margin:0;">
-                    <select id="filter-subject">
+                    <input type="search" id="student-search" placeholder="ابحث بالاسم أو الرقم" aria-label="ابحث عن طالب بالاسم أو الرقم" autocomplete="off" style="flex:1; min-width:160px; margin:0;">
+                    <select id="sort-students" aria-label="الترتيب">
+                        <option value="name">أبجدي</option>
+                        <option value="next">الحصة الجاية</option>
+                        <option value="recent">الأحدث</option>
+                    </select>
+                    <select id="filter-subject" aria-label="المادة" hidden>
                         <option value="">جميع المواد</option>
                         <option value="quran">القرآن الكريم</option>
                         <option value="english">اللغة الإنجليزية</option>
@@ -142,7 +186,7 @@
     <!-- إضافة طالب (الاسم بس إجباري) -->
     <div class="modal" id="add-student-modal">
         <div class="modal-content">
-            <span class="close-modal" data-close="add-student-modal">&times;</span>
+            <button type="button" class="close-modal" data-close="add-student-modal" aria-label="قفل">&times;</button>
             <h2 id="modal-title">إضافة طالب جديد</h2>
             <!-- v31: طالب عادي ولا حصة تجريبية الأول -->
             <div class="add-mode" role="tablist" aria-label="نوع الإضافة">
@@ -223,7 +267,7 @@
     <!-- إضافة أكثر من طالب مرة واحدة (نقل من الورق) -->
     <div class="modal" id="bulk-modal">
         <div class="modal-content">
-            <span class="close-modal" data-close="bulk-modal">&times;</span>
+            <button type="button" class="close-modal" data-close="bulk-modal" aria-label="قفل">&times;</button>
             <h2>إضافة أكثر من طالب</h2>
             <p class="muted" style="margin:-0.4rem 0 1rem; font-size:0.88rem;">اكتب كل طالب في سطر: الاسم، وبعده الرقم لو حابب.</p>
             <form id="bulk-form" novalidate>
@@ -257,17 +301,18 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=39"></script>
+    <script type="module" src="js/config.js?v=51"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=39';
-        import { api } from './js/api.js?v=39';
-        import { ErrorHandler, Formatters, toLatinDigits } from './js/utils.js?v=39';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=39';
-        import { icon } from './js/icons.js?v=39';
-        import { openStudentAppointments } from './js/student-appointments.js?v=39';
-        import { subjectLabel } from './js/lesson-utils.js?v=39';
-        import { confirmDeleteStudent } from './js/student-actions.js?v=39';
-        import { isTrial, trialState, trialWhen, localSlot, defaultTrialSlot, bookTrialSlot, bindTrialActions } from './js/trial.js?v=39';
+        import { Auth } from './js/auth.js?v=51';
+        import { api } from './js/api.js?v=51';
+        import { ErrorHandler, Formatters, toLatinDigits, askChoice } from './js/utils.js?v=51';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=51';
+        import { icon } from './js/icons.js?v=51';
+        import { openStudentAppointments } from './js/student-appointments.js?v=51';
+        import { subjectLabel } from './js/lesson-utils.js?v=51';
+        import { confirmDeleteStudent } from './js/student-actions.js?v=51';
+        import { normalizePhone, whatsappUrl } from './js/billing.js?v=51';
+        import { isTrial, trialState, trialWhen, localSlot, defaultTrialSlot, bookTrialSlot, bindTrialActions } from './js/trial.js?v=51';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الطلاب', subtitle: 'إدارة كل طلابك من مكان واحد' });
@@ -344,7 +389,7 @@
             if (urlParams.get('action') === 'bulk') openBulk();
             await loadStudents();
             // v29.8: لو اتضاف/اتعدّل طالب من جهاز تاني القايمة تتحدّث لوحدها (والبحث والفلتر بيفضلوا زي ما هما)
-            import('./js/auto-refresh.js?v=39').then((m) => m.onAppResume(() => loadStudents())).catch(() => { /* تجاهل */ });
+            import('./js/auto-refresh.js?v=51').then((m) => m.onAppResume(() => loadStudents())).catch(() => { /* تجاهل */ });
             const searchTerm = urlParams.get('search');
             if (searchTerm) {
                 document.getElementById('student-search').value = searchTerm;
@@ -357,6 +402,11 @@
                 const data = await api.getAllStudents();
                 allStudents = data.students || [];
                 applyFilter();   // بنحافظ على فلتر المادة اللي المدرس مختاره بعد الإضافة/الحذف
+                // v35.3.1: جهاز جديد لسه ماحفظش الجدول: نجيب المواعيد مرة (من كاش القراية لو موجود) ونحسب "الحصة الجاية"
+                if (!localStorage.getItem('tm_rem_sched_v1') && !schedFetched) {
+                    schedFetched = true;
+                    api.getSchedules().then((d) => { schedFallback = (d && d.schedules) || []; nextMap = null; applyFilter(); }).catch(() => { /* السطر ده إضافي */ });
+                }
                 loader.style.display = 'none';
             } catch (error) {
                 loader.innerHTML = `${Formatters.escapeHtml(ErrorHandler.getErrorMessage(error))} <button type="button" class="btn btn-sm" id="students-retry">حاول تاني</button>`;
@@ -382,26 +432,96 @@
                 if (b) b.addEventListener('click', openBulk);
                 return;
             }
-            container.innerHTML = students.map(student => `
-                <div class="student-card${stOf(student) === 'archived' ? ' is-archived' : ''}${stOf(student) === 'trial' ? ' is-trial' : ''}" data-open="${Formatters.escapeHtml(String(student.id))}" tabindex="0" role="link" aria-label="ملف ${Formatters.escapeHtml(student.name || '')}">
-                    <div class="student-name">${Formatters.escapeHtml(student.name || '')}${stOf(student) !== 'active' ? `<span class="st-badge ${stOf(student)}">${STATUS_LABEL[stOf(student)]}</span>` : ''}</div>
-                    ${stOf(student) === 'trial' ? (() => { const t = trialState(student); return `<div class="trial-line ${t.phase === 'decide' ? 'decide' : ''}">🎯 ${Formatters.escapeHtml(t.text)}</div>`; })() : ''}
-                    <div class="student-info">${icon('bookOpen', { size: 14 })} ${Formatters.escapeHtml(subjectLabel(student.subject))}</div>
-                    <div class="student-info">${icon('target', { size: 14 })} ${Formatters.escapeHtml(student.current_topic || 'بدون موضوع')}</div>
-                    <div class="student-info">${icon('phone', { size: 14 })} ${Formatters.escapeHtml(student.phone || 'بدون رقم')}</div>
-                    ${stOf(student) === 'trial' ? `<div class="student-actions" style="margin-bottom:0.45rem;">
-                        <button type="button" class="btn btn-sm" data-trial-convert data-sid="${Formatters.escapeHtml(String(student.id))}">${icon('check', { size: 14 })} ضيفه لطلابي</button>
-                        <button type="button" class="btn btn-sm btn-outline" data-trial-resched data-sid="${Formatters.escapeHtml(String(student.id))}">${icon('calendar', { size: 14 })} الميعاد</button>
-                        <button type="button" class="btn btn-sm btn-ghost" data-trial-delete data-sid="${Formatters.escapeHtml(String(student.id))}">مكملش</button>
+            container.innerHTML = students.map((student) => {
+                const id = Formatters.escapeHtml(String(student.id));
+                const nm = Formatters.escapeHtml(student.name || '');
+                const st = stOf(student);
+                const nx = nextLessonOf(student.id);
+                // v35.3.1: نفس دالة الأرقام اللي في باقي البرنامج (أرقام عربية ٠١٠… وأرقام الخليج)
+                const rawPhone = student.phone || student.guardian_phone || '';
+                const wa = normalizePhone(rawPhone) ? whatsappUrl(rawPhone, '') : '';
+                return `
+                <div class="student-card${st === 'archived' ? ' is-archived' : ''}${st === 'trial' ? ' is-trial' : ''}" data-open="${id}" tabindex="0" role="link" aria-label="ملف ${nm}">
+                    <div class="sc-top">
+                        <div class="student-name">${nm}${st !== 'active' ? `<span class="st-badge ${st}">${STATUS_LABEL[st]}</span>` : ''}</div>
+                        <button type="button" class="sc-more" data-more="${id}" aria-label="خيارات ${nm}" title="خيارات">${icon('moreV', { size: 18 })}</button>
+                    </div>
+                    ${st === 'trial' ? (() => { const t = trialState(student); return `<div class="trial-line ${t.phase === 'decide' ? 'decide' : ''}">🎯 ${Formatters.escapeHtml(t.text)}</div>`; })() : ''}
+                    <div class="sc-lines">
+                        ${nx ? `<div class="student-info next">${icon('calendar', { size: 14 })} الحصة الجاية: ${Formatters.escapeHtml(nx.label)}</div>` : ''}
+                        ${student.current_topic ? `<div class="student-info">${icon('target', { size: 14 })} ${Formatters.escapeHtml(student.current_topic)}</div>` : ''}
+                        ${multiSubject ? `<div class="student-info">${icon('bookOpen', { size: 14 })} ${Formatters.escapeHtml(subjectLabel(student.subject))}</div>` : ''}
+                        ${!nx && !student.current_topic && !multiSubject ? `<div class="student-info">${icon('calendar', { size: 14 })} مفيش ميعاد ثابت</div>` : ''}
+                    </div>
+                    ${st === 'trial' ? `<div class="student-actions" style="margin-bottom:0.45rem;">
+                        <button type="button" class="btn btn-sm" data-trial-convert data-sid="${id}">${icon('check', { size: 14 })} ضيفه لطلابي</button>
+                        <button type="button" class="btn btn-sm btn-outline" data-trial-resched data-sid="${id}">${icon('calendar', { size: 14 })} الميعاد</button>
+                        <button type="button" class="btn btn-sm btn-ghost" data-trial-delete data-sid="${id}">مكملش</button>
                     </div>` : ''}
                     <div class="student-actions">
-                        <a href="student.html?id=${encodeURIComponent(student.id)}" class="btn">عرض الملف</a>
-                        <button class="btn btn-outline btn-open-appts" data-id="${Formatters.escapeHtml(String(student.id))}">${icon('calendar', { size: 14 })} المواعيد</button>
-                        <!-- v28: زرار حذف ظاهر (أيقونة صغيرة) + تأكيد بيوضح هيتمسح إيه -->
-                        <button type="button" class="btn-del-student" data-id="${Formatters.escapeHtml(String(student.id))}" title="حذف الطالب" aria-label="حذف ${Formatters.escapeHtml(student.name || '')}">${icon('trash', { size: 17 })}</button>
+                        ${st !== 'archived' ? `<a href="lesson.html?student_id=${encodeURIComponent(student.id)}" class="btn">${icon('play', { size: 14 })} ابدأ الحصة</a>` : ''}
+                        <a href="student.html?id=${encodeURIComponent(student.id)}" class="btn btn-outline">الملف</a>
+                        ${wa ? `<a href="${Formatters.escapeHtml(wa)}" target="_blank" rel="noopener" class="btn btn-outline btn-wa" title="واتساب" aria-label="واتساب ${nm}">${icon('messageCircle', { size: 17 })}</a>` : ''}
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
+        }
+
+        // v35.3: الحصة الجاية لكل طالب (من المواعيد المحفوظة على الجهاز — من غير طلب زيادة للسيرفر)
+        const DAY_AR = ['الأحد', 'الاتنين', 'التلات', 'الأربع', 'الخميس', 'الجمعة', 'السبت'];
+        let nextMap = null;
+        function buildNextMap() {
+            nextMap = new Map();
+            let c = null;
+            try { c = JSON.parse(localStorage.getItem('tm_rem_sched_v1') || 'null'); } catch (e) { c = null; }
+            const list = (c && c.schedules && c.schedules.length ? c.schedules : schedFallback) || [];
+            const now = new Date();
+            const nowMin = now.getDay() * 1440 + now.getHours() * 60 + now.getMinutes();
+            list.forEach((sc) => {
+                if (sc == null || sc.day_of_week == null || !sc.start_time) return;
+                if (sc.recurrence_type && sc.recurrence_type !== 'weekly') return;
+                const [h, m] = String(sc.start_time).split(':').map(Number);
+                const at = Number(sc.day_of_week) * 1440 + h * 60 + (m || 0);
+                const wait = (at - nowMin + 10080) % 10080;
+                const prev = nextMap.get(String(sc.student_id));
+                if (!prev || wait < prev.wait) {
+                    const t = new Date(2000, 0, 1, h, m || 0).toLocaleTimeString('ar-EG-u-nu-latn', { hour: 'numeric', minute: '2-digit' });
+                    const day = wait < 1440 && Number(sc.day_of_week) === now.getDay() ? 'النهارده' : wait < 2880 && Number(sc.day_of_week) === (now.getDay() + 1) % 7 ? 'بكرة' : DAY_AR[Number(sc.day_of_week)];
+                    nextMap.set(String(sc.student_id), { wait, label: `${day} ${t}` });
+                }
+            });
+        }
+        function nextLessonOf(id) { if (!nextMap) buildNextMap(); return nextMap.get(String(id)) || null; }
+        let multiSubject = false;
+        let schedFallback = [];
+        let schedFetched = false;
+
+        // قايمة "⋯" على الكارت: المواعيد والحذف (الحذف كان سلة حمرا لازقة في الزراير)
+        let scMenu = null;
+        function closeScMenu() { if (scMenu) { scMenu.remove(); scMenu = null; } }
+        document.addEventListener('pointerdown', (e) => { if (scMenu && !scMenu.contains(e.target) && !e.target.closest('[data-more]')) closeScMenu(); }, true);
+        function openScMenu(btn) {
+            closeScMenu();
+            const st = allStudents.find((x) => String(x.id) === String(btn.dataset.more));
+            if (!st) return;
+            scMenu = document.createElement('div');
+            scMenu.className = 'sc-menu'; scMenu.setRole = null; scMenu.setAttribute('role', 'menu');
+            scMenu.innerHTML = `<button type="button" role="menuitem" data-m="appts">${icon('calendar', { size: 16 })} المواعيد</button>
+                <button type="button" role="menuitem" data-m="manual">${icon('edit', { size: 16 })} سجّل حصة فاتت</button>
+                <button type="button" role="menuitem" data-m="del" class="danger">${icon('trash', { size: 16 })} حذف الطالب</button>`;
+            document.body.appendChild(scMenu);
+            const r = btn.getBoundingClientRect();
+            scMenu.style.top = `${Math.min(window.innerHeight - scMenu.offsetHeight - 8, r.bottom + 4)}px`;
+            scMenu.style.left = `${Math.max(8, Math.min(window.innerWidth - scMenu.offsetWidth - 8, r.left))}px`;
+            scMenu.querySelector('button').focus();
+            scMenu.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeScMenu(); btn.focus(); } });
+            scMenu.addEventListener('click', (e) => {
+                const m = e.target.closest('[data-m]'); if (!m) return;
+                closeScMenu();
+                if (m.dataset.m === 'appts') openStudentAppointments(st.id, st.name || '');
+                else if (m.dataset.m === 'manual') window.location.href = `lesson.html?student_id=${encodeURIComponent(st.id)}&manual=1`;
+                else window.deleteStudent(st.id);
+            });
         }
 
         // v31: أزرار الطالب التجريبي (ضيفه / الميعاد / مكملش)
@@ -411,14 +531,8 @@
         bindTrialActions(document.getElementById('trial-strip'), (b) => trialById(b), afterTrial);
         container.addEventListener('click', (e) => {
             if (e.target.closest('[data-trial-convert], [data-trial-resched], [data-trial-delete]')) return;
-            const del = e.target.closest('.btn-del-student');
-            if (del) { window.deleteStudent(del.dataset.id); return; }
-            const btn = e.target.closest('.btn-open-appts');
-            if (btn) {
-                const st = allStudents.find(s => String(s.id) === String(btn.dataset.id));
-                openStudentAppointments(btn.dataset.id, st ? st.name : '');
-                return;
-            }
+            const more = e.target.closest('[data-more]');
+            if (more) { e.stopPropagation(); openScMenu(more); return; }
             if (e.target.closest('a, button')) return;
             // الكارت كله بيفتح ملف الطالب (كان شكله قابل للضغط ومابيعملش حاجة)
             const card = e.target.closest('.student-card[data-open]');
@@ -452,9 +566,24 @@
             if (show) show.addEventListener('click', () => { statusFilter = 'trial'; applyFilter(); });
             if (tabs.hidden) statusFilter = 'active';
             tabs.querySelectorAll('.st-tab').forEach((b) => b.classList.toggle('active', b.dataset.st === statusFilter));
+            // v35.3: فلتر المادة بيظهر بس لو الطلاب فيهم أكتر من مادة (أغلب المدرسين مادة واحدة)
+            const subjects = new Set(allStudents.map((x) => x.subject || 'other'));
+            multiSubject = subjects.size > 1;
+            const fs = document.getElementById('filter-subject');
+            fs.hidden = !multiSubject;
+            if (!multiSubject && fs.value) fs.value = '';
+            buildNextMap();
             // البحث بيدوّر في كل الطلاب (حتى المؤرشفين) عشان مايضيعش طالب
-            renderStudents(allStudents.filter(s => (q ? true : stOf(s) === statusFilter) && (!subject || s.subject === subject)
-                && (!q || String(s.name || '').toLowerCase().includes(q) || toLatinDigits(s.phone || '').includes(q) || toLatinDigits(s.guardian_phone || '').includes(q))));
+            const list = allStudents.filter(s => (q ? true : stOf(s) === statusFilter) && (!(multiSubject && subject) || s.subject === subject)
+                && (!q || String(s.name || '').toLowerCase().includes(q) || toLatinDigits(s.phone || '').includes(q) || toLatinDigits(s.guardian_phone || '').includes(q)));
+            const sort = document.getElementById('sort-students').value;
+            const ts = (x) => Date.parse(x.created_at || '') || 0;
+            list.sort((a, b) => {
+                if (sort === 'next') { const na = nextLessonOf(a.id), nb = nextLessonOf(b.id); return (na ? na.wait : 1e9) - (nb ? nb.wait : 1e9) || String(a.name || '').localeCompare(String(b.name || ''), 'ar'); }
+                if (sort === 'recent') return ts(b) - ts(a);
+                return String(a.name || '').localeCompare(String(b.name || ''), 'ar');
+            });
+            renderStudents(list);
         }
         document.getElementById('st-tabs').addEventListener('click', (e) => {
             const b = e.target.closest('.st-tab');
@@ -463,6 +592,16 @@
             applyFilter();
         });
         document.getElementById('filter-subject').addEventListener('change', applyFilter);
+        try { const sv = localStorage.getItem('tm_students_sort'); if (sv) document.getElementById('sort-students').value = sv; } catch (e) { /* تجاهل */ }
+        document.getElementById('sort-students').addEventListener('change', (e) => { try { localStorage.setItem('tm_students_sort', e.target.value); } catch (er) { /* تجاهل */ } applyFilter(); });
+        // زرار "إضافة" بقايمته
+        const addMenu = document.getElementById('add-menu');
+        const addBtn = document.getElementById('btn-add-menu');
+        const toggleAdd = (open) => { addMenu.hidden = !open; addBtn.setAttribute('aria-expanded', String(open)); if (open) addMenu.querySelector('button').focus(); };
+        addBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleAdd(addMenu.hidden); });
+        addMenu.addEventListener('click', () => toggleAdd(false));
+        addMenu.addEventListener('keydown', (e) => { if (e.key === 'Escape') { toggleAdd(false); addBtn.focus(); } });
+        document.addEventListener('click', (e) => { if (!addMenu.hidden && !e.target.closest('.add-wrap')) toggleAdd(false); });
         document.getElementById('student-search').addEventListener('input', applyFilter);
 
         // v28: لينك الحصة: لو اتلصق من غير https بنكمّله، وزرار "لصق" من الحافظة
@@ -520,6 +659,14 @@
                 guardian_phone: document.getElementById('guardian-phone').value.trim() || null
             };
             const saveBtn = document.getElementById('add-save');
+            if (saveBtn.disabled) return;   // v35.3: ضغطتين ورا بعض (النت بطيء) مايعملوش طالبين
+            // v35.3: طالب بنفس الاسم موجود؟ نسأل قبل ما نكرره
+            const norm = (t) => String(t || '').replace(/[\u064B-\u0652\u0640]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/\s+/g, ' ').trim();
+            const dup = allStudents.find((x) => norm(x.name) === norm(name));
+            if (dup) {
+                const go = await askChoice({ title: 'الاسم ده موجود', message: `عندك طالب اسمه "${dup.name}" بالفعل. تضيف طالب تاني بنفس الاسم؟`, choices: [{ label: 'أيوه، ضيفه', value: 'yes' }], cancelLabel: 'لأ' });
+                if (go !== 'yes') return;
+            }
             saveBtn.disabled = true;
             try {
                 const res = await api.createStudent(studentData);
@@ -631,6 +778,6 @@
         // v29: الطالب اتأرشف من رسالة الحذف
         window.addEventListener('tm:student-status', () => loadStudents());
     </script>
-    <script src="js/pwa-install.js?v=39" defer></script>
+    <script src="js/pwa-install.js?v=51" defer></script>
 </body>
 </html>

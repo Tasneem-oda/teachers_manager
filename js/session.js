@@ -12,7 +12,7 @@
  *  - طلب تجديد واحد بس في نفس الوقت (حتى لو 5 طلبات طلعت مع بعض).
  * الملف ده خفيف ومابيستوردش غير server-time.js.
  */
-import { nowMs } from './server-time.js?v=39';
+import { nowMs } from './server-time.js?v=51';
 
 const REF = 'qdpnupgqvjxlrmwwgmij';
 const STORE_KEY = `sb-${REF}-auth-token`;
@@ -47,24 +47,37 @@ export function storedSession() {
 
 const isNetErr = (err) => !!err && /fetch|network|retryable|timeout|load failed|failed to fetch|abort/i.test(`${err.name || ''} ${err.message || ''} ${err.status === 0 ? 'network' : ''}`);
 
+// v35: الجلسة "ماتت" بجد بس لو Supabase رفض الـ refresh token صراحة. غير كده (نت/مهلة/قفل) = مؤقت
+const isDeadSession = (err) => {
+    if (!err || isNetErr(err)) return false;
+    const msg = `${err.name || ''} ${err.code || ''} ${err.message || ''}`;
+    if (/lock|timed? ?out|abort/i.test(msg)) return false;
+    if (/AuthSessionMissing|refresh[ _]token|session[_ ](not[_ ]found|expired)|revoked|already used|invalid[_ ]grant|user[_ ]not[_ ]found/i.test(msg)) return true;
+    return err.status === 400 || err.status === 401 || err.status === 403;
+};
+
 let refreshing = null;
 async function refreshNow() {
     if (refreshing) return refreshing;
     refreshing = (async () => {
         const client = window.supabaseClient;
         if (!client) throw { error: { code: 'NETWORK', message: 'الصفحة ماتحمّلتش كاملة. حمّلها تاني.' } };
-        let res;
-        try { res = await client.auth.refreshSession(); } catch (e) { res = { data: null, error: e }; }
-        const session = res && res.data ? res.data.session : null;
-        if (session && session.access_token) return session;
-        const err = res ? res.error : null;
-        if (isNetErr(err) || (typeof navigator !== 'undefined' && navigator.onLine === false)) {
-            throw { error: { code: 'NETWORK', message: 'تعذّر الاتصال بالخادم. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.' } };
+        let err = null;
+        // v35: محاولتين — أول تجديد بعد صحيان الجهاز ممكن يفشل لأن النت لسه بيرجع أو قفل المكتبة متعلّق
+        for (let i = 0; i < 2; i++) {
+            let res;
+            try { res = await client.auth.refreshSession(); } catch (e) { res = { data: null, error: e }; }
+            const session = res && res.data ? res.data.session : null;
+            if (session && session.access_token) return session;
+            err = res ? res.error : null;
+            // تاب تانية جدّدت في نفس اللحظة: التوكن الجديد بقى محفوظ
+            const s2 = storedSession();
+            if (s2 && tokenExpMs(s2.access_token) - nowMs() > 30000) return s2;
+            if (isDeadSession(err)) return null;   // الجلسة انتهت فعلًا (خروج من جهاز تاني / كلمة السر اتغيرت)
+            if (i === 0) await new Promise((r) => setTimeout(r, 1200));
         }
-        // تاب تانية جدّدت في نفس اللحظة: التوكن الجديد بقى محفوظ
-        const s2 = storedSession();
-        if (s2 && tokenExpMs(s2.access_token) - nowMs() > 30000) return s2;
-        return null;   // الجلسة انتهت فعلًا (اتسجّل خروج من جهاز تاني / كلمة السر اتغيرت)
+        // أي خطأ تاني (نت / مهلة / قفل المتصفح) مؤقت: مانطلّعش المدرس برّه بسببه
+        throw { error: { code: 'NETWORK', message: 'تعذّر الاتصال بالخادم. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.' }, detail: String((err && err.message) || '') };
     })();
     try { return await refreshing; } finally { refreshing = null; }
 }
