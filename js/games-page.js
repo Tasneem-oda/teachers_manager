@@ -1,12 +1,12 @@
 /**
  * games-page.js — v33: صفحة "ألعاب الحصة"
  */
-import { Auth } from './auth.js?v=49';
-import { renderSidebar, renderTopHeader } from './sidebar.js?v=49';
-import { api } from './api.js?v=49';
-import { ErrorHandler } from './utils.js?v=49';
-import { setupGamesUi, ensureUiCss, mountQuranBuilder, packsHtml, packGame, openEditor, shareGame, openGame, TEMPLATES, templateOf, modal } from './games/ui.js?v=49';
-import { gi } from './games/gicons.js?v=49';
+import { Auth } from './auth.js?v=50';
+import { renderSidebar, renderTopHeader } from './sidebar.js?v=50';
+import { api } from './api.js?v=50';
+import { ErrorHandler } from './utils.js?v=50';
+import { setupGamesUi, ensureUiCss, mountQuranBuilder, packsHtml, packGame, openEditor, shareGame, openGame, TEMPLATES, templateOf, modal } from './games/ui.js?v=50';
+import { gi } from './games/gicons.js?v=50';
 
 // v34: أيقونات الصفحة نفسها (بدل الإيموجي)
 document.querySelectorAll('[data-gi]').forEach((el) => { el.innerHTML = gi(el.dataset.gi, { tile: el.dataset.tile !== '0', size: Number(el.dataset.size) || 28 }); el.style.display = 'inline-flex'; el.style.verticalAlign = 'middle'; });

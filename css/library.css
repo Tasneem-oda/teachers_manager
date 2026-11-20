@@ -26,12 +26,12 @@
 @media (max-width: 899px) { .fx { grid-template-columns: minmax(0, 1fr); } .fx .fx-side { display: none; } }
 
 /* ---------- الشريط اللي فوق (v35.4: كل العناصر 40px وعلى خط واحد) */
-.fx-main { min-width: 0; position: relative; --fx-h: 40px; }
+.fx-main { min-width: 0; position: relative; }
 .fx-bar { display: grid; grid-template-columns: var(--fx-h) minmax(0, 1fr) minmax(180px, 280px) auto; align-items: center; gap: .5rem; margin-bottom: 1rem; }
 .fx-tools { display: flex; align-items: center; gap: .5rem; }
 .fx-crumbs { display: flex; align-items: center; gap: 2px; min-width: 0; height: var(--fx-h); overflow-x: auto; scrollbar-width: none; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 0 4px; }
 .fx-crumbs::-webkit-scrollbar { display: none; }
-.fx-crumbs button { flex-shrink: 0; height: 30px; border: 0; background: transparent; border-radius: 8px; padding: 0 .55rem; font: inherit; font-size: .86rem; color: var(--text-secondary); cursor: pointer; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; display: inline-flex; align-items: center; gap: .3rem; }
+.fx-crumbs button { flex-shrink: 0; height: calc(var(--fx-h) - 8px); border: 0; background: transparent; border-radius: 8px; padding: 0 .55rem; font: inherit; font-size: .86rem; color: var(--text-secondary); cursor: pointer; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; display: inline-flex; align-items: center; gap: .3rem; }
 .fx-crumbs button:hover { background: var(--bg-secondary); color: var(--text-primary); }
 .fx-crumbs button:last-child { color: var(--text-primary); font-weight: 700; }
 .fx-crumbs .sep { color: var(--text-light); font-size: .75rem; flex-shrink: 0; }

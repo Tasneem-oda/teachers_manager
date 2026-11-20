@@ -16,9 +16,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=49">
-    <link rel="stylesheet" href="css/lessons.css?v=49">
-    <link rel="stylesheet" href="css/groups.css?v=49">
+    <link rel="stylesheet" href="css/style.css?v=50">
+    <link rel="stylesheet" href="css/lessons.css?v=50">
+    <link rel="stylesheet" href="css/groups.css?v=50">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -26,8 +26,9 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/books.css?v=49">
-    <link rel="stylesheet" href="css/v29.css?v=49">
+    <link rel="stylesheet" href="css/books.css?v=50">
+    <link rel="stylesheet" href="css/v29.css?v=50">
+    <link rel="stylesheet" href="css/ui.css?v=50">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -149,23 +150,23 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=49"></script>
+    <script type="module" src="js/config.js?v=50"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=49';
-        import { api } from './js/api.js?v=49';
-        import { ErrorHandler, Formatters, askChoice, uuidv4 } from './js/utils.js?v=49';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=49';
-        import { icon } from './js/icons.js?v=49';
-        import { RATINGS, HOMEWORK_STATUS, ratingFieldLabels, formatLessonDate, localDateISO } from './js/lesson-utils.js?v=49';
-        import { whatsappUrl, parentPhone } from './js/billing.js?v=49';
-        import { formatClock12, timeToMinutes } from './js/calendar-utils.js?v=49';
-        import { groupTitle, membersText, sessionShareText } from './js/groups-utils.js?v=49';
-        import { mountGroupAi } from './js/group-ai.js?v=49';
-        import { buildLessonReport, fullDate } from './js/report.js?v=49';
-        import { openBookViewer } from './js/book-viewer.js?v=49';
-        import { LiveLesson, clockText, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=49';
-        import { openWhiteboard } from './js/whiteboard.js?v=49';
-        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=49';
+        import { Auth } from './js/auth.js?v=50';
+        import { api } from './js/api.js?v=50';
+        import { ErrorHandler, Formatters, askChoice, uuidv4 } from './js/utils.js?v=50';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=50';
+        import { icon } from './js/icons.js?v=50';
+        import { RATINGS, HOMEWORK_STATUS, ratingFieldLabels, formatLessonDate, localDateISO } from './js/lesson-utils.js?v=50';
+        import { whatsappUrl, parentPhone } from './js/billing.js?v=50';
+        import { formatClock12, timeToMinutes } from './js/calendar-utils.js?v=50';
+        import { groupTitle, membersText, sessionShareText } from './js/groups-utils.js?v=50';
+        import { mountGroupAi } from './js/group-ai.js?v=50';
+        import { buildLessonReport, fullDate } from './js/report.js?v=50';
+        import { openBookViewer } from './js/book-viewer.js?v=50';
+        import { LiveLesson, clockText, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=50';
+        import { openWhiteboard } from './js/whiteboard.js?v=50';
+        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=50';
 
         const $ = (id) => document.getElementById(id);
         const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
@@ -219,9 +220,10 @@
                 $('loader').style.display = 'none';
                 $('app').hidden = false;
             } catch (error) {
-                $('loader').innerHTML = `${esc(ErrorHandler.getErrorMessage(error))} <button type="button" class="btn btn-sm" id="retry">حاول تاني</button> <a class="btn btn-sm btn-outline" href="group.html?id=${encodeURIComponent(groupId)}">صفحة المجموعة</a>`;
+                $('loader').classList.add('is-err');
+                $('loader').innerHTML = `<div>${esc(ErrorHandler.getErrorMessage(error))}</div><div class="err-acts"><button type="button" class="btn btn-sm" id="retry">حاول تاني</button><a class="btn btn-sm btn-outline" href="group.html?id=${encodeURIComponent(groupId)}">صفحة المجموعة</a></div>`;
                 const r = $('retry');
-                if (r) r.addEventListener('click', () => { $('loader').textContent = 'جاري تجهيز الحصة...'; load(date); });
+                if (r) r.addEventListener('click', () => { $('loader').classList.remove('is-err'); $('loader').textContent = 'جاري تجهيز الحصة...'; load(date); });
             }
         }
 
@@ -394,7 +396,7 @@
         try { document.querySelector('#btn-game .ic-game').innerHTML = icon('gamepad', { size: 16 }); } catch (e) { /* تجاهل */ }
         $('btn-game').addEventListener('click', async () => {
             try {
-                const m = await import('./js/games/picker.js?v=49');
+                const m = await import('./js/games/picker.js?v=50');
                 const names = ((prep && prep.members) || []).filter((x) => !x.left_at).map((x) => String(x.name || '').split(' ')[0]);
                 m.openGamePicker({ api, teams: names.length >= 4, names, subject: prep && prep.group && prep.group.subject, toast: { ok: (t) => ErrorHandler.showSuccess(t), err: (e) => ErrorHandler.showError(ErrorHandler.getErrorMessage(e)) } });
             } catch (e) { ErrorHandler.showError('الألعاب ماتحمّلتش. اتأكد من النت وجرّب تاني.'); }
@@ -1021,6 +1023,6 @@
             } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
         });
     </script>
-    <script src="js/pwa-install.js?v=49" defer></script>
+    <script src="js/pwa-install.js?v=50" defer></script>
 </body>
 </html>

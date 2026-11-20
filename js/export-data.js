@@ -1,10 +1,10 @@
 /**
  * export-data.js — v29: نسخة من كل بيانات المدرس (ملف مضغوط فيه جداول Excel/CSV بالعربي)
  */
-import { api } from './api.js?v=49';
-import { ErrorHandler } from './utils.js?v=49';
-import { loadJsZip } from './book-libs.js?v=49';
-import { subjectLabel } from './lesson-utils.js?v=49';
+import { api } from './api.js?v=50';
+import { ErrorHandler } from './utils.js?v=50';
+import { loadJsZip } from './book-libs.js?v=50';
+import { subjectLabel } from './lesson-utils.js?v=50';
 
 const DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const STATUS = { completed: 'تمت', cancelled: 'ملغاة/غياب', in_progress: 'جارية' };

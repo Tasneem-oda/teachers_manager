@@ -16,9 +16,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=49">
-    <link rel="stylesheet" href="css/lessons.css?v=49">
-    <link rel="stylesheet" href="css/groups.css?v=49">
+    <link rel="stylesheet" href="css/style.css?v=50">
+    <link rel="stylesheet" href="css/lessons.css?v=50">
+    <link rel="stylesheet" href="css/groups.css?v=50">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -71,7 +71,8 @@
         }
         @media (prefers-reduced-motion: reduce) { .wa-cta { transition: none; } .wa-cta:hover { transform: none; } }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=49">
+    <link rel="stylesheet" href="css/v29.css?v=50">
+    <link rel="stylesheet" href="css/ui.css?v=50">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -150,9 +151,9 @@
                             <a href="schedule.html" class="quick-link-btn"><span class="icon" id="ic-ql-schedule"></span> جدولي</a>
                             <a href="schedule.html?add=event" class="quick-link-btn"><span class="icon" id="ic-ql-event"></span> موعد شخصي</a>
                             <a href="books.html" class="quick-link-btn"><span class="icon" id="ic-ql-books"></span> مكتبتي</a>
-                            <a href="games.html" class="quick-link-btn"><span class="icon" aria-hidden="true">🎮</span> ألعاب الحصة</a>
-                            <a href="mushaf.html" class="quick-link-btn"><span class="icon" aria-hidden="true">📖</span> المصحف</a>
-                            <a href="learn.html" class="quick-link-btn"><span class="icon" aria-hidden="true">▶</span> الشروحات</a>
+                            <a href="games.html" class="quick-link-btn"><span class="icon" id="ic-ql-games"></span> ألعاب الحصة</a>
+                            <a href="mushaf.html" class="quick-link-btn"><span class="icon" id="ic-ql-mushaf"></span> المصحف</a>
+                            <a href="learn.html" class="quick-link-btn"><span class="icon" id="ic-ql-learn"></span> الشروحات</a>
                             <a href="#" class="quick-link-btn" id="ql-income"><span class="icon" id="ic-ql-income"></span> فلوس الشهر</a>
                             <a href="students.html" class="quick-link-btn"><span class="icon" id="ic-ql-notes"></span> ملاحظات الطلاب</a>
                             <a href="subscription.html" class="quick-link-btn"><span class="icon" id="ic-ql-sub"></span> الاشتراك</a>
@@ -190,26 +191,26 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=49"></script>
+    <script type="module" src="js/config.js?v=50"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=49';
-        import { api } from './js/api.js?v=49';
-        import { isTrial, trialState, trialDate, bindTrialActions } from './js/trial.js?v=49';
-        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=49';
-        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=49';
-        import { icon } from './js/icons.js?v=49';
-        import { renderOnboarding } from './js/onboarding.js?v=49';
-        import { openAttendanceModal } from './js/attendance.js?v=49';
-        import { ATTENDANCE } from './js/lesson-utils.js?v=49';
-        import { computeBilling, openReminder, lessonsText, buildReminder, parentPhone, openBulkReminders } from './js/billing.js?v=49';
-        import { showTips } from './js/tips.js?v=49';
-        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=49';
-        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=49';
-        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=49';
-        import { mountReminderSetupCard } from './js/reminder-settings.js?v=49';
-        import { requestPermission } from './js/notifications.js?v=49';
-        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=49';
-        import { whatsappUrl } from './js/billing.js?v=49';
+        import { Auth } from './js/auth.js?v=50';
+        import { api } from './js/api.js?v=50';
+        import { isTrial, trialState, trialDate, bindTrialActions } from './js/trial.js?v=50';
+        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=50';
+        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=50';
+        import { icon } from './js/icons.js?v=50';
+        import { renderOnboarding } from './js/onboarding.js?v=50';
+        import { openAttendanceModal } from './js/attendance.js?v=50';
+        import { ATTENDANCE } from './js/lesson-utils.js?v=50';
+        import { computeBilling, openReminder, lessonsText, buildReminder, parentPhone, openBulkReminders } from './js/billing.js?v=50';
+        import { showTips } from './js/tips.js?v=50';
+        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=50';
+        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=50';
+        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=50';
+        import { mountReminderSetupCard } from './js/reminder-settings.js?v=50';
+        import { requestPermission } from './js/notifications.js?v=50';
+        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=50';
+        import { whatsappUrl } from './js/billing.js?v=50';
 
         renderSidebar('dashboard');
 
@@ -230,6 +231,9 @@
         document.getElementById('ic-ql-settings').innerHTML = icon('gear', { size: 19 });
         document.getElementById('ic-ql-income').innerHTML = icon('creditCard', { size: 19 });
         document.getElementById('ic-ql-event').innerHTML = icon('clock', { size: 19 });
+        document.getElementById('ic-ql-games').innerHTML = icon('gamepad', { size: 19 });
+        document.getElementById('ic-ql-mushaf').innerHTML = icon('star', { size: 19 });
+        document.getElementById('ic-ql-learn').innerHTML = icon('play', { size: 19 });
         document.getElementById('ql-income').addEventListener('click', (e) => { e.preventDefault(); openIncomeModal(new Date().getDate() <= 5 ? -1 : 0); });
 
         function greeting() {
@@ -749,16 +753,16 @@
         }
         window.addEventListener('tm:schedules-changed', () => { loadDashboard(); });
         // v29.8: لو اتسجّلت حصة من جهاز تاني (أو المدرس رجع للبرنامج) الرئيسية تتحدّث لوحدها
-        import('./js/auto-refresh.js?v=49').then((m) => m.onAppResume(() => loadDashboard())).catch(() => { /* تجاهل */ });
+        import('./js/auto-refresh.js?v=50').then((m) => m.onAppResume(() => loadDashboard())).catch(() => { /* تجاهل */ });
 
         (async () => {
             const authInfo = await Auth.requireAuth();
             if (!authInfo) return;
             // v29: أول دخول بحساب جوجل: سؤال المادة + الموبايل
-            try { const { maybeCompleteProfile } = await import('./js/complete-profile.js?v=49'); maybeCompleteProfile(authInfo.profile, authInfo.session); } catch (e) { /* تجاهل */ }
+            try { const { maybeCompleteProfile } = await import('./js/complete-profile.js?v=50'); maybeCompleteProfile(authInfo.profile, authInfo.session); } catch (e) { /* تجاهل */ }
             await loadDashboard();
         })();
     </script>
-    <script src="js/pwa-install.js?v=49" defer></script>
+    <script src="js/pwa-install.js?v=50" defer></script>
 </body>
 </html>
