@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=44">
+    <link rel="stylesheet" href="css/style.css?v=45">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -96,7 +96,7 @@
             .st-actions .btn { flex: 1; }
         }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=44">
+    <link rel="stylesheet" href="css/v29.css?v=45">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -190,6 +190,16 @@
                 <div class="tx"><b>ثبّت التطبيق على جهازك</b><small>يفتح بضغطة زي أي تطبيق، ويوصلك تنبيه بحصص كل يوم.</small></div>
                 <button type="button" class="btn btn-sm" id="btn-install-app">ثبّت التطبيق</button>
             </div>
+            <div class="st-row">
+                <span class="st-ic y icon" aria-hidden="true">▶</span>
+                <div class="tx"><b>الشروحات</b><small>فيديوهات قصيرة بتشرح كل جزء في البرنامج.</small></div>
+                <a class="btn btn-sm btn-outline" href="learn.html">افتح الشروحات</a>
+            </div>
+            <div class="st-row" id="drive-section" hidden>
+                <span class="st-ic t icon" aria-hidden="true">☁️</span>
+                <div class="tx"><b>كتبك على جوجل درايف</b><small id="drive-state">الكتب اللي بترفعها تتحفظ على جوجل درايف بتاعك بدل تخزين البرنامج.</small></div>
+                <button type="button" class="btn btn-sm btn-outline" id="btn-drive">وصّل جوجل درايف</button>
+            </div>
             <div class="st-row" id="export-section">
                 <span class="st-ic t icon" id="ic-export2"></span>
                 <div class="tx"><b>نسخة من كل بياناتك</b><small>الطلاب والحصص والدفعات والمواعيد والمجموعات والملاحظات في ملف Excel.</small></div>
@@ -220,17 +230,17 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=44"></script>
+    <script type="module" src="js/config.js?v=45"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=44';
-        import { Storage, ErrorHandler, toLatinDigits } from './js/utils.js?v=44';
-        import { api } from './js/api.js?v=44';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=44';
-        import { icon } from './js/icons.js?v=44';
-        import { CONFIG } from './js/config.js?v=44';
-        import { requestPermission, unlinkOnSignOut } from './js/notifications.js?v=44';
-        import { mountReminderControls } from './js/reminder-settings.js?v=44';
-        import { openDeleteAccount } from './js/account-delete.js?v=44';
+        import { Auth } from './js/auth.js?v=45';
+        import { Storage, ErrorHandler, toLatinDigits } from './js/utils.js?v=45';
+        import { api } from './js/api.js?v=45';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=45';
+        import { icon } from './js/icons.js?v=45';
+        import { CONFIG } from './js/config.js?v=45';
+        import { requestPermission, unlinkOnSignOut } from './js/notifications.js?v=45';
+        import { mountReminderControls } from './js/reminder-settings.js?v=45';
+        import { openDeleteAccount } from './js/account-delete.js?v=45';
 
         // v32: الحالة الحقيقية (الجهاز متسجل فعلًا عند خدمة الإشعارات) مش بس "الإذن متاح"
         let pushHealth = null;
@@ -241,7 +251,7 @@
             el.textContent = 'جاري التأكد من الإشعارات على الجهاز ده...';
             btn.hidden = true;
             try {
-                const ph = await import('./js/push-health.js?v=44');
+                const ph = await import('./js/push-health.js?v=45');
                 pushHealth = await ph.checkPushHealth({ waitSdkMs: 10000 });
                 const t = ph.healthText(pushHealth);
                 el.innerHTML = `<b>${t.title}</b>${t.desc ? `<br><small>${t.desc}</small>` : ''}`;
@@ -260,7 +270,7 @@
             b.disabled = true;
             b.textContent = 'لحظة...';
             try {
-                const ph = await import('./js/push-health.js?v=44');
+                const ph = await import('./js/push-health.js?v=45');
                 await ph.fixNow(pushHealth || { state: 'default', p: ph.devicePlatform() }, requestPermission);
             } finally { b.disabled = false; b.textContent = label; }
             renderPushStatus();
@@ -287,7 +297,7 @@
             links.forEach((a) => a.addEventListener('click', (e) => { const t = document.querySelector(a.getAttribute('href')); if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }));
         } catch (e) { /* تجاهل */ }
         document.getElementById('btn-export').addEventListener('click', async (e) => {
-            const { downloadAllData } = await import('./js/export-data.js?v=44');
+            const { downloadAllData } = await import('./js/export-data.js?v=45');
             downloadAllData(e.currentTarget);
         });
         document.getElementById('ic-install').innerHTML = icon('download', { size: 18 });
@@ -478,6 +488,25 @@
             rep.addEventListener('change', () => save({ report_after_lesson: rep.checked }));
         })();
     </script>
-    <script src="js/pwa-install.js?v=44" defer></script>
+    <script src="js/pwa-install.js?v=45" defer></script>
+    <script type="module">
+        // v35: ربط جوجل درايف (للكتب) من الإعدادات
+        import * as Drive from './js/gdrive.js?v=45';
+        const row = document.getElementById('drive-section');
+        const btn = document.getElementById('btn-drive');
+        const st = document.getElementById('drive-state');
+        const paint = () => {
+            if (Drive.driveConnected()) { st.textContent = `متوصّل${Drive.driveEmail() ? ` بـ ${Drive.driveEmail()}` : ''} — ${Drive.drivePreferred() ? 'الكتب الجديدة بتترفع عليه' : 'الكتب الجديدة على تخزين البرنامج'}.`; btn.textContent = 'افصل الدرايف'; }
+            else { st.textContent = 'الكتب اللي بترفعها تتحفظ على جوجل درايف بتاعك بدل تخزين البرنامج. البرنامج بيشوف بس الملفات اللي رفعها هو.'; btn.textContent = 'وصّل جوجل درايف'; }
+        };
+        if (Drive.driveAvailable()) {
+            row.hidden = false; paint();
+            btn.addEventListener('click', async () => {
+                if (Drive.driveConnected()) { if (confirm('تفصل جوجل درايف؟ الكتب اللي عليه هتحتاج توصّله تاني عشان تفتحها.')) { Drive.disconnectDrive(); paint(); } return; }
+                btn.disabled = true;
+                try { await Drive.connectDrive(); paint(); } catch (e) { alert((e && e.error && e.error.message) || 'مقدرناش نوصّل جوجل درايف.'); } finally { btn.disabled = false; }
+            });
+        }
+    </script>
 </body>
 </html>

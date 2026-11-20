@@ -19,7 +19,7 @@ export const TEMPLATES = [
     { id: 'letters', name: 'كوّن الكلمة', desc: 'حروف متلخبطة يكوّن منها الكلمة' },
     { id: 'wheel', name: 'العجلة', desc: 'لف واختار طالب أو سؤال عشوائي' }
 ];
-import { gi } from './gicons.js?v=44';
+import { gi } from './gicons.js?v=45';
 export { gi };
 export const templateOf = (id) => TEMPLATES.find((t) => t.id === id) || TEMPLATES[0];
 
@@ -102,7 +102,11 @@ function ensureCss() {
 .gm-chip.done{opacity:.35;pointer-events:none}
 .gm-line{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;min-height:70px;width:100%;max-width:1000px;padding:.8rem;border:2px dashed rgba(255,255,255,.35);border-radius:18px}
 .gm-pool{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;width:100%;max-width:1000px}
-.gm-line.vert,.gm-pool.vert{flex-direction:column;align-items:stretch}
+.gm-line,.gm-pool{flex-shrink:0}
+.gm-line.vert,.gm-pool.vert{flex-direction:column;flex-wrap:nowrap;align-items:stretch}
+.gm-chip{white-space:normal;overflow-wrap:anywhere;max-width:100%;text-align:center}
+.gm-line.vert .gm-chip,.gm-pool.vert .gm-chip{width:100%;text-align:start;padding:.6rem .9rem}
+.gm-chip .gm-no{display:inline-flex;align-items:center;justify-content:center;min-width:1.7em;height:1.7em;margin-inline-end:.5em;border-radius:50%;background:#F2C14E;color:#2B2433;font:800 .8rem 'IBM Plex Sans Arabic',Tahoma,sans-serif;vertical-align:middle}
 .gm-card{width:min(92vw,560px);min-height:230px;border-radius:24px;background:#fff;color:#2B2433;display:flex;align-items:center;justify-content:center;text-align:center;padding:1.5rem;font-size:clamp(1.4rem,4vw,2.4rem);font-weight:800;line-height:1.8;cursor:pointer;box-shadow:0 10px 0 rgba(0,0,0,.25);user-select:none}
 .gm-card.back{background:#FFE8A8}
 .gm-card.quran{font-weight:400}
@@ -358,7 +362,7 @@ export function openGame(game, opts = {}) {
                 let line = [];
                 const draw = () => {
                     stage.innerHTML = `<p class="gm-sub">${esc(rd.prompt || 'رتّب بالترتيب الصح')}${rounds.length > 1 ? ` · ${r + 1} من ${rounds.length}` : ''}</p>
-                        <div class="gm-line ${vert ? 'vert' : ''}" data-line>${line.map((p, k) => `<button type="button" class="gm-chip ${qc}" data-back="${k}">${esc(p.txt)}</button>`).join('') || '<span class="gm-sub">اضغط على الكلمات بالترتيب ↓</span>'}</div>
+                        <div class="gm-line ${vert ? 'vert' : ''}" data-line>${line.map((p, k) => `<button type="button" class="gm-chip ${qc}" data-back="${k}">${vert ? `<span class="gm-no">${k + 1}</span>` : ''}${esc(p.txt)}</button>`).join('') || `<span class="gm-sub">${vert ? 'اضغط على الآيات بالترتيب ↓' : 'اضغط على الكلمات بالترتيب ↓'}</span>`}</div>
                         <div class="gm-pool ${vert ? 'vert' : ''}">${pool.map((p, k) => `<button type="button" class="gm-chip ${qc}" data-take="${k}">${esc(p.txt)}</button>`).join('')}</div>`;
                     stage.querySelectorAll('[data-take]').forEach((b) => b.addEventListener('click', () => { line.push(pool.splice(Number(b.dataset.take), 1)[0]); draw(); }));
                     stage.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', () => { pool.push(line.splice(Number(b.dataset.back), 1)[0]); draw(); }));
@@ -371,7 +375,7 @@ export function openGame(game, opts = {}) {
                     feedback(ok);
                     if (ok) footer([{ id: 'next', label: r + 1 < rounds.length ? 'اللي بعده ←' : `النتيجة ${gi('trophy', { tile: false, size: 18 })}`, pri: true, on: () => { r += 1; nextTurn(); show(); } }]);
                     else footer([{ id: 'retry', label: 'صحّح الغلط', pri: true, on: () => { const keep = []; for (let k = 0; k < line.length; k++) { if (plain(line[k].txt) === plain(items[k].txt) && keep.length === k) keep.push(line[k]); else break; } pool = shuffle(items.filter((x) => !keep.includes(x))); line = keep; nextTurn(); draw(); } },
-                        { id: 'show', label: 'وريني الحل', on: () => { line = items.slice(); pool = []; draw(); foot.innerHTML = ''; footer([{ id: 'next', label: 'اللي بعده ←', pri: true, on: () => { r += 1; show(); } }]); } }]);
+                        { id: 'show', label: 'وريني الحل', on: () => { line = items.slice(); pool = []; draw(); foot.innerHTML = ''; footer([{ id: 'next', label: r + 1 < rounds.length ? 'اللي بعده ←' : `النتيجة ${gi('trophy', { tile: false, size: 18 })}`, pri: true, on: () => { r += 1; nextTurn(); show(); } }]); } }]);
                 };
                 draw();
             };

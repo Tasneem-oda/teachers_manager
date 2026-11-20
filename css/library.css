@@ -1,0 +1,148 @@
+/* v35: المكتبة — مستكشف ملفات زي فولدرات الكمبيوتر */
+.fx { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 1rem; align-items: start; }
+
+/* ---------- الجنب: اختصارات + شجرة الفولدرات + التخزين */
+.fx-side { position: sticky; top: .75rem; background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: .5rem; display: flex; flex-direction: column; gap: 2px; max-height: calc(100vh - 1.5rem); overflow: auto; }
+.fx-side h4 { margin: .7rem .55rem .25rem; font-size: .72rem; color: var(--text-light); font-weight: 700; letter-spacing: .02em; }
+.fx-nav { display: flex; align-items: center; gap: .5rem; min-height: 38px; padding: 0 .55rem; border: 0; background: transparent; border-radius: 10px; font: inherit; font-size: .88rem; color: var(--text-primary); cursor: pointer; text-align: start; text-decoration: none; width: 100%; }
+.fx-nav:hover { background: var(--bg-secondary); }
+.fx-nav.is-on { background: #EFE9F5; color: var(--primary); font-weight: 700; }
+.fx-nav .n { margin-inline-start: auto; font-size: .72rem; color: var(--text-light); font-weight: 600; }
+.fx-nav.drop-over, .fx-tree .fx-node.drop-over > .fx-row, .fx-crumbs button.drop-over, .fx-tile.drop-over { outline: 2px dashed var(--primary); outline-offset: -2px; background: #F4EEF9; }
+.fx-tree { display: flex; flex-direction: column; }
+.fx-node > .fx-row { display: flex; align-items: center; gap: 2px; border-radius: 10px; }
+.fx-node > .fx-row:hover { background: var(--bg-secondary); }
+.fx-node > .fx-row.is-on { background: #EFE9F5; }
+.fx-node > .fx-row.is-on .fx-nav { color: var(--primary); font-weight: 700; }
+.fx-node > .fx-row .fx-nav:hover { background: transparent; }
+.fx-tog { width: 22px; height: 30px; flex-shrink: 0; border: 0; background: transparent; color: var(--text-light); cursor: pointer; border-radius: 6px; font-size: .7rem; display: inline-flex; align-items: center; justify-content: center; transition: transform .15s; }
+.fx-tog.open { transform: rotate(-90deg); }
+.fx-tog.empty { visibility: hidden; }
+.fx-kids { padding-inline-start: 14px; border-inline-start: 1px dashed var(--border); margin-inline-start: 12px; }
+.fx-fi { width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; background: var(--fc, #EFE9F5); font-size: .8rem; flex-shrink: 0; }
+.fx-store { margin-top: .6rem; padding: .7rem; border-radius: 12px; background: var(--bg-secondary); font-size: .78rem; line-height: 1.7; color: var(--text-secondary); }
+.fx-store b { color: var(--text-primary); }
+.fx-store .btn { margin-top: .45rem; width: 100%; justify-content: center; }
+@media (max-width: 899px) { .fx { grid-template-columns: minmax(0, 1fr); } .fx .fx-side { display: none; } }
+
+/* ---------- الشريط اللي فوق */
+.fx-main { min-width: 0; position: relative; }
+.fx-bar { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; margin-bottom: .6rem; }
+.fx-crumbs { display: flex; align-items: center; gap: 2px; flex: 1 1 170px; min-width: 0; overflow-x: auto; scrollbar-width: none; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 3px; }
+.fx-crumbs::-webkit-scrollbar { display: none; }
+.fx-crumbs button { flex-shrink: 0; border: 0; background: transparent; border-radius: 9px; min-height: 34px; padding: 0 .6rem; font: inherit; font-size: .86rem; color: var(--text-secondary); cursor: pointer; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.fx-crumbs button:hover { background: var(--bg-secondary); color: var(--text-primary); }
+.fx-crumbs button:last-child { color: var(--text-primary); font-weight: 700; }
+.fx-crumbs .sep { color: var(--text-light); font-size: .75rem; flex-shrink: 0; }
+.fx-ib { width: 40px; height: 40px; flex-shrink: 0; border: 1px solid var(--border); background: var(--card-bg); border-radius: 12px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: var(--text-primary); }
+.fx-ib:hover:not([disabled]) { border-color: var(--primary); color: var(--primary); }
+.fx-ib[disabled] { opacity: .4; cursor: default; }
+.fx-ib.is-on { background: #EFE9F5; color: var(--primary); border-color: #D9CCE6; }
+.fx-search { display: flex; align-items: center; gap: .4rem; flex: 1 1 150px; min-width: 130px; max-width: 320px; height: 40px; padding: 0 .7rem; border: 1px solid var(--border); border-radius: 12px; background: var(--card-bg); }
+.fx-search input, .fx-search input:focus { border: 0 !important; outline: 0; flex: 1; min-width: 0; width: auto; height: auto; padding: 0 !important; margin: 0; font: inherit; font-size: .9rem; background: transparent !important; box-shadow: none !important; }
+.fx-search:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(75, 58, 90, .1); }
+.fx-sort { width: auto !important; flex: 0 0 auto; height: 40px; border: 1px solid var(--border); border-radius: 12px; background: var(--card-bg); font: inherit; font-size: .85rem; padding: 0 .5rem; color: var(--text-primary); }
+.fx-new { position: relative; }
+.fx-new > .btn { height: 40px; }
+@media (max-width: 640px) {
+    .fx-bar { gap: .35rem; }
+    .fx-crumbs { order: 5; flex-basis: 100%; }
+    .fx-search { order: 1; max-width: none; flex: 1 1 120px; }
+    .fx-sort { display: none; }
+    .fx-new .t { display: none; }
+    .fx-search input { font-size: 16px; }
+}
+
+/* ---------- المحتوى */
+.fx-sec { margin: .2rem 0 .6rem; display: flex; align-items: center; gap: .5rem; font-size: .78rem; color: var(--text-light); font-weight: 700; }
+.fx-sec::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.fx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .7rem; margin-bottom: 1.1rem; }
+@media (max-width: 480px) { .fx-grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: .5rem; } }
+.fx-tile { position: relative; display: flex; flex-direction: column; align-items: stretch; gap: .35rem; padding: .55rem; background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; cursor: pointer; text-align: center; transition: box-shadow .15s, border-color .15s, transform .12s; outline: none; -webkit-touch-callout: none; user-select: none; }
+.fx-tile:hover { border-color: #D3C7DE; box-shadow: 0 6px 18px rgba(40, 25, 60, .08); }
+.fx-tile:focus-visible { box-shadow: 0 0 0 3px rgba(75, 58, 90, .25); }
+.fx-tile.is-sel { border-color: var(--primary); background: #F6F1FA; box-shadow: 0 0 0 2px rgba(75, 58, 90, .25); }
+.fx-tile.is-cut { opacity: .5; }
+.fx-tile.dragging { opacity: .45; }
+.fx-ico { position: relative; height: 92px; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
+/* فولدر شكل الكمبيوتر */
+.fx-folder-ic { position: relative; width: 84px; height: 64px; }
+.fx-folder-ic::before { content: ''; position: absolute; top: 0; inset-inline-start: 6px; width: 34px; height: 14px; border-radius: 6px 6px 0 0; background: var(--fd, #C8B6DA); }
+.fx-folder-ic::after { content: ''; position: absolute; inset: 9px 0 0; border-radius: 4px 10px 10px 10px; background: linear-gradient(180deg, var(--fl, #DCCDEB), var(--fd, #C8B6DA)); box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 3px 8px rgba(40,25,60,.12); }
+.fx-folder-ic .em { position: absolute; inset: 14px 0 0; z-index: 1; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; }
+.fx-folder-ic .cnt { position: absolute; z-index: 1; bottom: 4px; inset-inline-end: 6px; font-size: .64rem; font-weight: 800; color: rgba(0,0,0,.45); }
+/* الكتاب */
+.fx-book-ic { position: relative; width: 66px; height: 86px; border-radius: 3px 8px 8px 3px; background: var(--cv, linear-gradient(135deg, #5B4A6B, #8C6FA3)); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; box-shadow: 0 4px 10px rgba(30, 20, 40, .18); }
+.fx-book-ic::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 7px; background: rgba(0, 0, 0, .16); border-radius: 3px 0 0 3px; }
+.fx-book-ic .ty { position: absolute; bottom: 5px; inset-inline: 0; text-align: center; font: 800 .55rem/1 'IBM Plex Sans Arabic', sans-serif; letter-spacing: .03em; opacity: .9; }
+.fx-badges { position: absolute; top: 4px; inset-inline-start: 4px; display: flex; gap: 3px; flex-wrap: wrap; z-index: 2; }
+.fx-badge { font-size: .62rem; font-weight: 800; padding: 1px 6px; border-radius: 999px; background: rgba(255, 255, 255, .95); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+.fx-badge.pend { background: #FCF1DA; color: #8A6A1E; } .fx-badge.pub { background: #E1F2E8; color: #1F6B4F; } .fx-badge.drive { background: #E2EDF9; color: #1F5AA6; }
+.fx-name { font-size: .84rem; font-weight: 700; line-height: 1.45; color: var(--text-primary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; min-height: 2.4em; }
+.fx-meta { font-size: .7rem; color: var(--text-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fx-st { font-size: .7rem; font-weight: 700; color: #8A6A1E; }
+.fx-st.bad { color: var(--danger); }
+.fx-more { position: absolute; top: 4px; inset-inline-end: 4px; width: 30px; height: 30px; border: 0; border-radius: 8px; background: rgba(255, 255, 255, .9); color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; z-index: 3; opacity: 0; transition: opacity .12s; }
+.fx-tile:hover .fx-more, .fx-tile:focus-within .fx-more, .fx-tile.is-sel .fx-more { opacity: 1; }
+@media (hover: none) { .fx-more { opacity: 1; } }
+.fx-check { position: absolute; top: 6px; inset-inline-start: 6px; width: 22px; height: 22px; border-radius: 7px; border: 2px solid #B9AEC4; background: #fff; z-index: 3; display: none; align-items: center; justify-content: center; color: #fff; font-size: .8rem; }
+.fx.selecting .fx-check, .fx-tile.is-sel .fx-check { display: inline-flex; }
+.fx-tile.is-sel .fx-check { background: var(--primary); border-color: var(--primary); }
+.fx-tile .book-progress { text-align: start; }
+/* المصحف (عنصر ثابت) */
+.fx-tile.mushaf { text-decoration: none; color: inherit; }
+.fx-tile.mushaf .fx-book-ic { background: linear-gradient(135deg, #1F4D3A, #2F7A5B); width: 70px; }
+.fx-tile.mushaf .fx-book-ic::after { content: ''; position: absolute; inset: 7px 9px 7px 12px; border: 1.5px solid #C9A55A; border-radius: 4px; }
+.fx-tile.mushaf .fx-book-ic span { font-family: 'Amiri Quran', serif; color: #E9D49A; font-size: .9rem; line-height: 1.3; text-align: center; z-index: 1; }
+
+/* ---------- عرض القائمة */
+.fx-list .fx-grid { grid-template-columns: 1fr; gap: 0; background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.fx-list .fx-tile { flex-direction: row; align-items: center; text-align: start; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; padding: .45rem .7rem; gap: .7rem; min-height: 56px; }
+.fx-list .fx-tile:last-child { border-bottom: 0; }
+.fx-list .fx-tile:hover { box-shadow: none; background: var(--bg-secondary); }
+.fx-list .fx-ico { height: auto; width: 44px; flex-shrink: 0; }
+.fx-list .fx-folder-ic { transform: scale(.5); margin: -16px -21px; }
+.fx-list .fx-book-ic { width: 32px; height: 42px; font-size: .9rem; }
+.fx-list .fx-book-ic .ty { display: none; }
+.fx-list .fx-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.fx-list .fx-name { min-height: 0; -webkit-line-clamp: 1; }
+.fx-list .fx-badges { position: static; order: 3; }
+.fx-list .fx-more { position: static; opacity: 1; background: transparent; }
+.fx-list .fx-check { position: static; }
+
+/* ---------- الإفلات من الكمبيوتر + الحالة الفاضية + شريط التحديد */
+.fx-drop { position: absolute; inset: 0; z-index: 20; border: 3px dashed var(--primary); border-radius: 18px; background: rgba(246, 241, 250, .92); display: none; align-items: center; justify-content: center; flex-direction: column; gap: .4rem; font-weight: 800; color: var(--primary); font-size: 1.05rem; text-align: center; padding: 1rem; pointer-events: none; }
+.fx-main.dropping .fx-drop { display: flex; }
+.fx-empty { text-align: center; padding: 2.4rem 1rem; color: var(--text-secondary); background: var(--card-bg); border: 1px dashed #D3C7DE; border-radius: 16px; line-height: 1.9; }
+.fx-empty .em { font-size: 2.6rem; display: block; margin-bottom: .3rem; }
+.fx-empty .btn { margin: .3rem .2rem 0; }
+.fx-status { font-size: .74rem; color: var(--text-light); margin-top: .2rem; }
+.fx-selbar { position: sticky; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 30; margin-top: .8rem; display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; background: var(--primary); color: #fff; border-radius: 14px; padding: .5rem .7rem; box-shadow: 0 10px 30px rgba(40, 25, 60, .3); }
+.fx-selbar[hidden] { display: none; }
+.fx-selbar strong { margin-inline-end: auto; font-size: .9rem; }
+.fx-selbar .btn { background: rgba(255, 255, 255, .14); color: #fff; border-color: transparent; }
+.fx-selbar .btn:hover { background: rgba(255, 255, 255, .24); }
+@media (max-width: 768px) { .fx-selbar { bottom: calc(76px + env(safe-area-inset-bottom)); } }
+
+/* ---------- نافذة النقل (شجرة) */
+.fx-pick { display: flex; flex-direction: column; gap: 2px; max-height: 50vh; overflow: auto; border: 1px solid var(--border); border-radius: 12px; padding: .3rem; }
+.fx-pick button { display: flex; align-items: center; gap: .5rem; min-height: 40px; border: 0; background: transparent; border-radius: 9px; font: inherit; font-size: .88rem; cursor: pointer; text-align: start; padding-inline-end: .5rem; }
+.fx-pick button:hover { background: var(--bg-secondary); }
+.fx-pick button.is-on { background: #EFE9F5; color: var(--primary); font-weight: 700; }
+.fx-pick button[disabled] { opacity: .4; cursor: not-allowed; }
+
+/* ---------- خيار التخزين في نافذة الرفع */
+.fx-storage-opt { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.fx-storage-opt label { display: flex; gap: .5rem; align-items: flex-start; padding: .6rem; border: 1.5px solid var(--border); border-radius: 12px; cursor: pointer; font-size: .82rem; line-height: 1.5; }
+.fx-storage-opt label:has(input:checked) { border-color: var(--primary); background: #F6F1FA; }
+.fx-storage-opt small { display: block; color: var(--text-light); font-size: .72rem; }
+@media (max-width: 480px) { .fx-storage-opt { grid-template-columns: 1fr; } }
+
+/* ---------- المكتبة العامة: المصحف */
+.mushaf-hero { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.1rem; border-radius: 18px; margin-bottom: 1rem; background: linear-gradient(135deg, #1F4D3A, #2F7A5B); color: #F7EBD0; text-decoration: none; box-shadow: 0 10px 26px rgba(31, 77, 58, .25); position: relative; overflow: hidden; }
+.mushaf-hero::after { content: ''; position: absolute; inset: 8px; border: 1px solid rgba(201, 165, 90, .5); border-radius: 13px; pointer-events: none; }
+.mushaf-hero .cv { width: 62px; height: 80px; border-radius: 4px 9px 9px 4px; background: #173B2C; border: 2px solid #C9A55A; display: flex; align-items: center; justify-content: center; font-family: 'Amiri Quran', serif; color: #E9D49A; text-align: center; font-size: .85rem; line-height: 1.3; flex-shrink: 0; }
+.mushaf-hero b { font-size: 1.1rem; display: block; color: #fff; }
+.mushaf-hero p { margin: .2rem 0 0; font-size: .84rem; opacity: .9; line-height: 1.7; }
+.mushaf-hero .go { margin-inline-start: auto; background: #C9A55A; color: #1F4D3A; font-weight: 800; border-radius: 12px; padding: .55rem 1rem; white-space: nowrap; z-index: 1; }
+@media (max-width: 520px) { .mushaf-hero .go { display: none; } }

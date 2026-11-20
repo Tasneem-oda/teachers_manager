@@ -3,11 +3,11 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=44';
-import { APIUtils, Storage } from './utils.js?v=44';
-import { getFreshSession } from './session.js?v=44';
-import { Resume, affectedBySleep, waitAfterResume } from './resume.js?v=44';
-import { currentSyncVersion, syncTrusted } from './realtime-sync.js?v=44';
+import { CONFIG } from './config.js?v=45';
+import { APIUtils, Storage } from './utils.js?v=45';
+import { getFreshSession } from './session.js?v=45';
+import { Resume, affectedBySleep, waitAfterResume } from './resume.js?v=45';
+import { currentSyncVersion, syncTrusted } from './realtime-sync.js?v=45';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -38,6 +38,48 @@ async function apiCall(endpoint, method = 'GET', body = null, options = {}) {
     if (String(method).toUpperCase() !== 'GET' && !readKey && !isQuiet(body)) ReadCache.clear();
     return data;
 }
+
+/**
+ * v35.1: بوابة الطلبات — السجلات بيّنت إن الصفحة بتطلب 10-14 حاجة في نفس اللحظة من n8n، والسيرفر
+ * بيبطّأ كلها مع بعض (4-30 ثانية بدل أقل من ثانية). دلوقتي: 4 طلبات بس في نفس الوقت،
+ * واللي المدرس مستنيه (حفظ/بيانات الصفحة) قبل الحاجات الجانبية (الإشعارات/الاشتراك/دليل البداية).
+ */
+const LONG_RUNNING = /ai-chat|assistant|ask-sources|prepare-lesson|book-ocr|book-index|finish-book|export-data|group-ai|get-book-content/;
+const LOW_PRIORITY = /get-notifications|check-subscription|onboarding-status|track-events|get-teaching-profile|push|billing-due/;
+function gatePriority(endpoint, method, body, options) {
+    if (options && options.priority) return options.priority === 'low' ? 0 : 2;
+    if (String(method).toUpperCase() !== 'GET' && !(body && QUIET_ACTIONS.includes(body.action)) && !isReadRequest(endpoint, method, body)) return 2;   // حفظ
+    if (LOW_PRIORITY.test(String(endpoint)) || (body && QUIET_ACTIONS.includes(body.action))) return 0;
+    return 1;
+}
+const Gate = (() => {
+    const MAX = 4;
+    let active = 0;
+    const waiting = [];
+    const next = () => {
+        while (active < MAX && waiting.length) {
+            waiting.sort((a, b) => b.p - a.p || a.t - b.t);
+            const w = waiting.shift();
+            if (w.dead) continue;
+            active += 1;
+            w.go();
+        }
+    };
+    return {
+        enter(p, signal, endpoint) {
+            // الطلبات الطويلة (ذكاء اصطناعي/معالجة كتب) مابتحجزش مكان
+            if (LONG_RUNNING.test(String(endpoint || ''))) return Promise.resolve(() => {});
+            return new Promise((resolve, reject) => {
+                let done = false;
+                const release = () => { if (done) return; done = true; active -= 1; next(); };
+                const w = { p, t: Date.now(), dead: false, go: () => resolve(release) };
+                if (signal) signal.addEventListener('abort', () => { if (!w.dead && waiting.includes(w)) { w.dead = true; waiting.splice(waiting.indexOf(w), 1); reject(Object.assign(new Error('aborted'), { name: 'AbortError' })); } }, { once: true });
+                waiting.push(w);
+                next();
+            });
+        }
+    };
+})();
 
 /**
  * v35: بعد ما الجهاز ينام/التاب تتجمّد: نستنى النت والجلسة يجهزوا قبل الطلب،
@@ -81,7 +123,9 @@ async function apiCallOnce(endpoint, method = 'GET', body = null, options = {}) 
             const fetchOptions = { method, headers: APIUtils.buildHeaders(session.access_token), signal: controller.signal };
             if (body && method !== 'GET') fetchOptions.body = JSON.stringify(body);
             let response;
+            let release = null;
             try {
+                release = await Gate.enter(gatePriority(endpoint, method, body, options), controller.signal, endpoint);
                 response = await fetch(url, fetchOptions);
             } catch (netError) {
                 if (netError && netError.name === 'AbortError') {
@@ -89,7 +133,7 @@ async function apiCallOnce(endpoint, method = 'GET', body = null, options = {}) 
                     throw { error: { code: 'ABORTED', message: 'تم إلغاء الطلب' }, aborted: true };
                 }
                 throw { error: { code: 'NETWORK', message: 'تعذّر الاتصال بالخادم. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.' } };
-            }
+            } finally { if (release) release(); }
             return APIUtils.handleResponse(response);
         };
 
@@ -122,7 +166,7 @@ async function apiCallOnce(endpoint, method = 'GET', body = null, options = {}) 
         const quiet = isQuiet(body);   // v32/v33: مش تغيير بيانات
         if (method !== 'GET' && !isRead && !quiet && !/track-events|notifications|ai-chat|assistant|ask-sources|prepare-lesson|owner-/i.test(endpoint)) {
             ReadCache.clear();
-            import('./auto-refresh.js?v=44').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
+            import('./auto-refresh.js?v=45').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
         }
         return data;
 
@@ -173,7 +217,7 @@ export const MONEY_MODES = ['per_lesson', 'monthly', 'hourly'];
 const READ_ACTIONS = { '/app-hub': ['library', 'public_list', 'games_list', 'billing_money', 'billing_money_all', 'games_public_list'], '/groups': ['list', 'get'], '/group-session': ['prepare'], '/group-billing': ['month'], '/teacher-settings': ['get'], '/lesson-tools': ['board_list'] };
 const NO_READ_CACHE = /notifications|check-subscription|bootstrap-session|get-book-content|ai-chat|assistant|ask-sources|prepare-lesson|track-events|export-data/;
 // v33: طلبات مش بتغيّر بيانات المدرس (فمابنمسحش الكاش ولا بنحدّث الأجهزة التانية)
-const QUIET_ACTIONS = ['push_status', 'test', 'hello', 'ann_seen', 'ann_click', 'ann_dismiss', 'journey_mark', 'game_played', 'public_download', 'track', 'game_public_played'];
+const QUIET_ACTIONS = ['videos', 'video_seen', 'push_status', 'test', 'hello', 'ann_seen', 'ann_click', 'ann_dismiss', 'journey_mark', 'game_played', 'public_download', 'track', 'game_public_played'];
 function isQuiet(body) { return !!(body && QUIET_ACTIONS.includes(body.action) || (body && body.action === 'book_meta' && body.opened && !('category' in body) && !('pinned' in body))); }
 function isReadRequest(endpoint, method, body, options = {}) {
     const path = String(endpoint || '').split('?')[0];
@@ -298,7 +342,7 @@ export const Outbox = (() => {
     const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
     const write = (list) => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { /* تجاهل */ } emit(); };
     const emit = () => { try { window.dispatchEvent(new CustomEvent('tm:outbox', { detail: { count: read().length } })); } catch (e) { /* تجاهل */ } };
-    const toast = (msg, ok = true) => import('./utils.js?v=44').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
+    const toast = (msg, ok = true) => import('./utils.js?v=45').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
     return {
         list: read,
         count: () => read().length,
@@ -352,7 +396,7 @@ let billingDueCache = null;
 let conflictAsk = null;   // سؤال واحد لكل الأيام اللي بتتحفظ مع بعض
 async function askAllowConflict(message) {
     if (conflictAsk) return conflictAsk;
-    conflictAsk = import('./utils.js?v=44').then(({ askChoice }) => askChoice({
+    conflictAsk = import('./utils.js?v=45').then(({ askChoice }) => askChoice({
         title: '⚠️ الميعاد ده فيه حصة تانية',
         message: message || 'الميعاد ده بيتعارض مع حصة تانية متسجلة. لو ده مقصود احفظ الحصتين في نفس الميعاد، وهيظهروا في الجدول بعلامة تعارض.',
         choices: [{ label: 'احفظ الحصتين في نفس الميعاد', value: 'force' }],
@@ -399,7 +443,7 @@ async function getSessionOrRedirect({ force = false, rejected = null } = {}) {
 // (get-book-content و ask مش "حفظ": قراءة الكتب مسموحة زي ما وعدنا المدرس في شريط القراءة فقط) + أحداث التتبع
 const READ_ONLY_ALLOWED = ['/check-subscription', '/submit-suggestion', '/mark-notifications-read', '/bootstrap-session', '/initialize-teacher', '/monthly-income', '/get-book-content', '/track-events', '/update-profile', '/export-data'];
 // v27: طلبات المجموعات كلها POST، فبنسمح بالقراءة بس (عرض المجموعات/الحصة/كشف الاشتراك) في وضع القراءة فقط
-const READ_ONLY_ACTIONS = { '/app-hub': ['hello', 'ann_seen', 'ann_click', 'ann_dismiss', 'journey_mark', 'library', 'public_list', 'games_list', 'public_download', 'game_played', 'book_meta', 'billing_money', 'billing_money_all', 'track', 'profile_save', 'games_public_list', 'game_public_played'], '/groups': ['list', 'get'], '/group-session': ['prepare'], '/group-billing': ['month'], '/teacher-settings': ['get', 'save', 'test', 'push_status'], '/delete-account': ['request', 'cancel', 'status'], '/lesson-tools': ['board_list'] };
+const READ_ONLY_ACTIONS = { '/app-hub': ['videos', 'video_seen', 'hello', 'ann_seen', 'ann_click', 'ann_dismiss', 'journey_mark', 'library', 'public_list', 'games_list', 'public_download', 'game_played', 'book_meta', 'billing_money', 'billing_money_all', 'track', 'profile_save', 'games_public_list', 'game_public_played'], '/groups': ['list', 'get'], '/group-session': ['prepare'], '/group-billing': ['month'], '/teacher-settings': ['get', 'save', 'test', 'push_status'], '/delete-account': ['request', 'cancel', 'status'], '/lesson-tools': ['board_list'] };
 function isBlockedByReadOnly(endpoint, method, body = null) {
     if (typeof window === 'undefined' || !window.__tmReadOnly) return false;
     if (String(method || 'GET').toUpperCase() === 'GET') return false;
@@ -1209,6 +1253,8 @@ export const api = {
     // رابط موقّع (Signed URL) لملف الكتاب الأصلي - للعرض أو التحميل.
     // download: true أو اسم ملف → الرابط بيفرض تنزيل الملف بدل فتحه في المتصفح
     async getBookFileUrl(storagePath, { expiresIn = 3600, download = false } = {}) {
+        // v35: كتاب على جوجل درايف المدرس
+        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=45'); return g.driveFileUrl(storagePath, { download: false }); }
         // v30: الرابط الموقّع بيتحفظ لحد ما يقرب يخلص (فتح نفس الكتاب تاني بيبقى فوري)
         const ck = `${storagePath}|${download ? String(download) : ''}`;
         const hit = signedUrlCache.get(ck);
@@ -1225,6 +1271,7 @@ export const api = {
 
     // تحميل بايتات الملف الأصلي للعرض/إعادة الفهرسة، مع تقدّم التحميل
     async fetchBookFile(storagePath, { onProgress, signal } = {}) {
+        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=45'); return g.fetchFromDrive(storagePath, { onProgress, signal }); }
         const url = await this.getBookFileUrl(storagePath, { expiresIn: 3600 });
         let res;
         try {
@@ -1260,7 +1307,13 @@ export const api = {
     },
 
     // حذف ملف الكتاب من التخزين (بيتنادى بعد نجاح deleteBook في السيرفر)
+    // v35: مكان ملف الكتاب اتغيّر (اترفع على جوجل درايف المدرس بدل تخزين البرنامج)
+    async setBookStorage(bookId, storagePath, extra = {}) {
+        return apiCall(CONFIG.API_ENDPOINTS.HUB || '/app-hub', 'POST', { action: 'book_storage', book_id: bookId, storage_path: storagePath, ...extra });
+    },
+
     async deleteBookFile(storagePath) {
+        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=45'); return g.deleteFromDrive(storagePath); }
         try { await getFreshSession(); } catch (e) { /* تجاهل */ }
         try {
             await window.supabaseClient.storage.from(CONFIG.BOOKS_SETTINGS.BUCKET).remove([storagePath]);

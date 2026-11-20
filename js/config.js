@@ -46,6 +46,14 @@ export const CONFIG = {
         }
     },
     SUPPORT_WHATSAPP: '201037728764',
+    // v35: كتب المدرس على جوجل درايف بتاعه. حطّي هنا OAuth Client ID (نوع Web) من Google Cloud Console
+    // (مع تفعيل Google Drive API وإضافة دومين البرنامج في Authorized JavaScript origins). فاضي = الخاصية مخفية.
+    GOOGLE_DRIVE: {
+        CLIENT_ID: '',
+        FOLDER_NAME: 'Teachers Manager - كتبي'
+    },
+    // v35: الشروحات (فيديوهات يوتيوب بتتضاف من المونيتور وبتظهر في أماكنها في البرنامج)
+    TUTORIALS: { ENABLED: true },
     // v33: مجموعة واتساب المدرسين (بتظهر تلقائي بعد أول حصة) — غيّريها هنا لو اللينك اتغيّر
     COMMUNITY_URL: 'https://chat.whatsapp.com/LRWtf3mTrmBK6CA0FBwg3I',
     SITE_URL: 'https://teachers-manager.online',

@@ -1,9 +1,9 @@
 /**
  * student-actions.js — v28: حذف الطالب وشيله من مجموعة (مشترك بين صفحة الطلاب وملف الطالب)
  */
-import { api } from './api.js?v=44';
-import { ErrorHandler, askChoice } from './utils.js?v=44';
-import { groupTitle } from './groups-utils.js?v=44';
+import { api } from './api.js?v=45';
+import { ErrorHandler, askChoice } from './utils.js?v=45';
+import { groupTitle } from './groups-utils.js?v=45';
 
 /**
  * تأكيد واضح قبل الحذف (بيقول هيتمسح إيه بالظبط) وبعدين الحذف.

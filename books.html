@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=44">
+    <link rel="stylesheet" href="css/style.css?v=45">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -24,9 +24,11 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/books.css?v=44">
-    <link rel="stylesheet" href="css/v29.css?v=44">
-    <link rel="stylesheet" href="css/v33.css?v=44">
+    <link rel="stylesheet" href="css/books.css?v=45">
+    <link rel="stylesheet" href="css/v29.css?v=45">
+    <link rel="stylesheet" href="css/v33.css?v=45">
+    <link rel="stylesheet" href="css/library.css?v=45">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri+Quran&display=swap" media="print" onload="this.media='all'">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -38,49 +40,48 @@
         <main class="main-content">
             <div id="top-header-root"></div>
             <script>/* v29.5: الشريط الجانبي/السفلي والهيدر بيظهروا فورًا من آخر نسخة محفوظة (قبل ما ملفات الصفحة تتحمّل) */(function(){try{var c=JSON.parse(localStorage.getItem('tm_shell_v1')||'null');if(!c||!c.nav)return;var p=(location.pathname.split('/').pop()||'dashboard').replace(/\.html$/,'')||'dashboard';var s=document.getElementById('sidebar-root');if(s&&!s.firstChild){s.innerHTML=c.nav;var k=(c.active&&c.active[p])||p,a=s.querySelectorAll('.sidebar-nav a[data-key]');for(var i=0;i<a.length;i++){if(a[i].getAttribute('data-key')===k)a[i].classList.add('active');if(k==='groups'&&a[i].getAttribute('data-key')==='students')a[i].classList.add('active-mobile');}s.setAttribute('data-shell','1');}var h=document.getElementById('top-header-root');if(h&&!h.firstChild&&c.header&&c.header[p]){h.innerHTML=c.header[p];h.setAttribute('data-shell','1');}}catch(e){}})();</script>
-            <div class="page-body lib2">
-
-                <div class="lib2-top">
-                    <label class="lib2-search">
-                        <span id="ic-search" class="icon" style="display:inline-flex; color:var(--text-light);"></span>
-                        <input type="search" id="lib-search" placeholder="ابحث في كتبك..." aria-label="ابحث في كتبك" autocomplete="off">
-                    </label>
-                    <button type="button" class="btn btn-primary" id="btn-add-source">
-                        <span id="ic-add-source" class="icon" style="display:inline-flex;"></span><span class="t">كتاب جديد</span>
-                    </button>
-                    <button type="button" class="btn btn-outline" id="btn-new-folder" hidden>
-                        <span id="ic-new-folder" class="icon" style="display:inline-flex;"></span><span class="t">فولدر جديد</span>
-                    </button>
-                </div>
-
+            <div class="page-body lib2 lib3">
+                <!-- v35: المكتبة زي فولدرات الكمبيوتر: فولدرات جوه فولدرات، سحب وإفلات، كليك يمين، عرض شبكة/قائمة -->
                 <nav class="lib2-tabs" role="tablist" aria-label="أقسام المكتبة">
                     <button type="button" class="lib2-tab is-on" role="tab" aria-selected="true" data-tab="mine">📚 كتبي <span class="n" id="n-mine"></span></button>
                     <button type="button" class="lib2-tab" role="tab" aria-selected="false" data-tab="public">🌍 المكتبة العامة <span class="n" id="n-public"></span></button>
+                    <a class="lib2-tab" href="mushaf.html">📖 المصحف الشريف</a>
                     <a class="lib2-tab" href="games.html">🎮 ألعاب الحصة</a>
                 </nav>
 
                 <section id="tab-mine" role="tabpanel">
-                    <div class="lib2-body">
-                        <aside class="lib2-side" id="lib-side" aria-label="الفولدرات"></aside>
-                        <div>
-                            <div class="lib2-cats" id="lib-cats" role="toolbar" aria-label="التصنيف"></div>
-                            <div class="lib2-head">
-                                <h3 id="lib-title">كل الكتب</h3>
-                                <div class="lib2-sort">
-                                    <button type="button" class="btn btn-sm btn-ghost" id="btn-select">تحديد</button>
-                                    <select id="lib-sort" aria-label="الترتيب">
-                                        <option value="recent">الأحدث</option>
-                                        <option value="opened">آخر ما فتحته</option>
-                                        <option value="name">بالاسم</option>
-                                    </select>
+                    <div class="fx" id="fx">
+                        <aside class="fx-side" id="fx-side" aria-label="الفولدرات"></aside>
+                        <div class="fx-main" id="fx-main">
+                            <div class="fx-bar">
+                                <button type="button" class="fx-ib" id="fx-up" aria-label="الفولدر اللي فوق" title="رجوع للفولدر اللي فوق (Backspace)"></button>
+                                <div class="fx-crumbs" id="fx-crumbs" aria-label="مكانك في المكتبة"></div>
+                                <label class="fx-search"><span id="ic-search" style="display:inline-flex;color:var(--text-light)"></span>
+                                    <input type="search" id="lib-search" placeholder="ابحث في كل كتبك وفولدراتك..." aria-label="ابحث في كتبك" autocomplete="off"></label>
+                                <select class="fx-sort" id="lib-sort" aria-label="الترتيب">
+                                    <option value="name">بالاسم</option>
+                                    <option value="recent">الأحدث</option>
+                                    <option value="opened">آخر ما فتحته</option>
+                                    <option value="type">بالنوع</option>
+                                </select>
+                                <button type="button" class="fx-ib" id="fx-view" aria-label="طريقة العرض" title="شبكة / قائمة"></button>
+                                <button type="button" class="fx-ib" id="btn-select" aria-label="تحديد أكتر من حاجة" title="تحديد"></button>
+                                <div class="fx-new">
+                                    <button type="button" class="btn btn-primary" id="btn-new" aria-haspopup="menu"><span id="ic-add-source" style="display:inline-flex"></span><span class="t">جديد</span></button>
                                 </div>
+                                <button type="button" id="btn-add-source" hidden></button>
+                                <button type="button" id="btn-new-folder" hidden></button>
                             </div>
-                            <div id="books-section"><div class="loading">جاري التحميل...</div></div>
-                            <div class="lib2-selbar" id="lib-selbar" hidden>
+                            <div id="books-section" aria-live="polite"><div class="loading">جاري التحميل...</div></div>
+                            <p class="fx-status" id="fx-status"></p>
+                            <div class="fx-selbar" id="lib-selbar" hidden>
                                 <strong id="sel-count">0 مختار</strong>
-                                <button type="button" class="btn btn-sm" id="sel-move">📁 نقل لفولدر</button>
-                                <button type="button" class="btn btn-sm btn-ghost" id="sel-cancel" style="color:#fff">إلغاء</button>
+                                <button type="button" class="btn btn-sm" id="sel-move">📁 نقل</button>
+                                <button type="button" class="btn btn-sm" id="sel-del">🗑 حذف</button>
+                                <button type="button" class="btn btn-sm" id="sel-all">تحديد الكل</button>
+                                <button type="button" class="btn btn-sm" id="sel-cancel">إلغاء</button>
                             </div>
+                            <div class="fx-drop" id="fx-drop"><span style="font-size:2rem">📥</span><span id="fx-drop-t">افلت الملف هنا عشان يترفع</span></div>
                         </div>
                     </div>
 
@@ -99,9 +100,14 @@
                 </section>
 
                 <section id="tab-public" role="tabpanel" hidden>
+                    <a class="mushaf-hero" href="mushaf.html">
+                        <span class="cv">المصحف<br>الشريف</span>
+                        <span><b>المصحف الشريف — مصحف المدينة</b><p>برواية حفص عن عاصم · ٦٠٤ صفحة زي المطبوع بالظبط · فهرس السور والأجزاء وعلامات</p></span>
+                        <span class="go">افتح المصحف ←</span>
+                    </a>
                     <div class="lib2-pubnote">
                         <p>🌍 <b>المكتبة العامة</b>: كتب رفعها مدرسين زيّك واتراجعت قبل ما تتنشر. ضيف أي كتاب لمكتبتك بضغطة وافتحه في الحصة على طول.<br>
-                        عندك كتاب مفيد؟ من <b>⋮</b> على الكتاب في "كتبي" اختار <b>"انشره للمدرسين"</b>.</p>
+                        عندك كتاب مفيد؟ اضغط كليك يمين (أو <b>⋮</b>) على الكتاب في "كتبي" واختار <b>"انشره للمدرسين"</b>.</p>
                     </div>
                     <div class="lib2-cats" id="pub-cats" role="toolbar" aria-label="تصنيف المكتبة العامة"></div>
                     <div id="pub-section"><div class="loading">جاري التحميل...</div></div>
@@ -115,7 +121,7 @@
     <div class="modal" id="upload-modal">
         <div class="modal-content">
             <span class="close-modal">&times;</span>
-            <h2>إضافة مصدر جديد</h2>
+            <h2 data-tutorial="books:upload">إضافة مصدر جديد</h2>
             <form id="upload-form">
                 <p class="upload-hint">المدعوم: PDF · Word (.docx) · PowerPoint (.pptx) · نص (.txt) · صور (JPG / PNG).<br>الكتب المصوّرة والممسوحة ضوئيًا بتتقرأ بالذكاء الاصطناعي تلقائيًا (ممكن ياخد دقائق حسب عدد الصفحات).</p>
                 <div class="form-group">
@@ -133,6 +139,13 @@
                 <div class="form-group" style="display:grid; grid-template-columns:1fr 1fr; gap:.6rem;">
                     <div><label for="upload-cat">التصنيف</label><select id="upload-cat"></select></div>
                     <div><label for="upload-folder">الفولدر</label><select id="upload-folder"><option value="">بدون فولدر</option></select></div>
+                </div>
+                <div class="form-group" id="upload-storage" hidden>
+                    <label>هيتحفظ فين؟</label>
+                    <div class="fx-storage-opt">
+                        <label><input type="radio" name="upload-store" value="drive" checked><span>☁️ جوجل درايف بتاعك<small id="upload-drive-email">الملف ملكك وعلى مساحتك</small></span></label>
+                        <label><input type="radio" name="upload-store" value="app"><span>🗄️ تخزين البرنامج<small>لحد ٥٠ ميجا للملف</small></span></label>
+                    </div>
                 </div>
                 <div class="upload-progress" id="upload-progress" aria-live="polite">
                     <div class="book-progress-bar"><i style="width:100%; opacity:.35"></i></div>
@@ -179,11 +192,11 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=44"></script>
+    <script type="module" src="js/config.js?v=45"></script>
     <script type="module">
-        import { initBooksPage } from './js/books-page.js?v=44';
+        import { initBooksPage } from './js/books-page.js?v=45';
         window.booksPage = initBooksPage();
     </script>
-    <script src="js/pwa-install.js?v=44" defer></script>
+    <script src="js/pwa-install.js?v=45" defer></script>
 </body>
 </html>

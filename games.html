@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=44">
+    <link rel="stylesheet" href="css/style.css?v=45">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -24,8 +24,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/v29.css?v=44">
-    <link rel="stylesheet" href="css/v33.css?v=44">
+    <link rel="stylesheet" href="css/v29.css?v=45">
+    <link rel="stylesheet" href="css/v33.css?v=45">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -50,7 +50,7 @@
                 </div>
 
                 <section class="card gx-sec" id="sec-quran">
-                    <h3><span data-gi="quran" data-size="30"></span> لعبة من آيات القرآن <small style="font-weight:500; color:var(--text-secondary); font-size:.78rem">(اختار السورة والآيات، واللعبة بتتعمل لوحدها)</small></h3>
+                    <h3 data-tutorial="games:create"><span data-gi="quran" data-size="30"></span> لعبة من آيات القرآن <small style="font-weight:500; color:var(--text-secondary); font-size:.78rem">(اختار السورة والآيات، واللعبة بتتعمل لوحدها)</small></h3>
                     <div id="quran-builder"></div>
                 </section>
 
@@ -81,11 +81,11 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=44"></script>
+    <script type="module" src="js/config.js?v=45"></script>
     <script type="module">
-        import { initGamesPage } from './js/games-page.js?v=44';
+        import { initGamesPage } from './js/games-page.js?v=45';
         initGamesPage();
     </script>
-    <script src="js/pwa-install.js?v=44" defer></script>
+    <script src="js/pwa-install.js?v=45" defer></script>
 </body>
 </html>

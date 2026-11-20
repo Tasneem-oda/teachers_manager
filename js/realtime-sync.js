@@ -12,7 +12,7 @@
  * والكاش: البيانات المحفوظة على الجهاز مختومة برقم العدّاد. طول ما الرقم ماتغيّرش الكاش صالح
  * (لحد 10 دقايق) فالتنقل بين الصفحات فوري، وأول ما الرقم يتغيّر الكاش بيتمسح.
  */
-import { storedSession, getFreshSession } from './session.js?v=44';
+import { storedSession, getFreshSession } from './session.js?v=45';
 
 const TAB = Math.random().toString(36).slice(2, 10);
 const V_KEY = 'tm_sync_v';            // {uid, v, at} آخر رقم معروف (مشترك بين التابات)

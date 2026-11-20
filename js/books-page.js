@@ -1,21 +1,27 @@
 /**
  * books-page.js - منطق صفحة "📚 مكتبتي"
- *   v33: تصميم جديد: فولدرات خاصة بالمدرس + تصنيفات (قرآن، تجويد، تأسيس، عربي...) + بحث + ترتيب + تحديد ونقل
- *        + المكتبة العامة (كتب المدرسين بعد مراجعة صاحبة البرنامج) + نشر كتاب للعامة
+ *   v35: إعادة تصميم كاملة — المكتبة بقت زي فولدرات الكمبيوتر:
+ *        • فولدرات جوه فولدرات (لما السيرفر يدعمها) + مسار فوق (مكتبتي › التجويد › التحفة) + رجوع للي فوق
+ *        • شجرة الفولدرات على الجنب (كمبيوتر)، وعرض شبكة أو قائمة، وترتيب بالاسم/الأحدث/النوع
+ *        • سحب وإفلات: كتاب/فولدر على فولدر أو على المسار، وملف من الكمبيوتر يترفع في الفولدر المفتوح
+ *        • كليك يمين (أو ضغطة طويلة على الموبايل) = قايمة الخيارات، وتحديد أكتر من حاجة ونقلها/حذفها مرة واحدة
+ *        • كيبورد: Enter فتح، F2 تغيير الاسم، Delete حذف، Backspace رجوع، Ctrl+A تحديد الكل
+ *        • المصحف الشريف ثابت في أول المكتبة (mushaf.html) + الكتب الجديدة ممكن تترفع على جوجل درايف المدرس
  *   - الضغط على الكتاب بيفتحه كاملًا بصيغته الأصلية (book-viewer.js)
  *   - رفع كتاب جديد ومعالجته في المتصفح مع نسبة تقدّم حقيقية، إعادة المعالجة، إدارة الوصول، و"اسأل كتبك"
  */
 
-import { CONFIG } from './config.js?v=44';
-import { Auth } from './auth.js?v=44';
-import { renderSidebar, renderTopHeader } from './sidebar.js?v=44';
-import { icon } from './icons.js?v=44';
-import { api } from './api.js?v=44';
-import { ErrorHandler, Formatters } from './utils.js?v=44';
-import { detectFileType, processBook } from './book-processor.js?v=44';
-import { openBookViewer } from './book-viewer.js?v=44';
-import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=44';
-import { CATS, catOf, guessCategory, FOLDER_COLORS, folderColor, FOLDER_ICONS, FOLDER_SUGGESTIONS } from './lib-meta.js?v=44';
+import { CONFIG } from './config.js?v=45';
+import { Auth } from './auth.js?v=45';
+import { renderSidebar, renderTopHeader } from './sidebar.js?v=45';
+import { icon } from './icons.js?v=45';
+import { api } from './api.js?v=45';
+import { ErrorHandler, Formatters } from './utils.js?v=45';
+import { detectFileType, processBook } from './book-processor.js?v=45';
+import { openBookViewer } from './book-viewer.js?v=45';
+import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=45';
+import { CATS, catOf, guessCategory, FOLDER_COLORS, folderColor, FOLDER_ICONS, FOLDER_SUGGESTIONS } from './lib-meta.js?v=45';
+import * as Drive from './gdrive.js?v=45';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => Formatters.escapeHtml(String(s == null ? '' : s));
@@ -28,37 +34,45 @@ const STATUS_LABELS = {
     failed: 'تعذّر التحليل',
     stalled: 'المعالجة توقفت'
 };
-const PREF_KEY = 'tm_lib_prefs_v1';
+const PREF_KEY = 'tm_lib_prefs_v2';
+// ألوان الفولدر (فاتح/غامق) لشكل فولدر الكمبيوتر
+const FOLDER_SHADES = { violet: ['#DCCDEB', '#B9A2D2'], green: ['#C9E8D5', '#8FCAA6'], blue: ['#CFE0F5', '#93B8E6'], orange: ['#F9D9BE', '#EDAE7A'], pink: ['#F7CDDB', '#E594B0'], gold: ['#F6E3A8', '#E2C060'], teal: ['#C6EAE5', '#82CBC1'], gray: ['#DDE1E5', '#B3BAC2'] };
+const shade = (c) => FOLDER_SHADES[c] || FOLDER_SHADES.violet;
 
 export function initBooksPage() {
     renderSidebar('books');
-    renderTopHeader({ title: 'مكتبتي', subtitle: 'كتبك وملفاتك في فولدرات، والمكتبة العامة للمدرسين', showSearch: false });
+    renderTopHeader({ title: 'مكتبتي', subtitle: 'كتبك وملفاتك في فولدرات زي الكمبيوتر، والمصحف، والمكتبة العامة', showSearch: false });
     $('ic-add-source').innerHTML = icon('plus', { size: 16 });
-    $('ic-new-folder').innerHTML = icon('folderPlus', { size: 16 });
     $('ic-search').innerHTML = icon('search', { size: 16 });
     $('ic-ask').innerHTML = icon('sparkles', { size: 17 });
+    $('fx-up').innerHTML = icon('chevronRight', { size: 18 });
+    $('btn-select').innerHTML = icon('check', { size: 18 });
 
     let books = [];
     let folders = [];
     let pubMap = {};          // source_book_id → {id, status, note}
     let sharedPaths = [];     // ملفات منشورة للعامة: مانمسحهاش من التخزين لو المدرس مسح الكتاب
     let hubOk = true;         // workflow app-hub متفعّل؟ (لو لأ: المكتبة بتشتغل زي الأول من غير فولدرات)
+    let features = [];        // v35: مزايا السيرفر (nesting = فولدرات جوه فولدرات، book_storage = جوجل درايف)
     let allStudents = [];
     let pollTimer = null;
     let accessModalBookId = null;
     const active = new Map();      // bookId -> { ctl, percent, message, stage }
     let viewer = null;
     let selecting = false;
-    const selected = new Set();
+    const selected = new Set();    // "b:<id>" أو "f:<id>"
     let pubBooks = null;
     let pubCat = '';
+    let loaded = false;
 
     const prefs = (() => { try { return JSON.parse(localStorage.getItem(PREF_KEY) || '{}') || {}; } catch (e) { return {}; } })();
     const savePrefs = () => { try { localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); } catch (e) { /* تجاهل */ } };
-    let view = prefs.view || 'all';            // all | pinned | opened | none | folder:<id>
-    let cat = '';
+    // مكانك: فولدر (null = أول المكتبة) أو مكان خاص (pinned | recent)
+    let loc = prefs.loc || { f: null };
     let query = '';
-    $('lib-sort').value = prefs.sort || 'recent';
+    let layout = prefs.layout || 'grid';
+    $('lib-sort').value = prefs.sort || 'name';
+    const expanded = new Set(prefs.expanded || []);
 
     document.querySelectorAll('.close-modal').forEach((btn) => {
         btn.addEventListener('click', (e) => {
@@ -68,10 +82,21 @@ export function initBooksPage() {
     });
 
     // ------------------------------------------------------------------ مساعدات
+    const nesting = () => features.includes('nesting');
+    const driveReady = () => Drive.driveAvailable() && features.includes('book_storage');
     const typeLabel = (b) => TYPE_LABEL[b.file_type] || b.file_type;
     const bookCat = (b) => b.category || guessCategory(b.title) || 'other';
-    const folderOf = (b) => folders.find((f) => f.id === b.folder_id) || null;
+    const folderById = (id) => folders.find((f) => f.id === id) || null;
+    const parentOf = (f) => (nesting() && f && f.parent_id && folderById(f.parent_id) ? f.parent_id : null);
+    const kidsOf = (id) => folders.filter((f) => parentOf(f) === (id || null));
+    const booksIn = (id) => books.filter((b) => (b.folder_id && folderById(b.folder_id) ? b.folder_id : null) === (id || null));
     const isShared = (b) => !!b.public_book_id || sharedPaths.includes(b.storage_path);
+    const pathOf = (id) => { const out = []; let f = folderById(id); let guard = 0; while (f && guard++ < 30) { out.unshift(f); f = folderById(parentOf(f)); } return out; };
+    const descendants = (id) => { const out = []; const walk = (x) => kidsOf(x).forEach((k) => { out.push(k.id); walk(k.id); }); walk(id); return out; };
+    const countDeep = (id) => booksIn(id).length + descendants(id).reduce((n, d) => n + booksIn(d).length, 0);
+    const goTo = (l) => { loc = l; prefs.loc = l; savePrefs(); selected.clear(); renderAll(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+    const inFolder = () => !loc.s;
+    const curFolder = () => (loc.s ? null : (loc.f && folderById(loc.f) ? loc.f : null));
 
     function effectiveStatus(b) {
         if (active.has(b.id)) return 'processing';
@@ -94,85 +119,119 @@ export function initBooksPage() {
             </div>`;
     }
 
-    // ------------------------------------------------------------------ الفولدرات (الجنب)
-    function countIn(v) {
-        if (v === 'all') return books.length;
-        if (v === 'pinned') return books.filter((b) => b.pinned).length;
-        if (v === 'opened') return books.filter((b) => b.last_opened_at).length;
-        if (v === 'none') return books.filter((b) => !b.folder_id).length;
-        if (v.startsWith('folder:')) return books.filter((b) => b.folder_id === v.slice(7)).length;
-        return 0;
-    }
+    // ------------------------------------------------------------------ الجنب: اختصارات + شجرة
     function renderSide() {
-        const side = $('lib-side');
-        const item = (v, ic, label, color, editable) => `
-            <button type="button" class="lib2-folder ${view === v ? 'is-on' : ''}" data-view="${v}" ${v.startsWith('folder:') || v === 'none' ? `data-drop="${v}"` : ''}>
-                <span class="fi" style="--fc:${color || '#EFE9F5'}">${ic}</span>
-                <span class="fl">${esc(label)}</span><span class="fc">${countIn(v)}</span>
-                ${editable ? `<span class="fe" role="button" tabindex="0" data-edit-folder="${v.slice(7)}" title="تعديل الفولدر" aria-label="تعديل الفولدر">${icon('edit', { size: 13 })}</span>` : ''}
-            </button>`;
+        const side = $('fx-side');
+        const nav = (l, ic, label, n, extra = '') => {
+            const on = (l.s && loc.s === l.s) || (!l.s && !loc.s && (l.f || null) === curFolder());
+            return `<button type="button" class="fx-nav ${on ? 'is-on' : ''}" data-go='${JSON.stringify(l)}' ${extra}><span class="fx-fi">${ic}</span><span>${esc(label)}</span>${n != null ? `<span class="n">${n}</span>` : ''}</button>`;
+        };
+        const node = (f) => {
+            const kids = kidsOf(f.id);
+            const open = expanded.has(f.id);
+            const on = !loc.s && curFolder() === f.id;
+            return `<div class="fx-node" data-drop-f="${f.id}">
+                <div class="fx-row ${on ? 'is-on' : ''}">
+                    <button type="button" class="fx-tog ${open ? 'open' : ''} ${kids.length ? '' : 'empty'}" data-tog="${f.id}" aria-label="${open ? 'اقفل' : 'افتح'} ${esc(f.name)}" aria-expanded="${open}">◀</button>
+                    <button type="button" class="fx-nav" data-go='${JSON.stringify({ f: f.id })}'><span class="fx-fi" style="--fc:${folderColor(f.color)}">${esc(f.icon || '📁')}</span><span>${esc(f.name)}</span><span class="n">${countDeep(f.id) || ''}</span></button>
+                </div>
+                ${kids.length && open ? `<div class="fx-kids">${sortFolders(kids).map(node).join('')}</div>` : ''}
+            </div>`;
+        };
         side.innerHTML = `
-            ${item('all', '📚', 'كل الكتب', '#EFE9F5')}
-            ${books.some((b) => b.pinned) ? item('pinned', '📌', 'المثبّتة', '#FAF0D2') : ''}
-            ${books.some((b) => b.last_opened_at) ? item('opened', '🕘', 'آخر ما فتحته', '#E2EDF9') : ''}
-            ${hubOk ? `<h4>فولدراتك</h4>${folders.map((f) => item(`folder:${f.id}`, esc(f.icon || '📁'), f.name, folderColor(f.color), true)).join('')}
-            ${folders.length ? item('none', '🗂️', 'بدون فولدر', '#ECEEF0') : ''}
-            <button type="button" class="lib2-folder lib2-newfolder" data-new-folder>${icon('folderPlus', { size: 16 })} فولدر جديد</button>` : ''}`;
+            <a class="fx-nav" href="mushaf.html"><span class="fx-fi" style="--fc:#DDEFE6">📖</span><span>المصحف الشريف</span></a>
+            ${nav({ f: null }, '🏠', 'مكتبتي', books.length, `data-drop-f=""`)}
+            ${books.some((b) => b.pinned) ? nav({ s: 'pinned' }, '📌', 'المثبّتة', books.filter((b) => b.pinned).length) : ''}
+            ${books.some((b) => b.last_opened_at) ? nav({ s: 'recent' }, '🕘', 'آخر ما فتحته', null) : ''}
+            ${hubOk && folders.length ? `<h4>الفولدرات</h4><div class="fx-tree">${sortFolders(kidsOf(null)).map(node).join('')}</div>` : ''}
+            ${hubOk ? `<button type="button" class="fx-nav" data-new-folder><span class="fx-fi">${icon('folderPlus', { size: 14 })}</span><span>فولدر جديد</span></button>` : ''}
+            ${storageCard()}`;
     }
-
-    $('lib-side').addEventListener('click', (e) => {
-        const ed = e.target.closest('[data-edit-folder]');
-        if (ed) { e.stopPropagation(); const f = folders.find((x) => x.id === ed.dataset.editFolder); if (f) openFolderModal(f); return; }
-        if (e.target.closest('[data-new-folder]')) { openFolderModal(null); return; }
-        const b = e.target.closest('[data-view]');
-        if (!b) return;
-        view = b.dataset.view; prefs.view = view; savePrefs();
-        renderAll();
-    });
-    // سحب الكتاب على فولدر (كمبيوتر)
-    $('lib-side').addEventListener('dragover', (e) => { const t = e.target.closest('[data-drop]'); if (t) { e.preventDefault(); t.classList.add('drop-over'); } });
-    $('lib-side').addEventListener('dragleave', (e) => { const t = e.target.closest('[data-drop]'); if (t) t.classList.remove('drop-over'); });
-    $('lib-side').addEventListener('drop', (e) => {
-        const t = e.target.closest('[data-drop]');
-        if (!t) return;
-        e.preventDefault(); t.classList.remove('drop-over');
-        const id = e.dataTransfer.getData('text/tm-book');
-        if (id) moveBooks([id], t.dataset.drop === 'none' ? null : t.dataset.drop.slice(7));
-    });
-
-    // ------------------------------------------------------------------ التصنيفات
-    function renderCats() {
-        const used = new Set(books.map(bookCat));
-        $('lib-cats').innerHTML = `<button type="button" class="lib2-chip ${!cat ? 'is-on' : ''}" data-cat="">الكل</button>`
-            + CATS.filter((c) => used.has(c.id)).map((c) => `<button type="button" class="lib2-chip ${cat === c.id ? 'is-on' : ''}" data-cat="${c.id}">${c.em} ${c.label}</button>`).join('');
-        $('lib-cats').hidden = used.size < 2;
-    }
-    $('lib-cats').addEventListener('click', (e) => { const c = e.target.closest('[data-cat]'); if (!c) return; cat = c.dataset.cat; renderAll(); });
-
-    // ------------------------------------------------------------------ الكتب
-    function visibleBooks() {
-        let list = books.slice();
-        if (view === 'pinned') list = list.filter((b) => b.pinned);
-        else if (view === 'opened') list = list.filter((b) => b.last_opened_at);
-        else if (view === 'none') list = list.filter((b) => !b.folder_id);
-        else if (view.startsWith('folder:')) list = list.filter((b) => b.folder_id === view.slice(7));
-        if (cat) list = list.filter((b) => bookCat(b) === cat);
-        if (query) {
-            const q = query.toLowerCase();
-            list = list.filter((b) => String(b.title || '').toLowerCase().includes(q) || String(b.file_name || '').toLowerCase().includes(q));
+    function storageCard() {
+        if (!driveReady()) return '';
+        if (Drive.driveConnected()) {
+            return `<div class="fx-store">☁️ <b>جوجل درايف متوصّل</b><br>${Drive.driveEmail() ? `${esc(Drive.driveEmail())}<br>` : ''}${Drive.drivePreferred() ? 'الكتب الجديدة بتترفع على الدرايف بتاعك.' : 'الكتب الجديدة على تخزين البرنامج.'}
+                <button type="button" class="btn btn-sm btn-outline" data-drive="settings">إعدادات التخزين</button></div>`;
         }
+        return `<div class="fx-store">☁️ <b>خزّن كتبك على جوجل درايف بتاعك</b><br>الملفات تفضل ملكك وعلى مساحتك، والبرنامج يشوف بس الكتب اللي انت رفعتها منه.
+            <button type="button" class="btn btn-sm btn-primary" data-drive="connect">وصّل جوجل درايف</button></div>`;
+    }
+
+    $('fx-side').addEventListener('click', (e) => {
+        const tog = e.target.closest('[data-tog]');
+        if (tog) { const id = tog.dataset.tog; if (expanded.has(id)) expanded.delete(id); else expanded.add(id); prefs.expanded = [...expanded]; savePrefs(); renderSide(); return; }
+        if (e.target.closest('[data-new-folder]')) { openFolderModal(null, curFolder()); return; }
+        const dv = e.target.closest('[data-drive]');
+        if (dv) { if (dv.dataset.drive === 'connect') connectDriveFlow(); else openDriveSettings(); return; }
+        const g = e.target.closest('[data-go]');
+        if (g) { const l = JSON.parse(g.dataset.go); if (l.f) pathOf(l.f).forEach((f) => expanded.add(f.id)); goTo(l); }
+    });
+
+    // ------------------------------------------------------------------ المسار فوق
+    function renderCrumbs() {
+        const cr = $('fx-crumbs');
+        let parts = [`<button type="button" data-go='{"f":null}' data-drop-f="">🏠 مكتبتي</button>`];
+        if (query) parts.push(`<span class="sep">‹</span><button type="button">🔍 نتايج "${esc(query)}"</button>`);
+        else if (loc.s === 'pinned') parts.push('<span class="sep">‹</span><button type="button">📌 المثبّتة</button>');
+        else if (loc.s === 'recent') parts.push('<span class="sep">‹</span><button type="button">🕘 آخر ما فتحته</button>');
+        else pathOf(curFolder()).forEach((f) => parts.push(`<span class="sep">‹</span><button type="button" data-go='${JSON.stringify({ f: f.id })}' data-drop-f="${f.id}">${esc(f.icon || '📁')} ${esc(f.name)}</button>`));
+        cr.innerHTML = parts.join('');
+        cr.scrollLeft = -cr.scrollWidth;
+        $('fx-up').disabled = !query && !loc.s && !curFolder();
+    }
+    $('fx-crumbs').addEventListener('click', (e) => { const g = e.target.closest('[data-go]'); if (g) { clearSearch(); goTo(JSON.parse(g.dataset.go)); } });
+    function goUp() {
+        if (query) { clearSearch(); renderAll(); return; }
+        if (loc.s) { goTo({ f: null }); return; }
+        const f = folderById(curFolder());
+        if (f) goTo({ f: parentOf(f) });
+    }
+    $('fx-up').addEventListener('click', goUp);
+    function clearSearch() { query = ''; $('lib-search').value = ''; }
+
+    // ------------------------------------------------------------------ المحتوى
+    function sortFolders(list) { return list.slice().sort((a, b) => String(a.name).localeCompare(String(b.name), 'ar')); }
+    function sortBooks(list) {
         const sort = $('lib-sort').value;
         const ts = (v) => (v ? Date.parse(v) || 0 : 0);
-        list.sort((a, b) => {
-            if (view === 'all' && !query && !!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
-            if (sort === 'name') return String(a.title).localeCompare(String(b.title), 'ar');
+        return list.slice().sort((a, b) => {
+            if (!!a.pinned !== !!b.pinned && !query) return a.pinned ? -1 : 1;
+            if (sort === 'recent') return ts(b.created_at) - ts(a.created_at);
             if (sort === 'opened') return ts(b.last_opened_at) - ts(a.last_opened_at) || ts(b.created_at) - ts(a.created_at);
-            return ts(b.created_at) - ts(a.created_at);
+            if (sort === 'type') return String(a.file_type).localeCompare(String(b.file_type)) || String(a.title).localeCompare(String(b.title), 'ar');
+            return String(a.title).localeCompare(String(b.title), 'ar', { numeric: true });
         });
-        return list;
+    }
+    function visible() {
+        if (query) {
+            const q = query.toLowerCase();
+            return {
+                folders: sortFolders(folders.filter((f) => String(f.name).toLowerCase().includes(q))),
+                books: sortBooks(books.filter((b) => `${b.title} ${b.file_name || ''}`.toLowerCase().includes(q)))
+            };
+        }
+        if (loc.s === 'pinned') return { folders: [], books: sortBooks(books.filter((b) => b.pinned)) };
+        if (loc.s === 'recent') return { folders: [], books: books.filter((b) => b.last_opened_at).sort((a, b) => Date.parse(b.last_opened_at) - Date.parse(a.last_opened_at)).slice(0, 30) };
+        const id = curFolder();
+        return { folders: sortFolders(kidsOf(id)), books: sortBooks(booksIn(id)) };
     }
 
-    function cardHtml(b) {
+    function folderTile(f) {
+        const [l, d] = shade(f.color);
+        const n = countDeep(f.id);
+        const sub = kidsOf(f.id).length;
+        const k = `f:${f.id}`;
+        const where = query && parentOf(f) ? pathOf(parentOf(f)).map((x) => x.name).join(' ‹ ') : '';
+        return `<div class="fx-tile fx-folder ${selected.has(k) ? 'is-sel' : ''}" data-k="${k}" data-drop-f="${f.id}" tabindex="0" role="button" draggable="${hubOk}" aria-label="فولدر ${esc(f.name)}، فيه ${n} كتاب">
+            <span class="fx-check" aria-hidden="true">✓</span>
+            <div class="fx-ico"><div class="fx-folder-ic" style="--fl:${l};--fd:${d}"><span class="em">${esc(f.icon && f.icon !== '📁' ? f.icon : '')}</span><span class="cnt">${n || ''}</span></div></div>
+            <div class="fx-txt"><div class="fx-name">${esc(f.name)}</div>
+                <div class="fx-meta">${[sub ? `${sub} فولدر` : '', n ? `${n} كتاب` : (sub ? '' : 'فاضي'), where].filter(Boolean).join(' · ')}</div></div>
+            <button type="button" class="fx-more" data-more aria-label="خيارات ${esc(f.name)}">${icon('moreV', { size: 16 })}</button>
+        </div>`;
+    }
+
+    function bookTile(b) {
         const st = effectiveStatus(b);
         const live = active.get(b.id);
         const c = catOf(bookCat(b)) || catOf('other');
@@ -180,76 +239,74 @@ export function initBooksPage() {
         const uploadBroken = st === 'stalled' && b.status === 'uploading';
         const canOpen = !!b.storage_path && st !== 'uploading' && !uploadBroken && !active.has(b.id);
         const pub = pubMap[b.id];
-        const f = folderOf(b);
+        const k = `b:${b.id}`;
         let extra = '';
         if (st === 'processing' || (st === 'uploading' && live)) extra = progressHtml(b, live);
-        else if (st === 'failed') extra = `<p class="book-error-text">${esc(b.error_message || 'حدث خطأ أثناء التحليل')}</p>`;
-        else if (uploadBroken) extra = '<p class="book-error-text">الرفع ماكملش (غالبًا النت فصل). احذف الكتاب ده وارفعه تاني.</p>';
-        else if (st === 'stalled') extra = '<p class="book-error-text">المعالجة وقفت. دوس "إعادة المعالجة" عشان تكمل.</p>';
-        const reprocess = (st === 'failed' || (st === 'stalled' && !uploadBroken))
-            ? `<button type="button" class="btn" data-action="reprocess">${icon('refresh', { size: 13 })} <span>إعادة المعالجة</span></button>` : '';
-        const openBtn = canOpen ? `<button type="button" class="btn btn-primary" data-action="open">${icon('bookOpen', { size: 14 })} <span>افتح</span></button>` : '';
+        else if (st === 'failed') extra = `<div class="fx-st bad">${esc(b.error_message || 'تعذّر التحليل')}</div><button type="button" class="btn btn-sm" data-action="reprocess">${icon('refresh', { size: 13 })} إعادة المعالجة</button>`;
+        else if (uploadBroken) extra = '<div class="fx-st bad">الرفع ماكملش. امسحه وارفعه تاني.</div>';
+        else if (st === 'stalled') extra = '<div class="fx-st bad">المعالجة وقفت</div><button type="button" class="btn btn-sm" data-action="reprocess">كمّل المعالجة</button>';
+        else if (st !== 'ready') extra = `<div class="fx-st">${STATUS_LABELS[st] || esc(st)}</div>`;
         const meta = [typeLabel(b)];
         if (st === 'ready' && b.page_count) meta.push(`${b.page_count} ${unit}`);
         if (b.is_scanned) meta.push('مصوّر');
-        if (b.student_ids && b.student_ids.length) meta.push(`لـ ${b.student_ids.length} طالب`);
-        return `
-            <article class="bk ${canOpen ? 'is-openable' : ''}" data-book-id="${b.id}" ${canOpen ? `tabindex="0" role="button" aria-label="افتح ${esc(b.title)}"` : ''} draggable="${hubOk ? 'true' : 'false'}" style="--cv:${c.cv}">
-                <div class="bk-cover">
-                    <span class="em" aria-hidden="true">${c.em}</span>
-                    <span class="ttl" aria-hidden="true">${esc(b.title)}</span>
-                    <div class="bk-flags">
-                        ${b.pinned ? '<span class="bk-flag">📌</span>' : ''}
-                        ${pub && pub.status === 'approved' ? '<span class="bk-flag pub">🌍 منشور</span>' : ''}
-                        ${pub && pub.status === 'pending' ? '<span class="bk-flag pend">⏳ بيتراجع</span>' : ''}
-                        ${b.public_book_id ? '<span class="bk-flag">🌍</span>' : ''}
-                    </div>
-                    ${selecting ? `<input type="checkbox" class="bk-sel" data-sel="${b.id}" ${selected.has(b.id) ? 'checked' : ''} aria-label="اختار ${esc(b.title)}">` : ''}
-                </div>
-                <div class="bk-body">
-                    <p class="bk-title" title="${esc(b.title)}">${esc(b.title)}</p>
-                    <p class="bk-meta">${meta.map(esc).join('<span class="dot">·</span>')}</p>
-                    ${st !== 'ready' ? `<span class="bk-status s-${st}">${STATUS_LABELS[st] || esc(st)}</span>` : ''}
-                    ${f && view === 'all' ? `<span class="bk-folder">${esc(f.icon || '📁')} ${esc(f.name)}</span>` : ''}
-                    ${pub && pub.status === 'rejected' ? `<p class="book-error-text" style="font-size:.74rem">ماتنشرش${pub.note ? `: ${esc(pub.note)}` : ''}</p>` : ''}
-                    ${extra}
-                    <div class="bk-actions">${reprocess}${openBtn}
-                        <button type="button" class="btn btn-ghost bk-more" data-action="menu" aria-label="خيارات الكتاب" title="خيارات">${icon('moreV', { size: 16 })}</button>
-                    </div>
-                </div>
-            </article>`;
+        if (query || loc.s) { const p = pathOf(b.folder_id).map((x) => x.name).join(' ‹ '); if (p) meta.push(`📁 ${p}`); }
+        const badges = [
+            b.pinned ? '<span class="fx-badge">📌</span>' : '',
+            Drive.isGdrivePath(b.storage_path) ? '<span class="fx-badge drive" title="على جوجل درايف بتاعك">☁️</span>' : '',
+            pub && pub.status === 'approved' ? '<span class="fx-badge pub">🌍 منشور</span>' : '',
+            pub && pub.status === 'pending' ? '<span class="fx-badge pend">⏳ بيتراجع</span>' : '',
+            b.public_book_id ? '<span class="fx-badge">🌍</span>' : '',
+            b.student_ids && b.student_ids.length ? `<span class="fx-badge" title="لطلاب محددين">👤${b.student_ids.length}</span>` : ''
+        ].join('');
+        return `<div class="fx-tile fx-book ${selected.has(k) ? 'is-sel' : ''} ${canOpen ? 'is-openable' : ''}" data-k="${k}" data-book-id="${b.id}" tabindex="0" role="button" draggable="${hubOk}" aria-label="${esc(b.title)}">
+            <span class="fx-check" aria-hidden="true">✓</span>
+            <div class="fx-badges">${badges}</div>
+            <div class="fx-ico"><div class="fx-book-ic" style="--cv:${c.cv}">${c.em}<span class="ty">${esc(typeLabel(b))}</span></div></div>
+            <div class="fx-txt"><div class="fx-name" title="${esc(b.title)}">${esc(b.title)}</div>
+                <div class="fx-meta">${meta.map(esc).join(' · ')}</div>
+                ${pub && pub.status === 'rejected' ? `<div class="fx-st bad">ماتنشرش${pub.note ? `: ${esc(pub.note)}` : ''}</div>` : ''}
+                ${extra}</div>
+            <button type="button" class="fx-more" data-more aria-label="خيارات ${esc(b.title)}">${icon('moreV', { size: 16 })}</button>
+        </div>`;
     }
 
-    function titleOf() {
-        if (view === 'pinned') return '📌 المثبّتة';
-        if (view === 'opened') return '🕘 آخر ما فتحته';
-        if (view === 'none') return '🗂️ بدون فولدر';
-        if (view.startsWith('folder:')) { const f = folders.find((x) => x.id === view.slice(7)); return f ? `${f.icon || '📁'} ${f.name}` : 'كل الكتب'; }
-        return 'كل الكتب';
+    function mushafTile() {
+        return `<a class="fx-tile mushaf" href="mushaf.html" aria-label="المصحف الشريف">
+            <div class="fx-ico"><div class="fx-book-ic"><span>المصحف<br>الشريف</span></div></div>
+            <div class="fx-txt"><div class="fx-name">المصحف الشريف</div><div class="fx-meta">مصحف المدينة · حفص · ٦٠٤ صفحة</div></div></a>`;
     }
 
     function renderBooks() {
         const section = $('books-section');
-        $('lib-title').textContent = titleOf() + (cat ? ` · ${catOf(cat).label}` : '');
         $('n-mine').textContent = books.length ? String(books.length) : '';
-        if (books.length === 0) {
-            section.innerHTML = `<div class="lib2-empty"><span class="em">📚</span>
-                <b>مكتبتك لسه فاضية</b><br>ارفع المصحف، نور البيان، تحفة الأطفال، أو أي مذكرة — وافتحها في الحصة واشرح عليها.
+        $('fx').classList.toggle('selecting', selecting);
+        $('fx-main').classList.toggle('fx-list', layout === 'list');
+        $('fx-view').innerHTML = icon(layout === 'list' ? 'grid' : 'list', { size: 18 });
+        $('fx-view').title = layout === 'list' ? 'عرض شبكة' : 'عرض قائمة';
+        $('btn-select').classList.toggle('is-on', selecting);
+        if (!loaded) return;
+        const v = visible();
+        const atRoot = !query && !loc.s && !curFolder();
+        if (!books.length && !folders.length) {
+            section.innerHTML = `${atRoot ? `<div class="fx-grid">${mushafTile()}</div>` : ''}<div class="fx-empty"><span class="em">📚</span>
+                <b>مكتبتك لسه فاضية</b><br>ارفع نور البيان، تحفة الأطفال، أو أي مذكرة — أو اسحب الملف من الكمبيوتر وافلته هنا.
                 <br><button type="button" class="btn btn-primary" data-empty-add>${icon('plus', { size: 15 })} ارفع أول كتاب</button>
-                ${hubOk ? '<button type="button" class="btn btn-outline" data-empty-public>🌍 أو خد كتاب من المكتبة العامة</button>' : ''}</div>`;
+                ${hubOk ? `<button type="button" class="btn btn-outline" data-empty-folder>${icon('folderPlus', { size: 15 })} اعمل فولدر</button><button type="button" class="btn btn-outline" data-empty-public>🌍 خد كتاب من المكتبة العامة</button>` : ''}</div>`;
+            $('fx-status').textContent = '';
             return;
         }
-        const list = visibleBooks();
-        if (!list.length) {
-            const inFolder = view.startsWith('folder:');
-            section.innerHTML = `<div class="lib2-empty"><span class="em">${query ? '🔍' : '🗂️'}</span>
-                ${query ? `مفيش كتاب اسمه "${esc(query)}"` : inFolder ? 'الفولدر ده لسه فاضي.<br>من <b>⋮</b> على أي كتاب اختار "نقل لفولدر"، أو اسحب الكتاب على الفولدر.' : 'مفيش كتب هنا.'}</div>`;
-            return;
+        let html = '';
+        if (v.folders.length) html += `<div class="fx-sec">الفولدرات</div><div class="fx-grid">${v.folders.map(folderTile).join('')}</div>`;
+        if (v.books.length || atRoot) html += `${v.folders.length || atRoot ? `<div class="fx-sec">${atRoot ? 'الكتب والملفات' : 'الملفات'}</div>` : ''}<div class="fx-grid">${atRoot ? mushafTile() : ''}${v.books.map(bookTile).join('')}</div>`;
+        if (!v.folders.length && !v.books.length) {
+            html = `<div class="fx-empty"><span class="em">${query ? '🔍' : '📂'}</span>${query ? `مفيش حاجة اسمها "${esc(query)}"` : loc.s ? 'مفيش هنا حاجة لسه.' : `الفولدر ده فاضي.<br>اسحب كتب عليه، أو <button type="button" class="btn btn-sm btn-primary" data-empty-add>ارفع كتاب هنا</button>${nesting() ? ' <button type="button" class="btn btn-sm btn-outline" data-empty-folder>فولدر جوّاه</button>' : ''}`}</div>`;
         }
-        section.innerHTML = `<div class="lib2-grid">${list.map(cardHtml).join('')}</div>`;
+        section.innerHTML = html;
+        const nf = v.folders.length, nb = v.books.length;
+        $('fx-status').textContent = [nf ? `${nf} فولدر` : '', nb ? `${nb} كتاب` : ''].filter(Boolean).join(' · ') + (hubOk && !('ontouchstart' in window) ? '  —  كليك يمين على أي حاجة للخيارات، واسحب الكتب على الفولدرات' : '');
     }
 
-    function renderAll() { renderSide(); renderCats(); renderBooks(); renderSelbar(); }
+    function renderAll() { renderSide(); renderCrumbs(); renderBooks(); renderSelbar(); }
 
     /** تحديث شريط التقدّم فقط (من غير إعادة رسم القائمة) */
     function updateProgressUI(bookId) {
@@ -262,136 +319,434 @@ export function initBooksPage() {
         wrap.querySelector('.book-progress-text').textContent = `${live.message} (${live.percent}%)`;
     }
 
-    // ------------------------------------------------------------------ البحث / الترتيب / التحديد
+    // ------------------------------------------------------------------ البحث / الترتيب / العرض / التحديد
     let searchT = null;
     $('lib-search').addEventListener('input', (e) => {
         clearTimeout(searchT);
-        searchT = setTimeout(() => { query = e.target.value.trim(); renderBooks(); if (!$('tab-public').hidden) renderPublic(); }, 150);
+        searchT = setTimeout(() => { query = e.target.value.trim(); renderCrumbs(); renderBooks(); if (!$('tab-public').hidden) renderPublic(); }, 150);
     });
     $('lib-sort').addEventListener('change', () => { prefs.sort = $('lib-sort').value; savePrefs(); renderBooks(); });
-    $('btn-select').addEventListener('click', () => { selecting = !selecting; selected.clear(); $('btn-select').textContent = selecting ? 'خلصت' : 'تحديد'; renderBooks(); renderSelbar(); });
+    $('fx-view').addEventListener('click', () => { layout = layout === 'list' ? 'grid' : 'list'; prefs.layout = layout; savePrefs(); renderBooks(); });
+    const setSelecting = (on) => { selecting = on; if (!on) selected.clear(); renderBooks(); renderSelbar(); };
+    $('btn-select').addEventListener('click', () => setSelecting(!selecting));
     function renderSelbar() {
-        $('lib-selbar').hidden = !selecting;
-        $('btn-select').hidden = !hubOk || !books.length;
-        $('sel-count').textContent = `${selected.size} مختار`;
+        $('lib-selbar').hidden = !selecting && !selected.size;
+        $('btn-select').hidden = !hubOk || (!books.length && !folders.length);
+        $('sel-count').textContent = selected.size ? `${selected.size} مختار` : 'اختار الحاجات';
         $('sel-move').disabled = !selected.size;
+        $('sel-del').disabled = !selected.size;
     }
-    $('sel-cancel').addEventListener('click', () => { selecting = false; selected.clear(); $('btn-select').textContent = 'تحديد'; renderBooks(); renderSelbar(); });
+    $('sel-cancel').addEventListener('click', () => setSelecting(false));
+    $('sel-all').addEventListener('click', () => { const v = visible(); v.folders.forEach((f) => selected.add(`f:${f.id}`)); v.books.forEach((b) => selected.add(`b:${b.id}`)); selecting = true; renderBooks(); renderSelbar(); });
     $('sel-move').addEventListener('click', () => { if (selected.size) openMovePicker([...selected]); });
+    $('sel-del').addEventListener('click', () => { if (selected.size) deleteItems([...selected]); });
 
-    // ------------------------------------------------------------------ أحداث الكتب
-    $('books-section').addEventListener('change', (e) => {
-        const s = e.target.closest('[data-sel]');
-        if (!s) return;
-        if (s.checked) selected.add(s.dataset.sel); else selected.delete(s.dataset.sel);
-        renderSelbar();
+    // ------------------------------------------------------------------ زرار "جديد"
+    $('btn-new').addEventListener('click', (e) => {
+        const items = [['upload', 'upload', 'ارفع كتاب أو ملف']];
+        if (hubOk) items.push(['folder', 'folderPlus', curFolder() && nesting() ? 'فولدر جديد هنا' : 'فولدر جديد']);
+        items.push(['-'], ['public', 'globe', 'خد كتاب من المكتبة العامة'], ['mushaf', 'bookOpen', 'افتح المصحف الشريف']);
+        showMenu(items, e.currentTarget, (m) => {
+            if (m === 'upload') openUpload();
+            else if (m === 'folder') openFolderModal(null, curFolder());
+            else if (m === 'public') switchTab('public');
+            else if (m === 'mushaf') location.href = 'mushaf.html';
+        });
     });
+    $('btn-add-source').addEventListener('click', () => openUpload());
+    $('btn-new-folder').addEventListener('click', () => openFolderModal(null, curFolder()));
+
+    // ------------------------------------------------------------------ أحداث العناصر (ضغط / كليك يمين / ضغطة طويلة / كيبورد)
+    const itemOf = (k) => (k.startsWith('f:') ? { kind: 'f', f: folderById(k.slice(2)) } : { kind: 'b', b: books.find((x) => x.id === k.slice(2)) });
+    let lastClicked = null;
+    function toggleSel(k, range) {
+        if (range && lastClicked) {
+            const keys = [...$('books-section').querySelectorAll('[data-k]')].map((x) => x.dataset.k);
+            const a = keys.indexOf(lastClicked), b = keys.indexOf(k);
+            if (a >= 0 && b >= 0) keys.slice(Math.min(a, b), Math.max(a, b) + 1).forEach((x) => selected.add(x));
+        } else if (selected.has(k)) selected.delete(k); else selected.add(k);
+        lastClicked = k;
+        if (!selected.size && selecting) { /* يفضل وضع التحديد مفتوح */ }
+        renderBooks(); renderSelbar();
+    }
+    function openItem(k, tile) {
+        const it = itemOf(k);
+        if (it.kind === 'f' && it.f) { expanded.add(it.f.id); pathOf(it.f.id).forEach((p) => expanded.add(p.id)); clearSearch(); goTo({ f: it.f.id }); return; }
+        if (it.b && tile && tile.classList.contains('is-openable')) openBook(it.b, { opener: tile });
+    }
+    let longPressFired = false;
     $('books-section').addEventListener('click', (e) => {
-        if (e.target.closest('[data-empty-add]')) { $('btn-add-source').click(); return; }
+        if (e.target.closest('[data-empty-add]')) { openUpload(); return; }
+        if (e.target.closest('[data-empty-folder]')) { openFolderModal(null, curFolder()); return; }
         if (e.target.closest('[data-empty-public]')) { switchTab('public'); return; }
-        if (e.target.closest('[data-sel]')) return;
-        const btn = e.target.closest('button[data-action]');
-        const card = e.target.closest('.bk');
-        if (!card) return;
-        const book = books.find((b) => b.id === card.dataset.bookId);
-        if (!book) return;
-        if (selecting) { if (selected.has(book.id)) selected.delete(book.id); else selected.add(book.id); renderBooks(); renderSelbar(); return; }
-        if (btn) { e.stopPropagation(); handleCardAction(btn.dataset.action, book, btn); return; }
-        if (card.classList.contains('is-openable')) openBook(book, { opener: card });
+        const tile = e.target.closest('[data-k]');
+        if (!tile) { if (!selecting && selected.size && !e.target.closest('.fx-tile')) { selected.clear(); renderBooks(); renderSelbar(); } return; }
+        if (longPressFired) { longPressFired = false; e.preventDefault(); return; }
+        const k = tile.dataset.k;
+        const act = e.target.closest('[data-action]');
+        if (act) { e.stopPropagation(); const it = itemOf(k); if (it.b) handleCardAction(act.dataset.action, it.b, act); return; }
+        if (e.target.closest('[data-more]')) { e.stopPropagation(); openContext(k, e.target.closest('[data-more]')); return; }
+        if (selecting || e.ctrlKey || e.metaKey || e.shiftKey) { toggleSel(k, e.shiftKey); return; }
+        openItem(k, tile);
     });
+    $('books-section').addEventListener('contextmenu', (e) => {
+        const tile = e.target.closest('[data-k]');
+        if (!tile || !hubOk) return;
+        e.preventDefault();
+        openContext(tile.dataset.k, { x: e.clientX, y: e.clientY });
+    });
+    // ضغطة طويلة على الموبايل = قايمة الخيارات
+    let lpTimer = null, lpStart = null;
+    $('books-section').addEventListener('touchstart', (e) => {
+        const tile = e.target.closest('[data-k]');
+        if (!tile || e.target.closest('[data-more],[data-action]')) return;
+        const t = e.touches[0]; lpStart = { x: t.clientX, y: t.clientY };
+        lpTimer = setTimeout(() => { longPressFired = true; try { navigator.vibrate && navigator.vibrate(15); } catch (er) { /* تجاهل */ } openContext(tile.dataset.k, { x: lpStart.x, y: lpStart.y }); }, 520);
+    }, { passive: true });
+    const lpCancel = (e) => { if (!lpTimer) return; if (e.type === 'touchmove') { const t = e.touches[0]; if (Math.hypot(t.clientX - lpStart.x, t.clientY - lpStart.y) < 10) return; } clearTimeout(lpTimer); lpTimer = null; };
+    ['touchend', 'touchmove', 'touchcancel'].forEach((ev) => $('books-section').addEventListener(ev, lpCancel, { passive: true }));
+
     $('books-section').addEventListener('keydown', (e) => {
-        if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('bk')) {
-            e.preventDefault();
-            const book = books.find((b) => b.id === e.target.dataset.bookId);
-            if (book) openBook(book, { opener: e.target });
+        const tile = e.target.closest && e.target.closest('[data-k]');
+        if (!tile || e.target !== tile) return;
+        const k = tile.dataset.k;
+        if (e.key === 'Enter') { e.preventDefault(); openItem(k, tile); }
+        else if (e.key === ' ') { e.preventDefault(); toggleSel(k); }
+        else if (e.key === 'F2') { e.preventDefault(); renameItem(k); }
+        else if (e.key === 'Delete') { e.preventDefault(); deleteItems(selected.size ? [...selected] : [k]); }
+        else if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) { e.preventDefault(); openContext(k, tile.querySelector('[data-more]') || tile); }
+        else if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+            const all = [...$('books-section').querySelectorAll('[data-k]')];
+            const i = all.indexOf(tile);
+            const cols = layout === 'list' ? 1 : Math.max(1, Math.round(tile.parentElement.clientWidth / tile.offsetWidth));
+            const d = { ArrowLeft: 1, ArrowRight: -1, ArrowDown: cols, ArrowUp: -cols }[e.key];
+            const n = all[i + d]; if (n) { e.preventDefault(); n.focus(); }
         }
     });
-    $('books-section').addEventListener('dragstart', (e) => {
-        const card = e.target.closest('.bk');
-        if (!card || !hubOk) return;
-        e.dataTransfer.setData('text/tm-book', card.dataset.bookId);
-        e.dataTransfer.effectAllowed = 'move';
+    document.addEventListener('keydown', (e) => {
+        if ($('tab-mine').hidden || e.target.closest('input,textarea,select,[contenteditable],.modal.active,.bv-root')) return;
+        if (document.querySelector('.modal.active')) return;
+        if (e.key === 'Backspace' || (e.altKey && e.key === 'ArrowUp')) { e.preventDefault(); goUp(); }
+        else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') { e.preventDefault(); $('sel-all').click(); }
+        else if (e.key === 'Escape' && (selecting || selected.size)) setSelecting(false);
+        else if (e.key === 'Delete' && selected.size) deleteItems([...selected]);
     });
 
-    async function handleCardAction(action, book, btn) {
-        if (action === 'menu') { openMenu(book, btn); return; }
-        if (action === 'delete') {
-            if (active.has(book.id)) { ErrorHandler.showError('الكتاب بيتعالج حاليًا. اضغط "إلغاء" الأول.'); return; }
-            const shared = isShared(book);
-            if (!confirm(`تمسح "${book.title}" من مكتبتك؟${shared ? '\n(الكتاب منشور للمدرسين: هيفضل في المكتبة العامة)' : ''}`)) return;
-            try {
-                const res = await api.deleteBook(book.id);
-                // v33: ملف منشور للعامة أو متضاف من المكتبة العامة: مانمسحوش من التخزين (بتاع مدرسين تانيين كمان)
-                if (res && res.storage_path && !shared) await api.deleteBookFile(res.storage_path);
-                ErrorHandler.showSuccess('اتمسح ✓');
-                await loadBooks();
-            } catch (error) {
-                ErrorHandler.showError(ErrorHandler.getErrorMessage(error));
-            }
-        } else if (action === 'manage') {
-            openAccessModal(book);
-        } else if (action === 'open') {
-            openBook(book);
-        } else if (action === 'ask') {
-            openBook(book, { chat: true });
-        } else if (action === 'reprocess') {
-            startProcessing(book, null);
-        } else if (action === 'cancel') {
-            const live = active.get(book.id);
-            if (live) live.ctl.abort();
+    // ------------------------------------------------------------------ السحب والإفلات (جوه البرنامج + ملفات من الكمبيوتر)
+    let dragKeys = null;
+    document.addEventListener('dragstart', (e) => {
+        const tile = e.target.closest && e.target.closest('#books-section [data-k]');
+        if (!tile || !hubOk) return;
+        const k = tile.dataset.k;
+        dragKeys = selected.has(k) ? [...selected] : [k];
+        e.dataTransfer.setData('text/tm-items', JSON.stringify(dragKeys));
+        e.dataTransfer.effectAllowed = 'move';
+        tile.classList.add('dragging');
+    });
+    document.addEventListener('dragend', () => { dragKeys = null; document.querySelectorAll('.dragging,.drop-over').forEach((x) => x.classList.remove('dragging', 'drop-over')); $('fx-main').classList.remove('dropping'); });
+    const isFileDrag = (e) => !dragKeys && e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
+    const dropTarget = (e) => e.target.closest && e.target.closest('[data-drop-f]');
+    $('tab-mine').addEventListener('dragover', (e) => {
+        if (isFileDrag(e)) {
+            e.preventDefault();
+            const f = folderById(curFolder());
+            $('fx-drop-t').textContent = `افلت الملف هنا عشان يترفع في ${f ? `"${f.name}"` : 'مكتبتك'}`;
+            $('fx-main').classList.add('dropping');
+            return;
         }
+        const t = dropTarget(e);
+        document.querySelectorAll('.drop-over').forEach((x) => { if (x !== t) x.classList.remove('drop-over'); });
+        if (t && dragKeys && canDropInto(dragKeys, t.dataset.dropF || null)) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; t.classList.add('drop-over'); }
+    });
+    $('tab-mine').addEventListener('dragleave', (e) => {
+        if (e.target === $('fx-main') || !$('fx-main').contains(e.relatedTarget)) $('fx-main').classList.remove('dropping');
+        const t = dropTarget(e); if (t && !t.contains(e.relatedTarget)) t.classList.remove('drop-over');
+    });
+    $('tab-mine').addEventListener('drop', (e) => {
+        $('fx-main').classList.remove('dropping');
+        if (isFileDrag(e)) {
+            e.preventDefault();
+            const files = [...(e.dataTransfer.files || [])];
+            if (files.length) openUpload(files[0], files.length > 1 ? files.length : 0);
+            return;
+        }
+        const t = dropTarget(e);
+        if (!t || !dragKeys) return;
+        e.preventDefault(); t.classList.remove('drop-over');
+        moveItems(dragKeys, t.dataset.dropF || null);
+    });
+    function canDropInto(keys, folderId) {
+        return keys.every((k) => {
+            if (k.startsWith('b:')) { const b = books.find((x) => x.id === k.slice(2)); return b && (b.folder_id || null) !== folderId; }
+            const id = k.slice(2);
+            if (!nesting()) return false;
+            if (id === folderId) return false;
+            if (folderId && descendants(id).includes(folderId)) return false;
+            return (parentOf(folderById(id)) || null) !== folderId;
+        });
     }
 
-    // ------------------------------------------------------------------ قايمة ⋮
+    // ------------------------------------------------------------------ قايمة الخيارات (كليك يمين / ⋮)
     let menuEl = null;
     function closeMenu() { if (menuEl) { menuEl.remove(); menuEl = null; document.removeEventListener('pointerdown', onDocDown, true); } }
     function onDocDown(e) { if (menuEl && !menuEl.contains(e.target)) closeMenu(); }
-    function openMenu(book, anchor) {
+    function showMenu(items, anchor, onPick) {
         closeMenu();
+        menuEl = document.createElement('div');
+        menuEl.className = 'lib2-menu';
+        menuEl.setAttribute('role', 'menu');
+        menuEl.innerHTML = items.map((it) => it[0] === '-' ? '<hr>' : `<button type="button" role="menuitem" data-m="${it[0]}" class="${it[3] || ''}">${icon(it[1], { size: 16 })} ${esc(it[2])}</button>`).join('');
+        document.body.appendChild(menuEl);
+        const mw = menuEl.offsetWidth, mh = menuEl.offsetHeight;
+        let x, y;
+        if (anchor && anchor.getBoundingClientRect) { const r = anchor.getBoundingClientRect(); x = r.left; y = r.bottom + 6; } else { x = anchor.x - mw; y = anchor.y; }
+        menuEl.style.top = `${Math.max(8, Math.min(window.innerHeight - mh - 8, y))}px`;
+        menuEl.style.left = `${Math.max(8, Math.min(window.innerWidth - mw - 8, x))}px`;
+        menuEl.querySelector('button').focus({ preventScroll: true });
+        setTimeout(() => document.addEventListener('pointerdown', onDocDown, true), 0);
+        menuEl.addEventListener('keydown', (e) => {
+            const bs = [...menuEl.querySelectorAll('button')]; const i = bs.indexOf(document.activeElement);
+            if (e.key === 'Escape') { closeMenu(); if (anchor && anchor.focus) anchor.focus(); }
+            else if (e.key === 'ArrowDown') { e.preventDefault(); (bs[i + 1] || bs[0]).focus(); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); (bs[i - 1] || bs[bs.length - 1]).focus(); }
+        });
+        menuEl.addEventListener('click', (e) => { const b = e.target.closest('[data-m]'); if (!b) return; closeMenu(); onPick(b.dataset.m); });
+    }
+    function openContext(k, anchor) {
+        if (selected.size > 1 && selected.has(k)) {
+            showMenu([['move', 'folder', `نقل ${selected.size} حاجات`], ['-'], ['delete', 'trash', `حذف ${selected.size} حاجات`, 'danger']], anchor, (m) => { if (m === 'move') openMovePicker([...selected]); else deleteItems([...selected]); });
+            return;
+        }
+        const it = itemOf(k);
+        if (it.kind === 'f' && it.f) {
+            const f = it.f;
+            const items = [['open', 'folder', 'افتح'], ['rename', 'edit', 'تغيير الاسم'], ['style', 'grid', 'اللون والأيقونة']];
+            if (nesting()) items.push(['newin', 'folderPlus', 'فولدر جوّاه'], ['move', 'folder', 'نقل لفولدر تاني']);
+            items.push(['upload', 'upload', 'ارفع كتاب جوّاه'], ['-'], ['delete', 'trash', 'حذف الفولدر', 'danger']);
+            showMenu(items, anchor, (m) => {
+                if (m === 'open') openItem(k);
+                else if (m === 'rename') renameItem(k);
+                else if (m === 'style') openFolderModal(f);
+                else if (m === 'newin') openFolderModal(null, f.id);
+                else if (m === 'move') openMovePicker([k]);
+                else if (m === 'upload') openUpload(null, 0, f.id);
+                else if (m === 'delete') deleteItems([k]);
+            });
+            return;
+        }
+        if (it.b) openMenu(it.b, anchor);
+    }
+    function openMenu(book, anchor) {
         const st = effectiveStatus(book);
         const pub = pubMap[book.id];
         const items = [];
+        if (book.storage_path && st !== 'uploading' && !active.has(book.id)) items.push(['open', 'bookOpen', 'افتح']);
         if (st === 'ready') items.push(['ask', 'messageSquare', 'اسأل الكتاب']);
         if (hubOk) {
             items.push(['move', 'folder', 'نقل لفولدر']);
+            items.push(['rename', 'edit', 'تغيير الاسم']);
             items.push(['category', 'grid', 'التصنيف']);
             items.push(['pin', 'pin', book.pinned ? 'إلغاء التثبيت' : 'تثبيت فوق']);
-            items.push(['rename', 'edit', 'تغيير الاسم']);
         }
         items.push(['manage', 'users', 'مين من الطلاب يستخدمه']);
         if (book.storage_path && st !== 'uploading') items.push(['download', 'download', 'تحميل الملف']);
+        if (driveReady() && Drive.driveConnected() && book.storage_path && !Drive.isGdrivePath(book.storage_path) && !book.public_book_id && st !== 'uploading') items.push(['todrive', 'upload', 'انقله لجوجل درايف بتاعي']);
         if (hubOk && !book.public_book_id) {
             items.push(['-']);
             if (pub && (pub.status === 'pending' || pub.status === 'approved')) items.push(['unpublish', 'globe', pub.status === 'pending' ? 'إلغاء طلب النشر' : 'شيله من المكتبة العامة']);
             else if (st === 'ready') items.push(['publish', 'globe', pub && pub.status === 'rejected' ? 'اطلب النشر تاني' : 'انشره للمدرسين (المكتبة العامة)']);
         }
         items.push(['-'], ['delete', 'trash', 'حذف', 'danger']);
-        menuEl = document.createElement('div');
-        menuEl.className = 'lib2-menu';
-        menuEl.setAttribute('role', 'menu');
-        menuEl.innerHTML = items.map((it) => it[0] === '-' ? '<hr>' : `<button type="button" role="menuitem" data-m="${it[0]}" class="${it[3] || ''}">${icon(it[1], { size: 16 })} ${esc(it[2])}</button>`).join('');
-        document.body.appendChild(menuEl);
-        const r = anchor.getBoundingClientRect();
-        const mw = menuEl.offsetWidth, mh = menuEl.offsetHeight;
-        menuEl.style.top = `${Math.max(8, Math.min(window.innerHeight - mh - 8, r.bottom + 6))}px`;
-        menuEl.style.left = `${Math.max(8, Math.min(window.innerWidth - mw - 8, r.left))}px`;
-        menuEl.querySelector('button').focus({ preventScroll: true });
-        setTimeout(() => document.addEventListener('pointerdown', onDocDown, true), 0);
-        menuEl.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeMenu(); anchor.focus(); } });
-        menuEl.addEventListener('click', async (e) => {
-            const b = e.target.closest('[data-m]');
-            if (!b) return;
-            const m = b.dataset.m;
-            closeMenu();
-            if (m === 'move') openMovePicker([book.id]);
+        showMenu(items, anchor, (m) => {
+            if (m === 'move') openMovePicker([`b:${book.id}`]);
             else if (m === 'category') openCategoryPicker(book);
             else if (m === 'pin') setMeta(book, { pinned: !book.pinned });
-            else if (m === 'rename') { const t = prompt('الاسم الجديد للكتاب', book.title); if (t && t.trim() && t.trim() !== book.title) setMeta(book, { title: t.trim() }); }
+            else if (m === 'rename') renameItem(`b:${book.id}`);
             else if (m === 'download') downloadBook(book);
             else if (m === 'publish') openPublishModal(book);
             else if (m === 'unpublish') unpublish(book);
+            else if (m === 'todrive') moveBookToDrive(book);
+            else if (m === 'delete') deleteItems([`b:${book.id}`]);
             else handleCardAction(m, book);
         });
+    }
+
+    async function handleCardAction(action, book) {
+        if (action === 'menu') { openMenu(book, document.activeElement); return; }
+        if (action === 'manage') openAccessModal(book);
+        else if (action === 'open') openBook(book);
+        else if (action === 'ask') openBook(book, { chat: true });
+        else if (action === 'reprocess') startProcessing(book, null);
+        else if (action === 'cancel') { const live = active.get(book.id); if (live) live.ctl.abort(); }
+    }
+
+    function renameItem(k) {
+        const it = itemOf(k);
+        if (it.kind === 'f' && it.f) {
+            const t = prompt('الاسم الجديد للفولدر', it.f.name);
+            if (t && t.trim() && t.trim() !== it.f.name) saveFolder(it.f, { name: t.trim().slice(0, 60) });
+        } else if (it.b) {
+            const t = prompt('الاسم الجديد للكتاب', it.b.title);
+            if (t && t.trim() && t.trim() !== it.b.title) setMeta(it.b, { title: t.trim() });
+        }
+    }
+
+    async function deleteItems(keys) {
+        const fs = keys.filter((k) => k.startsWith('f:')).map((k) => folderById(k.slice(2))).filter(Boolean);
+        const bs = keys.filter((k) => k.startsWith('b:')).map((k) => books.find((b) => b.id === k.slice(2))).filter(Boolean);
+        if (bs.some((b) => active.has(b.id))) { ErrorHandler.showError('في كتاب بيتعالج حاليًا. اضغط "إلغاء" الأول.'); return; }
+        const parts = [];
+        if (fs.length) parts.push(fs.length === 1 ? `فولدر "${fs[0].name}"` : `${fs.length} فولدرات`);
+        if (bs.length) parts.push(bs.length === 1 ? `"${bs[0].title}"` : `${bs.length} كتب`);
+        const note = fs.length ? '\n(الكتب اللي جوه الفولدرات مش هتتمسح: هترجع للفولدر اللي فوق)' : '';
+        const sharedNote = bs.some(isShared) ? '\n(الكتب المنشورة هتفضل في المكتبة العامة)' : '';
+        if (!confirm(`تمسح ${parts.join(' و')}؟${note}${sharedNote}`)) return;
+        let ok = 0;
+        for (const b of bs) {
+            try {
+                const shared = isShared(b);
+                const res = await api.deleteBook(b.id);
+                if (res && res.storage_path && !shared) await api.deleteBookFile(res.storage_path);
+                else if (Drive.isGdrivePath(b.storage_path)) await api.deleteBookFile(b.storage_path);
+                ok++;
+            } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
+        }
+        for (const f of fs) {
+            try {
+                const parent = parentOf(f);
+                // الكتب والفولدرات اللي جوّاه بتطلع للي فوق قبل الحذف (عشان مايتوهوش)
+                const inside = booksIn(f.id).map((b) => b.id);
+                if (inside.length) await api.hub('book_move', { book_ids: inside, folder_id: parent });
+                if (nesting()) for (const kid of kidsOf(f.id)) await api.hub('folder_save', { id: kid.id, name: kid.name, icon: kid.icon, color: kid.color, parent_id: parent });
+                await api.hub('folder_delete', { id: f.id });
+                ok++;
+                if (curFolder() === f.id) loc = { f: parent };
+            } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
+        }
+        selected.clear(); selecting = false;
+        if (ok) ErrorHandler.showSuccess('اتمسح ✓');
+        await loadBooks();
+    }
+
+    // ------------------------------------------------------------------ الفولدرات (عمل / تعديل / نقل)
+    async function saveFolder(folder, data) {
+        try {
+            const r = await api.hub('folder_save', { id: folder.id, name: folder.name, icon: folder.icon, color: folder.color, ...(nesting() ? { parent_id: parentOf(folder) } : {}), ...data });
+            Object.assign(folder, (r && r.folder) || data);
+            renderAll();
+        } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
+    }
+
+    function openFolderModal(folder, parentId = null) {
+        if (!folder && parentId && !nesting()) parentId = null;
+        const subj = String((JSON.parse(localStorage.getItem('user_profile') || '{}') || {}).subject || '').toLowerCase();
+        const sugg = !folder && !folders.length ? (FOLDER_SUGGESTIONS[/arab|عرب/.test(subj) ? 'arabic' : 'quran'] || []) : [];
+        let color = folder ? folder.color : 'violet';
+        let ic = folder ? folder.icon : '📁';
+        const parentName = parentId ? (folderById(parentId) || {}).name : '';
+        sheet(folder ? 'تعديل الفولدر' : parentName ? `فولدر جديد جوه "${parentName}"` : 'فولدر جديد', `
+            ${sugg.length ? `<p style="margin:-.3rem 0 .5rem; font-size:.82rem; color:var(--text-secondary)">اقتراحات سريعة:</p>
+                <div class="lib2-cats" style="flex-wrap:wrap">${sugg.map((s) => `<button type="button" class="lib2-chip" data-sugg="${esc(s[0])}" data-ic="${s[1]}" data-c="${s[2]}">${s[1]} ${esc(s[0])}</button>`).join('')}</div>` : ''}
+            <div class="form-group"><label for="fd-name">اسم الفولدر</label><input type="text" id="fd-name" maxlength="60" value="${esc(folder ? folder.name : '')}" placeholder="مثلًا: جزء عمّ"></div>
+            <div class="form-group"><label>الأيقونة</label><div class="lib2-swatches" data-g="ic">${FOLDER_ICONS.map((x) => `<button type="button" data-v="${x}" class="${x === ic ? 'is-on' : ''}" aria-label="${x}">${x}</button>`).join('')}</div></div>
+            <div class="form-group"><label>اللون</label><div class="lib2-swatches" data-g="c">${FOLDER_COLORS.map((x) => `<button type="button" data-v="${x.id}" class="${x.id === color ? 'is-on' : ''}" style="background:${x.c}" aria-label="لون ${x.id}"></button>`).join('')}</div></div>
+            <div style="display:flex; gap:.5rem; flex-wrap:wrap; margin-top:1rem">
+                <button type="button" class="btn btn-primary" data-save>${folder ? 'حفظ' : 'اعمل الفولدر'}</button>
+                ${folder ? '<button type="button" class="btn btn-outline-danger" data-del>حذف الفولدر</button>' : ''}
+            </div>
+            ${folder ? '<p style="font-size:.76rem; color:var(--text-light); margin:.6rem 0 0">حذف الفولدر مش بيمسح الكتب اللي جواه: بيرجعوا للفولدر اللي فوق.</p>' : ''}`, {
+            onMount(m, close) {
+                const name = m.querySelector('#fd-name');
+                setTimeout(() => name.focus(), 50);
+                m.querySelectorAll('.lib2-swatches').forEach((g) => g.addEventListener('click', (e) => {
+                    const b = e.target.closest('[data-v]'); if (!b) return;
+                    g.querySelectorAll('button').forEach((x) => x.classList.toggle('is-on', x === b));
+                    if (g.dataset.g === 'ic') ic = b.dataset.v; else color = b.dataset.v;
+                }));
+                m.querySelectorAll('[data-sugg]').forEach((b) => b.addEventListener('click', () => {
+                    name.value = b.dataset.sugg; ic = b.dataset.ic; color = b.dataset.c;
+                    m.querySelectorAll('[data-g="ic"] button').forEach((x) => x.classList.toggle('is-on', x.dataset.v === ic));
+                    m.querySelectorAll('[data-g="c"] button').forEach((x) => x.classList.toggle('is-on', x.dataset.v === color));
+                }));
+                const save = async () => {
+                    const n = name.value.trim();
+                    if (!n) { name.focus(); return; }
+                    const btn = m.querySelector('[data-save]'); btn.disabled = true;
+                    try {
+                        const body = { id: folder ? folder.id : undefined, name: n, icon: ic, color };
+                        if (nesting()) body.parent_id = folder ? parentOf(folder) : parentId;
+                        const r = await api.hub('folder_save', body);
+                        if (folder) Object.assign(folder, r.folder);
+                        else {
+                            const nf = Object.assign({ parent_id: parentId }, r.folder);
+                            folders.push(nf);
+                            if (parentId) expanded.add(parentId);
+                        }
+                        close(); renderAll();
+                        ErrorHandler.showSuccess(folder ? 'اتحفظ ✓' : 'الفولدر اتعمل ✓ اسحب الكتب عليه أو افتحه وارفع جوّاه', 3500);
+                    } catch (err) { btn.disabled = false; ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
+                };
+                m.querySelector('[data-save]').addEventListener('click', save);
+                name.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+                const del = m.querySelector('[data-del]');
+                if (del) del.addEventListener('click', () => { close(); deleteItems([`f:${folder.id}`]); });
+            }
+        });
+    }
+
+    /** نافذة النقل: شجرة الفولدرات كلها (زي "نقل إلى" في الكمبيوتر) */
+    function openMovePicker(keys) {
+        if (!folders.length && !keys.some((k) => k.startsWith('b:'))) return;
+        const movingF = keys.filter((k) => k.startsWith('f:')).map((k) => k.slice(2));
+        const blocked = new Set(movingF.flatMap((id) => [id, ...descendants(id)]));
+        let target = curFolder();
+        const row = (f, depth) => `<button type="button" data-to="${f.id}" style="padding-inline-start:${0.5 + depth * 1.1}rem" ${blocked.has(f.id) ? 'disabled' : ''} class="${target === f.id ? 'is-on' : ''}"><span class="fx-fi" style="--fc:${folderColor(f.color)}">${esc(f.icon || '📁')}</span>${esc(f.name)}</button>`;
+        const tree = (id, depth) => sortFolders(kidsOf(id)).map((f) => row(f, depth) + tree(f.id, depth + 1)).join('');
+        const n = keys.length;
+        sheet(n > 1 ? `نقل ${n} حاجات لـ` : 'نقل لـ', `
+            <div class="fx-pick" data-pick>
+                <button type="button" data-to="" class="${!target ? 'is-on' : ''}"><span class="fx-fi">🏠</span>مكتبتي (أول المكتبة)</button>
+                ${tree(null, 1)}
+            </div>
+            <div style="display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.8rem">
+                <button type="button" class="btn btn-primary" data-ok>انقل هنا</button>
+                ${hubOk ? `<button type="button" class="btn btn-outline" data-newf>${icon('folderPlus', { size: 15 })} فولدر جديد</button>` : ''}
+            </div>`, {
+            onMount(m, close) {
+                m.querySelector('[data-pick]').addEventListener('click', (e) => {
+                    const b = e.target.closest('[data-to]'); if (!b || b.disabled) return;
+                    target = b.dataset.to || null;
+                    m.querySelectorAll('[data-to]').forEach((x) => x.classList.toggle('is-on', x === b));
+                });
+                m.querySelector('[data-pick]').addEventListener('dblclick', (e) => { const b = e.target.closest('[data-to]'); if (b && !b.disabled) { close(); moveItems(keys, b.dataset.to || null); } });
+                m.querySelector('[data-ok]').addEventListener('click', () => { close(); moveItems(keys, target); });
+                const nb = m.querySelector('[data-newf]');
+                if (nb) nb.addEventListener('click', () => { close(); openFolderModal(null, target); });
+            }
+        });
+    }
+
+    async function moveItems(keys, folderId) {
+        const bIds = keys.filter((k) => k.startsWith('b:')).map((k) => k.slice(2));
+        const fIds = keys.filter((k) => k.startsWith('f:')).map((k) => k.slice(2)).filter((id) => nesting() && id !== folderId && !(folderId && descendants(id).includes(folderId)));
+        const prevB = new Map(bIds.map((id) => [id, (books.find((b) => b.id === id) || {}).folder_id]));
+        const prevF = new Map(fIds.map((id) => [id, (folderById(id) || {}).parent_id]));
+        books.forEach((b) => { if (bIds.includes(b.id)) b.folder_id = folderId; });
+        folders.forEach((f) => { if (fIds.includes(f.id)) f.parent_id = folderId; });
+        selecting = false; selected.clear();
+        if (folderId) expanded.add(folderId);
+        renderAll();
+        try {
+            if (bIds.length) await api.hub('book_move', { book_ids: bIds, folder_id: folderId });
+            for (const id of fIds) { const f = folderById(id); await api.hub('folder_save', { id, name: f.name, icon: f.icon, color: f.color, parent_id: folderId }); }
+            const f = folderById(folderId);
+            ErrorHandler.showSuccess(f ? `اتنقل لـ "${f.name}" ✓` : 'اتنقل لأول المكتبة ✓', 2500);
+        } catch (err) {
+            books.forEach((b) => { if (prevB.has(b.id)) b.folder_id = prevB.get(b.id); });
+            folders.forEach((f) => { if (prevF.has(f.id)) f.parent_id = prevF.get(f.id); });
+            renderAll();
+            ErrorHandler.showError(ErrorHandler.getErrorMessage(err));
+        }
     }
 
     async function setMeta(book, data) {
@@ -404,6 +759,7 @@ export function initBooksPage() {
 
     async function downloadBook(book) {
         try {
+            if (Drive.isGdrivePath(book.storage_path)) { await Drive.driveFileUrl(book.storage_path, { download: book.file_name || `${book.title}.${book.file_type || 'pdf'}` }); return; }
             const url = await api.getBookFileUrl(book.storage_path, { download: book.file_name || true });
             window.open(url, '_blank', 'noopener');
         } catch (err) { ErrorHandler.showError('مقدرناش نجيب الملف دلوقتي. جرّب تاني.'); }
@@ -423,101 +779,6 @@ export function initBooksPage() {
         document.body.appendChild(m);
         if (onMount) onMount(m, close);
         return { m, close };
-    }
-
-    function openFolderModal(folder) {
-        const subj = String((JSON.parse(localStorage.getItem('user_profile') || '{}') || {}).subject || '').toLowerCase();
-        const sugg = !folder && !folders.length ? (FOLDER_SUGGESTIONS[/arab|عرب/.test(subj) ? 'arabic' : 'quran'] || []) : [];
-        let color = folder ? folder.color : 'violet';
-        let ic = folder ? folder.icon : '📁';
-        sheet(folder ? 'تعديل الفولدر' : 'فولدر جديد', `
-            ${sugg.length ? `<p style="margin:-.3rem 0 .5rem; font-size:.82rem; color:var(--text-secondary)">اقتراحات سريعة:</p>
-                <div class="lib2-cats" style="flex-wrap:wrap">${sugg.map((s) => `<button type="button" class="lib2-chip" data-sugg="${esc(s[0])}" data-ic="${s[1]}" data-c="${s[2]}">${s[1]} ${esc(s[0])}</button>`).join('')}</div>` : ''}
-            <div class="form-group"><label for="fd-name">اسم الفولدر</label><input type="text" id="fd-name" maxlength="60" value="${esc(folder ? folder.name : '')}" placeholder="مثلًا: جزء عمّ"></div>
-            <div class="form-group"><label>الأيقونة</label><div class="lib2-swatches" data-g="ic">${FOLDER_ICONS.map((x) => `<button type="button" data-v="${x}" class="${x === ic ? 'is-on' : ''}" aria-label="${x}">${x}</button>`).join('')}</div></div>
-            <div class="form-group"><label>اللون</label><div class="lib2-swatches" data-g="c">${FOLDER_COLORS.map((x) => `<button type="button" data-v="${x.id}" class="${x.id === color ? 'is-on' : ''}" style="background:${x.c}" aria-label="لون ${x.id}"></button>`).join('')}</div></div>
-            <div style="display:flex; gap:.5rem; flex-wrap:wrap; margin-top:1rem">
-                <button type="button" class="btn btn-primary" data-save>${folder ? 'حفظ' : 'اعمل الفولدر'}</button>
-                ${folder ? '<button type="button" class="btn btn-outline-danger" data-del>حذف الفولدر</button>' : ''}
-            </div>
-            ${folder ? '<p style="font-size:.76rem; color:var(--text-light); margin:.6rem 0 0">حذف الفولدر مش بيمسح الكتب اللي جواه: بيرجعوا "بدون فولدر".</p>' : ''}`, {
-            onMount(m, close) {
-                const name = m.querySelector('#fd-name');
-                setTimeout(() => name.focus(), 50);
-                m.querySelectorAll('.lib2-swatches').forEach((g) => g.addEventListener('click', (e) => {
-                    const b = e.target.closest('[data-v]'); if (!b) return;
-                    g.querySelectorAll('button').forEach((x) => x.classList.toggle('is-on', x === b));
-                    if (g.dataset.g === 'ic') ic = b.dataset.v; else color = b.dataset.v;
-                }));
-                m.querySelectorAll('[data-sugg]').forEach((b) => b.addEventListener('click', () => {
-                    name.value = b.dataset.sugg; ic = b.dataset.ic; color = b.dataset.c;
-                    m.querySelectorAll('[data-g="ic"] button').forEach((x) => x.classList.toggle('is-on', x.dataset.v === ic));
-                    m.querySelectorAll('[data-g="c"] button').forEach((x) => x.classList.toggle('is-on', x.dataset.v === color));
-                }));
-                const save = async () => {
-                    const n = name.value.trim();
-                    if (!n) { name.focus(); return; }
-                    const btn = m.querySelector('[data-save]'); btn.disabled = true;
-                    try {
-                        const r = await api.hub('folder_save', { id: folder ? folder.id : undefined, name: n, icon: ic, color });
-                        if (folder) Object.assign(folder, r.folder); else { folders.push(r.folder); view = `folder:${r.folder.id}`; prefs.view = view; savePrefs(); }
-                        close(); renderAll();
-                        ErrorHandler.showSuccess(folder ? 'اتحفظ ✓' : 'الفولدر اتعمل ✓ دلوقتي انقل له كتبك من ⋮ أو بالسحب');
-                    } catch (err) { btn.disabled = false; ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
-                };
-                m.querySelector('[data-save]').addEventListener('click', save);
-                name.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
-                const del = m.querySelector('[data-del]');
-                if (del) del.addEventListener('click', async () => {
-                    if (!confirm(`تمسح فولدر "${folder.name}"؟ الكتب اللي جواه مش هتتمسح.`)) return;
-                    try {
-                        await api.hub('folder_delete', { id: folder.id });
-                        folders = folders.filter((f) => f.id !== folder.id);
-                        books.forEach((b) => { if (b.folder_id === folder.id) b.folder_id = null; });
-                        if (view === `folder:${folder.id}`) view = 'all';
-                        close(); renderAll();
-                    } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
-                });
-            }
-        });
-    }
-
-    function openMovePicker(ids) {
-        if (!folders.length) {
-            ErrorHandler.showSuccess('اعمل فولدر الأول ✓', 3000);
-            openFolderModal(null);
-            return;
-        }
-        sheet(ids.length > 1 ? `نقل ${ids.length} كتب لـ` : 'نقل لفولدر', `
-            <div style="display:flex; flex-direction:column; gap:.3rem">
-                ${folders.map((f) => `<button type="button" class="lib2-folder" data-to="${f.id}"><span class="fi" style="--fc:${folderColor(f.color)}">${esc(f.icon || '📁')}</span><span class="fl">${esc(f.name)}</span></button>`).join('')}
-                <button type="button" class="lib2-folder" data-to=""><span class="fi" style="--fc:#ECEEF0">🗂️</span><span class="fl">بدون فولدر</span></button>
-                <button type="button" class="lib2-folder lib2-newfolder" data-newf>${icon('folderPlus', { size: 16 })} فولدر جديد</button>
-            </div>`, {
-            onMount(m, close) {
-                m.addEventListener('click', (e) => {
-                    if (e.target.closest('[data-newf]')) { close(); openFolderModal(null); return; }
-                    const b = e.target.closest('[data-to]'); if (!b) return;
-                    close(); moveBooks(ids, b.dataset.to || null);
-                });
-            }
-        });
-    }
-
-    async function moveBooks(ids, folderId) {
-        const prev = new Map(ids.map((id) => [id, (books.find((b) => b.id === id) || {}).folder_id]));
-        books.forEach((b) => { if (ids.includes(b.id)) b.folder_id = folderId; });
-        selecting = false; selected.clear(); $('btn-select').textContent = 'تحديد';
-        renderAll();
-        try {
-            await api.hub('book_move', { book_ids: ids, folder_id: folderId });
-            const f = folders.find((x) => x.id === folderId);
-            ErrorHandler.showSuccess(f ? `اتنقل لـ "${f.name}" ✓` : 'اتشال من الفولدر ✓', 2500);
-        } catch (err) {
-            books.forEach((b) => { if (prev.has(b.id)) b.folder_id = prev.get(b.id); });
-            renderAll();
-            ErrorHandler.showError(ErrorHandler.getErrorMessage(err));
-        }
     }
 
     function openCategoryPicker(book) {
@@ -542,13 +803,24 @@ export function initBooksPage() {
                 m.querySelector('[data-send]').addEventListener('click', async (e) => {
                     const b = e.currentTarget; b.disabled = true;
                     try {
-                        const r = await api.hub('public_request', { book_id: book.id, title: m.querySelector('#pb-title').value.trim(), description: m.querySelector('#pb-desc').value.trim(), category: m.querySelector('#pb-cat').value, show_name: m.querySelector('#pb-name').checked });
+                        const req = { book_id: book.id, title: m.querySelector('#pb-title').value.trim(), description: m.querySelector('#pb-desc').value.trim(), category: m.querySelector('#pb-cat').value, show_name: m.querySelector('#pb-name').checked };
+                        // v35: كتاب على جوجل درايف المدرس: المدرسين التانيين مش هيقدروا يفتحوه من هناك، فبنرفع نسخة على تخزين البرنامج للمكتبة العامة
+                        if (Drive.isGdrivePath(book.storage_path)) {
+                            b.textContent = 'جاري تجهيز نسخة للمكتبة العامة...';
+                            const { buffer, contentType } = await api.fetchBookFile(book.storage_path);
+                            const sess = await window.supabaseClient.auth.getSession();
+                            const uid = sess && sess.data && sess.data.session ? sess.data.session.user.id : 'public';
+                            const safe = String(book.file_name || 'book').replace(/[^\w.\-]+/g, '_').slice(-80);
+                            req.storage_path = `${uid}/public/${Date.now().toString(36)}-${safe}`;
+                            await api.uploadBookFile(req.storage_path, new File([buffer], safe, { type: contentType || 'application/octet-stream' }));
+                        }
+                        const r = await api.hub('public_request', req);
                         pubMap[book.id] = { id: r.id, status: 'pending' };
-                        sharedPaths.push(book.storage_path);
+                        sharedPaths.push(req.storage_path || book.storage_path);
                         close(); renderBooks();
                         ErrorHandler.showSuccess('اتبعت للمراجعة ✓ هيوصلك إشعار أول ما يتنشر', 6000);
                         try { window.tmTrack && window.tmTrack('book_publish_requested', {}); } catch (x) { /* تجاهل */ }
-                    } catch (err) { b.disabled = false; ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
+                    } catch (err) { b.disabled = false; b.textContent = 'ابعته للمراجعة'; ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
                 });
             }
         });
@@ -571,7 +843,9 @@ export function initBooksPage() {
         document.querySelectorAll('.lib2-tab[data-tab]').forEach((b) => { const on = b.dataset.tab === t; b.classList.toggle('is-on', on); b.setAttribute('aria-selected', String(on)); });
         $('tab-mine').hidden = t !== 'mine';
         $('tab-public').hidden = t !== 'public';
-        $('lib-search').placeholder = t === 'public' ? 'ابحث في المكتبة العامة...' : 'ابحث في كتبك...';
+        $('lib-search').placeholder = t === 'public' ? 'ابحث في المكتبة العامة...' : 'ابحث في كل كتبك وفولدراتك...';
+        const sb = $('lib-search').closest('.fx-search');
+        if (t === 'public') { $('tab-public').prepend(sb); sb.style.maxWidth = 'none'; sb.style.marginBottom = '.7rem'; } else { $('fx-crumbs').after(sb); sb.style.maxWidth = ''; sb.style.marginBottom = ''; }
         try { history.replaceState(null, '', t === 'public' ? '?tab=public' : location.pathname); } catch (e) { /* تجاهل */ }
         if (t === 'public') loadPublic();
     }
@@ -670,27 +944,221 @@ export function initBooksPage() {
             folders = lib.folders || [];
             pubMap = lib.public || {};
             sharedPaths = lib.shared_paths || [];
+            features = Array.isArray(lib.features) ? lib.features : [];
             $('n-public').textContent = lib.public_count ? String(lib.public_count) : '';
         } catch (err) {
             // workflow app-hub لسه ماتفعّلش: المكتبة تشتغل زي الأول
             if (err && (err.status === 404 || (err.error && err.error.code === 'DB_ERROR'))) hubOk = false;
         }
-        $('btn-new-folder').hidden = !hubOk;
-        if (view.startsWith('folder:') && !folders.some((f) => `folder:${f.id}` === view)) view = 'all';
+        if (curFolder() === null && loc.f && !loc.s) loc = { f: null };
     }
 
     async function loadBooks() {
         try {
             const [data] = await Promise.all([api.listBooks(), loadLibrary()]);
             books = data.books || [];
+            loaded = true;
             renderAll();
         } catch (error) {
-            $('books-section').innerHTML = `<div class="lib2-empty">تعذّر تحميل المكتبة: ${esc(ErrorHandler.getErrorMessage(error))}</div>`;
+            $('books-section').innerHTML = `<div class="fx-empty">تعذّر تحميل المكتبة: ${esc(ErrorHandler.getErrorMessage(error))}</div>`;
         }
         if (pollTimer) clearTimeout(pollTimer);
         if (needsPolling()) pollTimer = setTimeout(loadBooks, 4000);
     }
-    $('btn-new-folder').addEventListener('click', () => openFolderModal(null));
+
+    // ------------------------------------------------------------------ جوجل درايف
+    async function connectDriveFlow() {
+        try {
+            const r = await Drive.connectDrive();
+            ErrorHandler.showSuccess(`جوجل درايف اتوصّل ✓${r.email ? ` (${r.email})` : ''} الكتب الجديدة هتترفع عليه`, 5000);
+            try { window.tmTrack && window.tmTrack('gdrive_connected', {}); } catch (e) { /* تجاهل */ }
+            renderSide();
+        } catch (err) { ErrorHandler.showError(ErrorHandler.getErrorMessage(err)); }
+    }
+    function openDriveSettings() {
+        const onDrive = books.filter((b) => Drive.isGdrivePath(b.storage_path)).length;
+        const onApp = books.filter((b) => b.storage_path && !Drive.isGdrivePath(b.storage_path) && !b.public_book_id).length;
+        sheet('تخزين الكتب', `
+            <p style="margin:-.3rem 0 .7rem; font-size:.86rem; line-height:1.8; color:var(--text-secondary)">☁️ متوصّل بـ <b>${esc(Drive.driveEmail() || 'جوجل درايف')}</b><br>
+            على الدرايف: <b>${onDrive}</b> كتاب · على تخزين البرنامج: <b>${onApp}</b> كتاب<br><span data-quota></span></p>
+            <label class="ls-check"><input type="checkbox" data-pref ${Drive.drivePreferred() ? 'checked' : ''}> ارفع الكتب الجديدة على جوجل درايف بتاعي</label>
+            <div style="display:flex; gap:.5rem; flex-wrap:wrap; margin-top:1rem">
+                ${onApp ? `<button type="button" class="btn btn-primary" data-all>انقل كل كتبي (${onApp}) للدرايف</button>` : ''}
+                <button type="button" class="btn btn-outline-danger" data-off>افصل جوجل درايف</button>
+            </div>
+            <p style="font-size:.74rem; color:var(--text-light); margin:.7rem 0 0; line-height:1.7">البرنامج بيشوف بس الملفات اللي اترفعت منه (في فولدر "Teachers Manager - كتبي")، ومايقدرش يشوف باقي ملفاتك.
+            لو فصلت الدرايف، الكتب اللي عليه هتفضل في مكتبتك بس هتحتاج توصّله تاني عشان تفتحها.</p>`, {
+            onMount(m, close) {
+                Drive.driveQuota().then((q) => { const el = m.querySelector('[data-quota]'); if (el && q.limit) el.textContent = `مساحة الدرايف: ${(q.used / 1073741824).toFixed(1)} من ${(q.limit / 1073741824).toFixed(0)} جيجا`; }).catch(() => {});
+                m.querySelector('[data-pref]').addEventListener('change', (e) => { Drive.setDrivePreferred(e.target.checked); renderSide(); });
+                m.querySelector('[data-off]').addEventListener('click', () => { if (!confirm('تفصل جوجل درايف؟')) return; Drive.disconnectDrive(); close(); renderSide(); });
+                const all = m.querySelector('[data-all]');
+                if (all) all.addEventListener('click', async () => { close(); for (const b of books.filter((x) => x.storage_path && !Drive.isGdrivePath(x.storage_path) && !x.public_book_id)) { if (!(await moveBookToDrive(b, { quiet: true }))) break; } ErrorHandler.showSuccess('خلصنا نقل الكتب ✓'); renderAll(); });
+            }
+        });
+    }
+    /** نقل كتاب موجود من تخزين البرنامج للدرايف */
+    async function moveBookToDrive(book, { quiet = false } = {}) {
+        if (isShared(book)) { if (!quiet) ErrorHandler.showError('الكتاب ده منشور في المكتبة العامة، فبيفضل على تخزين البرنامج.'); return true; }
+        try {
+            if (!quiet) ErrorHandler.showSuccess(`جاري نقل "${book.title}" لجوجل درايف...`, 3000);
+            const { buffer, contentType } = await api.fetchBookFile(book.storage_path);
+            const file = new File([buffer], book.file_name || `${book.title}.${book.file_type || 'pdf'}`, { type: contentType || 'application/octet-stream' });
+            const oldPath = book.storage_path;
+            const path = await Drive.uploadToDrive(file, { name: file.name });
+            try { await api.setBookStorage(book.id, path, { file_size: file.size }); }
+            catch (err) { await Drive.deleteFromDrive(path); throw err; }
+            book.storage_path = path;
+            await api.deleteBookFile(oldPath);
+            if (!quiet) { ErrorHandler.showSuccess('اتنقل لجوجل درايف ✓'); renderBooks(); }
+            return true;
+        } catch (err) { ErrorHandler.showError(`"${book.title}": ${ErrorHandler.getErrorMessage(err)}`); return false; }
+    }
+
+    // ------------------------------------------------------------------ رفع مصدر جديد
+    const MAX_BYTES = CONFIG.BOOKS_SETTINGS.MAX_FILE_MB * 1024 * 1024;
+    const DRIVE_MAX_BYTES = 300 * 1024 * 1024;
+    $('upload-cat').innerHTML = '<option value="">تلقائي (من الاسم)</option>' + CATS.map((c) => `<option value="${c.id}">${c.em} ${c.label}</option>`).join('');
+    const useDriveUpload = () => driveReady() && Drive.driveConnected() && (document.querySelector('input[name="upload-store"]:checked') || {}).value === 'drive';
+
+    function folderOptions() {
+        const out = ['<option value="">🏠 أول المكتبة</option>'];
+        const walk = (id, depth) => sortFolders(kidsOf(id)).forEach((f) => { out.push(`<option value="${f.id}">${'— '.repeat(depth)}${esc(f.icon || '📁')} ${esc(f.name)}</option>`); walk(f.id, depth + 1); });
+        walk(null, 0);
+        return out.join('');
+    }
+    function openUpload(file = null, more = 0, folderId) {
+        $('upload-form').reset();
+        pickedAny = null; $('upload-file-input').required = true;
+        $('upload-detected').textContent = '';
+        $('upload-progress').classList.remove('is-on');
+        $('upload-submit-btn').disabled = false;
+        const fsel = $('upload-folder');
+        fsel.innerHTML = folderOptions();
+        fsel.value = folderId !== undefined ? (folderId || '') : (curFolder() || '');
+        fsel.closest('div').hidden = !hubOk;
+        $('upload-cat').closest('div').hidden = !hubOk;
+        // مكان الحفظ: الدرايف لو متوصّل
+        const st = $('upload-storage');
+        st.hidden = !(driveReady() && Drive.driveConnected());
+        if (!st.hidden) {
+            document.querySelector(`input[name="upload-store"][value="${Drive.drivePreferred() ? 'drive' : 'app'}"]`).checked = true;
+            $('upload-drive-email').textContent = Drive.driveEmail() ? `على ${Drive.driveEmail()}` : 'الملف ملكك وعلى مساحتك';
+        }
+        $('upload-modal').classList.add('active');
+        if (file) {
+            pickedAny = file;
+            try { const dt = new DataTransfer(); dt.items.add(file); $('upload-file-input').files = dt.files; } catch (er) { /* تجاهل */ }
+            $('upload-file-input').required = false;
+            showPicked(file);
+            if (more > 1) ErrorHandler.showSuccess(`هنرفع "${file.name}" الأول (كتاب واحد في المرة عشان المعالجة)، وبعدها افلت الباقي.`, 5000);
+        }
+    }
+
+    // v29.2: الملف ممكن ييجي من الاختيار العادي أو من زرار "اختاره من الملفات" (لموبايلات سامسونج)
+    let pickedAny = null;
+    const pickedFile = () => pickedAny || $('upload-file-input').files[0];
+    $('upload-any-btn').addEventListener('click', () => { $('upload-file-any').value = ''; $('upload-file-any').click(); });
+    $('upload-file-any').addEventListener('change', (e) => {
+        const f = e.target.files[0]; if (!f) return;
+        pickedAny = f;
+        try { const dt = new DataTransfer(); dt.items.add(f); $('upload-file-input').files = dt.files; } catch (er) { /* متصفح قديم: pickedAny كفاية */ }
+        $('upload-file-input').required = false;
+        showPicked(f);
+    });
+    $('upload-file-input').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        pickedAny = null;
+        showPicked(file);
+    });
+    function showPicked(file) {
+        const type = detectFileType(file);
+        $('upload-detected').textContent = type ? `النوع: ${TYPE_LABEL[type]} · ${(file.size / 1048576).toFixed(1)} MB` : 'نوع الملف غير مدعوم';
+        $('upload-detected').style.color = type ? 'var(--text-secondary)' : 'var(--danger)';
+        if (!$('upload-title-input').value) $('upload-title-input').value = file.name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ');
+        if (!$('upload-cat').value) { const g = guessCategory($('upload-title-input').value); if (g) $('upload-cat').value = g; }
+    }
+
+    $('upload-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const file = pickedFile();
+        const title = $('upload-title-input').value.trim();
+        const submitBtn = $('upload-submit-btn');
+        const progress = $('upload-progress');
+        const progressText = $('upload-progress-text');
+        const category = $('upload-cat').value || guessCategory(title) || '';
+        const folderId = $('upload-folder').value || '';
+        const toDrive = useDriveUpload();
+
+        if (!file) { ErrorHandler.showError('من فضلك اختار ملفًا'); return; }
+        const fileType = detectFileType(file);
+        if (!fileType) { ErrorHandler.showError('نوع الملف غير مدعوم. المدعوم: PDF، Word (.docx)، PowerPoint (.pptx)، نص (.txt)، أو صورة (JPG/PNG).'); return; }
+        if (file.size > (toDrive ? DRIVE_MAX_BYTES : MAX_BYTES)) { ErrorHandler.showError(toDrive ? 'الملف أكبر من 300 ميجا. قسّمه لأجزاء.' : `حجم الملف أكبر من ${CONFIG.BOOKS_SETTINGS.MAX_FILE_MB} ميجا. قسّمه لأجزاء أو اضغطه${driveReady() ? '، أو ارفعه على جوجل درايف بتاعك' : ''}.`); return; }
+        if (active.size > 0) { ErrorHandler.showError('في كتاب بيتعالج حاليًا. استنى لحد ما يخلص.'); return; }
+
+        let bookId = null;
+        try {
+            submitBtn.disabled = true;
+            progress.classList.add('is-on');
+
+            progressText.textContent = 'جاري إنشاء المصدر...';
+            let createRes;
+            try {
+                createRes = await api.createBookSource(title, file.name, fileType);
+            } catch (err) {
+                throw new Error('تعذّر إضافة الكتاب: ' + ErrorHandler.getErrorMessage(err));
+            }
+            bookId = createRes.book_id;
+            let storagePath = createRes.storage_path;
+
+            if (toDrive) {
+                // v35: الملف على درايف المدرس، وقاعدة البيانات فيها مكانه بس
+                progressText.textContent = 'جاري الرفع على جوجل درايف...';
+                let drivePath = null;
+                try {
+                    drivePath = await Drive.uploadToDrive(file, { name: file.name, onProgress: (l, t) => { progressText.textContent = `جاري الرفع على جوجل درايف... ${Math.round((l / Math.max(1, t)) * 100)}%`; } });
+                    await api.setBookStorage(bookId, drivePath, { file_size: file.size });
+                    storagePath = drivePath;
+                } catch (err) {
+                    if (drivePath) await Drive.deleteFromDrive(drivePath);
+                    if (file.size > MAX_BYTES) throw new Error('الرفع على جوجل درايف ماكملش: ' + ErrorHandler.getErrorMessage(err));
+                    ErrorHandler.showError('مقدرناش نحفظه على جوجل درايف دلوقتي، فهيترفع على تخزين البرنامج. ' + ErrorHandler.getErrorMessage(err), 7000);
+                    progressText.textContent = 'جاري رفع الملف...';
+                    await api.uploadBookFile(createRes.storage_path, file);
+                }
+            } else {
+                progressText.textContent = 'جاري رفع الملف...';
+                try {
+                    await api.uploadBookFile(createRes.storage_path, file);
+                } catch (err) {
+                    throw new Error('تعذّر رفع الملف: ' + ErrorHandler.getErrorMessage(err) + ' — اتأكد من النت وجرّب تاني.');
+                }
+            }
+
+            $('upload-modal').classList.remove('active');
+            const book = { id: bookId, title, file_name: file.name, file_type: fileType, storage_path: storagePath, status: 'uploading', updated_at: new Date().toISOString(), created_at: new Date().toISOString(), progress: 0, category: category || null, folder_id: folderId || null };
+            books.unshift(book);
+            if (hubOk && (category || folderId)) {
+                (async () => {
+                    try {
+                        if (category) await api.hub('book_meta', { book_id: bookId, category });
+                        if (folderId) await api.hub('book_move', { book_id: bookId, folder_id: folderId });
+                    } catch (er) { /* تجاهل */ }
+                })();
+            }
+            startProcessing(book, file);   // بيشتغل في الخلفية (مع شريط تقدّم في بطاقة الكتاب)
+        } catch (error) {
+            if (bookId) {
+                try { await api.deleteBook(bookId); } catch (cleanupErr) { /* تجاهل */ }
+                await loadBooks();
+            }
+            ErrorHandler.showError(error.message || ErrorHandler.getErrorMessage(error), 9000);
+        } finally {
+            submitBtn.disabled = false;
+            progress.classList.remove('is-on');
+        }
+    });
 
     // ------------------------------------------------------------------ المعالجة
     window.addEventListener('beforeunload', (e) => {
@@ -743,112 +1211,6 @@ export function initBooksPage() {
     }
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible' && active.size) keepScreenOn(true);   // القفل بيتفك لما الصفحة تستخبى
-    });
-
-    // ------------------------------------------------------------------ رفع مصدر جديد
-    const MAX_BYTES = CONFIG.BOOKS_SETTINGS.MAX_FILE_MB * 1024 * 1024;
-    $('upload-cat').innerHTML = '<option value="">تلقائي (من الاسم)</option>' + CATS.map((c) => `<option value="${c.id}">${c.em} ${c.label}</option>`).join('');
-
-    $('btn-add-source').addEventListener('click', () => {
-        $('upload-form').reset();
-        pickedAny = null; $('upload-file-input').required = true;
-        $('upload-detected').textContent = '';
-        $('upload-progress').classList.remove('is-on');
-        $('upload-submit-btn').disabled = false;
-        const fsel = $('upload-folder');
-        fsel.innerHTML = '<option value="">بدون فولدر</option>' + folders.map((f) => `<option value="${f.id}">${esc(f.icon || '📁')} ${esc(f.name)}</option>`).join('');
-        fsel.value = view.startsWith('folder:') ? view.slice(7) : '';
-        fsel.closest('div').hidden = !hubOk;
-        $('upload-cat').closest('div').hidden = !hubOk;
-        $('upload-modal').classList.add('active');
-    });
-
-    // v29.2: الملف ممكن ييجي من الاختيار العادي أو من زرار "اختاره من الملفات" (لموبايلات سامسونج)
-    let pickedAny = null;
-    const pickedFile = () => pickedAny || $('upload-file-input').files[0];
-    $('upload-any-btn').addEventListener('click', () => { $('upload-file-any').value = ''; $('upload-file-any').click(); });
-    $('upload-file-any').addEventListener('change', (e) => {
-        const f = e.target.files[0]; if (!f) return;
-        pickedAny = f;
-        try { const dt = new DataTransfer(); dt.items.add(f); $('upload-file-input').files = dt.files; } catch (er) { /* متصفح قديم: pickedAny كفاية */ }
-        $('upload-file-input').required = false;
-        showPicked(f);
-    });
-    $('upload-file-input').addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        pickedAny = null;
-        showPicked(file);
-    });
-    function showPicked(file) {
-        const type = detectFileType(file);
-        $('upload-detected').textContent = type ? `النوع: ${TYPE_LABEL[type]} · ${(file.size / 1048576).toFixed(1)} MB` : 'نوع الملف غير مدعوم';
-        $('upload-detected').style.color = type ? 'var(--text-secondary)' : 'var(--danger)';
-        if (!$('upload-title-input').value) $('upload-title-input').value = file.name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ');
-        if (!$('upload-cat').value) { const g = guessCategory($('upload-title-input').value); if (g) $('upload-cat').value = g; }
-    }
-
-    $('upload-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const file = pickedFile();
-        const title = $('upload-title-input').value.trim();
-        const submitBtn = $('upload-submit-btn');
-        const progress = $('upload-progress');
-        const progressText = $('upload-progress-text');
-        const category = $('upload-cat').value || guessCategory(title) || '';
-        const folderId = $('upload-folder').value || '';
-
-        if (!file) { ErrorHandler.showError('من فضلك اختار ملفًا'); return; }
-        const fileType = detectFileType(file);
-        if (!fileType) { ErrorHandler.showError('نوع الملف غير مدعوم. المدعوم: PDF، Word (.docx)، PowerPoint (.pptx)، نص (.txt)، أو صورة (JPG/PNG).'); return; }
-        if (file.size > MAX_BYTES) { ErrorHandler.showError(`حجم الملف أكبر من ${CONFIG.BOOKS_SETTINGS.MAX_FILE_MB} ميجا. قسّمه لأجزاء أو اضغطه.`); return; }
-        if (active.size > 0) { ErrorHandler.showError('في كتاب بيتعالج حاليًا. استنى لحد ما يخلص.'); return; }
-
-        let bookId = null;
-        try {
-            submitBtn.disabled = true;
-            progress.classList.add('is-on');
-
-            progressText.textContent = 'جاري إنشاء المصدر...';
-            let createRes;
-            try {
-                createRes = await api.createBookSource(title, file.name, fileType);
-            } catch (err) {
-                throw new Error('تعذّر إضافة الكتاب: ' + ErrorHandler.getErrorMessage(err));
-            }
-            bookId = createRes.book_id;
-
-            progressText.textContent = 'جاري رفع الملف...';
-            try {
-                await api.uploadBookFile(createRes.storage_path, file);
-            } catch (err) {
-                throw new Error('تعذّر رفع الملف: ' + ErrorHandler.getErrorMessage(err) + ' — اتأكد من النت وجرّب تاني.');
-            }
-
-            $('upload-modal').classList.remove('active');
-            const book = { id: bookId, title, file_name: file.name, file_type: fileType, storage_path: createRes.storage_path, status: 'uploading', updated_at: new Date().toISOString(), created_at: new Date().toISOString(), progress: 0, category: category || null, folder_id: folderId || null };
-            books.unshift(book);
-            // v33: التصنيف والفولدر (بيتحفظوا في الخلفية؛ لو فشلوا الكتاب نفسه سليم)
-            if (hubOk && (category || folderId)) {
-                (async () => {
-                    try {
-                        if (category) await api.hub('book_meta', { book_id: bookId, category });
-                        if (folderId) await api.hub('book_move', { book_id: bookId, folder_id: folderId });
-                    } catch (er) { /* تجاهل */ }
-                })();
-            }
-            startProcessing(book, file);   // بيشتغل في الخلفية (مع شريط تقدّم في بطاقة الكتاب)
-        } catch (error) {
-            // فشل بعد إنشاء صف الكتاب: نمسحه بدل ما يفضل عالق
-            if (bookId) {
-                try { await api.deleteBook(bookId); } catch (cleanupErr) { /* تجاهل */ }
-                await loadBooks();
-            }
-            ErrorHandler.showError(error.message || ErrorHandler.getErrorMessage(error), 9000);
-        } finally {
-            submitBtn.disabled = false;
-            progress.classList.remove('is-on');
-        }
     });
 
     // ------------------------------------------------------------------ إدارة الوصول
@@ -948,8 +1310,10 @@ export function initBooksPage() {
         const authInfo = await Auth.requireAuth();
         if (!authInfo) return;
         await loadBooks();
-        if (new URLSearchParams(location.search).get('tab') === 'public') switchTab('public');
+        const qs = new URLSearchParams(location.search);
+        if (qs.get('tab') === 'public') switchTab('public');
+        else if (qs.get('folder') && folderById(qs.get('folder'))) goTo({ f: qs.get('folder') });
     })();
 
-    return { openBook, closeViewer() { if (viewer) viewer.close(); }, get books() { return books; }, loadBooks, switchTab };
+    return { openBook, closeViewer() { if (viewer) viewer.close(); }, get books() { return books; }, loadBooks, switchTab, goTo };
 }
