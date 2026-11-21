@@ -164,3 +164,64 @@ html.tm-no-ai .ai-card, html.tm-no-ai #btn-ai-ready, html.tm-no-ai #btn-open-ai-
 .ts-opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .45rem; }
 .ts-opts button { min-height: var(--ctl-h); padding: .3rem .4rem; border: 1.5px solid var(--border); background: var(--card-bg); border-radius: var(--ctl-r); font: inherit; font-size: .88rem; font-weight: 600; color: var(--text-primary); cursor: pointer; line-height: 1.3; }
 .ts-opts button[aria-checked="true"] { border-color: var(--primary); background: #F2ECF7; color: var(--primary); }
+
+/* أيقونة جوه السطر بدل الإيموجي */
+.ic-inl { display: inline-flex; align-items: center; vertical-align: -2px; color: currentColor; }
+.ic-inl svg { width: 1em; height: 1em; }
+
+/* v36: التعارض في الرئيسية: سطر برتقالي صغير بدل الكارت الأحمر المخطط */
+.lesson-item.is-conflict { box-shadow: none !important; background-image: none !important; }
+.clash-line { display: flex; align-items: center; gap: .3rem; margin-top: .25rem; font-size: .78rem; font-weight: 600; color: #A35A00; line-height: 1.4; }
+.clash-line svg { flex-shrink: 0; }
+
+/* v36: الإحصائيات صف واحد صغير */
+.stats-mini { display: flex; flex-wrap: wrap; align-items: stretch; margin: 1.5rem 0 1rem; background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.stats-mini:empty { display: none; }
+.stats-mini .sm-it { flex: 1 1 0; min-width: 140px; display: flex; align-items: center; gap: .45rem; padding: .65rem .9rem; text-decoration: none; color: var(--text-secondary); font-size: .82rem; border-inline-start: 1px solid var(--border); min-height: 44px; box-sizing: border-box; }
+.stats-mini .sm-it:first-child { border-inline-start: 0; }
+.stats-mini .sm-it:hover { background: var(--bg-secondary); }
+.stats-mini .sm-ic { display: inline-flex; flex-shrink: 0; }
+.stats-mini .sm-l { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stats-mini .sm-n { color: var(--text-primary); font-size: .95rem; font-weight: 800; }
+@media (max-width: 600px) {
+    .stats-mini .sm-it { flex: 1 1 50%; min-width: 0; border-inline-start: 0; border-top: 1px solid var(--border); }
+    .stats-mini .sm-it:nth-child(-n+2) { border-top: 0; }
+    .stats-mini .sm-it:nth-child(even) { border-inline-start: 1px solid var(--border); }
+}
+
+/* ==================== v36: النوافذ بتطلع من تحت على الموبايل ==================== */
+@media (max-width: 599px) {
+    .modal.active { align-items: flex-end; padding: 0; }
+    .modal.active > .modal-content {
+        width: 100%; max-width: 100%; margin: 0;
+        max-height: 92vh; max-height: 92dvh;
+        border-radius: 20px 20px 0 0;
+        padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+        animation: tm-sheet-up .2s ease-out;
+        box-shadow: 0 -8px 30px rgba(41, 37, 45, .22);
+    }
+    .modal.active > .modal-content::before { content: ''; display: block; width: 42px; height: 5px; border-radius: 999px; background: #D9D0E2; margin: -.45rem auto .7rem; }
+}
+@keyframes tm-sheet-up { from { transform: translateY(40px); opacity: .6; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .modal.active > .modal-content { animation: none; } }
+
+/* v36: شاشة «قبل البدء»: زرار فتح الرابط بس جنب «ابدأ الحصة» + سطر شرح تحته */
+.ls-start-row { display: flex; align-items: stretch; justify-content: center; gap: .6rem; width: 100%; max-width: 520px; flex-wrap: wrap; }
+.ls-start-row .btn-start-big { flex: 2 1 220px; margin: 0; }
+.ls-start-row .ls-link-only { flex: 1 1 150px; margin: 0; min-height: 0; white-space: nowrap; }
+.ls-start-row .ls-link-only[hidden] { display: none; }
+.ls-start-hint { font-size: .82rem; text-align: center; max-width: 520px; line-height: 1.7; }
+
+/* v36: ترتيب الرئيسية على الموبايل: البحث فوق، ورسالة الإرشاد مع الخطوات */
+@media (max-width: 768px) {
+    #content > #dash-search { order: 0; }
+    #content > #guide-root { order: 1; }
+}
+
+/* ==================== v36: حواف موحّدة لكل الكروت في كل الصفحات ==================== */
+:root { --card-r: 16px; }
+.card, .x-card, .student-card, .group-card, .pricing-card, .settings-section, .gx-card, #wk-scroll, .ob-card, .lib2-empty, .ln-empty, .wa-community, .ai-card, .stats-mini, .dash-search, .gd-card, .fx-side, #price-table { border-radius: var(--card-r) !important; }
+.sp-stat, .stat-card { border-radius: 14px !important; }
+.quick-link-btn { border-color: var(--border) !important; border-radius: 14px !important; }
+.quick-link-btn:hover { border-color: #D3C7DE !important; }
+#ask-input { border-radius: 12px; }

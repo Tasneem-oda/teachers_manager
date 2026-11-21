@@ -16,9 +16,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=53">
-    <link rel="stylesheet" href="css/lessons.css?v=53">
-    <link rel="stylesheet" href="css/groups.css?v=53">
+    <link rel="stylesheet" href="css/style.css?v=54">
+    <link rel="stylesheet" href="css/lessons.css?v=54">
+    <link rel="stylesheet" href="css/groups.css?v=54">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -117,8 +117,8 @@
             .student-actions .btn { min-height: 40px; font-size: .84rem; }
         }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=53">
-    <link rel="stylesheet" href="css/ui.css?v=53">
+    <link rel="stylesheet" href="css/v29.css?v=54">
+    <link rel="stylesheet" href="css/ui.css?v=54">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -143,9 +143,9 @@
                     <div class="add-wrap">
                         <button class="btn" id="btn-add-menu" type="button" aria-haspopup="menu" aria-expanded="false"><span id="ic-add-btn" class="icon" style="display:inline-flex; vertical-align:-3px;"></span> إضافة</button>
                         <div class="add-menu" id="add-menu" role="menu" hidden>
-                            <button type="button" role="menuitem" id="btn-add-new">👤 طالب جديد<small>الاسم بس يكفي</small></button>
-                            <button type="button" role="menuitem" id="btn-add-bulk">👥 أكتر من طالب<small>الصق الأسامي من الورق مرة واحدة</small></button>
-                            <button type="button" role="menuitem" id="btn-add-trial">🎯 حصة تجريبية<small>طالب جديد بيجرّب الأول</small></button>
+                            <button type="button" role="menuitem" id="btn-add-new"><span class="ic-inl" data-ic="userCheck"></span> طالب جديد<small>الاسم بس يكفي</small></button>
+                            <button type="button" role="menuitem" id="btn-add-bulk"><span class="ic-inl" data-ic="users"></span> أكتر من طالب<small>الصق الأسامي من الورق مرة واحدة</small></button>
+                            <button type="button" role="menuitem" id="btn-add-trial"><span class="ic-inl" data-ic="target"></span> حصة تجريبية<small>طالب جديد بيجرّب الأول</small></button>
                         </div>
                     </div>
                 </div>
@@ -171,7 +171,7 @@
 
                 <div class="st-tabs" id="st-tabs" role="tablist" aria-label="حالة الطالب" hidden>
                     <button type="button" class="st-tab active" data-st="active" role="tab">النشطين <b id="cnt-active">0</b></button>
-                    <button type="button" class="st-tab" data-st="trial" role="tab">🎯 تجريبي <b id="cnt-trial">0</b></button>
+                    <button type="button" class="st-tab" data-st="trial" role="tab"><span class="ic-inl" data-ic="target"></span> تجريبي <b id="cnt-trial">0</b></button>
                     <button type="button" class="st-tab" data-st="paused" role="tab">متوقفين مؤقتًا <b id="cnt-paused">0</b></button>
                     <button type="button" class="st-tab" data-st="archived" role="tab">الأرشيف <b id="cnt-archived">0</b></button>
                 </div>
@@ -191,7 +191,7 @@
             <!-- v31: طالب عادي ولا حصة تجريبية الأول -->
             <div class="add-mode" role="tablist" aria-label="نوع الإضافة">
                 <button type="button" class="add-mode-btn active" data-mode="normal" role="tab" aria-selected="true">طالب جديد</button>
-                <button type="button" class="add-mode-btn" data-mode="trial" role="tab" aria-selected="false">🎯 حصة تجريبية الأول</button>
+                <button type="button" class="add-mode-btn" data-mode="trial" role="tab" aria-selected="false"><span class="ic-inl" data-ic="target"></span> حصة تجريبية الأول</button>
             </div>
             <p class="muted" id="add-hint" style="margin:0 0 1rem; font-size:0.88rem; line-height:1.7;">الاسم بس يكفي — باقي البيانات تقدر تكمّلها بعدين.</p>
             <form id="add-student-form" novalidate>
@@ -310,18 +310,18 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=53"></script>
+    <script type="module" src="js/config.js?v=54"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=53';
-        import { api } from './js/api.js?v=53';
-        import { ErrorHandler, Formatters, toLatinDigits, askChoice } from './js/utils.js?v=53';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=53';
-        import { icon } from './js/icons.js?v=53';
-        import { openStudentAppointments } from './js/student-appointments.js?v=53';
-        import { subjectLabel } from './js/lesson-utils.js?v=53';
-        import { confirmDeleteStudent } from './js/student-actions.js?v=53';
-        import { normalizePhone, whatsappUrl } from './js/billing.js?v=53';
-        import { isTrial, trialState, trialWhen, localSlot, defaultTrialSlot, bookTrialSlot, bindTrialActions } from './js/trial.js?v=53';
+        import { Auth } from './js/auth.js?v=54';
+        import { api } from './js/api.js?v=54';
+        import { ErrorHandler, Formatters, toLatinDigits, askChoice } from './js/utils.js?v=54';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=54';
+        import { icon } from './js/icons.js?v=54';
+        import { openStudentAppointments } from './js/student-appointments.js?v=54';
+        import { subjectLabel } from './js/lesson-utils.js?v=54';
+        import { confirmDeleteStudent } from './js/student-actions.js?v=54';
+        import { normalizePhone, whatsappUrl } from './js/billing.js?v=54';
+        import { isTrial, trialState, trialWhen, localSlot, defaultTrialSlot, bookTrialSlot, bindTrialActions } from './js/trial.js?v=54';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الطلاب', subtitle: 'إدارة كل طلابك من مكان واحد' });
@@ -420,7 +420,7 @@
             if (urlParams.get('action') === 'bulk') openBulk();
             await loadStudents();
             // v29.8: لو اتضاف/اتعدّل طالب من جهاز تاني القايمة تتحدّث لوحدها (والبحث والفلتر بيفضلوا زي ما هما)
-            import('./js/auto-refresh.js?v=53').then((m) => m.onAppResume(() => loadStudents())).catch(() => { /* تجاهل */ });
+            import('./js/auto-refresh.js?v=54').then((m) => m.onAppResume(() => loadStudents())).catch(() => { /* تجاهل */ });
             const searchTerm = urlParams.get('search');
             if (searchTerm) {
                 document.getElementById('student-search').value = searchTerm;
@@ -477,7 +477,7 @@
                         <div class="student-name">${nm}${st !== 'active' ? `<span class="st-badge ${st}">${STATUS_LABEL[st]}</span>` : ''}</div>
                         <button type="button" class="sc-more" data-more="${id}" aria-label="خيارات ${nm}" title="خيارات">${icon('moreV', { size: 18 })}</button>
                     </div>
-                    ${st === 'trial' ? (() => { const t = trialState(student); return `<div class="trial-line ${t.phase === 'decide' ? 'decide' : ''}">🎯 ${Formatters.escapeHtml(t.text)}</div>`; })() : ''}
+                    ${st === 'trial' ? (() => { const t = trialState(student); return `<div class="trial-line ${t.phase === 'decide' ? 'decide' : ''}">${icon('target', { size: 13 })} ${Formatters.escapeHtml(t.text)}</div>`; })() : ''}
                     <div class="sc-lines">
                         ${nx ? `<div class="student-info next">${icon('calendar', { size: 14 })} الحصة الجاية: ${Formatters.escapeHtml(nx.label)}</div>` : ''}
                         ${student.current_topic ? `<div class="student-info">${icon('target', { size: 14 })} ${Formatters.escapeHtml(student.current_topic)}</div>` : ''}
@@ -590,7 +590,7 @@
             const decide = allStudents.filter((s) => stOf(s) === 'trial' && trialState(s).phase === 'decide');
             const strip = document.getElementById('trial-strip');
             strip.innerHTML = decide.length && statusFilter !== 'trial'
-                ? `<div class="trial-strip"><span>🎯 ${decide.length === 1 ? `الحصة التجريبية مع <b>${Formatters.escapeHtml(decide[0].name || '')}</b> خلصت — هيكمل معاك؟` : `<b>${decide.length}</b> طلاب خلصوا الحصة التجريبية ومستنيين قرارك`}</span>
+                ? `<div class="trial-strip"><span>${icon('target', { size: 15 })} ${decide.length === 1 ? `الحصة التجريبية مع <b>${Formatters.escapeHtml(decide[0].name || '')}</b> خلصت — هيكمل معاك؟` : `<b>${decide.length}</b> طلاب خلصوا الحصة التجريبية ومستنيين قرارك`}</span>
                     ${decide.length === 1 ? `<span style="display:flex;gap:.4rem;flex-wrap:wrap"><button type="button" class="btn btn-sm" data-trial-convert data-sid="${Formatters.escapeHtml(String(decide[0].id))}">ضيفه لطلابي</button><button type="button" class="btn btn-sm btn-ghost" data-trial-delete data-sid="${Formatters.escapeHtml(String(decide[0].id))}">مكملش</button></span>` : '<button type="button" class="btn btn-sm" data-show-trials>اعرضهم</button>'}</div>`
                 : '';
             const show = strip.querySelector('[data-show-trials]');
@@ -810,6 +810,6 @@
         // v29: الطالب اتأرشف من رسالة الحذف
         window.addEventListener('tm:student-status', () => loadStudents());
     </script>
-    <script src="js/pwa-install.js?v=53" defer></script>
+    <script src="js/pwa-install.js?v=54" defer></script>
 </body>
 </html>

@@ -12,10 +12,10 @@
  *   getContext() => { mode, elapsed_min, present_count, absent_names, lesson_content, homework, next_assignment, notes, prev_homework }
  *   onUse(field, text) => بيتنادى لما المدرس يضغط "حطه في …" (field: content | homework | next)
  */
-import { api } from './api.js?v=53';
-import { ErrorHandler } from './utils.js?v=53';
-import { icon } from './icons.js?v=53';
-import { renderMarkdown } from './md-lite.js?v=53';
+import { api } from './api.js?v=54';
+import { ErrorHandler } from './utils.js?v=54';
+import { icon } from './icons.js?v=54';
+import { renderMarkdown } from './md-lite.js?v=54';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
