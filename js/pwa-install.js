@@ -433,6 +433,13 @@
     }
     function maybeShowBanner() {
         if (isInstalled() || wasDismissedRecently() || isAuthPage()) return;
+        // v36: جوه البرنامج: مانقترحش التثبيت قبل أول حصة مسجّلة، ولا فوق رسالة إرشاد تانية (رسالة واحدة في المرة)
+        if (!/\/(index)?(\.html)?$/.test(window.location.pathname)) {
+            let has = false;
+            try { const st = (localStorage.getItem('tm_ob_state') || '').split(','); has = localStorage.getItem('tm_has_lesson') === '1' || st.includes('lesson') || localStorage.getItem('tm_ob_lesson_done') === '1'; } catch (e) { /* تجاهل */ }
+            if (!has) return;
+            if (document.querySelector('.ob-card, .rm-card, .gd-card, .tip-bubble, #tm-notif-banner, .modal.active, .tm-confirm, .tm-sheet, .ls-first')) { setTimeout(maybeShowBanner, 20000); return; }
+        }
         // الكمبيوتر: البانر بس لو المتصفح جاهز للتثبيت المباشر (الزرار في السايدبار والإعدادات موجود دايمًا)
         if (!isMobile && !deferredPrompt) return;
         buildBanner();
@@ -464,6 +471,8 @@
         });
         // مهلة صغيرة عشان مايغطيش أول تحميل للصفحة
         setTimeout(maybeShowBanner, 1800);
+        // v36: أول حصة اتسجلت = أنسب وقت (بعد ما سؤال التذكير يخلص)
+        window.addEventListener('tm:value-moment', () => setTimeout(maybeShowBanner, 2500));
         emitState();
     }
 

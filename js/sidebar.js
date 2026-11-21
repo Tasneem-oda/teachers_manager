@@ -1,15 +1,16 @@
 /**
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
-import { Auth } from './auth.js?v=52';
-import { icon } from './icons.js?v=52';
-import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=52';
-import { CONFIG } from './config.js?v=52';
-import { openSuggestionModal } from './suggestions.js?v=52';
-import { mountFloatingLesson } from './live-lesson.js?v=52';
-import { initTracking } from './track.js?v=52';
-import { askChoice } from './utils.js?v=52';
-import { priceFor, subscribeMessage, waUrl, currentUserInfo, offerActive, annualAvailable } from './pricing.js?v=52';
+import { Auth } from './auth.js?v=53';
+import { icon } from './icons.js?v=53';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=53';
+import { CONFIG } from './config.js?v=53';
+import { openSuggestionModal } from './suggestions.js?v=53';
+import { mountFloatingLesson } from './live-lesson.js?v=53';
+import { initTracking } from './track.js?v=53';
+import { askChoice } from './utils.js?v=53';
+import { applyAiGate, ensureLessonFlag } from './guide.js?v=53';
+import { priceFor, subscribeMessage, waUrl, currentUserInfo, offerActive, annualAvailable } from './pricing.js?v=53';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
@@ -19,8 +20,18 @@ const NAV_ITEMS = [
     { key: 'schedule', href: 'schedule.html', icon: 'calendar', label: 'جدولي' },
     { key: 'books', href: 'books.html', icon: 'bookOpen', label: 'مكتبتي' },
     { key: 'games', href: 'games.html', icon: 'gamepad', label: 'ألعاب الحصة', desktopOnly: true },
-    { key: 'settings', href: 'settings.html', icon: 'gear', label: 'الإعدادات' }
+    // v36: على الموبايل «الإعدادات» جوه «المزيد»
+    { key: 'settings', href: 'settings.html', icon: 'gear', label: 'الإعدادات', desktopOnly: true },
+    { key: 'more', href: '#', icon: 'list', label: 'المزيد', mobileOnly: true }
 ];
+// الصفحات اللي «المزيد» بيبان نشط فيها على الموبايل
+const MORE_KEYS = ['groups', 'games', 'settings', 'mushaf', 'learn', 'subscription'];
+const navCls = (item, activeKey) => [
+    item.key === activeKey ? 'active' : '',
+    item.desktopOnly ? 'nav-desktop-only' : '',
+    item.mobileOnly ? 'nav-mobile-only' : '',
+    item.key === 'more' && MORE_KEYS.includes(activeKey) ? 'active-mobile' : ''
+].filter(Boolean).join(' ');
 
 /**
  * تخزين مؤقّت لنتيجة /check-subscription لتقليل الضغط على n8n:
@@ -38,7 +49,7 @@ let subFetchPromise = null;
 function fetchSubscriptionNow() {
     if (subFetchPromise) return subFetchPromise;
     subFetchPromise = (async () => {
-        const { api } = await import('./api.js?v=52');
+        const { api } = await import('./api.js?v=53');
         const data = await api.checkSubscription();
         try {
             sessionStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
@@ -158,15 +169,17 @@ function installNavGuard() {
 const cleanNav = (html) => { const t = document.createElement('div'); t.innerHTML = html; t.querySelectorAll('.active, .active-mobile').forEach((el) => el.classList.remove('active', 'active-mobile')); return t.innerHTML.replace(/\s+/g, ' ').trim(); };
 
 export function renderSidebar(activeKey) {
+    // v36: المساعد الذكي مستخبي لحد أول حصة مسجّلة
+    try { applyAiGate(); whenActive(() => ensureLessonFlag()); } catch (e) { /* تجاهل */ }
     whenActive(() => { try { initTracking(); } catch (e) { /* التتبع إضافي: لو فشل الصفحة تكمّل عادي */ } });
     // v35: فيديوهات الشرح للصفحة دي (زرار صغير "▶ شرح" لو فيه فيديو مكانه هنا)
-    whenActive(() => { if (CONFIG.TUTORIALS && CONFIG.TUTORIALS.ENABLED === false) return; setTimeout(() => import('./tutorials.js?v=52').then((m) => m.initTutorials(pageKey())).catch(() => { /* إضافي */ }), 1800); });
+    whenActive(() => { if (CONFIG.TUTORIALS && CONFIG.TUTORIALS.ENABLED === false) return; setTimeout(() => import('./tutorials.js?v=53').then((m) => m.initTutorials(pageKey())).catch(() => { /* إضافي */ }), 1800); });
     installNavGuard();
     const root = document.getElementById('sidebar-root');
     if (!root) return;
 
     const navHtml = NAV_ITEMS.map(item => `
-        <a href="${item.href}" data-key="${item.key}" class="${[item.key === activeKey ? 'active' : '', item.desktopOnly ? 'nav-desktop-only' : '', (item.key === 'students' && activeKey === 'groups') || (item.key === 'books' && activeKey === 'games') ? 'active-mobile' : ''].filter(Boolean).join(' ')}">
+        <a href="${item.href}" data-key="${item.key}" class="${navCls(item, activeKey)}"${item.key === 'more' ? ' role="button" aria-haspopup="dialog"' : ''}>
             <span class="icon">${icon(item.icon, { size: 19 })}</span>
             <span class="label">${item.label}</span>
         </a>
@@ -212,7 +225,7 @@ export function renderSidebar(activeKey) {
         root.querySelectorAll('.sidebar-nav a[data-key]').forEach((a) => {
             const k = a.dataset.key;
             a.classList.toggle('active', k === activeKey);
-            a.classList.toggle('active-mobile', (k === 'students' && activeKey === 'groups') || (k === 'books' && activeKey === 'games'));
+            a.classList.toggle('active-mobile', k === 'more' && MORE_KEYS.includes(activeKey));
         });
         const inst = document.getElementById('sidebar-install'); if (inst) inst.hidden = true;
     } else {
@@ -226,6 +239,8 @@ export function renderSidebar(activeKey) {
         e.preventDefault();
         openInstall();
     });
+    const moreBtn = root.querySelector('.sidebar-nav a[data-key="more"]');
+    if (moreBtn) moreBtn.addEventListener('click', (e) => { e.preventDefault(); openMoreSheet(activeKey); });
     syncInstallEntries();
 
     document.getElementById('sidebar-suggest').addEventListener('click', (e) => {
@@ -234,11 +249,11 @@ export function renderSidebar(activeKey) {
     });
     document.getElementById('sidebar-contact').addEventListener('click', (e) => {
         e.preventDefault();
-        import('./hub.js?v=52').then((m) => m.openContact()).catch(() => { window.open(`https://wa.me/${CONFIG.SUPPORT_WHATSAPP}`, '_blank', 'noopener'); });
+        import('./hub.js?v=53').then((m) => m.openContact()).catch(() => { window.open(`https://wa.me/${CONFIG.SUPPORT_WHATSAPP}`, '_blank', 'noopener'); });
     });
     // v33: إشعاراتك من المونيتور + الرسايل التلقائية (بعد ما الصفحة تخلص تحميل، من غير ما تأخرها)
     whenActive(() => { try {
-        const startHub = () => import('./hub.js?v=52').then((m) => m.initHub()).catch(() => { /* تجاهل */ });
+        const startHub = () => import('./hub.js?v=53').then((m) => m.initHub()).catch(() => { /* تجاهل */ });
         if ('requestIdleCallback' in window) requestIdleCallback(() => setTimeout(startHub, 600), { timeout: 3000 });
         else setTimeout(startHub, 1500);
     } catch (e) { /* تجاهل */ } });
@@ -264,6 +279,58 @@ export function renderSidebar(activeKey) {
         const qs = new URLSearchParams(location.search);
         mountFloatingLesson({ exceptStudentId: onLessonPage ? qs.get('student_id') : (onGroupLesson ? `group:${qs.get('group_id')}` : null) });
     } catch (e) { /* النافذة إضافية: لو فشلت الصفحة تكمّل عادي */ }
+}
+
+// ------------------------------------------------------------------ v36: «المزيد» (موبايل): نافذة من تحت
+async function signOutFlow() {
+    const ok = await askChoice({ title: 'تسجيل الخروج', message: 'تخرج من البرنامج على الجهاز ده؟ بياناتك محفوظة.', choices: [{ label: 'اخرج', value: 'yes' }] });
+    if (!ok) return;
+    await unlinkOnSignOut();
+    await Auth.signOut();
+    window.location.href = 'login.html';
+}
+export function openMoreSheet(activeKey = '') {
+    if (document.getElementById('tm-more')) return;
+    const installed = (window.tmInstall && window.tmInstall.isInstalled) ? window.tmInstall.isInstalled() : appInstalled();
+    const items = [
+        { k: 'groups', href: 'groups.html', ic: 'group', t: 'المجموعات' },
+        { k: 'games', href: 'games.html', ic: 'gamepad', t: 'ألعاب الحصة' },
+        { k: 'settings', href: 'settings.html', ic: 'gear', t: 'الإعدادات' },
+        { k: 'mushaf', href: 'mushaf.html', ic: 'bookOpen', t: 'المصحف' },
+        { k: 'learn', href: 'learn.html', ic: 'play', t: 'الشروحات' },
+        { k: 'income', ic: 'creditCard', t: 'فلوس الشهر', act: () => import('./income.js?v=53').then((m) => m.openIncomeModal(new Date().getDate() <= 5 ? -1 : 0)) },
+        { k: 'subscription', href: 'subscription.html', ic: 'crown', t: 'الاشتراك' },
+        installed ? null : { k: 'install', ic: 'download', t: 'ثبّت التطبيق', act: () => openInstall() },
+        { k: 'suggest', ic: 'lightbulb', t: 'عندك اقتراح؟', act: () => openSuggestionModal() },
+        { k: 'contact', ic: 'headset', t: 'تواصل مع المطوّر', act: () => import('./hub.js?v=53').then((m) => m.openContact()).catch(() => { window.open(`https://wa.me/${CONFIG.SUPPORT_WHATSAPP}`, '_blank', 'noopener'); }) },
+        { k: 'logout', ic: 'logout', t: 'تسجيل الخروج', act: signOutFlow, danger: true }
+    ].filter(Boolean);
+    const here = pageKey();
+    const m = document.createElement('div');
+    m.id = 'tm-more';
+    m.className = 'tm-sheet';
+    m.innerHTML = `<div class="tm-sheet-panel" role="dialog" aria-modal="true" aria-label="المزيد">
+        <div class="tm-sheet-grip" aria-hidden="true"></div>
+        <div class="tm-sheet-head"><b>المزيد</b><button type="button" class="tm-sheet-x" data-x aria-label="قفل">${icon('x', { size: 18 })}</button></div>
+        <nav class="tm-more-list">${items.map((it, i) => {
+            const cur = it.href && (it.k === here || (it.k === 'settings' && here === 'settings'));
+            const inner = `<span class="mi">${icon(it.ic, { size: 19 })}</span><span class="mt">${it.t}</span>`;
+            return it.href
+                ? `<a href="${it.href}" class="${cur ? 'is-cur' : ''}"${cur ? ' aria-current="page"' : ''}>${inner}</a>`
+                : `<button type="button" data-i="${i}" class="${it.danger ? 'is-danger' : ''}">${inner}</button>`;
+        }).join('')}</nav>
+    </div>`;
+    const close = () => { m.classList.remove('open'); setTimeout(() => m.remove(), 180); document.removeEventListener('keydown', onKey); };
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    m.addEventListener('click', (e) => {
+        if (e.target === m || e.target.closest('[data-x]')) { close(); return; }
+        const b = e.target.closest('button[data-i]');
+        if (b) { const it = items[Number(b.dataset.i)]; close(); setTimeout(() => it.act && it.act(), 60); }
+    });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(m);
+    requestAnimationFrame(() => m.classList.add('open'));
+    setTimeout(() => { const f = m.querySelector('.tm-more-list a, .tm-more-list button'); if (f) f.focus({ preventScroll: true }); }, 60);
 }
 
 /**
@@ -460,7 +527,7 @@ function escapeBannerText(s) {
 /**
  * الهيدر العلوي الموحّد (ترحيب + بحث + إشعارات + صورة المستخدم)
  */
-export function renderTopHeader({ title = '', subtitle = '', showSearch = true } = {}) {
+export function renderTopHeader({ title = '', subtitle = '', showSearch = false } = {}) {
     const root = document.getElementById('top-header-root');
     if (!root) return;
 
@@ -476,17 +543,11 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
                     <span class="icon">${icon('search', { size: 16 })}</span>
                     <input type="text" id="global-search" placeholder="ابحث عن طالب...">
                 </div>` : ''}
-                <button type="button" class="bell-btn header-install tm-install-entry" id="header-install" title="ثبّت التطبيق" aria-label="ثبّت التطبيق" hidden>
-                    ${icon('download', { size: 17 })}<span>ثبّت</span>
-                </button>
                 <button type="button" class="bell-btn header-contact" id="header-contact" title="تواصل مع المطوّر" aria-label="تواصل مع المطوّر">
                     ${icon('headset', { size: 18 })}<span>تواصل</span>
                 </button>
                 <button type="button" class="bell-btn" id="header-bell" title="الإشعارات" aria-label="الإشعارات">
                     ${icon('bell', { size: 18 })}
-                </button>
-                <button type="button" class="bell-btn mobile-only-flex" id="header-logout-mobile" title="تسجيل الخروج">
-                    ${icon('logout', { size: 18 })}
                 </button>
                 <a class="bell-btn header-help" href="learn.html" title="الشروحات" aria-label="فيديوهات الشرح">${icon('play', { size: 16 })}</a>
                 <a class="header-avatar" href="settings.html" title="حسابك والإعدادات" aria-label="حسابك والإعدادات">
@@ -501,17 +562,7 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
     `;
 
     document.getElementById('header-contact').addEventListener('click', () => {
-        import('./hub.js?v=52').then((m) => m.openContact()).catch(() => { window.open(`https://wa.me/${CONFIG.SUPPORT_WHATSAPP}`, '_blank', 'noopener'); });
-    });
-    document.getElementById('header-install').addEventListener('click', () => openInstall());
-    syncInstallEntries();
-
-    document.getElementById('header-logout-mobile').addEventListener('click', async () => {
-        const ok = await askChoice({ title: 'تسجيل الخروج', message: 'تخرج من البرنامج على الجهاز ده؟ بياناتك محفوظة.', choices: [{ label: 'اخرج', value: 'yes' }] });
-        if (!ok) return;
-        await unlinkOnSignOut();
-        await Auth.signOut();
-        window.location.href = 'login.html';
+        import('./hub.js?v=53').then((m) => m.openContact()).catch(() => { window.open(`https://wa.me/${CONFIG.SUPPORT_WHATSAPP}`, '_blank', 'noopener'); });
     });
 
     if (showSearch) {
@@ -533,14 +584,14 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = true }
 // على الموبايلات الضعيفة ده كان بيعلّق التطبيق أول ما يفتح
 function idle(fn, t) { if ('requestIdleCallback' in window) requestIdleCallback(() => fn(), { timeout: t }); else setTimeout(fn, Math.min(t, 1500)); }
 function startBackground() {
-    import('./net-status.js?v=52').then((m) => m.initNetStatus()).catch(() => { /* تجاهل */ });
+    import('./net-status.js?v=53').then((m) => m.initNetStatus()).catch(() => { /* تجاهل */ });
     idle(() => {
     // v29.7: الوقت الصح من السيرفر (لو ساعة الجهاز غلط التذكيرات وتاريخ الحصص بيمشوا على الوقت الحقيقي)
-    import('./server-time.js?v=52').then((m) => m.initServerTime()).catch(() => { /* تجاهل */ });
+    import('./server-time.js?v=53').then((m) => m.initServerTime()).catch(() => { /* تجاهل */ });
     // v30: مزامنة لحظية بين أجهزة نفس المدرس (حصة اتسجلت على اللابتوب ← الموبايل يتحدّث فورًا)
     }, 1500);
-    idle(() => import('./realtime-sync.js?v=52').then((m) => m.initRealtimeSync()).catch(() => { /* تجاهل */ }), 2500);
-    const startReminders = () => import('./local-reminders.js?v=52').then((m) => m.initLocalReminders()).catch(() => { /* تجاهل */ });
+    idle(() => import('./realtime-sync.js?v=53').then((m) => m.initRealtimeSync()).catch(() => { /* تجاهل */ }), 2500);
+    const startReminders = () => import('./local-reminders.js?v=53').then((m) => m.initLocalReminders()).catch(() => { /* تجاهل */ });
     idle(startReminders, 3500);
 
     // تفعيل إشعارات Push (تذكير الحصص اليومي) - مرة واحدة بعد رسم الهيدر
@@ -556,7 +607,7 @@ async function loadHeaderProfile() {
         const profile = Auth.cachedProfile(session.user && session.user.id) || await Auth.bootstrapSession();
         // v28: الحساب مجدول للحذف؟ نعرض "رجّع حسابي" قبل أي حاجة
         if (profile && profile.deletion_scheduled_for) {
-            try { const m = await import('./account-delete.js?v=52'); m.showDeletionScheduledGate(profile); } catch (e) { /* تجاهل */ }
+            try { const m = await import('./account-delete.js?v=53'); m.showDeletionScheduledGate(profile); } catch (e) { /* تجاهل */ }
         }
         const nameEl = document.getElementById('header-user-name');
         const avatarEl = document.getElementById('header-avatar-fallback');

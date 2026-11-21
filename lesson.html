@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=52">
+    <link rel="stylesheet" href="css/style.css?v=53">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -24,11 +24,11 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=52">
-    <link rel="stylesheet" href="css/books.css?v=52">
+    <link rel="stylesheet" href="css/lessons.css?v=53">
+    <link rel="stylesheet" href="css/books.css?v=53">
     <style>body { margin: 0; }</style>
-    <link rel="stylesheet" href="css/v29.css?v=52">
-    <link rel="stylesheet" href="css/ui.css?v=52">
+    <link rel="stylesheet" href="css/v29.css?v=53">
+    <link rel="stylesheet" href="css/ui.css?v=53">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -195,6 +195,7 @@
                                 <!-- v31: بعد الحصة التجريبية: يكمل ولا لأ؟ -->
                                 <div id="done-trial" style="text-align:start"></div>
                                 <!-- v28: تقرير الحصة لولي الأمر -->
+                                <div class="ls-first" id="done-first" hidden></div>
                                 <div class="ls-done-report" id="done-report" hidden></div>
                                 <div class="ls-done-next" id="done-next" hidden></div>
 <div class="ls-done-bill" id="done-bill"></div>
@@ -315,28 +316,29 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=52"></script>
+    <script type="module" src="js/config.js?v=53"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=52';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=52';
-        import { api } from './js/api.js?v=52';
-        import { ErrorHandler, Formatters, uuidv4, toLatinDigits, askChoice } from './js/utils.js?v=52';
-        import { icon } from './js/icons.js?v=52';
+        import { Auth } from './js/auth.js?v=53';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=53';
+        import { api } from './js/api.js?v=53';
+        import { ErrorHandler, Formatters, uuidv4, toLatinDigits, askChoice } from './js/utils.js?v=53';
+        import { icon } from './js/icons.js?v=53';
         import {
             subjectLabel, ratingFieldLabels, RATINGS, HOMEWORK_STATUS, relativeDay, localDateISO, localTimeISO,
             formatDuration, minutesText, LessonDraft, lessonHasContent, lessonDetailsHtml, nextOccurrence, formatNextOccurrence,
             normalizeLesson, isAbsenceRow, attendanceInfo, lessonDay, deviceMsToDateISO, serverTimeToDateISO
-        } from './js/lesson-utils.js?v=52';
-        import { openAttendanceModal } from './js/attendance.js?v=52';
-        import { showTips, dismissTip } from './js/tips.js?v=52';
-        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=52';
-        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=52';
-        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=52';
-        import { openBookViewer } from './js/book-viewer.js?v=52';
-        import { openLessonReport } from './js/report.js?v=52';
-        import { isTrial, trialCardHtml, bindTrialActions } from './js/trial.js?v=52';
-        import { openWhiteboard } from './js/whiteboard.js?v=52';
-        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=52';
+        } from './js/lesson-utils.js?v=53';
+        import { openAttendanceModal } from './js/attendance.js?v=53';
+        import { showTips, dismissTip } from './js/tips.js?v=53';
+        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=53';
+        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=53';
+        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=53';
+        import { openBookViewer } from './js/book-viewer.js?v=53';
+        import { openLessonReport } from './js/report.js?v=53';
+        import { isTrial, trialCardHtml, bindTrialActions } from './js/trial.js?v=53';
+        import { openWhiteboard } from './js/whiteboard.js?v=53';
+        import { markLessonSaved } from './js/guide.js?v=53';
+        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=53';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'ابدأ الحصة وتابعها وسجّلها في مكان واحد', showSearch: false });
@@ -624,7 +626,7 @@
             mode = null;
             stopTimer();
             // v33: "الواجب بالتفصيل" (حفظ/مراجعة/تلاوة + السورة + من/إلى)
-            import('./js/hw-builder.js?v=52').then((m) => m.mountHomeworkBuilder($('f-homework'), { subject: student && student.subject })).catch(() => { /* تجاهل */ });
+            import('./js/hw-builder.js?v=53').then((m) => m.mountHomeworkBuilder($('f-homework'), { subject: student && student.subject })).catch(() => { /* تجاهل */ });
             unpublishLive();
             $('r-name').textContent = student.name || 'بدون اسم';
             const sub = [`<span>${icon('bookOpen', { size: 14 })} ${esc(subjectLabel(student.subject))}</span>`];
@@ -879,7 +881,7 @@
         try { document.querySelector('#btn-game .ic-game').innerHTML = icon('gamepad', { size: 16 }); } catch (e) { /* تجاهل */ }
         $('btn-game').addEventListener('click', async () => {
             try {
-                const m = await import('./js/games/picker.js?v=52');
+                const m = await import('./js/games/picker.js?v=53');
                 m.openGamePicker({ api, subject: student && student.subject, toast: { ok: (t) => ErrorHandler.showSuccess(t), err: (e) => ErrorHandler.showError(ErrorHandler.getErrorMessage(e)) } });
             } catch (e) { ErrorHandler.showError('الألعاب ماتحمّلتش. اتأكد من النت وجرّب تاني.'); }
         });
@@ -1164,7 +1166,7 @@
                     window.location.href = `student.html?id=${encodeURIComponent(studentIdParam)}&edited=1#lessons`;
                     return;
                 }
-                try { localStorage.setItem('tm_ob_lesson_done', '1'); } catch (e) { /* تجاهل */ }
+                firstLessonNow = markLessonSaved();   // v36: أول حصة للمدرس؟ (قبل ما نعلّم إنه سجّل)
                 try {
                     // غِنى التسجيل (من غير المحتوى نفسه): بيورّينا المدرسين بيملوا إيه فعلًا وإيه اللي بيتجاهلوه
                     const filled = Object.entries(fields).filter(([, v]) => v && String(v).trim()).map(([k]) => k);
@@ -1268,6 +1270,7 @@
             $('done-sub').textContent = parts.join(' · ');
             renderBilling($('done-bill'), false);
             renderDoneNext(null);
+            if (!$('done-first').hidden) $('done-next').hidden = true;   // v36: رسالة واحدة في المرة
         }
 
         function showDone(duration, absenceValue, pendingRefresh = false) {
@@ -1283,6 +1286,11 @@
                 $('done-title').textContent = 'تم حفظ الحصة';
                 $('done-icon').innerHTML = icon('checkCircle', { size: 34 });
             }
+            // v36: أول حصة للمدرس: تهنئة + سؤال التذكير (بدل ما الإشعارات تتطلب قبل ما يكون عنده حاجة يتفكّر بيها)
+            const isFirst = !absenceValue && firstLessonNow;
+            firstLessonNow = false;
+            if (isFirst) $('done-title').textContent = 'أول حصة اتسجلت. أحسنت.';
+            renderFirstReminder(isFirst);
             if (onboardingParam && !absenceValue) {
                 $('done-home').className = 'btn';
                 $('done-home').textContent = 'كمّل خطوات البداية';
@@ -1293,15 +1301,54 @@
             if (!pendingRefresh && lessonsCount()) parts.push(`إجمالي حصص ${student.name ? student.name.split(' ')[0] : 'الطالب'}: ${lessonsCount()}`);
             $('done-sub').textContent = parts.join(' · ');
             if (pendingRefresh) { $('done-bill').innerHTML = ''; $('done-next').hidden = true; }   // بيتحدّثوا بعد ما البيانات الجديدة توصل
-            else { renderBilling($('done-bill'), false); renderDoneNext(absenceValue); }
+            else { renderBilling($('done-bill'), false); renderDoneNext(absenceValue); if (isFirst) $('done-next').hidden = true; }
             clearForm();
             // v31: الطالب تجريبي ← القرار هنا على طول (الحصة اتعملت، فده أنسب وقت)
             $('done-trial').innerHTML = isTrial(student) && absenceValue !== 'postponed' ? trialCardHtml(student, { doneLessons: absenceValue ? 0 : 1 }) : '';
             showState('done');
             // أول حصة متسجلة = أنسب وقت نقترح فيه تثبيت التطبيق (js/pwa-install.js بيسمع للحدث ده)
-            if (!absenceValue) {
+            // v36: في أول حصة بيستنى لحد ما المدرس يرد على سؤال التذكير (رسالة واحدة في المرة)
+            if (!absenceValue && !isFirst) {
                 try { window.dispatchEvent(new CustomEvent('tm:value-moment', { detail: { kind: 'lesson_saved' } })); } catch (e) { /* تجاهل */ }
             }
+        }
+
+        let firstLessonNow = false;
+        // v36: «تحب نفكرك قبل كل حصة؟» بعد أول حصة بس
+        function renderFirstReminder(show) {
+            const box = $('done-first');
+            if (!show) { if (!box.dataset.answered) { box.hidden = true; box.innerHTML = ''; } return; }
+            box.hidden = false;
+            box.innerHTML = `<strong>${icon('bell', { size: 17 })} تحب نفكرك قبل كل حصة؟</strong>
+                <span>كل يوم الساعة 5 الصبح (بتوقيت مصر) هيوصلك ملخص حصص اليوم في كل الأحوال.</span>
+                <div class="lf-opts" role="group" aria-label="ميعاد التذكير">
+                    <button type="button" class="btn" data-rm="60">قبلها بساعة</button>
+                    <button type="button" class="btn btn-outline" data-rm="30">قبلها بنص ساعة</button>
+                    <button type="button" class="btn btn-outline" data-rm="none">لأ، كفاية الصبح</button>
+                    <button type="button" class="btn btn-ghost" data-rm="later">بعدين</button>
+                </div>
+                <p class="lf-msg" aria-live="polite"></p>`;
+            const done = () => { try { window.dispatchEvent(new CustomEvent('tm:value-moment', { detail: { kind: 'lesson_saved' } })); } catch (e) { /* تجاهل */ } };
+            box.onclick = async (e) => {
+                const b = e.target.closest('[data-rm]');
+                if (!b) return;
+                const v = b.dataset.rm;
+                if (v === 'later') { box.hidden = true; box.innerHTML = ''; done(); return; }
+                box.querySelectorAll('[data-rm]').forEach((x) => { x.disabled = true; });
+                const msg = box.querySelector('.lf-msg');
+                msg.textContent = 'جاري الحفظ...';
+                try {
+                    await api.saveTeacherSettings({ remind_before_minutes: v === 'none' ? null : Number(v), reminders_configured: true });
+                    box.dataset.answered = '1';
+                    box.innerHTML = `<strong>${icon('checkCircle', { size: 17 })} تمام!</strong><span>${v === 'none' ? 'هيوصلك ملخص الصبح بس.' : `هنفكرك ${v === '60' ? 'قبل كل حصة بساعة' : 'قبل كل حصة بنص ساعة'}.`} تقدر تغيّره من الإعدادات.</span>`;
+                    try { const { requestPermission } = await import('./js/notifications.js?v=53'); await requestPermission(); } catch (er) { /* تجاهل */ }
+                    done();
+                } catch (err) {
+                    msg.textContent = '';
+                    box.querySelectorAll('[data-rm]').forEach((x) => { x.disabled = false; });
+                    ErrorHandler.showError(ErrorHandler.getErrorMessage(err));
+                }
+            };
         }
 
         bindTrialActions($('done-trial'), () => ({ ...student, id: studentIdParam }), (what) => {
@@ -2100,6 +2147,6 @@
             }
         });
         </script>
-    <script src="js/pwa-install.js?v=52" defer></script>
+    <script src="js/pwa-install.js?v=53" defer></script>
 </body>
 </html>

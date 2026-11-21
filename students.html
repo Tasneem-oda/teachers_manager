@@ -16,9 +16,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=52">
-    <link rel="stylesheet" href="css/lessons.css?v=52">
-    <link rel="stylesheet" href="css/groups.css?v=52">
+    <link rel="stylesheet" href="css/style.css?v=53">
+    <link rel="stylesheet" href="css/lessons.css?v=53">
+    <link rel="stylesheet" href="css/groups.css?v=53">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -117,8 +117,8 @@
             .student-actions .btn { min-height: 40px; font-size: .84rem; }
         }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=52">
-    <link rel="stylesheet" href="css/ui.css?v=52">
+    <link rel="stylesheet" href="css/v29.css?v=53">
+    <link rel="stylesheet" href="css/ui.css?v=53">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -204,6 +204,15 @@
                     <div class="form-group"><label for="trial-dur">مدة الحصة</label>
                         <select id="trial-dur"><option value="30">30 دقيقة</option><option value="45" selected>45 دقيقة</option><option value="60">ساعة</option><option value="90">ساعة ونص</option></select></div>
                 </div>
+                <!-- v36: المادة بتتسأل هنا مرة واحدة لو مادة المدرس فاضية (اتشالت من التسجيل) -->
+                <div class="form-group ts-ask" id="ts-ask" hidden>
+                    <label id="ts-ask-l">بتدرّس إيه؟ *</label>
+                    <div class="ts-opts" role="radiogroup" aria-labelledby="ts-ask-l">
+                        <button type="button" role="radio" aria-checked="false" data-ts="quran">القرآن الكريم</button>
+                        <button type="button" role="radio" aria-checked="false" data-ts="arabic">اللغة العربية</button>
+                        <button type="button" role="radio" aria-checked="false" data-ts="other">مادة تانية</button>
+                    </div>
+                </div>
                 <div class="form-group">
                     <label for="student-name">اسم الطالب *</label>
                     <input type="text" id="student-name" maxlength="120" autocomplete="off" required>
@@ -220,7 +229,7 @@
                         <div class="form-group"><label for="guardian-phone">رقم واتساب ولي الأمر</label><input type="tel" id="guardian-phone" dir="ltr" maxlength="40" placeholder="01xxxxxxxxx"></div>
                     </div>
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="student-subject-group">
                     <label for="student-subject">المادة *</label>
                     <select id="student-subject" required>
                         <option value="">اختر...</option>
@@ -301,18 +310,18 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=52"></script>
+    <script type="module" src="js/config.js?v=53"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=52';
-        import { api } from './js/api.js?v=52';
-        import { ErrorHandler, Formatters, toLatinDigits, askChoice } from './js/utils.js?v=52';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=52';
-        import { icon } from './js/icons.js?v=52';
-        import { openStudentAppointments } from './js/student-appointments.js?v=52';
-        import { subjectLabel } from './js/lesson-utils.js?v=52';
-        import { confirmDeleteStudent } from './js/student-actions.js?v=52';
-        import { normalizePhone, whatsappUrl } from './js/billing.js?v=52';
-        import { isTrial, trialState, trialWhen, localSlot, defaultTrialSlot, bookTrialSlot, bindTrialActions } from './js/trial.js?v=52';
+        import { Auth } from './js/auth.js?v=53';
+        import { api } from './js/api.js?v=53';
+        import { ErrorHandler, Formatters, toLatinDigits, askChoice } from './js/utils.js?v=53';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=53';
+        import { icon } from './js/icons.js?v=53';
+        import { openStudentAppointments } from './js/student-appointments.js?v=53';
+        import { subjectLabel } from './js/lesson-utils.js?v=53';
+        import { confirmDeleteStudent } from './js/student-actions.js?v=53';
+        import { normalizePhone, whatsappUrl } from './js/billing.js?v=53';
+        import { isTrial, trialState, trialWhen, localSlot, defaultTrialSlot, bookTrialSlot, bindTrialActions } from './js/trial.js?v=53';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الطلاب', subtitle: 'إدارة كل طلابك من مكان واحد' });
@@ -362,9 +371,31 @@
                 if (!document.getElementById('trial-time').value) document.getElementById('trial-time').value = d.time;
             }
         }
+        // v36: مادة المدرس فاضية؟ نسأله هنا (اختيار واحد) ونحفظها في ملفه
+        let askTeacherSubject = false;
+        function setupTeacherSubjectAsk() {
+            askTeacherSubject = !teacherSubject();
+            document.getElementById('ts-ask').hidden = !askTeacherSubject;
+            document.getElementById('student-subject-group').hidden = askTeacherSubject;
+            document.querySelectorAll('#ts-ask [data-ts]').forEach((b) => b.setAttribute('aria-checked', 'false'));
+        }
+        document.querySelectorAll('#ts-ask [data-ts]').forEach((b) => b.addEventListener('click', () => {
+            document.querySelectorAll('#ts-ask [data-ts]').forEach((x) => x.setAttribute('aria-checked', String(x === b)));
+            const sel = document.getElementById('student-subject');
+            if (![...sel.options].some((o) => o.value === b.dataset.ts)) sel.add(new Option(subjectLabel(b.dataset.ts), b.dataset.ts));
+            sel.value = b.dataset.ts;
+        }));
+        function saveTeacherSubject(subject) {
+            try { localStorage.setItem('tm_teacher_subject', subject); } catch (e) { /* تجاهل */ }
+            let prof = {};
+            try { prof = JSON.parse(localStorage.getItem('user_profile') || 'null') || {}; prof.subject = subject; localStorage.setItem('user_profile', JSON.stringify(prof)); sessionStorage.removeItem('tm_profile_cache_v1'); } catch (e) { /* تجاهل */ }
+            api.updateProfile({ name: prof.name || '', phone: prof.phone || '', teaching_type: prof.teaching_type || 'private', subject })
+                .catch(() => { /* المادة اتحفظت على الجهاز، وهتتسأل تاني لو ماتحفظتش على السيرفر */ try { localStorage.removeItem('tm_teacher_subject'); } catch (e) { /* تجاهل */ } });
+        }
         function openAdd(mode = 'normal') {
             document.getElementById('add-student-form').reset();
             document.getElementById('link-error').hidden = true;
+            setupTeacherSubjectAsk();
             presetSubject(document.getElementById('student-subject'));
             setAddMode(typeof mode === 'string' ? mode : 'normal');
             modal.classList.add('active');
@@ -389,7 +420,7 @@
             if (urlParams.get('action') === 'bulk') openBulk();
             await loadStudents();
             // v29.8: لو اتضاف/اتعدّل طالب من جهاز تاني القايمة تتحدّث لوحدها (والبحث والفلتر بيفضلوا زي ما هما)
-            import('./js/auto-refresh.js?v=52').then((m) => m.onAppResume(() => loadStudents())).catch(() => { /* تجاهل */ });
+            import('./js/auto-refresh.js?v=53').then((m) => m.onAppResume(() => loadStudents())).catch(() => { /* تجاهل */ });
             const searchTerm = urlParams.get('search');
             if (searchTerm) {
                 document.getElementById('student-search').value = searchTerm;
@@ -637,7 +668,7 @@
             const subject = document.getElementById('student-subject').value;
             const link = normalizeLink(document.getElementById('student-link').value);
             if (!name) { ErrorHandler.showError('اكتب اسم الطالب'); document.getElementById('student-name').focus(); return; }
-            if (!subject) { ErrorHandler.showError('اختر المادة'); return; }
+            if (!subject) { ErrorHandler.showError(askTeacherSubject ? 'اختار المادة اللي بتدرّسها' : 'اختر المادة'); return; }
             if (link && !/^https?:\/\/[^\s.]+\.[^\s]+/i.test(link)) { document.getElementById('link-error').hidden = false; document.getElementById('student-link').focus(); return; }
             // v31: ميعاد الحصة التجريبية
             let trialSlot = null;
@@ -670,6 +701,7 @@
             saveBtn.disabled = true;
             try {
                 const res = await api.createStudent(studentData);
+                if (askTeacherSubject) { saveTeacherSubject(subject); askTeacherSubject = false; }
                 try { (window.dataLayer = window.dataLayer || []).push({ event: 'student_added', students_count: 1, method: trialSlot ? 'trial' : 'single' }); } catch (e) { /* تجاهل */ }
                 modal.classList.remove('active');
                 let newId = newIdFrom(res);
@@ -778,6 +810,6 @@
         // v29: الطالب اتأرشف من رسالة الحذف
         window.addEventListener('tm:student-status', () => loadStudents());
     </script>
-    <script src="js/pwa-install.js?v=52" defer></script>
+    <script src="js/pwa-install.js?v=53" defer></script>
 </body>
 </html>

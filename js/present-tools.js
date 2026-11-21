@@ -6,9 +6,9 @@
  * • "صفحة بيضا" (السبورة) في أي وقت، وقص جزء من الكتاب للسبورة
  * • أزرار الكيبورد لكل ده (بتشتغل والكيبورد عربي برضه)
  */
-import { icon } from './icons.js?v=52';
-import { W, InkLayer, InkController, ToolDock, handleInkKey, LaserPointer, confirmIn } from './annotate.js?v=52';
-import { openWhiteboard, isWhiteboardOpen } from './whiteboard.js?v=52';
+import { icon } from './icons.js?v=53';
+import { W, InkLayer, InkController, ToolDock, handleInkKey, LaserPointer, confirmIn } from './annotate.js?v=53';
+import { openWhiteboard, isWhiteboardOpen } from './whiteboard.js?v=53';
 
 const DRAW_TYPES = ['pdf', 'docx', 'pptx', 'image'];
 const BOOK_TOOLS = ['hand', 'pen', 'hl', 'temp', 'eraser', 'line', 'arrow', 'rect', 'ellipse', 'text', 'stamp', 'move', 'laser', 'magnifier', 'zoomarea', 'spotlight', 'ruler', 'snip'];
@@ -23,7 +23,7 @@ const SHORTCUTS = [
 ];
 
 export class PresentTools {
-    /** @param {import('./book-viewer.js?v=52').BookViewer} viewer */
+    /** @param {import('./book-viewer.js?v=53').BookViewer} viewer */
     constructor(viewer) {
         this.v = viewer;
         this.layers = new Map();       // page → InkLayer

@@ -33,10 +33,10 @@
  * كل جزء بيفشل بصمت (من غير ما يكسر باقي الصفحة) لو لسه معمولش الإعداد بتاعه.
  * ============================================================================
  */
-import { CONFIG } from './config.js?v=52';
-import { Auth } from './auth.js?v=52';
-import { api } from './api.js?v=52';
-import { ErrorHandler } from './utils.js?v=52';
+import { CONFIG } from './config.js?v=53';
+import { Auth } from './auth.js?v=53';
+import { api } from './api.js?v=53';
+import { ErrorHandler } from './utils.js?v=53';
 
 const PROMPT_DISMISS_KEY = 'tm_notif_prompt_dismissed';
 const BADGE_CACHE_KEY = 'tm_notif_badge_cache_v1';
@@ -136,7 +136,7 @@ async function initAndLinkTeacher() {
             // v32: لو الاشتراك اتغيّر بعدين (اتلغى/رجع) السيرفر يعرف على طول
             if (ps && typeof ps.addEventListener === 'function') {
                 ps.addEventListener('change', () => {
-                    import('./push-health.js?v=52').then(async (m) => m.reportPushStatus(await m.checkPushHealth())).catch(() => { /* تجاهل */ });
+                    import('./push-health.js?v=53').then(async (m) => m.reportPushStatus(await m.checkPushHealth())).catch(() => { /* تجاهل */ });
                 });
             }
         } catch (e) { /* تجاهل */ }
@@ -153,7 +153,7 @@ async function initAndLinkTeacher() {
                         return;
                     }
                     if (data.tm_sound === true || data.tm_sound === 'true') {
-                        import('./reminder-settings.js?v=52').then((m) => m.playReminderSound()).catch(() => { /* تجاهل */ });
+                        import('./reminder-settings.js?v=53').then((m) => m.playReminderSound()).catch(() => { /* تجاهل */ });
                     }
                 } catch (e) { /* تجاهل */ }
             });
@@ -179,8 +179,12 @@ function showEnablePrompt() {
     try {
         const c = JSON.parse(localStorage.getItem('tm_rem_sched_v1') || 'null');
         if (!c || !(((c.schedules || []).length) || ((c.group_schedules || []).length))) return;
+        // v36: مدرس لسه ماسجّلش أول حصة: مفيش طلب إشعارات خالص (السؤال بييجي بعد أول حصة)
+        const st = (localStorage.getItem('tm_ob_state') || '').split(',');
+        if (!(localStorage.getItem('tm_has_lesson') === '1' || st.includes('lesson') || localStorage.getItem('tm_ob_lesson_done') === '1')) return;
     } catch (e) { return; }
-    if (document.querySelector('.modal.active, .tm-confirm, .onb-welcome, #tm-welcome')) { setTimeout(showEnablePrompt, 20000); return; }
+    // رسالة إرشاد واحدة بس في المرة: لو فيه كارت خطوة/دعوة/تلميح ظاهر نستنى
+    if (document.querySelector('.modal.active, .tm-confirm, .onb-welcome, #tm-welcome, .ob-card, .rm-card, .gd-card, .tip-bubble, .tm-sheet')) { setTimeout(showEnablePrompt, 20000); return; }
     // لو المتصفح أصلاً رافض الإذن أو موافق عليه بالفعل، مفيش داعي نعرض بانر
     if (!('Notification' in window)) return;
     if (Notification.permission === 'granted' || Notification.permission === 'denied') return;
@@ -821,7 +825,7 @@ export async function initPushNotifications() {
         setTimeout(showEnablePrompt, 2000);
         // v32: فحص إن الإشعارات واصلة فعلًا (مش بس إن الإذن متاح) + إصلاح تلقائي + تبليغ السيرفر
         setTimeout(() => {
-            import('./push-health.js?v=52').then((m) => m.runPushHealth({ requestPermission })).catch(() => { /* تجاهل */ });
+            import('./push-health.js?v=53').then((m) => m.runPushHealth({ requestPermission })).catch(() => { /* تجاهل */ });
         }, 5000);
     } catch (e) {
         // فشل تفعيل الإشعارات مش المفروض يوقف استخدام باقي البرنامج

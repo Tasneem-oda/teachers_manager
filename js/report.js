@@ -5,11 +5,11 @@
  * الحضور والغياب، مستوى الحفظ/التلاوة/المراجعة، الواجبات، اللي خلصناه، والخطة الجاية.
  */
 
-import { ErrorHandler } from './utils.js?v=52';
-import { icon } from './icons.js?v=52';
-import { lessonDay, ratingFieldLabels, ratingLabel, normalizeLesson } from './lesson-utils.js?v=52';
-import { whatsappUrl, recipientChooser, lessonsText, hoursText, money } from './billing.js?v=52';
-import { CONFIG } from './config.js?v=52';
+import { ErrorHandler } from './utils.js?v=53';
+import { icon } from './icons.js?v=53';
+import { lessonDay, ratingFieldLabels, ratingLabel, normalizeLesson } from './lesson-utils.js?v=53';
+import { whatsappUrl, recipientChooser, lessonsText, hoursText, money } from './billing.js?v=53';
+import { CONFIG } from './config.js?v=53';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 

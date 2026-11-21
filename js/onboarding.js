@@ -1,14 +1,16 @@
 /**
  * onboarding.js - "خلّينا نجهّز حسابك في 3 خطوات" (الرئيسية)
  *
- * 1. أضف أول طالب   2. حدّد موعد حصته   3. سجّل أول متابعة
+ * 1. أضف أول طالب   2. حدّد ميعاد أول حصة   3. سجّل أول حصة
+ * v36: كارت واحد بيعرض الخطوة الجاية بس، ومفيش نافذة ترحيب.
  * كل خطوة بتتعلّم ✓ تلقائيًا من البيانات الفعلية (مش بإيد المستخدم).
  * بعد الثلاثة: رسالة احتفال مرة واحدة + اقتراحات اختيارية.
  */
 
-import { api } from './api.js?v=52';
-import { Formatters } from './utils.js?v=52';
-import { openStudentAppointments } from './student-appointments.js?v=52';
+import { api } from './api.js?v=53';
+import { Formatters } from './utils.js?v=53';
+import { openStudentAppointments } from './student-appointments.js?v=53';
+import { setLessonsCount } from './guide.js?v=53';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 const LS = {
@@ -29,51 +31,41 @@ function stepsFrom(status) {
         {
             key: 'student', done: (Number(s.students) || 0) > 0,
             title: 'أضف أول طالب',
-            sub: 'الاسم بس يكفي — وتقدر تضيف كل طلابك مرة واحدة',
-            cta: 'أضف طالب', href: 'students.html?action=add&onboarding=1'
+            sub: 'الاسم بس يكفي. باقي البيانات تقدر تكمّلها بعدين.',
+            cta: 'أضف أول طالب', href: 'students.html?action=add&onboarding=1'
         },
         {
             key: 'schedule', done: (Number(s.schedules) || 0) > 0,
-            title: 'حدّد موعد حصته',
-            sub: 'اليوم والساعة — وحصص كل يوم هتظهر لك هنا تلقائيًا',
+            title: 'حدّد ميعاد أول حصة',
+            sub: 'اختار اليوم والساعة وهتظهر في جدولك وتذكيرك.',
             cta: 'حدّد الموعد', target: schedTarget, action: 'schedule'
         },
         {
             key: 'lesson', done: (Number(s.lessons) || 0) > 0,
-            title: 'سجّل أول متابعة',
-            sub: 'سجّل آخر حصة عملتها مع الطالب — حتى لو كانت امبارح',
-            cta: 'سجّل حصة', target: lessonTarget, action: 'lesson'
+            title: 'سجّل أول حصة',
+            sub: 'ابدأ الحصة، واكتب اللي اتعمل، وبعدين احفظ. بياناتك بتتحفظ تلقائيًا.',
+            cta: 'ابدأ أول حصة', target: lessonTarget, action: 'lesson'
         }
     ];
 }
 
+// v36: كارت خطوة واحدة بس (أول خطوة لسه ماتعملتش) بدل قايمة الخطوات ونافذة الترحيب
 function checklistHtml(steps) {
     const doneCount = steps.filter((s) => s.done).length;
-    const currentIdx = steps.findIndex((s) => !s.done);
-    return `<div class="ob-card" role="region" aria-label="خطوات البداية">
-        <div class="ob-head">
-            <div>
-                <h3>خلّينا نجهّز حسابك في 3 خطوات</h3>
-                <p>انقل شغلك من الورق للبرنامج في أقل من 3 دقايق</p>
-            </div>
-            <span class="ob-count">${doneCount} من 3</span>
+    const idx = steps.findIndex((s) => !s.done);
+    const s = steps[idx];
+    const n = idx + 1;
+    return `<div class="ob-card ob-one" role="region" aria-label="خطوات البداية">
+        <div class="ob-top">
+            <span class="ob-count">الخطوة ${n} من ${steps.length}</span>
+            <div class="ob-bar" role="progressbar" aria-valuenow="${doneCount}" aria-valuemin="0" aria-valuemax="${steps.length}" aria-label="${doneCount} من ${steps.length} خطوات خلصت"><span style="width:${Math.round(((doneCount) / steps.length) * 100)}%"></span></div>
         </div>
-        <div class="ob-bar" role="progressbar" aria-valuenow="${doneCount}" aria-valuemin="0" aria-valuemax="3"><span style="width:${Math.round(doneCount / 3 * 100)}%"></span></div>
-        <ol class="ob-steps">
-            ${steps.map((s, i) => {
-                const state = s.done ? 'done' : (i === currentIdx ? 'current' : 'todo');
-                const locked = !s.done && (s.action && !s.target);
-                const btn = s.done ? '' : (locked
-                    ? '<span class="ob-wait">بعد الخطوة الأولى</span>'
-                    : `<button type="button" class="btn btn-sm ${state === 'current' ? '' : 'btn-ghost'}" data-ob-step="${i}">${esc(s.cta)}</button>`);
-                return `<li class="ob-step is-${state}">
-                    <span class="ob-num" aria-hidden="true">${s.done ? '✓' : i + 1}</span>
-                    <div class="ob-text"><strong>${esc(s.title)}</strong><small>${s.done ? 'تم ✓' : esc(s.sub)}</small></div>
-                    ${btn}
-                </li>`;
-            }).join('')}
-        </ol>
-        <button type="button" class="ob-hide" data-ob-hide>إخفاء الدليل</button>
+        <h3>${esc(s.title)}</h3>
+        <p>${esc(s.sub)}</p>
+        <div class="ob-actions">
+            <button type="button" class="btn" data-ob-step="${idx}">${esc(s.cta)}</button>
+            <button type="button" class="ob-later" data-ob-hide>مش دلوقتي</button>
+        </div>
     </div>`;
 }
 
@@ -93,30 +85,6 @@ function celebrationHtml(status) {
     </div>`;
 }
 
-function welcomeModal(name, onStart) {
-    const modal = document.createElement('div');
-    modal.className = 'modal active bill-modal ob-welcome';
-    modal.innerHTML = `<div class="modal-content" role="dialog" aria-modal="true" aria-label="أهلًا بك">
-        <div class="ob-party" aria-hidden="true">👋</div>
-        <h2 class="bm-title" style="padding:0; text-align:center;">أهلًا${name ? ` يا ${esc(name)}` : ''}!</h2>
-        <p class="ob-welcome-sub">خلّينا نجهّز حسابك في 3 خطوات — أقل من 3 دقايق:</p>
-        <ol class="ob-welcome-list">
-            <li><span>1</span> أضف أول طالب</li>
-            <li><span>2</span> حدّد موعد حصته</li>
-            <li><span>3</span> سجّل أول متابعة</li>
-        </ol>
-        <div class="bm-buttons">
-            <button type="button" class="btn" data-start>يلا نبدأ</button>
-            <button type="button" class="btn btn-ghost" data-later>بعدين</button>
-        </div>
-    </div>`;
-    const close = () => modal.remove();
-    modal.querySelector('[data-start]').addEventListener('click', () => { close(); onStart(); });
-    modal.querySelector('[data-later]').addEventListener('click', close);
-    modal.addEventListener('mousedown', (e) => { if (e.target === modal) close(); });
-    document.body.appendChild(modal);
-}
-
 /**
  * @param {{root:HTMLElement, dashboardData?:object, teacherName?:string}} opts
  * @returns {Promise<{active:boolean, status?:object}>} active = الدليل ظاهر (الخطوات لسه مخلصتش)
@@ -126,6 +94,7 @@ export async function renderOnboarding({ root, dashboardData = null, teacherName
     let status;
     try { status = await api.getOnboardingStatus(dashboardData); } catch (e) { root.innerHTML = ''; return { active: false }; }
     const steps = stepsFrom(status);
+    setLessonsCount(status && status.lessons);
     const allDone = steps.every((s) => s.done);
 
     // تتبع الخطوات اللي اتعملت لأول مرة
@@ -139,17 +108,21 @@ export async function renderOnboarding({ root, dashboardData = null, teacherName
         if (LS.get('tm_ob_celebrated')) { root.innerHTML = ''; return { active: false, status }; }
         root.innerHTML = celebrationHtml(status);
         track('all_done');
-        root.querySelector('[data-ob-close]').addEventListener('click', () => { LS.set('tm_ob_celebrated', '1'); root.innerHTML = ''; });
-        return { active: false, status };
+        root.querySelector('[data-ob-close]').addEventListener('click', () => { LS.set('tm_ob_celebrated', '1'); root.innerHTML = ''; try { window.dispatchEvent(new CustomEvent('tm:guide-free')); } catch (e) { /* تجاهل */ } });
+        return { active: false, celebrating: true, status };
     }
 
     LS.set('tm_ob_seen', '1');
-    if (LS.get('tm_ob_hidden')) { root.innerHTML = ''; return { active: false, status }; }
+    // v36: «مش دلوقتي» بيخفي الكارت في الجلسة دي بس
+    let hiddenNow = false;
+    try { hiddenNow = sessionStorage.getItem('tm_ob_later') === '1'; } catch (e) { /* تجاهل */ }
+    if (hiddenNow) { root.innerHTML = ''; return { active: false, later: true, status }; }
 
     root.innerHTML = checklistHtml(steps);
     root.querySelector('[data-ob-hide]').addEventListener('click', () => {
-        LS.set('tm_ob_hidden', '1');
+        try { sessionStorage.setItem('tm_ob_later', '1'); } catch (e) { /* تجاهل */ }
         root.innerHTML = '';
+        try { window.dispatchEvent(new CustomEvent('tm:guide-free')); } catch (e) { /* تجاهل */ }
     });
     root.querySelectorAll('[data-ob-step]').forEach((btn) => btn.addEventListener('click', () => {
         const step = steps[Number(btn.dataset.obStep)];
@@ -157,13 +130,7 @@ export async function renderOnboarding({ root, dashboardData = null, teacherName
         if (step.href) { window.location.href = step.href; return; }
         if (!step.target) return;
         if (step.action === 'schedule') openStudentAppointments(step.target.id, step.target.name || '', { onboarding: true });
-        else if (step.action === 'lesson') window.location.href = `lesson.html?student_id=${encodeURIComponent(step.target.id)}&manual=1&onboarding=1`;
+        else if (step.action === 'lesson') window.location.href = `lesson.html?student_id=${encodeURIComponent(step.target.id)}&onboarding=1`;
     }));
-
-    const doneCount = steps.filter((s) => s.done).length;
-    if (doneCount === 0 && !LS.get('tm_welcome_seen')) {
-        LS.set('tm_welcome_seen', '1');
-        welcomeModal(teacherName, () => { window.location.href = steps[0].href; });
-    }
     return { active: true, status };
 }

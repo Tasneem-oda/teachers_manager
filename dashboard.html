@@ -16,9 +16,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=52">
-    <link rel="stylesheet" href="css/lessons.css?v=52">
-    <link rel="stylesheet" href="css/groups.css?v=52">
+    <link rel="stylesheet" href="css/style.css?v=53">
+    <link rel="stylesheet" href="css/lessons.css?v=53">
+    <link rel="stylesheet" href="css/groups.css?v=53">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -71,8 +71,8 @@
         }
         @media (prefers-reduced-motion: reduce) { .wa-cta { transition: none; } .wa-cta:hover { transform: none; } }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=52">
-    <link rel="stylesheet" href="css/ui.css?v=52">
+    <link rel="stylesheet" href="css/v29.css?v=53">
+    <link rel="stylesheet" href="css/ui.css?v=53">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -91,7 +91,15 @@
 
                 <div id="content" style="display:none;">
                     <div id="trial-banner-root"></div>
+                    <!-- v36: بحث سريع عن طالب (الرئيسية بس) -->
+                    <div class="dash-search" id="dash-search" role="search" hidden>
+                        <span class="ds-ic" aria-hidden="true" id="ic-dash-search"></span>
+                        <input type="search" id="dash-search-input" placeholder="ابحث عن طالب..." autocomplete="off" aria-label="ابحث عن طالب" aria-controls="dash-search-list" aria-autocomplete="list">
+                        <div class="ds-list" id="dash-search-list" role="listbox" hidden></div>
+                    </div>
                     <div id="onboarding-root"></div>
+                    <!-- v36: رسالة إرشاد واحدة بس في المرة (المساعد الذكي / التذكير / مجتمع واتساب) -->
+                    <div id="guide-root"></div>
                     <!-- v28: سؤال التذكيرات (مرة واحدة) -->
                     <div id="reminder-setup"></div>
                     <!-- v31: الحصص التجريبية (النهارده / محتاجة قرار) -->
@@ -191,26 +199,27 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=52"></script>
+    <script type="module" src="js/config.js?v=53"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=52';
-        import { api } from './js/api.js?v=52';
-        import { isTrial, trialState, trialDate, bindTrialActions } from './js/trial.js?v=52';
-        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=52';
-        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=52';
-        import { icon } from './js/icons.js?v=52';
-        import { renderOnboarding } from './js/onboarding.js?v=52';
-        import { openAttendanceModal } from './js/attendance.js?v=52';
-        import { ATTENDANCE } from './js/lesson-utils.js?v=52';
-        import { computeBilling, openReminder, lessonsText, buildReminder, parentPhone, openBulkReminders } from './js/billing.js?v=52';
-        import { showTips } from './js/tips.js?v=52';
-        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=52';
-        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=52';
-        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=52';
-        import { mountReminderSetupCard } from './js/reminder-settings.js?v=52';
-        import { requestPermission } from './js/notifications.js?v=52';
-        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=52';
-        import { whatsappUrl } from './js/billing.js?v=52';
+        import { Auth } from './js/auth.js?v=53';
+        import { api } from './js/api.js?v=53';
+        import { isTrial, trialState, trialDate, bindTrialActions } from './js/trial.js?v=53';
+        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=53';
+        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=53';
+        import { icon } from './js/icons.js?v=53';
+        import { renderOnboarding } from './js/onboarding.js?v=53';
+        import { openAttendanceModal } from './js/attendance.js?v=53';
+        import { ATTENDANCE } from './js/lesson-utils.js?v=53';
+        import { computeBilling, openReminder, lessonsText, buildReminder, parentPhone, openBulkReminders } from './js/billing.js?v=53';
+        import { showTips } from './js/tips.js?v=53';
+        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=53';
+        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=53';
+        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=53';
+        import { mountReminderSetupCard } from './js/reminder-settings.js?v=53';
+        import { requestPermission } from './js/notifications.js?v=53';
+        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=53';
+        import { whatsappUrl } from './js/billing.js?v=53';
+        import { once, dayAfterFirstLesson, ensureLessonFlag } from './js/guide.js?v=53';
 
         renderSidebar('dashboard');
 
@@ -235,6 +244,42 @@
         document.getElementById('ic-ql-mushaf').innerHTML = icon('star', { size: 19 });
         document.getElementById('ic-ql-learn').innerHTML = icon('play', { size: 19 });
         document.getElementById('ql-income').addEventListener('click', (e) => { e.preventDefault(); openIncomeModal(new Date().getDate() <= 5 ? -1 : 0); });
+
+        // v36: بحث سريع عن طالب: بيفتح ملفه على طول
+        (function setupDashSearch() {
+            const wrap = document.getElementById('dash-search');
+            const inp = document.getElementById('dash-search-input');
+            const list = document.getElementById('dash-search-list');
+            document.getElementById('ic-dash-search').innerHTML = icon('search', { size: 18 });
+            let students = null; let loading = null; let hits = []; let sel = -1;
+            const norm = (t) => String(t || '').toLowerCase().replace(/[\u064B-\u0652\u0640]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').trim();
+            const load = () => loading || (loading = api.getStudents(1, 500).then((d) => { students = (d && d.students) || []; }).catch(() => { students = []; loading = null; }));
+            const render = () => {
+                const q = norm(inp.value);
+                if (!q || !students) { list.hidden = true; inp.setAttribute('aria-expanded', 'false'); return; }
+                hits = students.filter((x) => norm(x.name).includes(q)).slice(0, 6);
+                sel = hits.length ? 0 : -1;
+                list.innerHTML = hits.length ? hits.map((x, i) => `<a role="option" id="ds-o${i}" href="student.html?id=${encodeURIComponent(x.id)}" class="${i === sel ? 'is-sel' : ''}"><span class="av">${Formatters.escapeHtml((x.name || '؟').trim().charAt(0))}</span><span class="nm">${Formatters.escapeHtml(x.name || '')}</span>${x.status && x.status !== 'active' ? `<small>${x.status === 'paused' ? 'متوقف' : 'أرشيف'}</small>` : ''}</a>`).join('')
+                    : `<div class="ds-empty">مفيش طالب بالاسم ده. <a href="students.html?search=${encodeURIComponent(inp.value.trim())}">دوّر في صفحة الطلاب</a></div>`;
+                list.hidden = false; inp.setAttribute('aria-expanded', 'true');
+            };
+            inp.addEventListener('focus', () => { load().then(render); });
+            inp.addEventListener('input', () => { if (students) render(); else load().then(render); });
+            inp.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    if (!hits.length) return; e.preventDefault();
+                    sel = (sel + (e.key === 'ArrowDown' ? 1 : -1) + hits.length) % hits.length;
+                    list.querySelectorAll('a[role=option]').forEach((a, i) => a.classList.toggle('is-sel', i === sel));
+                    inp.setAttribute('aria-activedescendant', `ds-o${sel}`);
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (hits[sel]) location.href = `student.html?id=${encodeURIComponent(hits[sel].id)}`;
+                    else if (inp.value.trim()) location.href = `students.html?search=${encodeURIComponent(inp.value.trim())}`;
+                } else if (e.key === 'Escape') { list.hidden = true; }
+            });
+            document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) list.hidden = true; });
+            window.__tmDashSearch = (count) => { wrap.hidden = !(count > 0); };
+        })();
 
         function greeting() {
             const h = new Date().getHours();
@@ -598,6 +643,7 @@
                 });
                 renderStats(data);
                 renderTodayLessons(data.todayLessons, data.todayGroups);
+                try { window.__tmDashSearch && window.__tmDashSearch(Number(data.studentsCount) || 0); } catch (e) { /* تجاهل */ }
                 renderTrialBanner();
                 updateAiCardHint();
                 try { if (data.teacher && data.teacher.subject) localStorage.setItem('tm_teacher_subject', data.teacher.subject); } catch (e) { /* تجاهل */ }
@@ -606,7 +652,6 @@
                 document.getElementById('content').style.display = 'block';
                 await Promise.all([refreshOnboarding(), ...sideLoads]);
                 // v28: لو المدرس لسه ماختارش مواعيد التذكير (مرة واحدة)
-                if (!reminderCardShown) { reminderCardShown = true; mountReminderSetupCard(document.getElementById('reminder-setup'), { onEnablePush: requestPermission }); }
                 // جاي من إشعار "فاضل حصص متسجلتش": نوديه على حصص النهارده على طول
                 if (new URLSearchParams(location.search).get('pending') === '1') {
                     const list = document.getElementById('today-lessons-list');
@@ -638,20 +683,59 @@
 
             // الفترة التجريبية بتتكلم عن اللي المعلم عمله مش العدّ التنازلي بس
             const st = res && res.status;
+            window.__tmObStatus = st || null;
             const lessonsN = st ? Number(st.lessons) || 0 : 0;
             const studentsN = st ? Number(st.students) || 0 : 0;
             if (lessonsN > 0) {
                 renderTrialBanner('trial-banner-root', { progress: `سجّلت ${lessonsText(lessonsN)} لـ ${studentsText(studentsN)} — كمّل عليها!` });
             }
 
-            // تلميحات أول مرة (بعد ما الدليل يخلص عشان مايبقاش في زحمة)
-            if (!(res && res.active)) {
+            // v36: رسالة إرشاد واحدة بس في المرة: الخطوات ← الاحتفال ← المساعد الذكي ← التذكير ← مجتمع واتساب ← التلميحات
+            if (!(res && (res.active || res.celebrating))) await runGuides(lessonsN);
+        }
+
+        const WA_LINK = 'https://chat.whatsapp.com/LRWtf3mTrmBK6CA0FBwg3I?s=cl&p=a&mlu=4&ilr=4';
+        function guideCard(root, { key, icon: ic, title, text, cta, href, onCta }) {
+            root.innerHTML = `<div class="gd-card" role="region" aria-label="${Formatters.escapeHtml(title)}">
+                <span class="gd-ic" aria-hidden="true">${icon(ic, { size: 20 })}</span>
+                <div class="gd-txt"><strong>${Formatters.escapeHtml(title)}</strong>${text ? `<span>${Formatters.escapeHtml(text)}</span>` : ''}</div>
+                ${href ? `<a class="btn btn-sm" href="${href}" target="_blank" rel="noopener noreferrer" data-gd-cta>${Formatters.escapeHtml(cta)}</a>` : `<button type="button" class="btn btn-sm" data-gd-cta>${Formatters.escapeHtml(cta)}</button>`}
+                <button type="button" class="gd-x" data-gd-x aria-label="قفل">${icon('x', { size: 16 })}</button>
+            </div>`;
+            const close = () => { once.mark(key); root.innerHTML = ''; };
+            root.querySelector('[data-gd-x]').addEventListener('click', close);
+            root.querySelector('[data-gd-cta]').addEventListener('click', () => { once.mark(key); if (onCta) onCta(); setTimeout(() => { root.innerHTML = ''; }, 50); });
+        }
+        let guidesRunning = false;
+        async function runGuides(lessonsN) {
+            if (guidesRunning) return;
+            guidesRunning = true;
+            try {
+                const root = document.getElementById('guide-root');
+                if (root.firstElementChild) return;
+                if (lessonsN > 0 && !once.seen('ai_news')) {
+                    guideCard(root, { key: 'ai_news', icon: 'sparkles', title: 'جديد: المساعد الذكي يحضّرلك الحصة الجاية في دقيقة', cta: 'جرّبه',
+                        onCta: () => document.getElementById('btn-open-ai-assistant').click() });
+                    return;
+                }
+                if (lessonsN > 0 && !reminderCardShown) {
+                    reminderCardShown = true;
+                    const rs = document.getElementById('reminder-setup');
+                    await mountReminderSetupCard(rs, { onEnablePush: requestPermission });
+                    if (rs.firstElementChild) return;
+                }
+                if (dayAfterFirstLesson() && !once.seen('wa_invite')) {
+                    guideCard(root, { key: 'wa_invite', icon: 'messageCircle', title: 'مجتمع المعلمين على واتساب', text: 'مساعدة سريعة، وتطلب المزايا اللي محتاجها، وتشارك أفكارك للتحديثات.', cta: 'انضم للمجموعة', href: WA_LINK });
+                    return;
+                }
+                if (document.getElementById('reminder-setup').firstElementChild) return;
                 showTips([
                     { id: 'dash_today', target: '#today-lessons-list .lesson-actions', title: 'حصص النهارده', text: 'من هنا تبدأ الحصة، أو تسجّل غياب الطالب بضغطة لو ما حضرش.' },
                     { id: 'dash_due', target: '#due-root .due-card', title: 'تذكير الدفع', text: 'هنا الطلاب اللي باقتهم خلصت أو قربت تخلص — ابعت رسالة التذكير الجاهزة بضغطة.' }
                 ], { delay: 1500 });
-            }
+            } finally { guidesRunning = false; }
         }
+        window.addEventListener('tm:guide-free', () => { const st = window.__tmObStatus; if (st && Number(st.lessons) > 0) runGuides(Number(st.lessons)); });
 
         function studentsText(n) {
             if (n === 1) return 'طالب واحد';
@@ -753,16 +837,16 @@
         }
         window.addEventListener('tm:schedules-changed', () => { loadDashboard(); });
         // v29.8: لو اتسجّلت حصة من جهاز تاني (أو المدرس رجع للبرنامج) الرئيسية تتحدّث لوحدها
-        import('./js/auto-refresh.js?v=52').then((m) => m.onAppResume(() => loadDashboard())).catch(() => { /* تجاهل */ });
+        import('./js/auto-refresh.js?v=53').then((m) => m.onAppResume(() => loadDashboard())).catch(() => { /* تجاهل */ });
 
         (async () => {
             const authInfo = await Auth.requireAuth();
             if (!authInfo) return;
             // v29: أول دخول بحساب جوجل: سؤال المادة + الموبايل
-            try { const { maybeCompleteProfile } = await import('./js/complete-profile.js?v=52'); maybeCompleteProfile(authInfo.profile, authInfo.session); } catch (e) { /* تجاهل */ }
+            try { const { maybeCompleteProfile } = await import('./js/complete-profile.js?v=53'); maybeCompleteProfile(authInfo.profile, authInfo.session); } catch (e) { /* تجاهل */ }
             await loadDashboard();
         })();
     </script>
-    <script src="js/pwa-install.js?v=52" defer></script>
+    <script src="js/pwa-install.js?v=53" defer></script>
 </body>
 </html>
