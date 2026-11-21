@@ -16,9 +16,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=51">
-    <link rel="stylesheet" href="css/lessons.css?v=51">
-    <link rel="stylesheet" href="css/groups.css?v=51">
+    <link rel="stylesheet" href="css/style.css?v=52">
+    <link rel="stylesheet" href="css/lessons.css?v=52">
+    <link rel="stylesheet" href="css/groups.css?v=52">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -117,8 +117,8 @@
             .student-actions .btn { min-height: 40px; font-size: .84rem; }
         }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=51">
-    <link rel="stylesheet" href="css/ui.css?v=51">
+    <link rel="stylesheet" href="css/v29.css?v=52">
+    <link rel="stylesheet" href="css/ui.css?v=52">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -301,18 +301,18 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=51"></script>
+    <script type="module" src="js/config.js?v=52"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=51';
-        import { api } from './js/api.js?v=51';
-        import { ErrorHandler, Formatters, toLatinDigits, askChoice } from './js/utils.js?v=51';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=51';
-        import { icon } from './js/icons.js?v=51';
-        import { openStudentAppointments } from './js/student-appointments.js?v=51';
-        import { subjectLabel } from './js/lesson-utils.js?v=51';
-        import { confirmDeleteStudent } from './js/student-actions.js?v=51';
-        import { normalizePhone, whatsappUrl } from './js/billing.js?v=51';
-        import { isTrial, trialState, trialWhen, localSlot, defaultTrialSlot, bookTrialSlot, bindTrialActions } from './js/trial.js?v=51';
+        import { Auth } from './js/auth.js?v=52';
+        import { api } from './js/api.js?v=52';
+        import { ErrorHandler, Formatters, toLatinDigits, askChoice } from './js/utils.js?v=52';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=52';
+        import { icon } from './js/icons.js?v=52';
+        import { openStudentAppointments } from './js/student-appointments.js?v=52';
+        import { subjectLabel } from './js/lesson-utils.js?v=52';
+        import { confirmDeleteStudent } from './js/student-actions.js?v=52';
+        import { normalizePhone, whatsappUrl } from './js/billing.js?v=52';
+        import { isTrial, trialState, trialWhen, localSlot, defaultTrialSlot, bookTrialSlot, bindTrialActions } from './js/trial.js?v=52';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الطلاب', subtitle: 'إدارة كل طلابك من مكان واحد' });
@@ -389,7 +389,7 @@
             if (urlParams.get('action') === 'bulk') openBulk();
             await loadStudents();
             // v29.8: لو اتضاف/اتعدّل طالب من جهاز تاني القايمة تتحدّث لوحدها (والبحث والفلتر بيفضلوا زي ما هما)
-            import('./js/auto-refresh.js?v=51').then((m) => m.onAppResume(() => loadStudents())).catch(() => { /* تجاهل */ });
+            import('./js/auto-refresh.js?v=52').then((m) => m.onAppResume(() => loadStudents())).catch(() => { /* تجاهل */ });
             const searchTerm = urlParams.get('search');
             if (searchTerm) {
                 document.getElementById('student-search').value = searchTerm;
@@ -778,6 +778,6 @@
         // v29: الطالب اتأرشف من رسالة الحذف
         window.addEventListener('tm:student-status', () => loadStudents());
     </script>
-    <script src="js/pwa-install.js?v=51" defer></script>
+    <script src="js/pwa-install.js?v=52" defer></script>
 </body>
 </html>

@@ -41,7 +41,7 @@ export function mountHomeworkBuilder(textarea, { subject = '' } = {}) {
     let surahsLoaded = false;
     const loadSurahs = () => {
         if (surahsLoaded || !isQuran) return; surahsLoaded = true;
-        import('./games/quran.js?v=51').then((m) => m.surahList()).then((l) => {
+        import('./games/quran.js?v=52').then((m) => m.surahList()).then((l) => {
             box.querySelector('#hwb-surahs').innerHTML = l.map((s) => `<option value="${esc(s.name)}">`).join('');
         }).catch(() => { surahsLoaded = false; });
     };

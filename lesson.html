@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=51">
+    <link rel="stylesheet" href="css/style.css?v=52">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -24,11 +24,11 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=51">
-    <link rel="stylesheet" href="css/books.css?v=51">
+    <link rel="stylesheet" href="css/lessons.css?v=52">
+    <link rel="stylesheet" href="css/books.css?v=52">
     <style>body { margin: 0; }</style>
-    <link rel="stylesheet" href="css/v29.css?v=51">
-    <link rel="stylesheet" href="css/ui.css?v=51">
+    <link rel="stylesheet" href="css/v29.css?v=52">
+    <link rel="stylesheet" href="css/ui.css?v=52">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -315,28 +315,28 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=51"></script>
+    <script type="module" src="js/config.js?v=52"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=51';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=51';
-        import { api } from './js/api.js?v=51';
-        import { ErrorHandler, Formatters, uuidv4, toLatinDigits, askChoice } from './js/utils.js?v=51';
-        import { icon } from './js/icons.js?v=51';
+        import { Auth } from './js/auth.js?v=52';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=52';
+        import { api } from './js/api.js?v=52';
+        import { ErrorHandler, Formatters, uuidv4, toLatinDigits, askChoice } from './js/utils.js?v=52';
+        import { icon } from './js/icons.js?v=52';
         import {
             subjectLabel, ratingFieldLabels, RATINGS, HOMEWORK_STATUS, relativeDay, localDateISO, localTimeISO,
             formatDuration, minutesText, LessonDraft, lessonHasContent, lessonDetailsHtml, nextOccurrence, formatNextOccurrence,
             normalizeLesson, isAbsenceRow, attendanceInfo, lessonDay, deviceMsToDateISO, serverTimeToDateISO
-        } from './js/lesson-utils.js?v=51';
-        import { openAttendanceModal } from './js/attendance.js?v=51';
-        import { showTips, dismissTip } from './js/tips.js?v=51';
-        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=51';
-        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=51';
-        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=51';
-        import { openBookViewer } from './js/book-viewer.js?v=51';
-        import { openLessonReport } from './js/report.js?v=51';
-        import { isTrial, trialCardHtml, bindTrialActions } from './js/trial.js?v=51';
-        import { openWhiteboard } from './js/whiteboard.js?v=51';
-        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=51';
+        } from './js/lesson-utils.js?v=52';
+        import { openAttendanceModal } from './js/attendance.js?v=52';
+        import { showTips, dismissTip } from './js/tips.js?v=52';
+        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=52';
+        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=52';
+        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=52';
+        import { openBookViewer } from './js/book-viewer.js?v=52';
+        import { openLessonReport } from './js/report.js?v=52';
+        import { isTrial, trialCardHtml, bindTrialActions } from './js/trial.js?v=52';
+        import { openWhiteboard } from './js/whiteboard.js?v=52';
+        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=52';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'ابدأ الحصة وتابعها وسجّلها في مكان واحد', showSearch: false });
@@ -624,7 +624,7 @@
             mode = null;
             stopTimer();
             // v33: "الواجب بالتفصيل" (حفظ/مراجعة/تلاوة + السورة + من/إلى)
-            import('./js/hw-builder.js?v=51').then((m) => m.mountHomeworkBuilder($('f-homework'), { subject: student && student.subject })).catch(() => { /* تجاهل */ });
+            import('./js/hw-builder.js?v=52').then((m) => m.mountHomeworkBuilder($('f-homework'), { subject: student && student.subject })).catch(() => { /* تجاهل */ });
             unpublishLive();
             $('r-name').textContent = student.name || 'بدون اسم';
             const sub = [`<span>${icon('bookOpen', { size: 14 })} ${esc(subjectLabel(student.subject))}</span>`];
@@ -879,7 +879,7 @@
         try { document.querySelector('#btn-game .ic-game').innerHTML = icon('gamepad', { size: 16 }); } catch (e) { /* تجاهل */ }
         $('btn-game').addEventListener('click', async () => {
             try {
-                const m = await import('./js/games/picker.js?v=51');
+                const m = await import('./js/games/picker.js?v=52');
                 m.openGamePicker({ api, subject: student && student.subject, toast: { ok: (t) => ErrorHandler.showSuccess(t), err: (e) => ErrorHandler.showError(ErrorHandler.getErrorMessage(e)) } });
             } catch (e) { ErrorHandler.showError('الألعاب ماتحمّلتش. اتأكد من النت وجرّب تاني.'); }
         });
@@ -2100,6 +2100,6 @@
             }
         });
         </script>
-    <script src="js/pwa-install.js?v=51" defer></script>
+    <script src="js/pwa-install.js?v=52" defer></script>
 </body>
 </html>

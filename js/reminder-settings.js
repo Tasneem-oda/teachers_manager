@@ -4,9 +4,9 @@
  *  - mountReminderSetupCard: كارت في الرئيسية بيسأل المدرس مرة واحدة (3 أسئلة سريعة)
  *  - playReminderSound: جرس التذكير لما البرنامج يكون مفتوح
  */
-import { api } from './api.js?v=51';
-import { ErrorHandler } from './utils.js?v=51';
-import { icon } from './icons.js?v=51';
+import { api } from './api.js?v=52';
+import { ErrorHandler } from './utils.js?v=52';
+import { icon } from './icons.js?v=52';
 
 export const BEFORE_OPTIONS = [
     { value: null, label: 'لأ' },
@@ -105,8 +105,8 @@ export function mountReminderControls(root, settings) {
                         ? 'التنبيه ماوصلش: الجهاز ده مش متسجل لاستقبال الإشعارات. بنصلّحه دلوقتي...'
                         : 'خدمة الإشعارات رفضت الإرسال دلوقتي. جرّب كمان شوية.', 7000);
                     if (push.status === 'not_subscribed') {
-                        const ph = await import('./push-health.js?v=51');
-                        const { requestPermission } = await import('./notifications.js?v=51');
+                        const ph = await import('./push-health.js?v=52');
+                        const { requestPermission } = await import('./notifications.js?v=52');
                         const h = await ph.checkPushHealth({ waitSdkMs: 8000 });
                         const after = await ph.fixNow(h.state === 'subscribed' ? { ...h, state: 'not-subscribed' } : h, requestPermission);
                         if (after.state === 'subscribed') ErrorHandler.showSuccess('اتصلّحت ✓ جرّب التنبيه تاني.', 6000);

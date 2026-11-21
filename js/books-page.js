@@ -11,17 +11,18 @@
  *   - رفع كتاب جديد ومعالجته في المتصفح مع نسبة تقدّم حقيقية، إعادة المعالجة، إدارة الوصول، و"اسأل كتبك"
  */
 
-import { CONFIG } from './config.js?v=51';
-import { Auth } from './auth.js?v=51';
-import { renderSidebar, renderTopHeader } from './sidebar.js?v=51';
-import { icon } from './icons.js?v=51';
-import { api } from './api.js?v=51';
-import { ErrorHandler, Formatters } from './utils.js?v=51';
-import { detectFileType, processBook } from './book-processor.js?v=51';
-import { openBookViewer } from './book-viewer.js?v=51';
-import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=51';
-import { CATS, catOf, guessCategory, FOLDER_COLORS, folderColor, FOLDER_ICONS, FOLDER_SUGGESTIONS } from './lib-meta.js?v=51';
-import * as Drive from './gdrive.js?v=51';
+import { CONFIG } from './config.js?v=52';
+import { Auth } from './auth.js?v=52';
+import { renderSidebar, renderTopHeader } from './sidebar.js?v=52';
+import { icon } from './icons.js?v=52';
+import { api } from './api.js?v=52';
+import { ErrorHandler, Formatters } from './utils.js?v=52';
+import { detectFileType, processBook } from './book-processor.js?v=52';
+import { openBookViewer } from './book-viewer.js?v=52';
+import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=52';
+import { CATS, catOf, guessCategory, FOLDER_COLORS, folderColor, FOLDER_ICONS, FOLDER_SUGGESTIONS } from './lib-meta.js?v=52';
+import * as Drive from './gdrive.js?v=52';
+import { track } from './track.js?v=52';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => Formatters.escapeHtml(String(s == null ? '' : s));
@@ -1357,6 +1358,7 @@ export function initBooksPage() {
             updateItem(q);
         } catch (err) {
             const aborted = !!(err && err.aborted) || q.cancelled;
+            if (!aborted) reportUploadFail(q, err);
             await cleanup();
             q.state = aborted ? 'cancel' : 'fail';
             q.error = aborted ? '' : (err && err.message) || ErrorHandler.getErrorMessage(err);
@@ -1365,6 +1367,21 @@ export function initBooksPage() {
             updateItem(q);
             renderAll();
         }
+    }
+
+    // v35.6: سبب فشل الرفع بيتسجّل (نوع المشكلة + حجم الملف + نوع النت + موديل الموبايل) عشان نعرف المشكلة من غير ما نسأل المدرس
+    async function reportUploadFail(q, err) {
+        try {
+            let model = '';
+            try { const h = navigator.userAgentData && await navigator.userAgentData.getHighEntropyValues(['model']); model = (h && h.model) || ''; } catch (e) { /* تجاهل */ }
+            if (!model) { const m = /Android [^;]+; ([^;)]+)[;)]/.exec(navigator.userAgent || ''); model = m && m[1] !== 'K' ? m[1] : ''; }
+            const c = navigator.connection || {};
+            track('book_upload_failed', {
+                code: String((err && err.error && err.error.code) || (err && err.code) || 'ERR').slice(0, 20), kind: (err && err.kind) || '', status: (err && err.status) || 0,
+                stage: q.state, to_drive: !!q.toDrive, size_mb: Math.round((q.file.size / 1048576) * 10) / 10, type: q.type,
+                conn: c.effectiveType || '', save_data: !!c.saveData, online: navigator.onLine !== false, model: String(model).slice(0, 40)
+            }, { gtm: false });
+        } catch (e) { /* تجاهل */ }
     }
 
     // ------------------------------------------------------------------ المعالجة (التحليل)
