@@ -68,7 +68,7 @@ export const CONFIG = {
             GET: '/get-dashboard'
         },
         STUDENTS: {
-            CREATE: '/create-student',
+            CREATE: '/plan-gate?t=create-student',   // v36: عن طريق بوابة الباقات (البداية لحد 10 طلاب)
             GET_ALL: '/get-students',
             GET_ONE: '/get-student',
             UPDATE: '/update-student',
@@ -115,7 +115,7 @@ export const CONFIG = {
         },
         // ملخص فلوس الشهر (كام طالب دفع وإجمالي المحصّل) - n8n/monthly-income.json
         INCOME: {
-            MONTHLY: '/monthly-income'
+            MONTHLY: '/plan-gate?t=monthly-income'   // v36: الاحترافية بس
         },
         // اقتراحات المدرسين (زرار "عندك اقتراح؟") - n8n/submit-suggestion.json
         PROFILE: {
@@ -138,7 +138,7 @@ export const CONFIG = {
             SESSION: '/group-session',
             // v27: الاشتراك الشهري للمجموعة + مساعد حصة المجموعة
             BILLING: '/group-billing',
-            AI_CHAT: '/group-ai-chat'
+            AI_CHAT: '/plan-gate?t=group-ai-chat'   // v36: حد يومي حسب الباقة
         },
         // v28: إعدادات المدرس (التذكيرات + رسايل الواتساب) - n8n/teacher-settings.json
         SETTINGS: {
@@ -146,6 +146,8 @@ export const CONFIG = {
         },
         // v33: المكتبة (الفولدرات + المكتبة العامة) + ألعاب الحصة + إشعاراتك من المونيتور + رحلة المدرس
         HUB: '/app-hub',
+        // v36: بوابة الباقات (n8n: plan-gate) — بتتأكد من الباقة وبعدين بتوصّل الطلب للـ workflow الأصلي
+        PLAN_GATE: '/plan-gate',
         // v33: لعبة متشاركة مع الطالب (من غير تسجيل دخول)
         GAME_PUBLIC: '/game-public',
         // v28: تأجيل حصة ليوم/ساعة تانية - n8n/postpone-lesson.json
@@ -164,18 +166,18 @@ export const CONFIG = {
             MARK_READ: '/mark-notifications-read'
         },
         AI: {
-            ASSISTANT: '/teacher-assistant',
+            ASSISTANT: '/plan-gate?t=teacher-assistant',
             LESSON_SUMMARY: '/lesson-summary',
             // مساعد الذكاء الاصطناعي التفاعلي (شات بذاكرة خاصة بكل طالب) - منفصل
             // عن ASSISTANT اللي بيستخدمه زرار "طلب ملخص ذكي" الموجود بالفعل
-            CHAT: '/ai-chat',
+            CHAT: '/plan-gate?t=ai-chat',   // v36: حد يومي حسب الباقة
             // "✨ حضّرلي الحصة" في صفحة الطالب - خطة حصة مبنية على بيانات
             // الطالب + مصادر مكتبة المعلم المرتبطة به
-            PREPARE_LESSON: '/prepare-lesson'
+            PREPARE_LESSON: '/plan-gate?t=prepare-lesson'   // v36: الاحترافية بس
         },
         // 📚 مكتبتي: رفع كتب/مذكرات، تحليلها بالذكاء الاصطناعي، والسؤال عنها
         BOOKS: {
-            CREATE_SOURCE: '/create-book-source',
+            CREATE_SOURCE: '/plan-gate?t=create-book-source',   // v36: «مكتبتي» الاحترافية بس
             // خط معالجة الكتاب (المتصفح بيستخرج النص، والسيرفر بيعمل OCR + فهرسة):
             //   PROCESS (start) → OCR (اختياري للصفحات الممسوحة) → INDEX (فهرسة دفعات) → FINISH
             PROCESS: '/process-book',
@@ -187,7 +189,7 @@ export const CONFIG = {
             LIST: '/list-books',
             DELETE: '/delete-book',
             UPDATE_ACCESS: '/update-book-access',
-            ASK: '/ask-sources'
+            ASK: '/plan-gate?t=ask-sources'   // v36: الاحترافية بس
         }
     },
     

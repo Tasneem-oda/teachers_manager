@@ -3,11 +3,11 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=54';
-import { APIUtils, Storage } from './utils.js?v=54';
-import { getFreshSession } from './session.js?v=54';
-import { Resume, affectedBySleep, waitAfterResume } from './resume.js?v=54';
-import { currentSyncVersion, syncTrusted } from './realtime-sync.js?v=54';
+import { CONFIG } from './config.js?v=55';
+import { notePlanError, APIUtils, Storage } from './utils.js?v=55';
+import { getFreshSession } from './session.js?v=55';
+import { Resume, affectedBySleep, waitAfterResume } from './resume.js?v=55';
+import { currentSyncVersion, syncTrusted } from './realtime-sync.js?v=55';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -166,7 +166,7 @@ async function apiCallOnce(endpoint, method = 'GET', body = null, options = {}) 
         const quiet = isQuiet(body);   // v32/v33: مش تغيير بيانات
         if (method !== 'GET' && !isRead && !quiet && !/track-events|notifications|ai-chat|assistant|ask-sources|prepare-lesson|owner-/i.test(endpoint)) {
             ReadCache.clear();
-            import('./auto-refresh.js?v=54').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
+            import('./auto-refresh.js?v=55').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
         }
         return data;
 
@@ -343,7 +343,7 @@ export const Outbox = (() => {
     const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
     const write = (list) => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { /* تجاهل */ } emit(); };
     const emit = () => { try { window.dispatchEvent(new CustomEvent('tm:outbox', { detail: { count: read().length } })); } catch (e) { /* تجاهل */ } };
-    const toast = (msg, ok = true) => import('./utils.js?v=54').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
+    const toast = (msg, ok = true) => import('./utils.js?v=55').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
     return {
         list: read,
         count: () => read().length,
@@ -397,7 +397,7 @@ let billingDueCache = null;
 let conflictAsk = null;   // سؤال واحد لكل الأيام اللي بتتحفظ مع بعض
 async function askAllowConflict(message) {
     if (conflictAsk) return conflictAsk;
-    conflictAsk = import('./utils.js?v=54').then(({ askChoice }) => askChoice({
+    conflictAsk = import('./utils.js?v=55').then(({ askChoice }) => askChoice({
         title: '⚠️ الميعاد ده فيه حصة تانية',
         message: message || 'الميعاد ده بيتعارض مع حصة تانية متسجلة. لو ده مقصود احفظ الحصتين في نفس الميعاد، وهيظهروا في الجدول بعلامة تعارض.',
         choices: [{ label: 'احفظ الحصتين في نفس الميعاد', value: 'force' }],
@@ -749,7 +749,7 @@ async function streamAiChatOnce(studentId, message, onText, signal, extra = {}) 
     // لو البث مش شغال في n8n، الرد الكامل بيوصل في رسالة الانتهاء (Done Response)
     if (final && final.reply && (!reply || !streamed)) { reply = String(final.reply); if (onText) onText(reply); }
     if (!streamed) console.info('[AI chat] الرد وصل مرة واحدة (البث غير مفعّل في n8n). عدد الرسائل:', chunks);
-    if (streamError && !reply) throw streamError;
+    if (streamError && !reply) { notePlanError(streamError.error); throw streamError; }
     if (!reply) throw { error: { code: 'EMPTY', message: 'لم يصل رد من المساعد، حاول مرة أخرى.' } };
     return { reply, remaining_today: final ? final.remaining_today : undefined, partialError: streamError };
 }
@@ -894,7 +894,8 @@ export const api = {
      */
     async getMonthlyIncome(month) {
         try {
-            const data = await apiCall(`${CONFIG.API_ENDPOINTS.INCOME.MONTHLY}?month=${encodeURIComponent(month)}`, 'GET', null, { timeoutMs: 20000 });
+            const ep = CONFIG.API_ENDPOINTS.INCOME.MONTHLY;
+            const data = await apiCall(`${ep}${ep.includes('?') ? '&' : '?'}month=${encodeURIComponent(month)}`, 'GET', null, { timeoutMs: 20000 });
             return data && data.available !== false ? data : null;
         } catch (error) {
             if (isMissingWebhook(error)) return null;
@@ -1411,7 +1412,7 @@ export const api = {
     // download: true أو اسم ملف → الرابط بيفرض تنزيل الملف بدل فتحه في المتصفح
     async getBookFileUrl(storagePath, { expiresIn = 3600, download = false } = {}) {
         // v35: كتاب على جوجل درايف المدرس
-        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=54'); return g.driveFileUrl(storagePath, { download: false }); }
+        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=55'); return g.driveFileUrl(storagePath, { download: false }); }
         // v30: الرابط الموقّع بيتحفظ لحد ما يقرب يخلص (فتح نفس الكتاب تاني بيبقى فوري)
         const ck = `${storagePath}|${download ? String(download) : ''}`;
         const hit = signedUrlCache.get(ck);
@@ -1428,7 +1429,7 @@ export const api = {
 
     // تحميل بايتات الملف الأصلي للعرض/إعادة الفهرسة، مع تقدّم التحميل
     async fetchBookFile(storagePath, { onProgress, signal } = {}) {
-        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=54'); return g.fetchFromDrive(storagePath, { onProgress, signal }); }
+        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=55'); return g.fetchFromDrive(storagePath, { onProgress, signal }); }
         const url = await this.getBookFileUrl(storagePath, { expiresIn: 3600 });
         let res;
         try {
@@ -1470,7 +1471,7 @@ export const api = {
     },
 
     async deleteBookFile(storagePath) {
-        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=54'); return g.deleteFromDrive(storagePath); }
+        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=55'); return g.deleteFromDrive(storagePath); }
         try { await getFreshSession(); } catch (e) { /* تجاهل */ }
         try {
             await window.supabaseClient.storage.from(CONFIG.BOOKS_SETTINGS.BUCKET).remove([storagePath]);
@@ -1552,7 +1553,9 @@ export const api = {
     // ==================== v33: المكتبة (فولدرات + المكتبة العامة) والألعاب والإشعارات ورحلة المدرس ====================
     // كل ده workflow واحد (n8n/v33-import/app-hub.json) ← دالة واحدة في قاعدة البيانات (DB_v33.sql)
     async hub(action, data = {}, options = {}) {
-        return await apiCall(CONFIG.API_ENDPOINTS.HUB, 'POST', { action, ...(data || {}) }, { timeoutMs: 20000, ...options });
+        // v36: إضافة كتاب من المكتبة العامة ونشر كتاب = «مكتبتي» (الاحترافية) ← عن طريق بوابة الباقات
+        const hubEp = ['public_add', 'public_request'].includes(action) && CONFIG.API_ENDPOINTS.PLAN_GATE ? `${CONFIG.API_ENDPOINTS.PLAN_GATE}?t=app-hub` : CONFIG.API_ENDPOINTS.HUB;
+        return await apiCall(hubEp, 'POST', { action, ...(data || {}) }, { timeoutMs: 20000, ...options });
     },
 
     // تحديد مين يستخدم الكتاب ده: 'all' (كل الطلاب) أو 'students' مع قائمة
