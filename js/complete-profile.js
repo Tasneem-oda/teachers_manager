@@ -1,8 +1,8 @@
 /**
  * complete-profile.js — v29: بعد أول دخول بجوجل: سؤالين بس (بتدرّس إيه + رقم واتساب) بدل فورم التسجيل كله
  */
-import { api } from './api.js?v=51';
-import { Storage, ErrorHandler, toLatinDigits, Formatters } from './utils.js?v=51';
+import { api } from './api.js?v=54';
+import { Storage, ErrorHandler, toLatinDigits, Formatters } from './utils.js?v=54';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 const SUBJECTS = [['quran', 'القرآن الكريم'], ['english', 'اللغة الإنجليزية'], ['arabic', 'اللغة العربية'], ['math', 'الرياضيات'],
@@ -25,6 +25,8 @@ export function maybeCompleteProfile(profile, session, onDone) {
     const welcome = new URLSearchParams(location.search).get('welcome') === 'google';
     if (welcome) { try { history.replaceState(null, '', location.pathname); } catch (e) { /* تجاهل */ } }
     if (!isGoogleUser(user)) return false;
+    // v36: أول جلسة للمدرس الجديد مافيهاش أي نافذة: المادة بتتسأل عند إضافة أول طالب، فالنافذة دي بتستنى لحد ما يضيف طالب
+    try { if (!(localStorage.getItem('tm_ob_state') || '').split(',').includes('student')) return false; } catch (e) { return false; }
     if (profile.subject && (profile.phone || !welcome)) return false;
     const key = 'tm_cp_done_' + user.id;
     try { if (localStorage.getItem(key) === '1' && !welcome) return false; } catch (e) { /* تجاهل */ }

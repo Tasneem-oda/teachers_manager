@@ -10,9 +10,9 @@
  *     🗑️ "مكملش": حذف الطالب ومواعيده.
  *     📅 "غيّر الميعاد": لو التجربة اتأجلت.
  */
-import { api } from './api.js?v=51';
-import { ErrorHandler, Formatters, askChoice } from './utils.js?v=51';
-import { icon } from './icons.js?v=51';
+import { api } from './api.js?v=54';
+import { ErrorHandler, Formatters, askChoice } from './utils.js?v=54';
+import { icon } from './icons.js?v=54';
 
 const esc = (s) => Formatters.escapeHtml(String(s == null ? '' : s));
 const DAYS = ['الأحد', 'الاتنين', 'التلات', 'الأربع', 'الخميس', 'الجمعة', 'السبت'];
@@ -198,7 +198,7 @@ export function openConvertTrial(student, o = {}) {
         </div>
 
         <div class="tr-sec" id="tr-trial-sec">
-            <h3>🎯 الحصة التجريبية</h3>
+            <h3>${icon('target', { size: 18 })} الحصة التجريبية</h3>
             <div class="tr-opts" role="radiogroup" aria-label="الحصة التجريبية">
                 <label class="tr-opt"><input type="radio" name="tr-count" value="count" checked><span><b>تتحسب من أول باقة</b><small>كأنها أول حصة من الحصص المدفوعة.</small></span></label>
                 <label class="tr-opt"><input type="radio" name="tr-count" value="free"><span><b>مجانية</b><small>ماتتحسبش في الفلوس.</small></span></label>
@@ -373,7 +373,7 @@ export function trialCardHtml(student, o = {}) {
     const first = esc(String(student.name || 'الطالب').trim().split(/\s+/)[0]);
     const decide = st.phase === 'decide';
     return `<div class="tr-card" data-trial-card>
-        <div class="tr-card-head">🎯 ${first} طالب تجريبي</div>
+        <div class="tr-card-head">${icon('target', { size: 16 })} ${first} طالب تجريبي</div>
         <p>${esc(st.text)}${decide ? '' : '. بعد الحصة قرّر: يكمل معاك ولا لأ.'}</p>
         <div class="tr-btns">
             <button type="button" class="btn btn-sm" data-trial-convert>${icon('check', { size: 15 })} ${decide ? 'هيكمل — ضيفه لطلابي' : 'ضيفه لطلابي'}</button>

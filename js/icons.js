@@ -121,3 +121,12 @@ export function icon(name, opts = {}) {
 }
 
 export default { icon };
+
+// v36: أي <span data-ic="اسم"> في الصفحة بياخد الأيقونة بتاعته (بدل الإيموجي في الـ HTML الثابت)
+export function hydrateIcons(root = document) {
+    try { root.querySelectorAll('[data-ic]:not([data-ic-done])').forEach((el) => { el.innerHTML = icon(el.dataset.ic, { size: Number(el.dataset.icSize) || 15 }); el.setAttribute('data-ic-done', '1'); el.setAttribute('aria-hidden', 'true'); }); } catch (e) { /* تجاهل */ }
+}
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => hydrateIcons());
+    else setTimeout(() => hydrateIcons(), 0);
+}

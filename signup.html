@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=51">
+    <link rel="stylesheet" href="css/style.css?v=54">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -62,8 +62,8 @@
         .pw-wrap input { padding-left: 4.5rem !important; margin-bottom: 0 !important; }
         .pw-toggle { position: absolute; left: 0.35rem; top: 50%; transform: translateY(-50%); background: none; border: 0; color: var(--primary, #4B3A5A); font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; padding: 0 0.6rem; min-height: 40px; }
 </style>
-    <link rel="stylesheet" href="css/v29.css?v=51">
-    <link rel="stylesheet" href="css/ui.css?v=51">
+    <link rel="stylesheet" href="css/v29.css?v=54">
+    <link rel="stylesheet" href="css/ui.css?v=54">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -96,7 +96,7 @@
             </div>
 
             <div class="form-group">
-                <label for="phone">رقم واتساب <small style="font-weight:400; color:var(--text-secondary);">(اختياري — عشان نساعدك لو احتجت حاجة)</small></label>
+                <label for="phone">رقم واتساب <small style="font-weight:400; color:var(--text-secondary);">(اختياري)</small></label>
                 <!-- الحقل بيقبل أي رقم هاتف دولي (مش مقتصر على الأرقام المصرية) -->
                 <input type="tel" id="phone" inputmode="tel" autocomplete="tel" placeholder="مثال: 01234567890 أو +966501234567">
                 <div class="error" id="phoneError"></div>
@@ -115,21 +115,6 @@
 
             
 
-            <div class="form-group">
-                    <label for="subject">بتدرّس إيه؟ *</label>
-                    <select id="subject" name="subject" required>
-                        <option value="">اختر...</option>
-                        <option value="quran">القرآن الكريم</option>
-                        <option value="english">اللغة الإنجليزية</option>
-                        <option value="arabic">اللغة العربية</option>
-                        <option value="math">الرياضيات</option>
-                        <option value="science">العلوم</option>
-                        <option value="programming">البرمجة</option>
-                        <option value="other">أخرى</option>
-                    </select>
-                    <div class="error" id="subjectError"></div>
-                </div>
-
             <button type="submit" id="submitBtn" class="btn">إنشاء الحساب</button>
             
             <div class="loading" id="loading">
@@ -144,13 +129,13 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=51"></script>
+    <script type="module" src="js/config.js?v=54"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=51';
-        import { Validators, ErrorHandler, Formatters, toLatinDigits } from './js/utils.js?v=51';
-        import { icon } from './js/icons.js?v=51';
-        import { CONFIG } from './js/config.js?v=51';
-        import { mountGoogleButton } from './js/google-auth.js?v=51';
+        import { Auth } from './js/auth.js?v=54';
+        import { Validators, ErrorHandler, Formatters, toLatinDigits } from './js/utils.js?v=54';
+        import { icon } from './js/icons.js?v=54';
+        import { CONFIG } from './js/config.js?v=54';
+        import { mountGoogleButton } from './js/google-auth.js?v=54';
         mountGoogleButton(document.getElementById('google-root'), { mode: 'signup' });
         // مصدر التسجيل (utm أو كود ترشيح ref) لو المدرس جه على صفحة التسجيل مباشرة
         try {
@@ -205,7 +190,7 @@
             const phone = toLatinDigits(document.getElementById('phone').value).trim();
             const password = document.getElementById('password').value;
             const teachingType = 'private';
-            const subject = document.getElementById('subject').value;
+            const subject = '';   // v36: المادة بتتسأل عند إضافة أول طالب (التسجيل 4 خانات بس)
 
             // التحقق من البيانات
             let hasErrors = false;
@@ -233,12 +218,6 @@
             if (!password || !Validators.password(password)) {
                 document.getElementById('passwordError').textContent = 'كلمة المرور يجب أن تكون 8 أحرف على الأقل';
                 document.getElementById('passwordError').style.display = 'block';
-                hasErrors = true;
-            }
-
-            if (!subject) {
-                document.getElementById('subjectError').textContent = 'اختر المادة';
-                document.getElementById('subjectError').style.display = 'block';
                 hasErrors = true;
             }
 
@@ -289,6 +268,6 @@
             }
         });
     </script>
-    <script src="js/pwa-install.js?v=51" defer></script>
+    <script src="js/pwa-install.js?v=54" defer></script>
 </body>
 </html>

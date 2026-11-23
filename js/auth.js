@@ -7,9 +7,9 @@
  * في كل مكان (وليس window.supabase، لأن هذا الأخير هو مكتبة supabase-js
  * الخام القادمة من الـ CDN وليس عميلاً مهيّأً، وليس لديه خاصية .auth).
  */
-import { CONFIG } from './config.js?v=51';
-import { APIUtils, Storage, ErrorHandler, Validators, toLatinDigits } from './utils.js?v=51';
-import { getFreshSession } from './session.js?v=51';
+import { CONFIG } from './config.js?v=54';
+import { APIUtils, Storage, ErrorHandler, Validators, toLatinDigits } from './utils.js?v=54';
+import { getFreshSession } from './session.js?v=54';
 
 /** fetch بمهلة: على النت الضعيف الدخول/التسجيل مايفضلش يلف للأبد */
 async function fetchWithTimeout(url, options = {}, ms = 12000) {
@@ -474,7 +474,7 @@ export const Auth = {
         try { localStorage.removeItem('tm_shell_v1'); } catch (e) { /* تجاهل */ }
         // v29.5: اللي مستني يتبعت يتبعت الأول (بحد أقصى 4 ثواني)، وبعدين نمسح بيانات المدرس المحفوظة للعرض من غير نت
         try {
-            const m = await import('./api.js?v=51');
+            const m = await import('./api.js?v=54');
             if (m.Outbox && m.Outbox.count()) await Promise.race([m.Outbox.flush(), new Promise((r) => setTimeout(r, 4000))]);
             if (m.OfflineCache) m.OfflineCache.clear();
             ['tm_outbox_v1', 'tm_rem_sched_v1', 'tm_rem_shown_v1'].forEach((k) => localStorage.removeItem(k));
@@ -562,7 +562,7 @@ export const Auth = {
         // نفتح بيه على طول ونحدّثه في الخلفية، بدل ما الصفحة كلها تستنى bootstrap-session (حوالي ثانية ونص على الموبايل)
         const known = Storage.get('user_profile');
         const uidNow = session.user && session.user.id;
-        if (known && known.id && known.id === uidNow && known.subject && !known.deletion_scheduled_for) {
+        if (known && known.id && known.id === uidNow && (known.subject || known.name) && !known.deletion_scheduled_for) {
             this.bootstrapSession();
             return { session, profile: known };
         }

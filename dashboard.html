@@ -16,9 +16,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=51">
-    <link rel="stylesheet" href="css/lessons.css?v=51">
-    <link rel="stylesheet" href="css/groups.css?v=51">
+    <link rel="stylesheet" href="css/style.css?v=54">
+    <link rel="stylesheet" href="css/lessons.css?v=54">
+    <link rel="stylesheet" href="css/groups.css?v=54">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -71,8 +71,8 @@
         }
         @media (prefers-reduced-motion: reduce) { .wa-cta { transition: none; } .wa-cta:hover { transform: none; } }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=51">
-    <link rel="stylesheet" href="css/ui.css?v=51">
+    <link rel="stylesheet" href="css/v29.css?v=54">
+    <link rel="stylesheet" href="css/ui.css?v=54">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -91,7 +91,15 @@
 
                 <div id="content" style="display:none;">
                     <div id="trial-banner-root"></div>
+                    <!-- v36: بحث سريع عن طالب (الرئيسية بس) -->
+                    <div class="dash-search" id="dash-search" role="search" hidden>
+                        <span class="ds-ic" aria-hidden="true" id="ic-dash-search"></span>
+                        <input type="search" id="dash-search-input" placeholder="ابحث عن طالب..." autocomplete="off" aria-label="ابحث عن طالب" aria-controls="dash-search-list" aria-autocomplete="list">
+                        <div class="ds-list" id="dash-search-list" role="listbox" hidden></div>
+                    </div>
                     <div id="onboarding-root"></div>
+                    <!-- v36: رسالة إرشاد واحدة بس في المرة (المساعد الذكي / التذكير / مجتمع واتساب) -->
+                    <div id="guide-root"></div>
                     <!-- v28: سؤال التذكيرات (مرة واحدة) -->
                     <div id="reminder-setup"></div>
                     <!-- v31: الحصص التجريبية (النهارده / محتاجة قرار) -->
@@ -141,7 +149,6 @@
                     <div id="due-root"></div>
                     <div id="income-root"></div>
 
-                    <div class="stats-row" id="stats-row"></div>
 
 
                     <div class="card" style="margin-top:1.5rem;">
@@ -160,6 +167,9 @@
                             <a href="settings.html" class="quick-link-btn"><span class="icon" id="ic-ql-settings"></span> الإعدادات</a>
                         </div>
                     </div>
+
+                    <!-- v36: الإحصائيات صف واحد صغير آخر الرئيسية -->
+                    <nav class="stats-mini" id="stats-row" aria-label="ملخص سريع"></nav>
 
                     <!-- مجتمع واتساب الحصري لمشتركي البرنامج -->
                     <section class="wa-community" aria-labelledby="wa-title">
@@ -191,26 +201,27 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=51"></script>
+    <script type="module" src="js/config.js?v=54"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=51';
-        import { api } from './js/api.js?v=51';
-        import { isTrial, trialState, trialDate, bindTrialActions } from './js/trial.js?v=51';
-        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=51';
-        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=51';
-        import { icon } from './js/icons.js?v=51';
-        import { renderOnboarding } from './js/onboarding.js?v=51';
-        import { openAttendanceModal } from './js/attendance.js?v=51';
-        import { ATTENDANCE } from './js/lesson-utils.js?v=51';
-        import { computeBilling, openReminder, lessonsText, buildReminder, parentPhone, openBulkReminders } from './js/billing.js?v=51';
-        import { showTips } from './js/tips.js?v=51';
-        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=51';
-        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=51';
-        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=51';
-        import { mountReminderSetupCard } from './js/reminder-settings.js?v=51';
-        import { requestPermission } from './js/notifications.js?v=51';
-        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=51';
-        import { whatsappUrl } from './js/billing.js?v=51';
+        import { Auth } from './js/auth.js?v=54';
+        import { api } from './js/api.js?v=54';
+        import { isTrial, trialState, trialDate, bindTrialActions } from './js/trial.js?v=54';
+        import { ErrorHandler, Formatters, TimeUtils } from './js/utils.js?v=54';
+        import { renderSidebar, renderTopHeader, renderTrialBanner } from './js/sidebar.js?v=54';
+        import { icon } from './js/icons.js?v=54';
+        import { renderOnboarding } from './js/onboarding.js?v=54';
+        import { openAttendanceModal } from './js/attendance.js?v=54';
+        import { ATTENDANCE } from './js/lesson-utils.js?v=54';
+        import { computeBilling, openReminder, lessonsText, buildReminder, parentPhone, openBulkReminders } from './js/billing.js?v=54';
+        import { showTips } from './js/tips.js?v=54';
+        import { renderIncomeCard, openIncomeModal } from './js/income.js?v=54';
+        import { eventItem, itemsOn, formatRange, EVENT_COLORS } from './js/calendar-utils.js?v=54';
+        import { LiveLesson, notifyLiveLessonChanged } from './js/live-lesson.js?v=54';
+        import { mountReminderSetupCard } from './js/reminder-settings.js?v=54';
+        import { requestPermission } from './js/notifications.js?v=54';
+        import { groupTitle, groupColorClass, membersText, monthLabel } from './js/groups-utils.js?v=54';
+        import { whatsappUrl } from './js/billing.js?v=54';
+        import { once, dayAfterFirstLesson, ensureLessonFlag } from './js/guide.js?v=54';
 
         renderSidebar('dashboard');
 
@@ -236,6 +247,42 @@
         document.getElementById('ic-ql-learn').innerHTML = icon('play', { size: 19 });
         document.getElementById('ql-income').addEventListener('click', (e) => { e.preventDefault(); openIncomeModal(new Date().getDate() <= 5 ? -1 : 0); });
 
+        // v36: بحث سريع عن طالب: بيفتح ملفه على طول
+        (function setupDashSearch() {
+            const wrap = document.getElementById('dash-search');
+            const inp = document.getElementById('dash-search-input');
+            const list = document.getElementById('dash-search-list');
+            document.getElementById('ic-dash-search').innerHTML = icon('search', { size: 18 });
+            let students = null; let loading = null; let hits = []; let sel = -1;
+            const norm = (t) => String(t || '').toLowerCase().replace(/[\u064B-\u0652\u0640]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').trim();
+            const load = () => loading || (loading = api.getStudents(1, 500).then((d) => { students = (d && d.students) || []; }).catch(() => { students = []; loading = null; }));
+            const render = () => {
+                const q = norm(inp.value);
+                if (!q || !students) { list.hidden = true; inp.setAttribute('aria-expanded', 'false'); return; }
+                hits = students.filter((x) => norm(x.name).includes(q)).slice(0, 6);
+                sel = hits.length ? 0 : -1;
+                list.innerHTML = hits.length ? hits.map((x, i) => `<a role="option" id="ds-o${i}" href="student.html?id=${encodeURIComponent(x.id)}" class="${i === sel ? 'is-sel' : ''}"><span class="av">${Formatters.escapeHtml((x.name || '؟').trim().charAt(0))}</span><span class="nm">${Formatters.escapeHtml(x.name || '')}</span>${x.status && x.status !== 'active' ? `<small>${x.status === 'paused' ? 'متوقف' : 'أرشيف'}</small>` : ''}</a>`).join('')
+                    : `<div class="ds-empty">مفيش طالب بالاسم ده. <a href="students.html?search=${encodeURIComponent(inp.value.trim())}">دوّر في صفحة الطلاب</a></div>`;
+                list.hidden = false; inp.setAttribute('aria-expanded', 'true');
+            };
+            inp.addEventListener('focus', () => { load().then(render); });
+            inp.addEventListener('input', () => { if (students) render(); else load().then(render); });
+            inp.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    if (!hits.length) return; e.preventDefault();
+                    sel = (sel + (e.key === 'ArrowDown' ? 1 : -1) + hits.length) % hits.length;
+                    list.querySelectorAll('a[role=option]').forEach((a, i) => a.classList.toggle('is-sel', i === sel));
+                    inp.setAttribute('aria-activedescendant', `ds-o${sel}`);
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (hits[sel]) location.href = `student.html?id=${encodeURIComponent(hits[sel].id)}`;
+                    else if (inp.value.trim()) location.href = `students.html?search=${encodeURIComponent(inp.value.trim())}`;
+                } else if (e.key === 'Escape') { list.hidden = true; }
+            });
+            document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) list.hidden = true; });
+            window.__tmDashSearch = (count) => { wrap.hidden = !(count > 0); };
+        })();
+
         function greeting() {
             const h = new Date().getHours();
             if (h < 12) return 'صباح الخير';
@@ -253,14 +300,7 @@
                 { icon: 'clock', color: 'var(--success)', bg: 'rgba(111,143,114,0.15)', num: new Set((data.schedules || []).map((s, i) => s.recurrence_group_id || s.id || `i${i}`)).size, label: 'مواعيد ثابتة', link: 'schedule.html' },
                 { icon: 'creditCard', color: 'var(--warning)', bg: 'rgba(212,165,116,0.2)', num: data.subscription?.status === 'trial' ? 'تجريبي' : (data.subscription?.status === 'active' ? 'فعّال' : '—'), label: 'حالة الاشتراك', link: 'subscription.html' }
             ];
-            document.getElementById('stats-row').innerHTML = items.map(it => `
-                <div class="stat-card">
-                    <div class="stat-icon" style="background:${it.bg}; color:${it.color};">${icon(it.icon, { size: 18 })}</div>
-                    <p class="stat-num">${it.num}</p>
-                    <p class="stat-label">${it.label}</p>
-                    <a class="stat-link" href="${it.link}">عرض التفاصيل</a>
-                </div>
-            `).join('');
+            document.getElementById('stats-row').innerHTML = items.map((it) => `<a class="sm-it" href="${it.link}"><span class="sm-ic" style="color:${it.color}">${icon(it.icon, { size: 15 })}</span><span class="sm-l">${it.label}</span><b class="sm-n">${it.num}</b></a>`).join('');
         }
 
         // حالة كل حصة اليوم: null (لسه ماعملهاش/ممكن تكون فاتت) | in_progress | completed | cancelled
@@ -371,7 +411,7 @@
                         <div class="lesson-info">
                             <p class="name"><a href="group.html?id=${encodeURIComponent(g.group_id)}" style="color:inherit;">${Formatters.escapeHtml(name)}</a></p>
                             <p class="meta">حصة مجموعة · ${Formatters.escapeHtml(membersText(g.members_count || 0))}</p>
-                            ${badge}${clash.length && state !== 'cancelled' ? `<span class="lesson-status-badge status-conflict">⚠️ في نفس الوقت مع ${Formatters.escapeHtml(clash.slice(0, 2).join('، '))}</span>` : ''}
+                            ${badge}${clash.length && state !== 'cancelled' ? `<span class="clash-line">${icon('clock', { size: 13 })} في نفس الوقت مع ${Formatters.escapeHtml(clash.slice(0, 2).join('، '))}</span>` : ''}
                         </div>
                     </div>
                     <div class="lesson-time">${Formatters.formatTime ? Formatters.formatTime(g.start_time) : g.start_time}</div>
@@ -405,7 +445,8 @@
                 return { st, en: st + (Number(x.duration_minutes) || (m.kind === 'group' ? 60 : 45)), name: m.kind === 'group' ? groupTitle(x.group_name) : (x.student_name || '') };
             });
             const clashOf = (i) => span.filter((o, j) => j !== i && o.st < span[i].en && span[i].st < o.en).map((o) => o.name);
-            const clashHtml = (names) => (names.length ? `<span class="lesson-status-badge status-conflict">⚠️ في نفس الوقت مع ${Formatters.escapeHtml(names.slice(0, 2).join('، '))}</span>` : '');
+            // v36: التعارض سطر برتقالي صغير تحت الاسم بدل الكارت الأحمر المخطط
+            const clashHtml = (names) => (names.length ? `<span class="clash-line">${icon('clock', { size: 13 })} في نفس الوقت مع ${Formatters.escapeHtml(names.slice(0, 2).join('، '))}</span>` : '');
             container.innerHTML = merged.map(({ kind, l, g }, mi) => {
                 const clash = clashOf(mi);
                 if (kind === 'group') return groupLessonHtml(g, clash);
@@ -446,7 +487,7 @@
                         <div class="lesson-main">
                             <div class="lesson-avatar">${Formatters.escapeHtml((l.student_name || '؟').charAt(0))}</div>
                             <div class="lesson-info">
-                                <p class="name">${Formatters.escapeHtml(l.student_name || '')}${isTrial(l) ? '<span class="tr-badge">🎯 تجريبية</span>' : ''}</p>
+                                <p class="name">${Formatters.escapeHtml(l.student_name || '')}${isTrial(l) ? `<span class="tr-badge">${icon('target', { size: 12 })} تجريبية</span>` : ''}</p>
                                 <p class="meta">${Formatters.escapeHtml(l.current_topic || 'بدون موضوع محدد')}</p>
                                 ${badge}${state !== 'cancelled' ? clashHtml(clash) : ''}
                             </div>
@@ -538,7 +579,7 @@
             if (!items.length) { host.innerHTML = ''; return; }
             const decide = items.filter((x) => x.st.phase === 'decide').length;
             host.innerHTML = `<div class="tr-card" style="margin-bottom:1.2rem">
-                <div class="tr-card-head">🎯 ${decide ? (decide === 1 ? 'حصة تجريبية خلصت — محتاجة قرارك' : `${decide} حصص تجريبية خلصت — محتاجة قرارك`) : 'حصص تجريبية قريبة'}</div>
+                <div class="tr-card-head">${icon('target', { size: 16 })} ${decide ? (decide === 1 ? 'حصة تجريبية خلصت — محتاجة قرارك' : `${decide} حصص تجريبية خلصت — محتاجة قرارك`) : 'حصص تجريبية قريبة'}</div>
                 ${items.map(({ s, st }) => `<div class="tr-list-item">
                     <div class="tr-li-main"><a href="student.html?id=${encodeURIComponent(s.id)}">${Formatters.escapeHtml(s.name || '')}</a><small>${Formatters.escapeHtml(st.text)}</small></div>
                     <div class="tr-btns">${st.phase === 'decide'
@@ -598,6 +639,7 @@
                 });
                 renderStats(data);
                 renderTodayLessons(data.todayLessons, data.todayGroups);
+                try { window.__tmDashSearch && window.__tmDashSearch(Number(data.studentsCount) || 0); } catch (e) { /* تجاهل */ }
                 renderTrialBanner();
                 updateAiCardHint();
                 try { if (data.teacher && data.teacher.subject) localStorage.setItem('tm_teacher_subject', data.teacher.subject); } catch (e) { /* تجاهل */ }
@@ -606,7 +648,6 @@
                 document.getElementById('content').style.display = 'block';
                 await Promise.all([refreshOnboarding(), ...sideLoads]);
                 // v28: لو المدرس لسه ماختارش مواعيد التذكير (مرة واحدة)
-                if (!reminderCardShown) { reminderCardShown = true; mountReminderSetupCard(document.getElementById('reminder-setup'), { onEnablePush: requestPermission }); }
                 // جاي من إشعار "فاضل حصص متسجلتش": نوديه على حصص النهارده على طول
                 if (new URLSearchParams(location.search).get('pending') === '1') {
                     const list = document.getElementById('today-lessons-list');
@@ -638,20 +679,59 @@
 
             // الفترة التجريبية بتتكلم عن اللي المعلم عمله مش العدّ التنازلي بس
             const st = res && res.status;
+            window.__tmObStatus = st || null;
             const lessonsN = st ? Number(st.lessons) || 0 : 0;
             const studentsN = st ? Number(st.students) || 0 : 0;
             if (lessonsN > 0) {
                 renderTrialBanner('trial-banner-root', { progress: `سجّلت ${lessonsText(lessonsN)} لـ ${studentsText(studentsN)} — كمّل عليها!` });
             }
 
-            // تلميحات أول مرة (بعد ما الدليل يخلص عشان مايبقاش في زحمة)
-            if (!(res && res.active)) {
+            // v36: رسالة إرشاد واحدة بس في المرة: الخطوات ← الاحتفال ← المساعد الذكي ← التذكير ← مجتمع واتساب ← التلميحات
+            if (!(res && (res.active || res.celebrating))) await runGuides(lessonsN);
+        }
+
+        const WA_LINK = 'https://chat.whatsapp.com/LRWtf3mTrmBK6CA0FBwg3I?s=cl&p=a&mlu=4&ilr=4';
+        function guideCard(root, { key, icon: ic, title, text, cta, href, onCta }) {
+            root.innerHTML = `<div class="gd-card" role="region" aria-label="${Formatters.escapeHtml(title)}">
+                <span class="gd-ic" aria-hidden="true">${icon(ic, { size: 20 })}</span>
+                <div class="gd-txt"><strong>${Formatters.escapeHtml(title)}</strong>${text ? `<span>${Formatters.escapeHtml(text)}</span>` : ''}</div>
+                ${href ? `<a class="btn btn-sm" href="${href}" target="_blank" rel="noopener noreferrer" data-gd-cta>${Formatters.escapeHtml(cta)}</a>` : `<button type="button" class="btn btn-sm" data-gd-cta>${Formatters.escapeHtml(cta)}</button>`}
+                <button type="button" class="gd-x" data-gd-x aria-label="قفل">${icon('x', { size: 16 })}</button>
+            </div>`;
+            const close = () => { once.mark(key); root.innerHTML = ''; };
+            root.querySelector('[data-gd-x]').addEventListener('click', close);
+            root.querySelector('[data-gd-cta]').addEventListener('click', () => { once.mark(key); if (onCta) onCta(); setTimeout(() => { root.innerHTML = ''; }, 50); });
+        }
+        let guidesRunning = false;
+        async function runGuides(lessonsN) {
+            if (guidesRunning) return;
+            guidesRunning = true;
+            try {
+                const root = document.getElementById('guide-root');
+                if (root.firstElementChild) return;
+                if (lessonsN > 0 && !once.seen('ai_news')) {
+                    guideCard(root, { key: 'ai_news', icon: 'sparkles', title: 'جديد: المساعد الذكي يحضّرلك الحصة الجاية في دقيقة', cta: 'جرّبه',
+                        onCta: () => document.getElementById('btn-open-ai-assistant').click() });
+                    return;
+                }
+                if (lessonsN > 0 && !reminderCardShown) {
+                    reminderCardShown = true;
+                    const rs = document.getElementById('reminder-setup');
+                    await mountReminderSetupCard(rs, { onEnablePush: requestPermission });
+                    if (rs.firstElementChild) return;
+                }
+                if (dayAfterFirstLesson() && !once.seen('wa_invite')) {
+                    guideCard(root, { key: 'wa_invite', icon: 'messageCircle', title: 'مجتمع المعلمين على واتساب', text: 'مساعدة سريعة، وتطلب المزايا اللي محتاجها، وتشارك أفكارك للتحديثات.', cta: 'انضم للمجموعة', href: WA_LINK });
+                    return;
+                }
+                if (document.getElementById('reminder-setup').firstElementChild) return;
                 showTips([
                     { id: 'dash_today', target: '#today-lessons-list .lesson-actions', title: 'حصص النهارده', text: 'من هنا تبدأ الحصة، أو تسجّل غياب الطالب بضغطة لو ما حضرش.' },
                     { id: 'dash_due', target: '#due-root .due-card', title: 'تذكير الدفع', text: 'هنا الطلاب اللي باقتهم خلصت أو قربت تخلص — ابعت رسالة التذكير الجاهزة بضغطة.' }
                 ], { delay: 1500 });
-            }
+            } finally { guidesRunning = false; }
         }
+        window.addEventListener('tm:guide-free', () => { const st = window.__tmObStatus; if (st && Number(st.lessons) > 0) runGuides(Number(st.lessons)); });
 
         function studentsText(n) {
             if (n === 1) return 'طالب واحد';
@@ -668,7 +748,7 @@
                 const list = itemsOn((evs || []).map(eventItem), new Date());
                 if (!list.length) { box.hidden = true; box.innerHTML = ''; return; }
                 const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
-                box.innerHTML = `<h4>📌 مواعيدك التانية النهارده</h4>` + list.map((it) => {
+                box.innerHTML = `<h4>${icon('pin', { size: 15 })} مواعيدك التانية النهارده</h4>` + list.map((it) => {
                     const c = EVENT_COLORS[it.color] || EVENT_COLORS.gold;
                     const past = it.start + it.duration <= nowMin;
                     return `<a href="schedule.html" class="te-item${past ? ' is-past' : ''}" style="border-inline-start-color:${c.border}">
@@ -753,16 +833,16 @@
         }
         window.addEventListener('tm:schedules-changed', () => { loadDashboard(); });
         // v29.8: لو اتسجّلت حصة من جهاز تاني (أو المدرس رجع للبرنامج) الرئيسية تتحدّث لوحدها
-        import('./js/auto-refresh.js?v=51').then((m) => m.onAppResume(() => loadDashboard())).catch(() => { /* تجاهل */ });
+        import('./js/auto-refresh.js?v=54').then((m) => m.onAppResume(() => loadDashboard())).catch(() => { /* تجاهل */ });
 
         (async () => {
             const authInfo = await Auth.requireAuth();
             if (!authInfo) return;
             // v29: أول دخول بحساب جوجل: سؤال المادة + الموبايل
-            try { const { maybeCompleteProfile } = await import('./js/complete-profile.js?v=51'); maybeCompleteProfile(authInfo.profile, authInfo.session); } catch (e) { /* تجاهل */ }
+            try { const { maybeCompleteProfile } = await import('./js/complete-profile.js?v=54'); maybeCompleteProfile(authInfo.profile, authInfo.session); } catch (e) { /* تجاهل */ }
             await loadDashboard();
         })();
     </script>
-    <script src="js/pwa-install.js?v=51" defer></script>
+    <script src="js/pwa-install.js?v=54" defer></script>
 </body>
 </html>

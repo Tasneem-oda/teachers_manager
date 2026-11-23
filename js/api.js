@@ -3,11 +3,11 @@
  * جميع الاتصالات بالخادم تمر من هنا
  */
 
-import { CONFIG } from './config.js?v=51';
-import { APIUtils, Storage } from './utils.js?v=51';
-import { getFreshSession } from './session.js?v=51';
-import { Resume, affectedBySleep, waitAfterResume } from './resume.js?v=51';
-import { currentSyncVersion, syncTrusted } from './realtime-sync.js?v=51';
+import { CONFIG } from './config.js?v=54';
+import { APIUtils, Storage } from './utils.js?v=54';
+import { getFreshSession } from './session.js?v=54';
+import { Resume, affectedBySleep, waitAfterResume } from './resume.js?v=54';
+import { currentSyncVersion, syncTrusted } from './realtime-sync.js?v=54';
 
 /**
  * دالة أساسية لكل الطلبات
@@ -166,7 +166,7 @@ async function apiCallOnce(endpoint, method = 'GET', body = null, options = {}) 
         const quiet = isQuiet(body);   // v32/v33: مش تغيير بيانات
         if (method !== 'GET' && !isRead && !quiet && !/track-events|notifications|ai-chat|assistant|ask-sources|prepare-lesson|owner-/i.test(endpoint)) {
             ReadCache.clear();
-            import('./auto-refresh.js?v=51').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
+            import('./auto-refresh.js?v=54').then((m) => m.announceChange(endpoint)).catch(() => { /* تجاهل */ });
         }
         return data;
 
@@ -193,7 +193,8 @@ async function apiCallOnce(endpoint, method = 'GET', body = null, options = {}) 
             const cached = OfflineCache.get(cacheKeyOf(endpoint, method, body));
             if (cached !== undefined) { markOffline(true); return cached; }
         }
-        if (isNetworkFailure(error)) markOffline(false);
+        // v35.6: "الخادم مشغول" أو طلب طويل اتأخر مش معناه إن النت قطع: البانر بيظهر بس لو الطلب ماوصلش أصلًا
+        if (error && error.error && (error.error.code === 'NETWORK' || (error.error.code === 'TIMEOUT' && navigator.onLine === false))) markOffline(false);
 
         failure = error;
         throw error;
@@ -342,7 +343,7 @@ export const Outbox = (() => {
     const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
     const write = (list) => { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) { /* تجاهل */ } emit(); };
     const emit = () => { try { window.dispatchEvent(new CustomEvent('tm:outbox', { detail: { count: read().length } })); } catch (e) { /* تجاهل */ } };
-    const toast = (msg, ok = true) => import('./utils.js?v=51').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
+    const toast = (msg, ok = true) => import('./utils.js?v=54').then(({ ErrorHandler }) => (ok ? ErrorHandler.showSuccess(msg) : ErrorHandler.showError(msg, 7000))).catch(() => { /* تجاهل */ });
     return {
         list: read,
         count: () => read().length,
@@ -396,7 +397,7 @@ let billingDueCache = null;
 let conflictAsk = null;   // سؤال واحد لكل الأيام اللي بتتحفظ مع بعض
 async function askAllowConflict(message) {
     if (conflictAsk) return conflictAsk;
-    conflictAsk = import('./utils.js?v=51').then(({ askChoice }) => askChoice({
+    conflictAsk = import('./utils.js?v=54').then(({ askChoice }) => askChoice({
         title: '⚠️ الميعاد ده فيه حصة تانية',
         message: message || 'الميعاد ده بيتعارض مع حصة تانية متسجلة. لو ده مقصود احفظ الحصتين في نفس الميعاد، وهيظهروا في الجدول بعلامة تعارض.',
         choices: [{ label: 'احفظ الحصتين في نفس الميعاد', value: 'force' }],
@@ -417,6 +418,154 @@ async function saveScheduleWithConflict(send, data) {
         return await saveScheduleWithConflict(send, { ...data, allow_conflict: true });
     }
 }
+// ==================== v35.6: رفع ملفات الكتب بشكل يتحمّل نت الموبايل ====================
+// المشكلة اللي كانت بتحصل (خصوصًا موبايلات Infinix/Tecno): الرفع يفشل بعد ثواني والبرنامج يقول "النت قطع"
+// مع إن النت شغال وباقي البرنامج شغال. السببين:
+//  1) الملف نفسه مش بيتقري من الموبايل وقت الرفع (ملف من واتساب/درايف/مدير ملفات الشركة مش متنزّل فعلًا)
+//     → المتصفح بيرجّع "Failed to fetch" فكنا بنفتكره نت. دلوقتي بنقرا الملف الأول ولو فشل بنقول السبب الحقيقي.
+//  2) طلب واحد كبير على نت موبايل ضعيف بيتقطع → دلوقتي الملف بيترفع حتت (6 ميجا) ولو حتة وقعت بنكمّل من مكانها.
+const TUS_CHUNK = 6 * 1024 * 1024;   // سوبابيز بيطلب 6 ميجا بالظبط لكل حتة
+const upErr = (code, message, extra = {}) => ({ error: { code, message }, ...extra });
+const b64 = (v) => btoa(unescape(encodeURIComponent(String(v))));
+const waitMs = (ms, signal) => new Promise((res, rej) => {
+    const t = setTimeout(res, ms);
+    if (signal) signal.addEventListener('abort', () => { clearTimeout(t); rej(upErr('ABORTED', 'اتلغى', { aborted: true })); }, { once: true });
+});
+async function waitOnline(signal, maxMs = 30000) {
+    const t0 = Date.now();
+    while (typeof navigator !== 'undefined' && navigator.onLine === false && Date.now() - t0 < maxMs) await waitMs(1000, signal);
+}
+/** النت شغال فعلًا؟ (طلب صغير لسيرفر التخزين نفسه) */
+async function serverReachable() {
+    try {
+        const c = new AbortController(); const t = setTimeout(() => c.abort(), 6000);
+        const r = await fetch(`${CONFIG.SUPABASE_URL}/auth/v1/health`, { headers: { apikey: CONFIG.SUPABASE_ANON_KEY }, signal: c.signal, cache: 'no-store' });
+        clearTimeout(t); return r.status > 0;
+    } catch (e) { return false; }
+}
+async function readWholeFile(file) {
+    try {
+        const buf = await file.arrayBuffer();
+        if (file.size && buf.byteLength !== file.size) throw new Error('short read');
+        return new Blob([buf], { type: file.type || 'application/octet-stream' });
+    } catch (e) {
+        throw upErr('FILE_READ', 'الموبايل مش قادر يقرا الملف ده (غالبًا مش متنزّل على الموبايل نفسه، زي ملف من واتساب أو جوجل درايف). نزّله الأول على الموبايل وبعدين اختاره من "التنزيلات" أو "Downloads".', { kind: 'read' });
+    }
+}
+const authHeaders = (session) => ({ Authorization: `Bearer ${session.access_token}`, apikey: CONFIG.SUPABASE_ANON_KEY });
+
+/** XHR بنسبة تقدّم — بيرجّع {status, headers(name), text} أو بيرمي NETWORK/TIMEOUT/ABORTED */
+function xhrSend(method, url, headers, body, { onProgress, signal, timeout = 0 } = {}) {
+    return new Promise((resolve, reject) => {
+        const x = new XMLHttpRequest();
+        x.open(method, url);
+        Object.entries(headers).forEach(([k, v]) => x.setRequestHeader(k, v));
+        if (timeout) x.timeout = timeout;
+        if (onProgress && x.upload) x.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded, e.total); };
+        x.onload = () => resolve({ status: x.status, header: (n) => x.getResponseHeader(n), text: x.responseText });
+        x.onerror = () => reject(upErr('NETWORK', 'net', { kind: 'net' }));
+        x.ontimeout = () => reject(upErr('TIMEOUT', 'timeout', { kind: 'net' }));
+        x.onabort = () => reject(upErr('ABORTED', 'اتلغى', { aborted: true }));
+        if (signal) {
+            if (signal.aborted) { reject(upErr('ABORTED', 'اتلغى', { aborted: true })); return; }
+            signal.addEventListener('abort', () => { try { x.abort(); } catch (e) { /* تجاهل */ } }, { once: true });
+        }
+        x.send(body);
+    });
+}
+function httpFail(res) {
+    let msg = '';
+    try { const j = JSON.parse(res.text || '{}'); msg = j.message || j.error || ''; } catch (e) { /* تجاهل */ }
+    if (res.status === 413 || /too large|exceeded|maximum allowed size/i.test(msg)) return upErr('TOO_LARGE', 'الملف أكبر من المسموح في تخزين البرنامج.', { status: res.status });
+    if (res.status === 409 || /exists|duplicate/i.test(msg)) return upErr('EXISTS', 'exists', { status: res.status });
+    return upErr('UPLOAD_FAILED', `الرفع ماكملش (${res.status})${msg && /[؀-ۿ]/.test(msg) ? `: ${msg}` : ''}`, { status: res.status, kind: 'http' });
+}
+const retryable = (e) => e && !e.aborted && (e.error?.code === 'NETWORK' || e.error?.code === 'TIMEOUT' || (e.status >= 500) || e.status === 429);
+
+async function uploadSingle(url, blob, contentType, { onProgress, signal }) {
+    const session = await getFreshSession();
+    const res = await xhrSend('POST', url, { ...authHeaders(session), 'x-upsert': 'false', 'Content-Type': contentType }, blob, { onProgress, signal, timeout: 10 * 60 * 1000 });
+    if (res.status >= 200 && res.status < 300) return;
+    const e = httpFail(res);
+    if (e.error.code === 'EXISTS') return;
+    throw e;
+}
+
+async function uploadTus(bucket, objectName, blob, contentType, { onProgress, signal }) {
+    const base = `${CONFIG.SUPABASE_URL}/storage/v1/upload/resumable`;
+    let session = await getFreshSession();
+    const create = await xhrSend('POST', base, {
+        ...authHeaders(session), 'x-upsert': 'false', 'Tus-Resumable': '1.0.0', 'Upload-Length': String(blob.size),
+        'Upload-Metadata': `bucketName ${b64(bucket)},objectName ${b64(objectName)},contentType ${b64(contentType)},cacheControl ${b64('3600')}`
+    }, null, { signal, timeout: 60000 });
+    if (create.status === 409) return;   // اترفع قبل كده
+    if (create.status === 404 || create.status === 405 || create.status === 501) throw upErr('NO_TUS', 'no tus');
+    if (create.status !== 201 || !create.header('Location')) throw httpFail(create);
+    let loc = create.header('Location');
+    if (!/^https?:/i.test(loc)) loc = new URL(loc, CONFIG.SUPABASE_URL).href;
+    if (location.protocol === 'https:') loc = loc.replace(/^http:/i, 'https:');
+    let offset = 0;
+    let fails = 0;
+    while (offset < blob.size) {
+        const end = Math.min(blob.size, offset + TUS_CHUNK);
+        try {
+            session = await getFreshSession();
+            const res = await xhrSend('PATCH', loc, { ...authHeaders(session), 'Tus-Resumable': '1.0.0', 'Upload-Offset': String(offset), 'Content-Type': 'application/offset+octet-stream' },
+                blob.slice(offset, end), { signal, timeout: 3 * 60 * 1000, onProgress: (l) => onProgress && onProgress(offset + l, blob.size) });
+            if (res.status === 204 || res.status === 200) {
+                offset = Number(res.header('Upload-Offset')) || end; fails = 0;
+                if (onProgress) onProgress(offset, blob.size);
+                continue;
+            }
+            if (res.status === 409) {   // الأوفست اتلخبط: نسأل السيرفر وصل لحد فين
+                const h = await xhrSend('HEAD', loc, { ...authHeaders(session), 'Tus-Resumable': '1.0.0' }, null, { signal, timeout: 30000 });
+                offset = Number(h.header('Upload-Offset')) || offset; continue;
+            }
+            throw httpFail(res);
+        } catch (e) {
+            if (!retryable(e) || ++fails > 5) throw e;
+            await waitOnline(signal);
+            await waitMs(Math.min(15000, 1500 * 2 ** (fails - 1)), signal);
+            try {   // نكمّل من آخر حتة السيرفر استلمها
+                const h = await xhrSend('HEAD', loc, { ...authHeaders(await getFreshSession()), 'Tus-Resumable': '1.0.0' }, null, { signal, timeout: 30000 });
+                if (h.status === 200 && h.header('Upload-Offset') != null) offset = Number(h.header('Upload-Offset'));
+                else if (h.status === 404 || h.status === 410) throw upErr('UPLOAD_FAILED', 'الرفع وقف من عند السيرفر. جرّب ترفعه تاني.');
+            } catch (er) { if (er && (er.aborted || er.error?.code === 'UPLOAD_FAILED')) throw er; }
+        }
+    }
+}
+
+/** الرفع لتخزين البرنامج: بيقرا الملف الأول، وبيرفع حتت مع إعادة المحاولة، وبيقول سبب الفشل الحقيقي */
+export async function uploadResilient(storagePath, file, { onProgress, signal } = {}) {
+    const bucket = CONFIG.BOOKS_SETTINGS.BUCKET;
+    const contentType = file.type || 'application/octet-stream';
+    const blob = await readWholeFile(file);
+    const url = `${CONFIG.SUPABASE_URL}/storage/v1/object/${bucket}/${String(storagePath).split('/').map(encodeURIComponent).join('/')}`;
+    let tries = 0;
+    for (;;) {
+        try {
+            if (blob.size > TUS_CHUNK) {
+                try { await uploadTus(bucket, storagePath, blob, contentType, { onProgress, signal }); }
+                catch (e) { if (e && e.error?.code === 'NO_TUS') await uploadSingle(url, blob, contentType, { onProgress, signal }); else throw e; }
+            } else {
+                await uploadSingle(url, blob, contentType, { onProgress, signal });
+            }
+            if (onProgress) onProgress(blob.size, blob.size);
+            return storagePath;
+        } catch (e) {
+            if (e && e.aborted) throw e;
+            if (retryable(e) && ++tries <= 2) { await waitOnline(signal); await waitMs(2000 * tries, signal); continue; }
+            if (e && (e.error?.code === 'NETWORK' || e.error?.code === 'TIMEOUT')) {
+                const up = navigator.onLine !== false && await serverReachable();
+                throw upErr(e.error.code, up
+                    ? 'الاتصال بسيرفر التخزين بيتقطع أثناء الرفع رغم إن النت شغال (غالبًا النت ضعيف أو موفّر البيانات/البطارية في الموبايل بيوقفه). جرّب على واي فاي، وخلي الشاشة مفتوحة لحد ما يخلص.'
+                    : 'النت قطع أثناء الرفع. اتأكد من النت وجرّب تاني.', { kind: up ? 'net_server' : 'offline' });
+            }
+            throw e;
+        }
+    }
+}
+
 const signedUrlCache = new Map();
 
 /**
@@ -1245,35 +1394,8 @@ export const api = {
      * v35.2: رفع ملف الكتاب لتخزين البرنامج مع نسبة تقدّم حقيقية وإمكانية الإلغاء (XHR لأن fetch مابيدّيش نسبة الرفع)
      * @param {{onProgress?:(loaded:number,total:number)=>void, signal?:AbortSignal}} o
      */
-    async uploadBookFileWithProgress(storagePath, file, { onProgress, signal } = {}) {
-        let session = null;
-        try { session = await getFreshSession(); } catch (e) { session = null; }
-        if (!session || !session.access_token) return this.uploadBookFile(storagePath, file);
-        const url = `${CONFIG.SUPABASE_URL}/storage/v1/object/${CONFIG.BOOKS_SETTINGS.BUCKET}/${String(storagePath).split('/').map(encodeURIComponent).join('/')}`;
-        return new Promise((resolve, reject) => {
-            const x = new XMLHttpRequest();
-            x.open('POST', url);
-            x.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
-            x.setRequestHeader('apikey', CONFIG.SUPABASE_ANON_KEY);
-            x.setRequestHeader('x-upsert', 'false');
-            x.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-            x.upload.onprogress = (e) => { if (onProgress && e.lengthComputable) onProgress(e.loaded, e.total); };
-            x.onload = () => {
-                if (x.status >= 200 && x.status < 300) { if (onProgress) onProgress(file.size, file.size); resolve(storagePath); return; }
-                let msg = '';
-                try { const j = JSON.parse(x.responseText); msg = j.message || j.error || ''; } catch (e) { /* تجاهل */ }
-                if (x.status === 413 || /too large|exceeded/i.test(msg)) reject({ error: { code: 'TOO_LARGE', message: 'الملف أكبر من المسموح في تخزين البرنامج.' } });
-                else if (/exists|duplicate/i.test(msg)) resolve(storagePath);
-                else reject({ error: { code: 'UPLOAD_FAILED', message: `الرفع ماكملش (${x.status})${msg ? `: ${msg}` : ''}` }, status: x.status });
-            };
-            x.onerror = () => reject({ error: { code: 'NETWORK', message: 'النت قطع أثناء الرفع.' } });
-            x.ontimeout = () => reject({ error: { code: 'TIMEOUT', message: 'الرفع اتأخر أوي. اتأكد من النت.' } });
-            if (signal) {
-                if (signal.aborted) { reject({ error: { code: 'ABORTED', message: 'اتلغى' }, aborted: true }); return; }
-                signal.addEventListener('abort', () => { try { x.abort(); } catch (e) { /* تجاهل */ } reject({ error: { code: 'ABORTED', message: 'اتلغى' }, aborted: true }); }, { once: true });
-            }
-            x.send(file);
-        });
+    async uploadBookFileWithProgress(storagePath, file, opts = {}) {
+        return uploadResilient(storagePath, file, opts);
     },
 
     async uploadBookFile(storagePath, file) {
@@ -1289,7 +1411,7 @@ export const api = {
     // download: true أو اسم ملف → الرابط بيفرض تنزيل الملف بدل فتحه في المتصفح
     async getBookFileUrl(storagePath, { expiresIn = 3600, download = false } = {}) {
         // v35: كتاب على جوجل درايف المدرس
-        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=51'); return g.driveFileUrl(storagePath, { download: false }); }
+        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=54'); return g.driveFileUrl(storagePath, { download: false }); }
         // v30: الرابط الموقّع بيتحفظ لحد ما يقرب يخلص (فتح نفس الكتاب تاني بيبقى فوري)
         const ck = `${storagePath}|${download ? String(download) : ''}`;
         const hit = signedUrlCache.get(ck);
@@ -1306,7 +1428,7 @@ export const api = {
 
     // تحميل بايتات الملف الأصلي للعرض/إعادة الفهرسة، مع تقدّم التحميل
     async fetchBookFile(storagePath, { onProgress, signal } = {}) {
-        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=51'); return g.fetchFromDrive(storagePath, { onProgress, signal }); }
+        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=54'); return g.fetchFromDrive(storagePath, { onProgress, signal }); }
         const url = await this.getBookFileUrl(storagePath, { expiresIn: 3600 });
         let res;
         try {
@@ -1348,7 +1470,7 @@ export const api = {
     },
 
     async deleteBookFile(storagePath) {
-        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=51'); return g.deleteFromDrive(storagePath); }
+        if (String(storagePath || '').startsWith('gdrive:')) { const g = await import('./gdrive.js?v=54'); return g.deleteFromDrive(storagePath); }
         try { await getFreshSession(); } catch (e) { /* تجاهل */ }
         try {
             await window.supabaseClient.storage.from(CONFIG.BOOKS_SETTINGS.BUCKET).remove([storagePath]);
