@@ -1,8 +1,8 @@
 /**
  * complete-profile.js — v29: بعد أول دخول بجوجل: سؤالين بس (بتدرّس إيه + رقم واتساب) بدل فورم التسجيل كله
  */
-import { api } from './api.js?v=54';
-import { Storage, ErrorHandler, toLatinDigits, Formatters } from './utils.js?v=54';
+import { api } from './api.js?v=55';
+import { Storage, ErrorHandler, toLatinDigits, Formatters } from './utils.js?v=55';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 const SUBJECTS = [['quran', 'القرآن الكريم'], ['english', 'اللغة الإنجليزية'], ['arabic', 'اللغة العربية'], ['math', 'الرياضيات'],

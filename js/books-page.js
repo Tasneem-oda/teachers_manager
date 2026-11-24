@@ -11,18 +11,18 @@
  *   - رفع كتاب جديد ومعالجته في المتصفح مع نسبة تقدّم حقيقية، إعادة المعالجة، إدارة الوصول، و"اسأل كتبك"
  */
 
-import { CONFIG } from './config.js?v=54';
-import { Auth } from './auth.js?v=54';
-import { renderSidebar, renderTopHeader } from './sidebar.js?v=54';
-import { icon } from './icons.js?v=54';
-import { api } from './api.js?v=54';
-import { ErrorHandler, Formatters } from './utils.js?v=54';
-import { detectFileType, processBook } from './book-processor.js?v=54';
-import { openBookViewer } from './book-viewer.js?v=54';
-import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=54';
-import { CATS, catOf, guessCategory, FOLDER_COLORS, folderColor, FOLDER_ICONS, FOLDER_SUGGESTIONS } from './lib-meta.js?v=54';
-import * as Drive from './gdrive.js?v=54';
-import { track } from './track.js?v=54';
+import { CONFIG } from './config.js?v=55';
+import { Auth } from './auth.js?v=55';
+import { renderSidebar, renderTopHeader } from './sidebar.js?v=55';
+import { icon } from './icons.js?v=55';
+import { api } from './api.js?v=55';
+import { ErrorHandler, Formatters } from './utils.js?v=55';
+import { detectFileType, processBook } from './book-processor.js?v=55';
+import { openBookViewer } from './book-viewer.js?v=55';
+import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=55';
+import { CATS, catOf, guessCategory, FOLDER_COLORS, folderColor, FOLDER_ICONS, FOLDER_SUGGESTIONS } from './lib-meta.js?v=55';
+import * as Drive from './gdrive.js?v=55';
+import { track } from './track.js?v=55';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => Formatters.escapeHtml(String(s == null ? '' : s));
@@ -1557,6 +1557,18 @@ export function initBooksPage() {
         if (qs.get('tab') === 'public') switchTab('public');
         else if (qs.get('folder') && folderById(qs.get('folder'))) goTo({ f: qs.get('folder') });
     })();
+
+    // v36: «مكتبتي» في الاحترافية بس: في البداية الكتب القديمة بتفضل موجودة وتتفتح، بس الرفع والإضافة مقفولين
+    import('./plan.js?v=55').then(({ getTier }) => getTier()).then((tier) => {
+        if (tier !== 'starter') return;
+        const sec = document.getElementById('books-section');
+        if (!sec || document.getElementById('lib-plan-note')) return;
+        const note = document.createElement('div');
+        note.id = 'lib-plan-note';
+        note.className = 'lib-plan-note';
+        note.innerHTML = `<span class="lp-ic">${icon('lock', { size: 16 })}</span><span class="lp-t"><b>«مكتبتي» في الباقة الاحترافية</b><small>كتبك اللي اترفعت قبل كده موجودة وتقدر تفتحها، بس رفع كتب جديدة و«اسأل كتبك» في الاحترافية.</small></span><button type="button" class="btn btn-sm" data-pro-feature data-pro-name="«مكتبتي»">اعرف أكتر</button>`;
+        sec.parentNode.insertBefore(note, sec);
+    }).catch(() => { /* تجاهل */ });
 
     return { openBook, closeViewer() { if (viewer) viewer.close(); }, get books() { return books; }, loadBooks, switchTab, goTo };
 }

@@ -19,7 +19,7 @@ export const TEMPLATES = [
     { id: 'letters', name: 'كوّن الكلمة', desc: 'حروف متلخبطة يكوّن منها الكلمة' },
     { id: 'wheel', name: 'العجلة', desc: 'لف واختار طالب أو سؤال عشوائي' }
 ];
-import { gi } from './gicons.js?v=54';
+import { gi } from './gicons.js?v=55';
 export { gi };
 export const templateOf = (id) => TEMPLATES.find((t) => t.id === id) || TEMPLATES[0];
 

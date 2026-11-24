@@ -2,8 +2,8 @@
  * games/picker.js — v33: زرار "🎮 لعبة" جوه الحصة (حصة الطالب وحصة المجموعة)
  * بيتحمّل بس لما المدرس يدوس الزرار (مايأثرش على سرعة الحصة).
  */
-import { setupGamesUi, ensureUiCss, modal, mountQuranBuilder, packsHtml, packGame, openGame, templateOf } from './ui.js?v=54';
-import { gi } from './gicons.js?v=54';
+import { setupGamesUi, ensureUiCss, modal, mountQuranBuilder, packsHtml, packGame, openGame, templateOf } from './ui.js?v=55';
+import { gi } from './gicons.js?v=55';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 

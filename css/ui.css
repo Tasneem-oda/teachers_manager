@@ -225,3 +225,28 @@ html.tm-no-ai .ai-card, html.tm-no-ai #btn-ai-ready, html.tm-no-ai #btn-open-ai-
 .quick-link-btn { border-color: var(--border) !important; border-radius: 14px !important; }
 .quick-link-btn:hover { border-color: #D3C7DE !important; }
 #ask-input { border-radius: 12px; }
+
+/* ==================== v36: الباقات ==================== */
+html.tm-starter #btn-prepare-lesson::after, html.tm-starter #ql-income::after, html.tm-starter #btn-ask-submit::after {
+    content: 'الاحترافية'; margin-inline-start: .35rem; padding: .05rem .45rem; border-radius: 999px; background: #F5E7C6; color: #7A5413; font-size: .68rem; font-weight: 800; line-height: 1.6; }
+html.tm-starter #ql-income { position: relative; }
+.inc-locked, .lib-plan-note { display: flex; align-items: center; gap: .7rem; width: 100%; padding: .8rem 1rem; border: 1px dashed #E2C27E; background: #FFFAEE; border-radius: 14px; text-align: start; font: inherit; color: var(--text-primary); cursor: pointer; box-sizing: border-box; margin-bottom: 1rem; }
+.inc-locked .il-ic, .lib-plan-note .lp-ic { width: 36px; height: 36px; flex-shrink: 0; border-radius: 10px; background: #F5E7C6; color: #7A5413; display: inline-flex; align-items: center; justify-content: center; }
+.inc-locked .il-t, .lib-plan-note .lp-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.inc-locked small, .lib-plan-note small { color: var(--text-secondary); font-size: .8rem; line-height: 1.6; }
+.lib-plan-note { cursor: default; }
+.lib-plan-note .btn { flex-shrink: 0; }
+@media (max-width: 520px) { .lib-plan-note { flex-wrap: wrap; } .lib-plan-note .btn { width: 100%; } }
+/* نافذة الترقية */
+.tm-up { position: relative; text-align: center; padding-top: .4rem; }
+.tm-up-x { position: absolute; top: .7rem; inset-inline-end: .7rem; }
+.tm-up-ic { width: 56px; height: 56px; margin: .4rem auto .6rem; border-radius: 18px; background: linear-gradient(135deg, #F5E7C6, #FCEFD2); color: #7A5413; display: flex; align-items: center; justify-content: center; }
+.tm-up h3 { margin: 0 0 .35rem; font-size: 1.12rem; color: var(--text-primary); }
+.tm-up-msg { margin: 0 auto .8rem; max-width: 420px; color: var(--text-secondary); font-size: .9rem; line-height: 1.8; }
+.tm-up-list { list-style: none; padding: 0; margin: 0 auto 1rem; max-width: 340px; display: grid; gap: .45rem; text-align: start; }
+.tm-up-list li { display: flex; align-items: center; gap: .5rem; font-size: .9rem; color: var(--text-primary); }
+.tm-up-list li svg { color: var(--success-text, #1F6B4F); flex-shrink: 0; }
+.tm-up-go { width: 100%; max-width: 420px; background: var(--whatsapp, #25D366); color: #fff; text-decoration: none; margin: 0 auto; }
+.tm-up-go:hover { background: var(--whatsapp-hover, #1EBE5A); color: #fff; }
+.tm-up-more { display: inline-block; margin: .7rem 0 .2rem; font-size: .86rem; color: var(--primary); }
+@media (min-width: 600px) { #tm-upgrade { align-items: center; } #tm-upgrade .tm-sheet-panel { border-radius: 20px; max-width: 460px; padding: 1rem 1.4rem 1.4rem; } #tm-upgrade .tm-sheet-grip { display: none; } }

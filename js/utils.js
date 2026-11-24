@@ -2,7 +2,7 @@
  * utils.js - دوال مساعدة موحدة للتطبيق
  */
 
-import { CONFIG } from './config.js?v=54';
+import { CONFIG } from './config.js?v=55';
 
 /** أرقام عربية/فارسية (٠١٢ / ۰۱۲) ← أرقام إنجليزية. كيبوردات كتير في مصر بتكتب الأرقام العربي افتراضيًا */
 export function toLatinDigits(value) {
@@ -218,6 +218,8 @@ export const ErrorHandler = {
     },
     
     showError: (message, duration = 5000) => {
+        // v36: رسالة الباقة ظهرت في نافذة الترقية خلاص: مانكررهاش كإشعار
+        try { if (window.__tmPlanMsg && window.__tmPlanMsg.text === String(message) && Date.now() - window.__tmPlanMsg.at < 5000) return; } catch (e) { /* تجاهل */ }
         const errorDiv = document.getElementById('error-toast') || createErrorToast();
         errorDiv.textContent = message;
         errorDiv.style.display = 'flex';
@@ -323,12 +325,25 @@ export const APIUtils = {
             // n8n لما workflow يقع بيرجّع {"message":"Error in workflow"} من غير success
             const err = (data && data.error && typeof data.error === 'object') ? data.error
                 : { code: status >= 500 ? 'SERVER_ERROR' : 'ERROR', message: status >= 500 ? 'حصل خطأ مؤقت في الخادم. حاول مرة أخرى.' : 'حدث خطأ' };
+            notePlanError(err);
             throw { error: err, status };
         }
 
         return data.data;
     }
 };
+
+/**
+ * v36: رد من بوابة الباقات (حد البداية / ميزة الاحترافية / الاشتراك خلص) ← حدث واحد بيفتح نافذة الترقية
+ */
+export function notePlanError(err) {
+    try {
+        const code = err && err.code;
+        if (!code || !(/^PLAN_/.test(code) || code === 'SUBSCRIPTION_EXPIRED')) return;
+        window.__tmPlanMsg = { text: String(err.message || ''), at: Date.now() };
+        window.dispatchEvent(new CustomEvent('tm:plan-limit', { detail: err }));
+    } catch (e) { /* تجاهل */ }
+}
 
 /**
  * v25: نافذة اختيار بأزرار بأسماء الفعل نفسه (بدل confirm() اللي "موافق/إلغاء" فيه معناها مش واضح)
