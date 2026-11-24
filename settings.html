@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=55">
+    <link rel="stylesheet" href="css/style.css?v=56">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -96,8 +96,8 @@
             .st-actions .btn { flex: 1; }
         }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=55">
-    <link rel="stylesheet" href="css/ui.css?v=55">
+    <link rel="stylesheet" href="css/v29.css?v=56">
+    <link rel="stylesheet" href="css/ui.css?v=56">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -231,17 +231,17 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=55"></script>
+    <script type="module" src="js/config.js?v=56"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=55';
-        import { Storage, ErrorHandler, toLatinDigits } from './js/utils.js?v=55';
-        import { api } from './js/api.js?v=55';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=55';
-        import { icon } from './js/icons.js?v=55';
-        import { CONFIG } from './js/config.js?v=55';
-        import { requestPermission, unlinkOnSignOut } from './js/notifications.js?v=55';
-        import { mountReminderControls } from './js/reminder-settings.js?v=55';
-        import { openDeleteAccount } from './js/account-delete.js?v=55';
+        import { Auth } from './js/auth.js?v=56';
+        import { Storage, ErrorHandler, toLatinDigits } from './js/utils.js?v=56';
+        import { api } from './js/api.js?v=56';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=56';
+        import { icon } from './js/icons.js?v=56';
+        import { CONFIG } from './js/config.js?v=56';
+        import { requestPermission, unlinkOnSignOut } from './js/notifications.js?v=56';
+        import { mountReminderControls } from './js/reminder-settings.js?v=56';
+        import { openDeleteAccount } from './js/account-delete.js?v=56';
 
         // v32: الحالة الحقيقية (الجهاز متسجل فعلًا عند خدمة الإشعارات) مش بس "الإذن متاح"
         let pushHealth = null;
@@ -252,7 +252,7 @@
             el.textContent = 'جاري التأكد من الإشعارات على الجهاز ده...';
             btn.hidden = true;
             try {
-                const ph = await import('./js/push-health.js?v=55');
+                const ph = await import('./js/push-health.js?v=56');
                 pushHealth = await ph.checkPushHealth({ waitSdkMs: 10000 });
                 const t = ph.healthText(pushHealth);
                 el.innerHTML = `<b>${t.title}</b>${t.desc ? `<br><small>${t.desc}</small>` : ''}`;
@@ -271,7 +271,7 @@
             b.disabled = true;
             b.textContent = 'لحظة...';
             try {
-                const ph = await import('./js/push-health.js?v=55');
+                const ph = await import('./js/push-health.js?v=56');
                 await ph.fixNow(pushHealth || { state: 'default', p: ph.devicePlatform() }, requestPermission);
             } finally { b.disabled = false; b.textContent = label; }
             renderPushStatus();
@@ -298,7 +298,7 @@
             links.forEach((a) => a.addEventListener('click', (e) => { const t = document.querySelector(a.getAttribute('href')); if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }));
         } catch (e) { /* تجاهل */ }
         document.getElementById('btn-export').addEventListener('click', async (e) => {
-            const { downloadAllData } = await import('./js/export-data.js?v=55');
+            const { downloadAllData } = await import('./js/export-data.js?v=56');
             downloadAllData(e.currentTarget);
         });
         document.getElementById('ic-install').innerHTML = icon('download', { size: 18 });
@@ -489,10 +489,10 @@
             rep.addEventListener('change', () => save({ report_after_lesson: rep.checked }));
         })();
     </script>
-    <script src="js/pwa-install.js?v=55" defer></script>
+    <script src="js/pwa-install.js?v=56" defer></script>
     <script type="module">
         // v35: ربط جوجل درايف (للكتب) من الإعدادات
-        import * as Drive from './js/gdrive.js?v=55';
+        import * as Drive from './js/gdrive.js?v=56';
         const row = document.getElementById('drive-section');
         const btn = document.getElementById('btn-drive');
         const st = document.getElementById('drive-state');

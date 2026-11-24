@@ -4,9 +4,9 @@
  *   - الألعاب الجاهزة
  *   - محرّر الألعاب (المدرس يعمل لعبته) + مشاركة لينك مع الطالب
  */
-import { TEMPLATES, templateOf, openGame, gi } from './engine.js?v=55';
-import { PACKS, packGame } from './packs.js?v=55';
-import { surahList, surahAyahs, QURAN_GAMES, buildQuranGame } from './quran.js?v=55';
+import { TEMPLATES, templateOf, openGame, gi } from './engine.js?v=56';
+import { PACKS, packGame } from './packs.js?v=56';
+import { surahList, surahAyahs, QURAN_GAMES, buildQuranGame } from './quran.js?v=56';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 let api = null;
