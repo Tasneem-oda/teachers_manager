@@ -2,10 +2,10 @@
  * groups-utils.js (v26) - أدوات مشتركة للمجموعات:
  * الاسم المعروض، ملخص المواعيد، محرر المواعيد، ونافذة اختيار الطلاب
  */
-import { Formatters, ErrorHandler, askChoice } from './utils.js?v=55';
-import { icon } from './icons.js?v=55';
-import { DAY_NAMES, WEEK_ORDER, timeToMinutes, formatClock12, durationText, parseDate } from './calendar-utils.js?v=55';
-import { SUBJECTS } from './lesson-utils.js?v=55';
+import { Formatters, ErrorHandler, askChoice } from './utils.js?v=56';
+import { icon } from './icons.js?v=56';
+import { DAY_NAMES, WEEK_ORDER, timeToMinutes, formatClock12, durationText, parseDate } from './calendar-utils.js?v=56';
+import { SUBJECTS } from './lesson-utils.js?v=56';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 

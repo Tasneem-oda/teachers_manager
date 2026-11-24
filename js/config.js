@@ -49,7 +49,7 @@ export const CONFIG = {
     // v35: كتب المدرس على جوجل درايف بتاعه. حطّي هنا OAuth Client ID (نوع Web) من Google Cloud Console
     // (مع تفعيل Google Drive API وإضافة دومين البرنامج في Authorized JavaScript origins). فاضي = الخاصية مخفية.
     GOOGLE_DRIVE: {
-        CLIENT_ID: '51043177360-7gv5aov3gld3nbjj5j8ue0h7h45n6k1f.apps.googleusercontent.com',
+        CLIENT_ID: '1080016211274-vfo4pkf9raf5r53sk5kghf73tnbs05gj.apps.googleusercontent.com',
         FOLDER_NAME: 'Teachers Manager - كتبي'
     },
     // v35: الشروحات (فيديوهات يوتيوب بتتضاف من المونيتور وبتظهر في أماكنها في البرنامج)

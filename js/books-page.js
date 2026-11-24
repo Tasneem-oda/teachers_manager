@@ -11,18 +11,18 @@
  *   - رفع كتاب جديد ومعالجته في المتصفح مع نسبة تقدّم حقيقية، إعادة المعالجة، إدارة الوصول، و"اسأل كتبك"
  */
 
-import { CONFIG } from './config.js?v=55';
-import { Auth } from './auth.js?v=55';
-import { renderSidebar, renderTopHeader } from './sidebar.js?v=55';
-import { icon } from './icons.js?v=55';
-import { api } from './api.js?v=55';
-import { ErrorHandler, Formatters } from './utils.js?v=55';
-import { detectFileType, processBook } from './book-processor.js?v=55';
-import { openBookViewer } from './book-viewer.js?v=55';
-import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=55';
-import { CATS, catOf, guessCategory, FOLDER_COLORS, folderColor, FOLDER_ICONS, FOLDER_SUGGESTIONS } from './lib-meta.js?v=55';
-import * as Drive from './gdrive.js?v=55';
-import { track } from './track.js?v=55';
+import { CONFIG } from './config.js?v=56';
+import { Auth } from './auth.js?v=56';
+import { renderSidebar, renderTopHeader } from './sidebar.js?v=56';
+import { icon } from './icons.js?v=56';
+import { api } from './api.js?v=56';
+import { ErrorHandler, Formatters } from './utils.js?v=56';
+import { detectFileType, processBook } from './book-processor.js?v=56';
+import { openBookViewer } from './book-viewer.js?v=56';
+import { renderMarkdown, extractCitationNumbers } from './md-lite.js?v=56';
+import { CATS, catOf, guessCategory, FOLDER_COLORS, folderColor, FOLDER_ICONS, FOLDER_SUGGESTIONS } from './lib-meta.js?v=56';
+import * as Drive from './gdrive.js?v=56';
+import { track } from './track.js?v=56';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => Formatters.escapeHtml(String(s == null ? '' : s));
@@ -1559,7 +1559,7 @@ export function initBooksPage() {
     })();
 
     // v36: «مكتبتي» في الاحترافية بس: في البداية الكتب القديمة بتفضل موجودة وتتفتح، بس الرفع والإضافة مقفولين
-    import('./plan.js?v=55').then(({ getTier }) => getTier()).then((tier) => {
+    import('./plan.js?v=56').then(({ getTier }) => getTier()).then((tier) => {
         if (tier !== 'starter') return;
         const sec = document.getElementById('books-section');
         if (!sec || document.getElementById('lib-plan-note')) return;
