@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=56">
+    <link rel="stylesheet" href="css/style.css?v=57">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -24,8 +24,8 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=56">
-    <link rel="stylesheet" href="css/groups.css?v=56">
+    <link rel="stylesheet" href="css/lessons.css?v=57">
+    <link rel="stylesheet" href="css/groups.css?v=57">
     <style>
         .loading { text-align: center; padding: 2rem; color: var(--primary); }
         .empty-state { text-align: center; padding: 2rem; color: var(--text-secondary); }
@@ -51,8 +51,8 @@
         .e-guard { background: #FAFAF7; border: 1px dashed #E2DCCB; border-radius: 12px; padding: 0.7rem 0.8rem 0.1rem; margin-bottom: 1rem; }
         .e-guard > p { margin: 0 0 0.5rem; font-size: 0.82rem; color: var(--text-secondary); }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=56">
-    <link rel="stylesheet" href="css/ui.css?v=56">
+    <link rel="stylesheet" href="css/v29.css?v=57">
+    <link rel="stylesheet" href="css/ui.css?v=57">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -248,23 +248,23 @@
     <div id="error-toast" style="display:none;"></div>
     <div id="success-toast" style="display:none;"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=56"></script>
+    <script type="module" src="js/config.js?v=57"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=56';
-        import { api } from './js/api.js?v=56';
-        import { ErrorHandler, Formatters } from './js/utils.js?v=56';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=56';
-        import { icon } from './js/icons.js?v=56';
-        import { openStudentAppointments } from './js/student-appointments.js?v=56';
-        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=56';
-        import { openAttendanceModal } from './js/attendance.js?v=56';
-        import { openMonthlyReport, openLessonReport } from './js/report.js?v=56';
-        import { isTrial, trialCardHtml, bindTrialActions } from './js/trial.js?v=56';
-        import { showTips } from './js/tips.js?v=56';
-        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone, hoursText, monthLabel } from './js/billing.js?v=56';
-        import { groupTitle, groupColorClass } from './js/groups-utils.js?v=56';
-        import { confirmDeleteStudent, confirmRemoveFromGroup, setStudentStatus } from './js/student-actions.js?v=56';
-        import { openRecordingLinkModal } from './js/recording.js?v=56';
+        import { Auth } from './js/auth.js?v=57';
+        import { api } from './js/api.js?v=57';
+        import { ErrorHandler, Formatters } from './js/utils.js?v=57';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=57';
+        import { icon } from './js/icons.js?v=57';
+        import { openStudentAppointments } from './js/student-appointments.js?v=57';
+        import { subjectLabel, relativeDay, formatLessonDate, lessonDetailsHtml, nextOccurrence, formatNextOccurrence, attendanceStats, isAbsenceRow, attendanceInfo, normalizeLesson } from './js/lesson-utils.js?v=57';
+        import { openAttendanceModal } from './js/attendance.js?v=57';
+        import { openMonthlyReport, openLessonReport } from './js/report.js?v=57';
+        import { isTrial, trialCardHtml, bindTrialActions } from './js/trial.js?v=57';
+        import { showTips } from './js/tips.js?v=57';
+        import { computeBilling, billingCardHtml, bindBillingActions, openBillingSetup, lessonsText, money, whatsappUrl, normalizePhone, hoursText, monthLabel } from './js/billing.js?v=57';
+        import { groupTitle, groupColorClass } from './js/groups-utils.js?v=57';
+        import { confirmDeleteStudent, confirmRemoveFromGroup, setStudentStatus } from './js/student-actions.js?v=57';
+        import { openRecordingLinkModal } from './js/recording.js?v=57';
 
         renderSidebar('students');
         renderTopHeader({ title: 'ملف الطالب', subtitle: 'كل ما يخص الطالب في مكان واحد' });
@@ -302,7 +302,7 @@
                 if (['overview', 'lessons', 'billing', 'notes', 'info'].includes(hashTab)) switchTab(hashTab);
                 // v30: حصة/دفعة اتسجلت من جهاز تاني (أو المدرس رجع للبرنامج): الملف يتحدّث لوحده
                 // (مش وقت تعديل البيانات أو الملاحظات، ولا بعد "عرض المزيد" عشان مانرجّعش القايمة لأولها)
-                import('./js/auto-refresh.js?v=56').then((m) => m.onAppResume(async () => {
+                import('./js/auto-refresh.js?v=57').then((m) => m.onAppResume(async () => {
                     const tab = document.querySelector('.sp-tab.active');
                     if (tab && ['info', 'notes'].includes(tab.dataset.tab)) return;
                     if (lessons.length > PAGE) return;
@@ -867,6 +867,6 @@
 
         window.openBillingSetup = () => openBillingSetup({ student, view: billView }, billingCtx.onChange);
     </script>
-    <script src="js/pwa-install.js?v=56" defer></script>
+    <script src="js/pwa-install.js?v=57" defer></script>
 </body>
 </html>

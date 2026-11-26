@@ -8,7 +8,7 @@ const LS_SURAHS = 'tm_q_surahs_v2';
 const LS_PREFIX = 'tm_q_s_v1_';
 const MAX_CACHED = 24;
 
-import { shuffle, plain } from './engine.js?v=56';
+import { shuffle, plain } from './engine.js?v=57';
 
 const lsGet = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
