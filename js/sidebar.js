@@ -1,17 +1,17 @@
 /**
  * sidebar.js - السايدبار الموحّد لكل صفحات البرنامج (مطابق للثيم الجديد)
  */
-import { Auth } from './auth.js?v=56';
-import { icon } from './icons.js?v=56';
-import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=56';
-import { CONFIG } from './config.js?v=56';
-import { openSuggestionModal } from './suggestions.js?v=56';
-import { mountFloatingLesson } from './live-lesson.js?v=56';
-import { initTracking } from './track.js?v=56';
-import { askChoice } from './utils.js?v=56';
-import { applyAiGate, ensureLessonFlag } from './guide.js?v=56';
-import { installPlanUi } from './plan.js?v=56';
-import { priceFor, subscribeMessage, waUrl, currentUserInfo, offerActive, annualAvailable } from './pricing.js?v=56';
+import { Auth } from './auth.js?v=57';
+import { icon } from './icons.js?v=57';
+import { initPushNotifications, unlinkOnSignOut } from './notifications.js?v=57';
+import { CONFIG } from './config.js?v=57';
+import { openSuggestionModal } from './suggestions.js?v=57';
+import { mountFloatingLesson } from './live-lesson.js?v=57';
+import { initTracking } from './track.js?v=57';
+import { askChoice } from './utils.js?v=57';
+import { applyAiGate, ensureLessonFlag } from './guide.js?v=57';
+import { installPlanUi } from './plan.js?v=57';
+import { priceFor, subscribeMessage, waUrl, currentUserInfo, offerActive, annualAvailable } from './pricing.js?v=57';
 
 const NAV_ITEMS = [
     { key: 'dashboard', href: 'dashboard.html', icon: 'home', label: 'الرئيسية' },
@@ -50,7 +50,7 @@ let subFetchPromise = null;
 function fetchSubscriptionNow() {
     if (subFetchPromise) return subFetchPromise;
     subFetchPromise = (async () => {
-        const { api } = await import('./api.js?v=56');
+        const { api } = await import('./api.js?v=57');
         const data = await api.checkSubscription();
         try {
             sessionStorage.setItem(SUB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
@@ -176,7 +176,7 @@ export function renderSidebar(activeKey) {
     try { installPlanUi(); } catch (e) { /* تجاهل */ }
     whenActive(() => { try { initTracking(); } catch (e) { /* التتبع إضافي: لو فشل الصفحة تكمّل عادي */ } });
     // v35: فيديوهات الشرح للصفحة دي (زرار صغير "▶ شرح" لو فيه فيديو مكانه هنا)
-    whenActive(() => { if (CONFIG.TUTORIALS && CONFIG.TUTORIALS.ENABLED === false) return; setTimeout(() => import('./tutorials.js?v=56').then((m) => m.initTutorials(pageKey())).catch(() => { /* إضافي */ }), 1800); });
+    whenActive(() => { if (CONFIG.TUTORIALS && CONFIG.TUTORIALS.ENABLED === false) return; setTimeout(() => import('./tutorials.js?v=57').then((m) => m.initTutorials(pageKey())).catch(() => { /* إضافي */ }), 1800); });
     installNavGuard();
     const root = document.getElementById('sidebar-root');
     if (!root) return;
@@ -252,11 +252,11 @@ export function renderSidebar(activeKey) {
     });
     document.getElementById('sidebar-contact').addEventListener('click', (e) => {
         e.preventDefault();
-        import('./hub.js?v=56').then((m) => m.openContact()).catch(() => { window.open(`https://wa.me/${CONFIG.SUPPORT_WHATSAPP}`, '_blank', 'noopener'); });
+        import('./hub.js?v=57').then((m) => m.openContact()).catch(() => { window.open(`https://wa.me/${CONFIG.SUPPORT_WHATSAPP}`, '_blank', 'noopener'); });
     });
     // v33: إشعاراتك من المونيتور + الرسايل التلقائية (بعد ما الصفحة تخلص تحميل، من غير ما تأخرها)
     whenActive(() => { try {
-        const startHub = () => import('./hub.js?v=56').then((m) => m.initHub()).catch(() => { /* تجاهل */ });
+        const startHub = () => import('./hub.js?v=57').then((m) => m.initHub()).catch(() => { /* تجاهل */ });
         if ('requestIdleCallback' in window) requestIdleCallback(() => setTimeout(startHub, 600), { timeout: 3000 });
         else setTimeout(startHub, 1500);
     } catch (e) { /* تجاهل */ } });
@@ -301,11 +301,11 @@ export function openMoreSheet(activeKey = '') {
         { k: 'settings', href: 'settings.html', ic: 'gear', t: 'الإعدادات' },
         { k: 'mushaf', href: 'mushaf.html', ic: 'bookOpen', t: 'المصحف' },
         { k: 'learn', href: 'learn.html', ic: 'play', t: 'الشروحات' },
-        { k: 'income', ic: 'creditCard', t: 'فلوس الشهر', act: () => import('./income.js?v=56').then((m) => m.openIncomeModal(new Date().getDate() <= 5 ? -1 : 0)) },
+        { k: 'income', ic: 'creditCard', t: 'فلوس الشهر', act: () => import('./income.js?v=57').then((m) => m.openIncomeModal(new Date().getDate() <= 5 ? -1 : 0)) },
         { k: 'subscription', href: 'subscription.html', ic: 'crown', t: 'الاشتراك' },
         installed ? null : { k: 'install', ic: 'download', t: 'ثبّت التطبيق', act: () => openInstall() },
         { k: 'suggest', ic: 'lightbulb', t: 'عندك اقتراح؟', act: () => openSuggestionModal() },
-        { k: 'contact', ic: 'headset', t: 'تواصل مع المطوّر', act: () => import('./hub.js?v=56').then((m) => m.openContact()).catch(() => { window.open(`https://wa.me/${CONFIG.SUPPORT_WHATSAPP}`, '_blank', 'noopener'); }) },
+        { k: 'contact', ic: 'headset', t: 'تواصل مع المطوّر', act: () => import('./hub.js?v=57').then((m) => m.openContact()).catch(() => { window.open(`https://wa.me/${CONFIG.SUPPORT_WHATSAPP}`, '_blank', 'noopener'); }) },
         { k: 'logout', ic: 'logout', t: 'تسجيل الخروج', act: signOutFlow, danger: true }
     ].filter(Boolean);
     const here = pageKey();
@@ -565,7 +565,7 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = false 
     `;
 
     document.getElementById('header-contact').addEventListener('click', () => {
-        import('./hub.js?v=56').then((m) => m.openContact()).catch(() => { window.open(`https://wa.me/${CONFIG.SUPPORT_WHATSAPP}`, '_blank', 'noopener'); });
+        import('./hub.js?v=57').then((m) => m.openContact()).catch(() => { window.open(`https://wa.me/${CONFIG.SUPPORT_WHATSAPP}`, '_blank', 'noopener'); });
     });
 
     if (showSearch) {
@@ -587,14 +587,14 @@ export function renderTopHeader({ title = '', subtitle = '', showSearch = false 
 // على الموبايلات الضعيفة ده كان بيعلّق التطبيق أول ما يفتح
 function idle(fn, t) { if ('requestIdleCallback' in window) requestIdleCallback(() => fn(), { timeout: t }); else setTimeout(fn, Math.min(t, 1500)); }
 function startBackground() {
-    import('./net-status.js?v=56').then((m) => m.initNetStatus()).catch(() => { /* تجاهل */ });
+    import('./net-status.js?v=57').then((m) => m.initNetStatus()).catch(() => { /* تجاهل */ });
     idle(() => {
     // v29.7: الوقت الصح من السيرفر (لو ساعة الجهاز غلط التذكيرات وتاريخ الحصص بيمشوا على الوقت الحقيقي)
-    import('./server-time.js?v=56').then((m) => m.initServerTime()).catch(() => { /* تجاهل */ });
+    import('./server-time.js?v=57').then((m) => m.initServerTime()).catch(() => { /* تجاهل */ });
     // v30: مزامنة لحظية بين أجهزة نفس المدرس (حصة اتسجلت على اللابتوب ← الموبايل يتحدّث فورًا)
     }, 1500);
-    idle(() => import('./realtime-sync.js?v=56').then((m) => m.initRealtimeSync()).catch(() => { /* تجاهل */ }), 2500);
-    const startReminders = () => import('./local-reminders.js?v=56').then((m) => m.initLocalReminders()).catch(() => { /* تجاهل */ });
+    idle(() => import('./realtime-sync.js?v=57').then((m) => m.initRealtimeSync()).catch(() => { /* تجاهل */ }), 2500);
+    const startReminders = () => import('./local-reminders.js?v=57').then((m) => m.initLocalReminders()).catch(() => { /* تجاهل */ });
     idle(startReminders, 3500);
 
     // تفعيل إشعارات Push (تذكير الحصص اليومي) - مرة واحدة بعد رسم الهيدر
@@ -610,7 +610,7 @@ async function loadHeaderProfile() {
         const profile = Auth.cachedProfile(session.user && session.user.id) || await Auth.bootstrapSession();
         // v28: الحساب مجدول للحذف؟ نعرض "رجّع حسابي" قبل أي حاجة
         if (profile && profile.deletion_scheduled_for) {
-            try { const m = await import('./account-delete.js?v=56'); m.showDeletionScheduledGate(profile); } catch (e) { /* تجاهل */ }
+            try { const m = await import('./account-delete.js?v=57'); m.showDeletionScheduledGate(profile); } catch (e) { /* تجاهل */ }
         }
         const nameEl = document.getElementById('header-user-name');
         const avatarEl = document.getElementById('header-avatar-fallback');

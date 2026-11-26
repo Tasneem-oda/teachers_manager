@@ -1,0 +1,174 @@
+/* ============================================================================
+   viewer.css — v39: عارض الكتاب (بيتحمّل آخر حاجة في كل صفحة بتفتح كتب: مكتبتي، الحصة، حصة المجموعة، تاب الكتاب)
+   • الأدوات جنب الكتاب + الوضع الليلي (كانوا في v33.css فمكانوش بيشتغلوا في صفحات الحصة)
+   • أكتر من كتاب: التبويبات فوق دايمًا، وجنب بعض بنصين متساويين وهيدر مضغوط
+   ============================================================================ */
+
+/* ------------------------------------------------ أدوات الشرح: عمود جنب الكتاب بدل شريط عايم فوقه */
+.bv.pt-open { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+.bv.pt-open > .bv-header { grid-column: 1 / -1; grid-row: 1; }
+.bv.pt-open > .bv-stage { grid-column: 2; grid-row: 2; min-height: 0; }
+.bv.pt-open > .pt-dockwrap {
+    position: relative; grid-column: 1; grid-row: 2; inset: auto; transform: none; z-index: 6;
+    max-width: none; height: 100%; box-sizing: border-box; padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px));
+    background: #2B2433; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; align-items: stretch; justify-content: flex-start;
+    border-inline-end: 1px solid rgba(255, 255, 255, .06);
+}
+.bv.pt-open .bv-content { padding-bottom: 24px; }
+.bv.pt-open > .pt-dockwrap .ink-dock { display: block; background: transparent; box-shadow: none; border-radius: 0; padding: 0; max-width: none; }
+.bv.pt-open > .pt-dockwrap .ink-row { display: grid; grid-template-columns: repeat(2, 42px); gap: 4px; overflow: visible; justify-content: center; }
+.bv.pt-open > .pt-dockwrap .ink-tb { min-width: 42px; width: 42px; height: 42px; padding: 0; }
+.bv.pt-open > .pt-dockwrap .ink-tb-wide { grid-column: 1 / -1; width: 100%; background: rgba(255, 255, 255, .1); }
+.bv.pt-open > .pt-dockwrap .ink-tb-wide span { font-size: .72rem; }
+.bv.pt-open > .pt-dockwrap .ink-sep { grid-column: 1 / -1; width: 100%; height: 1px; margin: 3px 0; }
+.bv.pt-open > .pt-dockwrap .ink-pop-wrap { position: static; }
+/* القوايم (الألوان/الأشكال) بتطلع على الكتاب جنب الزرار ومابتتقصّش */
+.bv.pt-open > .pt-dockwrap .ink-pop { position: fixed; inset: auto; transform: none; margin-inline-start: 96px; margin-top: -42px; max-height: 70vh; overflow: auto; z-index: 30; }
+.bv.pt-open .pt-chip, .bv.pt-open .pt-toastmsg { left: calc(50% + 50px); }
+
+@media (max-width: 760px) {
+    /* الموبايل: شريط تحت الكتاب (جزء من الصفحة، مش فوقها) */
+    .bv.pt-open { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; }
+    .bv.pt-open > .bv-stage { grid-column: 1; grid-row: 2; }
+    .bv.pt-open > .pt-dockwrap { grid-column: 1; grid-row: 3; height: auto; padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px)); overflow-x: auto; overflow-y: hidden; border: 0; border-top: 1px solid rgba(255, 255, 255, .08); }
+    .bv.pt-open > .pt-dockwrap .ink-row { display: flex; flex-wrap: nowrap; gap: 3px; justify-content: flex-start; width: max-content; }
+    .bv.pt-open > .pt-dockwrap .ink-tb { width: 40px; min-width: 40px; height: 40px; }
+    .bv.pt-open > .pt-dockwrap .ink-tb-wide { width: auto; padding: 0 10px; }
+    .bv.pt-open > .pt-dockwrap .ink-sep { width: 1px; height: 26px; margin: 0 3px; align-self: center; }
+    .bv.pt-open > .pt-dockwrap .ink-pop { position: fixed; left: 8px; right: 8px; top: auto; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); margin: 0; width: auto; max-width: none; justify-content: center; }
+    .bv.pt-open .pt-chip, .bv.pt-open .pt-toastmsg { left: 50%; }
+}
+
+/* ------------------------------------------------ الوضع الليلي للكتاب: الصفحة غامقة والكلام فاتح */
+.bv.bv-night { background: #121016; }
+.bv.bv-night .bv-stage { background: #121016; }
+.bv.bv-night .bv-content:not(.bv-type-txt) { filter: invert(.9) hue-rotate(180deg); }
+.bv.bv-night .bv-content.bv-type-txt, .bv.bv-night .bv-textmode { background: #1A1720; color: #ECE7F1; }
+.bv.bv-night .bv-header { background: #1E1A24; color: #ECE7F1; border-color: #2E2836; }
+.bv.bv-night .bv-header .bv-title h2 { color: #E7D9F5; }
+.bv.bv-night .bv-header .bv-meta, .bv.bv-night .bv-pageinput { color: #B9AFC4; }
+.bv.bv-night .bv-group, .bv.bv-night .bv-btn[data-act="close"], .bv.bv-night .pt-toggle { background: #2A2431; border-color: #3A3342; color: #ECE7F1; }
+.bv.bv-night .bv-btn { color: #ECE7F1; }
+.bv.bv-night .bv-pageinput input { background: #2A2431; color: #fff; border-color: #3A3342; }
+.bv.bv-night .bv-zoom-label { color: #D6CCE0; }
+/* إخفاء الكتاب مؤقتًا: رسالة واضحة بدل شاشة سودا من غير ولا كلمة */
+.pt-black { align-items: center !important; padding: 0 !important; }
+.pt-black div { display: flex; flex-direction: column; gap: 8px; text-align: center; color: #fff; }
+.pt-black strong { font-size: 1.1rem; }
+.pt-black span { color: #CFC6D8 !important; font-size: .9rem !important; }
+
+/* ------------------------------------------------ ثبات الهيدر (المحاذاة) */
+/* ui.css بيكبّر كل الـ inputs (40-44px) فخانة رقم الصفحة كانت بتطوّل جروب الصفحات عن باقي الجروبات */
+.bv .bv-pageinput input { height: 28px; min-height: 0; padding: 0 2px; margin: 0; box-sizing: border-box; line-height: 28px; box-shadow: none; font-size: .85rem; }
+.bv .bv-group { height: 38px; min-height: 0; box-sizing: border-box; padding: 2px; }
+.bv .bv-group .bv-btn, .bv .bv-group .bv-zoom-label { height: 32px; min-height: 0; }
+.bv .bv-tools > .bv-btn { height: 38px; min-height: 0; box-sizing: border-box; }
+/* الهيدر: سطر واحد لو فيه مكان، ولو مفيش الأدوات بتنزل سطر تاني كامل (مابتغطيش اسم الكتاب ولا زرار القفل) */
+.bv .bv-header { flex-wrap: wrap; row-gap: .45rem; }
+.bv .bv-title { flex: 1 1 180px; min-width: 120px; }
+.bv .bv-tools { flex: 0 1 auto; flex-wrap: nowrap; justify-content: flex-start; min-width: 0; max-width: 100%; margin-inline-start: auto; overflow-x: auto; scrollbar-width: none; }
+.bv .bv-tools::-webkit-scrollbar { display: none; }
+.bv .bv-tools > * { flex-shrink: 0; }
+@media (max-width: 1180px) {
+    .bv .pt-toggle span, .bv .bv-chat-btn span, .bv .bv-mode span, .bv .bv-multi-t, .bv .lb-log-btn span { display: none; }
+    .bv .bv-chat-btn { padding: 0 .6rem; }
+}
+
+/* ------------------------------------------------ التبويبات (أكتر من كتاب): فوق الهيدر دايمًا، حتى والأدوات مفتوحة */
+.bv-tabs { align-items: flex-end; gap: 4px; min-height: 40px; box-sizing: border-box; padding-inline: 8px; padding-bottom: 0; }
+.bv-tab { display: inline-flex; align-items: stretch; flex: 0 1 auto; max-width: 240px; min-width: 0; padding: 0; height: 34px; border-radius: 10px 10px 0 0; background: rgba(255, 255, 255, .5); overflow: hidden; box-shadow: none; }
+.bv-tab.on { background: var(--card-bg, #fff); box-shadow: 0 -2px 6px rgba(41, 37, 45, .06); }
+.bv-tab-open { display: inline-flex; align-items: center; min-width: 0; flex: 1 1 auto; height: 100%; padding: 0 4px 0 10px; padding-inline: 12px 4px; border: 0; background: transparent; color: var(--text-primary); font: inherit; font-size: .8rem; font-weight: 600; cursor: pointer; }
+.bv-tab.on .bv-tab-open { color: var(--primary); font-weight: 700; }
+.bv-tab-open span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bv-tab-x { flex: 0 0 auto; width: 28px; height: 100%; display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--text-light, #8A8290); cursor: pointer; padding: 0; }
+.bv-tab-x:hover { color: var(--danger, #A12A2A); background: rgba(0, 0, 0, .06); }
+.bv-tab-open:focus-visible, .bv-tab-x:focus-visible, .bv-tab-add:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.bv-tab-add { flex: 0 0 auto; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 10px 10px 0 0; background: transparent; color: var(--primary); cursor: pointer; padding: 0; }
+.bv-tab-add:hover { background: rgba(255, 255, 255, .5); }
+.bv.bv-night .bv-tabs { background: #17131C; }
+.bv.bv-night .bv-tab { background: #231E2A; }
+.bv.bv-night .bv-tab.on { background: #1E1A24; }
+.bv.bv-night .bv-tab-open { color: #ECE7F1; }
+
+/* الأدوات مفتوحة (grid): التبويبات في أول صف بعرض الشاشة كلها (قبل كده كانت بتنزل تحت جنب الأدوات وتعرّض عمود الأدوات) */
+.bv.pt-open { grid-template-rows: auto auto minmax(0, 1fr); }
+.bv.pt-open > .bv-tabs { grid-column: 1 / -1; grid-row: 1; }
+.bv.pt-open > .bv-header { grid-row: 2; }
+.bv.pt-open > .bv-stage, .bv.pt-open > .pt-dockwrap { grid-row: 3; }
+@media (max-width: 760px) {
+    .bv.pt-open { grid-template-rows: auto auto minmax(0, 1fr) auto; }
+    .bv.pt-open > .bv-stage { grid-row: 3; }
+    .bv.pt-open > .pt-dockwrap { grid-row: 4; }
+}
+
+/* ------------------------------------------------ جنب بعض: نصين متساويين بخط فاصل، والنص المختار عليه خط ملوّن */
+.bv.bv-split { inset: 0 auto 0 auto; width: 50vw; border: 0; box-sizing: border-box; }
+.bv.bv-split-a { right: 0; left: auto; }
+.bv.bv-split-b { left: 0; right: auto; border-inline-start: 0; }
+.bv.bv-split-a { border-inline-end: 1px solid #C9C0D2; }
+.bv.bv-split .bv-header { gap: .5rem; padding-inline: .6rem; flex-wrap: wrap; row-gap: .4rem; }
+.bv.bv-split .bv-title { flex: 1 1 120px; }
+.bv.bv-split .bv-title h2 { font-size: .92rem; }
+.bv.bv-split .bv-title p { display: none; }
+.bv.bv-split .bv-tools { flex: 0 1 auto; margin-inline-start: auto; gap: .35rem; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.bv.bv-split .bv-tools::-webkit-scrollbar { display: none; }
+.bv.bv-split .pt-toggle span, .bv.bv-split .bv-chat-btn span, .bv.bv-split .bv-mode span, .bv.bv-split .bv-multi-t, .bv.bv-split .lb-log-btn span { display: none; }
+.bv.bv-split .bv-chat-btn { padding: 0 .6rem; }
+.bv.bv-split .bv-zoom-label { min-width: 42px; }
+@media (max-width: 1279px) { .bv.bv-split .bv-zoom-label, .bv.bv-split [data-act="newtab"] { display: none; } .bv.bv-split .bv-tools { gap: .3rem; } }
+.bv.bv-split:not(.bv-focus) .bv-header { opacity: 1; }
+.bv.bv-split:not(.bv-focus) .bv-title h2 { color: var(--text-secondary); }
+.bv.bv-split.bv-focus { box-shadow: none; }
+.bv.bv-split.bv-focus > .bv-header { box-shadow: inset 0 3px 0 var(--primary, #5B3F7A), 0 1px 6px rgba(41, 37, 45, .06); }
+.bv.bv-split.bv-focus.bv-many > .bv-tabs { box-shadow: inset 0 3px 0 var(--primary, #5B3F7A); }
+.bv.bv-split.bv-focus.bv-many > .bv-header { box-shadow: 0 1px 6px rgba(41, 37, 45, .06); }
+/* عمود الأدوات في النص: عمود واحد بدل اتنين (عشان الكتاب ياخد مساحة) */
+.bv.bv-split.pt-open > .pt-dockwrap { padding-inline: 4px; }
+.bv.bv-split.pt-open > .pt-dockwrap .ink-row { grid-template-columns: 42px; }
+.bv.bv-split.pt-open > .pt-dockwrap .ink-tb-wide { width: 42px; padding: 0; }
+.bv.bv-split.pt-open > .pt-dockwrap .ink-tb-wide span { display: none; }
+.bv.bv-split.pt-open > .pt-dockwrap .ink-pop { margin-inline-start: 54px; }
+.bv.bv-split.pt-open .pt-chip, .bv.bv-split.pt-open .pt-toastmsg { left: calc(50% + 25px); }
+/* الشات في النص: بيطلع فوق الكتاب جوه النص بتاعه (مش بيزق الكتاب لحد ما يبقى عمود رفيع) */
+.bv.bv-split.bc-open .bv-stage { margin-left: 0 !important; }
+.bv.bv-split .bc-panel { width: min(400px, calc(100% - 1.6rem)); left: .8rem; }
+.bv.bv-split .bc-fab { left: .8rem; }
+.bv.bv-split .bc-fab span { display: none; }
+.bv.bv-split .bc-fab { padding: .85rem; }
+.bv.bv-split .bc-book-title { max-width: 180px; }
+/* اختيار كتاب تاني جوه النص */
+.bv-pick-note { margin: 0; font-size: .76rem; color: var(--text-secondary); text-align: center; }
+.bv-pick-hd .bv-btn { width: 34px; padding: 0; }
+.bv-pick-q { height: 42px; }
+
+/* ------------------------------------------------ الموبايل: صف الأدوات مايطلعش برا الشاشة */
+@media (max-width: 720px) {
+    .bv [data-act="newtab"] { display: none; }
+    .bv .bv-tools { overflow-x: auto; scrollbar-width: none; justify-content: flex-start; }
+    .bv .bv-tools::-webkit-scrollbar { display: none; }
+    .bv .bv-tools > .bv-btn, .bv .bv-group { min-height: 0; height: 36px; }
+    .bv .bv-group .bv-btn { height: 30px; }
+    .bv .bv-title { flex-basis: calc(100% - 52px); }
+    .bv .bv-pageinput input { width: 38px; height: 26px; line-height: 26px; }
+    .bv .bv-group { padding: 0 .1rem; }
+    .bv-tabs { min-height: 38px; }
+    .bv-tab { max-width: 46vw; }
+}
+/* الموبايلات الصغيرة (آيفون SE وما شابه): كل الأزرار تبان من غير سحب — التحميل موجود في قايمة الكتاب في "مكتبتي" */
+@media (max-width: 380px) {
+    .bv .bv-tools { gap: .2rem; }
+    .bv .bv-tools [data-act="download"] { display: none; }
+    .bv .bv-group .bv-btn { min-width: 30px; padding: 0 .3rem; }
+    .bv .bv-pageinput input { width: 34px; }
+    .bv .bv-header { padding-inline: .45rem; }
+    .bv .bv-tools > .bv-btn { min-width: 34px; padding: 0 .35rem; }
+    .bv .bv-group { padding: 1px; gap: 0; }
+}
+/* الرسايل العايمة (اتحفظ الرسم / الوضع الليلي / رجوع من الزوم / تنبيه الكيبورد) تحت الهيدر مهما كان طوله */
+.bv .pt-toastmsg { top: calc(var(--pt-top, 66px) + 12px); }
+.bv .pt-back { top: calc(var(--pt-top, 66px) + 10px); }
+.bv .pt-focus { top: calc(var(--pt-top, 66px) + 54px); }
+.bv.bv-present .pt-toastmsg { top: 16px; }
+.bv.bv-present .pt-back { top: 16px; }
+.bv.bv-present .pt-focus { top: 60px; }

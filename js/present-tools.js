@@ -6,9 +6,9 @@
  * • "صفحة بيضا" (السبورة) في أي وقت، وقص جزء من الكتاب للسبورة
  * • أزرار الكيبورد لكل ده (بتشتغل والكيبورد عربي برضه)
  */
-import { icon } from './icons.js?v=56';
-import { W, InkLayer, InkController, ToolDock, handleInkKey, LaserPointer, confirmIn } from './annotate.js?v=56';
-import { openWhiteboard, isWhiteboardOpen } from './whiteboard.js?v=56';
+import { icon } from './icons.js?v=57';
+import { W, InkLayer, InkController, ToolDock, handleInkKey, LaserPointer, confirmIn } from './annotate.js?v=57';
+import { openWhiteboard, isWhiteboardOpen } from './whiteboard.js?v=57';
 
 const DRAW_TYPES = ['pdf', 'docx', 'pptx', 'image'];
 const BOOK_TOOLS = ['hand', 'pen', 'hl', 'temp', 'eraser', 'line', 'arrow', 'rect', 'ellipse', 'text', 'stamp', 'move', 'laser', 'magnifier', 'zoomarea', 'spotlight', 'ruler', 'snip'];
@@ -23,7 +23,7 @@ const SHORTCUTS = [
 ];
 
 export class PresentTools {
-    /** @param {import('./book-viewer.js?v=56').BookViewer} viewer */
+    /** @param {import('./book-viewer.js?v=57').BookViewer} viewer */
     constructor(viewer) {
         this.v = viewer;
         this.layers = new Map();       // page → InkLayer
@@ -119,7 +119,7 @@ export class PresentTools {
         this.toggleBtn.addEventListener('click', () => this.setDock(!this.dockOpen));
         this.backChip.addEventListener('click', () => this.zoomBack());
         this.focusHint.addEventListener('click', () => { this.focusHint.hidden = true; v.stage.focus({ preventScroll: true }); });
-        this._blur = () => { if (!v.closed && !isWhiteboardOpen()) this.focusHint.hidden = false; };
+        this._blur = () => { if (!v.closed && !v.root.hidden && !isWhiteboardOpen()) { this._placeFloating(); this.focusHint.hidden = false; } };
         this._focus = () => { this.focusHint.hidden = true; };
         window.addEventListener('blur', this._blur);
         window.addEventListener('focus', this._focus);
@@ -233,7 +233,17 @@ export class PresentTools {
     }
     /** رسالة جوه نافذة الكتاب (بتظهر كمان في ملء الشاشة) */
     _msg(text, kind = 'warn') { this._status(text, kind, 3500); }
+    /** v39: الرسايل والأزرار العايمة تحت الهيدر بالظبط (الهيدر بيطوّل مع التبويبات وفي وضع جنب بعض فكانت بتغطي الأزرار) */
+    _placeFloating() {
+        try {
+            const v = this.v;
+            const top = Math.round(v.stage.getBoundingClientRect().top - v.root.getBoundingClientRect().top);
+            if (top <= 0 || this.presenting) { v.root.style.removeProperty('--pt-top'); return; }
+            v.root.style.setProperty('--pt-top', `${top}px`);
+        } catch (e) { /* تجاهل */ }
+    }
     _status(text, kind, ms = 2500) {
+        this._placeFloating();
         this.statusEl.textContent = text;
         this.statusEl.dataset.kind = kind || '';
         this.statusEl.hidden = !text;
@@ -456,6 +466,7 @@ export class PresentTools {
         const hit = this._pageAt(x, y);
         if (push) {
             this.zoomStack.push({ zoom: v.zoom, top: v.stage.scrollTop, left: v.stage.scrollLeft, page: v.page });
+            this._placeFloating();
             this.backChip.hidden = false;
         }
         const ref = hit ? { el: hit.el, fx: (x - hit.r.left) / hit.r.width, fy: (y - hit.r.top) / hit.r.height } : null;

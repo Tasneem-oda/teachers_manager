@@ -7,10 +7,10 @@
  * بعد الثلاثة: رسالة احتفال مرة واحدة + اقتراحات اختيارية.
  */
 
-import { api } from './api.js?v=56';
-import { Formatters } from './utils.js?v=56';
-import { openStudentAppointments } from './student-appointments.js?v=56';
-import { setLessonsCount } from './guide.js?v=56';
+import { api } from './api.js?v=57';
+import { Formatters } from './utils.js?v=57';
+import { openStudentAppointments } from './student-appointments.js?v=57';
+import { setLessonsCount } from './guide.js?v=57';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 const LS = {
