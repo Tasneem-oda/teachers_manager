@@ -12,7 +12,7 @@
  *  4) بنبلّغ السيرفر بالحالة (مرة كل يوم أو لما تتغير) ← تقدري تشوفي مين الإشعارات مش واصلاله
  *     من teachers_manager.push_problems قبل ما يشتكي.
  */
-import { api } from './api.js?v=58';
+import { api } from './api.js?v=59';
 
 const REPORT_KEY = 'tm_push_report_v1';
 const BANNER_KEY = 'tm_push_fix_off';

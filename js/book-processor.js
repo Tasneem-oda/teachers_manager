@@ -12,9 +12,9 @@
  * والسيرفر بيعمل بس الحاجات اللي محتاجة مفتاح Gemini (OCR + embeddings) وقاعدة البيانات.
  */
 
-import { CONFIG } from './config.js?v=58';
-import { normalizeText, assessTextQuality, chunkUnits, paginateBlocks } from './book-chunker.js?v=58';
-import { loadPdfJs, pdfDocumentParams, loadJsZip, repairPdfBytes } from './book-libs.js?v=58';
+import { CONFIG } from './config.js?v=59';
+import { normalizeText, assessTextQuality, chunkUnits, paginateBlocks } from './book-chunker.js?v=59';
+import { loadPdfJs, pdfDocumentParams, loadJsZip, repairPdfBytes } from './book-libs.js?v=59';
 
 const S = () => CONFIG.BOOKS_SETTINGS;
 const OCR_MAX_SIDE = 1800;          // أقصى بُعد لصورة الصفحة المرسلة للـ OCR (بكسل)

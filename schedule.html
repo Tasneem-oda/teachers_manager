@@ -16,8 +16,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=58">
-    <link rel="stylesheet" href="css/lessons.css?v=58">
+    <link rel="stylesheet" href="css/style.css?v=59">
+    <link rel="stylesheet" href="css/lessons.css?v=59">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -195,8 +195,8 @@
         .wk-block.is-conflict { border-style: dashed !important; border-width: 2px !important; background-image: repeating-linear-gradient(135deg, rgba(192,57,43,0.16) 0 6px, transparent 6px 12px) !important; box-shadow: 0 0 0 1px rgba(192,57,43,0.45); }
         .wk-block.is-conflict b { color: var(--cf-text); }
     </style>
-    <link rel="stylesheet" href="css/v29.css?v=58">
-    <link rel="stylesheet" href="css/ui.css?v=58">
+    <link rel="stylesheet" href="css/v29.css?v=59">
+    <link rel="stylesheet" href="css/ui.css?v=59">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -360,20 +360,20 @@
     <div id="success-toast" style="display:none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=58"></script>
+    <script type="module" src="js/config.js?v=59"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=58';
-        import { api } from './js/api.js?v=58';
-        import { ErrorHandler, Formatters, uuidv4, askChoice } from './js/utils.js?v=58';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=58';
-        import { icon } from './js/icons.js?v=58';
-        import { mountTimePicker, refreshTimePicker, mountDayChips } from './js/form-widgets.js?v=58';
+        import { Auth } from './js/auth.js?v=59';
+        import { api } from './js/api.js?v=59';
+        import { ErrorHandler, Formatters, uuidv4, askChoice } from './js/utils.js?v=59';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=59';
+        import { icon } from './js/icons.js?v=59';
+        import { mountTimePicker, refreshTimePicker, mountDayChips } from './js/form-widgets.js?v=59';
         import {
             DAY_NAMES, DAY_SHORT, EVENT_COLORS, isoDate, parseDate, weekStart, addDays, sameDay, weekDays,
             minutesToTime, formatClock12, formatRange, durationText, formatDayDate, occursOn,
             lessonItem, eventItem, itemsOn, layoutLanes, findConflicts, dayConflicts
-        } from './js/calendar-utils.js?v=58';
-        import { groupTitle, membersText } from './js/groups-utils.js?v=58';
+        } from './js/calendar-utils.js?v=59';
+        import { groupTitle, membersText } from './js/groups-utils.js?v=59';
 
         renderSidebar('schedule');
         renderTopHeader({ title: 'جدولي', subtitle: 'حصصك ومواعيدك في مكان واحد' });
@@ -1010,7 +1010,7 @@
             if (!authInfo) return;
             await loadData();
             // v29.8: لو اتسجّل موعد من جهاز تاني (أو المدرس رجع للبرنامج) الجدول يتحدّث لوحده
-            import('./js/auto-refresh.js?v=58').then((m) => m.onAppResume(refreshSilently)).catch(() => { /* تجاهل */ });
+            import('./js/auto-refresh.js?v=59').then((m) => m.onAppResume(refreshSilently)).catch(() => { /* تجاهل */ });
             const addStudent = new URLSearchParams(location.search).get('add_student');
             if (addStudent) openItemModal({ type: 'lesson', date: selected });
             if (new URLSearchParams(location.search).get('add') === 'event') openItemModal({ type: 'event', date: selected });
@@ -1018,6 +1018,6 @@
             setInterval(() => { if (!document.querySelector('.modal.active')) render(); }, 60000);
         })();
     </script>
-    <script src="js/pwa-install.js?v=58" defer></script>
+    <script src="js/pwa-install.js?v=59" defer></script>
 </body>
 </html>

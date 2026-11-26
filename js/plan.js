@@ -6,9 +6,9 @@
  *  - نافذة الترقية لما السيرفر يرفض (حدث tm:plan-limit من utils.js)
  *  - علامة «الاحترافية» على المزايا المقفولة في باقة البداية، والضغط عليها بيفتح نافذة الترقية على طول
  */
-import { CONFIG } from './config.js?v=58';
-import { icon } from './icons.js?v=58';
-import { priceFor, subscribeMessage, waUrl } from './pricing.js?v=58';
+import { CONFIG } from './config.js?v=59';
+import { icon } from './icons.js?v=59';
+import { priceFor, subscribeMessage, waUrl } from './pricing.js?v=59';
 
 // لازم تطابق LIMITS في workflow plan-gate (عقدة Decide & Forward)
 export const PLAN_LIMITS = { starter: { students: 10, ai: 10 }, pro: { students: null, ai: 40 } };
@@ -27,7 +27,7 @@ export function tierFrom(sub) {
 
 export async function getTier() {
     try {
-        const { getSubscriptionCached } = await import('./sidebar.js?v=58');
+        const { getSubscriptionCached } = await import('./sidebar.js?v=59');
         return tierFrom(await getSubscriptionCached());
     } catch (e) { return 'pro'; }   // مش عارفين: مانقفلش حاجة (السيرفر هو الحكم)
 }

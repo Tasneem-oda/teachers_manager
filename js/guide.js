@@ -4,7 +4,7 @@
  *  - applyAiGate: المساعد الذكي بيستخبى (مش بيتشال) لحد أول حصة مسجّلة
  *  - guideBusy: رسالة إرشاد واحدة بس في نفس الوقت (خطوة / دعوة / إشعارات / تلميح)
  */
-import { api } from './api.js?v=58';
+import { api } from './api.js?v=59';
 
 const LS = {
     get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },

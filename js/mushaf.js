@@ -8,8 +8,8 @@
  * v40: أدوات الشرح كلها (نفس أدوات الكتب): قلم/هايلايتر/أشكال/كتابة/علامات/ليزر/كشاف/مسطرة/زوم على جزء/قص آيات للسبورة/
  *      ملء الشاشة/إخفاء مؤقت/السبورة + تكبير الصفحات (أزرار، Ctrl+عجلة، قرص بصباعين، ضغطتين) + بحث في الآيات والذهاب لآية.
  */
-import { PresentTools } from './present-tools.js?v=58';
-import { isWhiteboardOpen } from './whiteboard.js?v=58';
+import { PresentTools } from './present-tools.js?v=59';
+import { isWhiteboardOpen } from './whiteboard.js?v=59';
 
 const QCF_BASES = ['https://cdn.jsdelivr.net/npm/quran-qcf4@1.1.0', 'https://cdn.jsdelivr.net/gh/MohamadHajjRabee/quran-qcf4@main'];
 const TEXT_API = 'https://api.alquran.cloud/v1/page';
@@ -343,7 +343,125 @@ export function mountMushaf(root, { onBack, owner: ownerIn, ownerName: ownerName
         if (scroll && els[0] && zoom > 1.01) { try { els[0].scrollIntoView({ block: 'center', inline: 'center' }); } catch (e) { /* تجاهل */ } }
     }
 
-    async function show(p, dir = 0, { hl = null } = {}) {
+    // ------------------------------------------------------------------ v41: تقليب ورق طبيعي
+    // الورقة بتتلف حوالين كعب المصحف (زي الورق بالظبط): ضهرها بيبان وهي بتتقلب، وعليها ظل بيتغيّر مع اللفّة،
+    // وظل خفيف على الصفحة اللي تحتها. على الموبايل الورقة بتمشي مع الصباع ولو سبتها قبل النص بترجع مكانها.
+    const reduceMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const FLIP_MS = 640;
+    let flip = null;   // { wrap, anims, done, manual }
+    const canFlip = () => !reduceMotion() && zoom <= 1.01 && typeof Element !== 'undefined' && !!Element.prototype.animate;
+    function endFlip() {
+        if (!flip) return;
+        const f = flip; flip = null;
+        try { f.anims.forEach((a) => a.cancel()); } catch (e) { /* تجاهل */ }
+        f.wrap.remove();
+        spread.classList.remove('ms-flipping');
+    }
+    /** نسخة من الصفحات اللي ظاهرة دلوقتي (قبل ما تتغيّر) بمكانها جوه الـ spread */
+    function snapOld() {
+        const sr = spread.getBoundingClientRect();
+        return Array.from(spread.querySelectorAll('.ms-page')).map((el) => {
+            const r = el.getBoundingClientRect();
+            const c = el.cloneNode(true);
+            c.querySelectorAll('.ms-hl').forEach((x) => x.classList.remove('ms-hl'));
+            return { p: Number(el.dataset.p), el: c, x: r.left - sr.left, y: r.top - sr.top, w: r.width, h: r.height };
+        });
+    }
+    const place = (el, b) => Object.assign(el.style, { left: `${b.x}px`, top: `${b.y}px`, width: `${b.w}px`, height: `${b.h}px` });
+    const blankPaper = () => { const d = document.createElement('div'); d.className = 'ms-page ms-paper-back'; return d; };
+    function face(cls, content) {
+        const f = document.createElement('div');
+        f.className = `ms-face ${cls}`;
+        if (content) f.appendChild(content);
+        const sh = document.createElement('i'); sh.className = 'ms-fshade'; f.appendChild(sh);
+        return f;
+    }
+    /**
+     * بيبني الورقة اللي بتتقلب. dir>0 = الصفحة اللي بعدها (الورقة بتتلف لليمين حوالين كعبها اليمين)،
+     * dir<0 = اللي قبلها (عكسها). olds = نسخة الصفحات القديمة، والجديدة موجودة خلاص في الـ spread تحت.
+     */
+    function buildFlip(olds, dir, manual) {
+        endFlip();
+        const news = Array.from(spread.querySelectorAll('.ms-page'));
+        if (!olds.length || !news.length) return null;
+        const two = olds.length === 2 && news.length === 2;
+        const wrap = document.createElement('div');
+        wrap.className = 'ms-flipwrap';
+        const leaf = document.createElement('div');
+        leaf.className = 'ms-leaf';
+        let leafBox, origin, from, to, front, back, under = null;
+        const newClone = (i) => { const c = news[i].cloneNode(true); c.classList.add('ms-clone'); return c; };
+        const sr = spread.getBoundingClientRect();
+        const boxOf = (el) => { const r = el.getBoundingClientRect(); return { x: r.left - sr.left, y: r.top - sr.top, w: r.width, h: r.height }; };
+        if (dir > 0) {
+            if (two) {   // الصفحة الشمال بتتقلب على اليمين، وضهرها هو الصفحة اليمين الجديدة
+                const L = olds[1], R = olds[0];
+                under = R; leafBox = L; origin = 'right center'; from = 0; to = 180;
+                front = L.el; back = newClone(0);
+            } else {     // صفحة واحدة: بتتلف من حرفها الشمال لحد ما تختفي على اليمين
+                const O = olds[0];
+                leafBox = O; origin = 'right center'; from = 0; to = 180;
+                front = O.el; back = blankPaper();
+            }
+        } else {
+            if (two) {   // الصفحة اليمين بترجع على الشمال، وضهرها هو الصفحة الشمال الجديدة
+                const L = olds[1], R = olds[0];
+                under = L; leafBox = R; origin = 'left center'; from = 0; to = -180;
+                front = R.el; back = newClone(1);
+            } else {     // صفحة واحدة: الصفحة اللي قبلها بتيجي من اليمين وتنزل فوق
+                const O = olds[0];
+                under = O; leafBox = boxOf(news[0]); origin = 'right center'; from = 180; to = 0;
+                front = newClone(0); back = blankPaper();
+            }
+        }
+        if (under) { const u = under.el; u.classList.add('ms-under'); place(u, under); wrap.appendChild(u); }
+        place(leaf, leafBox);
+        leaf.style.transformOrigin = origin;
+        leaf.dataset.o = origin.startsWith('right') ? 'r' : 'l';
+        wrap.classList.toggle('two', two);
+        const ff = face('ms-front', front);
+        const bf = face('ms-back', back);
+        leaf.appendChild(ff); leaf.appendChild(bf);
+        // ظل الورقة على الصفحة اللي تحتها (ناحية الكعب)
+        const cast = document.createElement('i');
+        cast.className = `ms-cast ${(dir > 0) ? 'to-r' : 'to-l'}`;
+        place(cast, two ? { x: 0, y: leafBox.y, w: sr.width, h: leafBox.h } : leafBox);
+        wrap.appendChild(cast);
+        wrap.appendChild(leaf);
+        spread.appendChild(wrap);
+        spread.classList.add('ms-flipping');
+        const ease = manual ? 'linear' : 'cubic-bezier(.35,.05,.25,1)';
+        const opts = { duration: FLIP_MS, easing: ease, fill: 'both' };
+        const mid = (from + to) / 2;
+        // صفحة واحدة: النص التاني من اللفّة بيبقى برّه الصفحة، فبنخلّي الجزء اللي باين (لحد ٩٠°) ياخد معظم الوقت
+        const mo = two ? 0.5 : (from === 0 ? 0.68 : 0.32);
+        const persp = two ? 2400 : 1600;
+        const anims = [
+            leaf.animate([
+                { transform: `perspective(${persp}px) rotateY(${from}deg)` },
+                { transform: `perspective(${persp}px) rotateY(${mid}deg) scale(1.012)`, offset: mo },
+                { transform: `perspective(${persp}px) rotateY(${to}deg)` }
+            ], opts),
+            ff.querySelector('.ms-fshade').animate(from === 0 ? [{ opacity: 0 }, { opacity: 0.6, offset: mo }, { opacity: 0.6 }] : [{ opacity: 0.6 }, { opacity: 0.6, offset: mo }, { opacity: 0 }], opts),
+            bf.querySelector('.ms-fshade').animate([{ opacity: 0.55 }, { opacity: 0.4, offset: mo }, { opacity: 0 }], opts),
+            cast.animate([{ opacity: 0 }, { opacity: 1, offset: mo }, { opacity: 0 }], opts)
+        ];
+        const f = { wrap, anims, manual, back: bf, two, dir };
+        f.done = Promise.all(anims.map((a) => a.finished)).catch(() => {});
+        if (manual) anims.forEach((a) => a.pause());
+        flip = f;
+        return f;
+    }
+    /** بعد ما الصفحات الجديدة تتحمّل: نسخها اللي على الورقة (وش أو ضهر) تاخد المحتوى الحقيقي بدل علامة التحميل */
+    function refreshFlipBack() {
+        if (!flip) return;
+        flip.wrap.querySelectorAll('.ms-clone[data-p]').forEach((cl) => {
+            const src = spread.querySelector(`:scope > .ms-page[data-p="${cl.dataset.p}"]`);
+            if (src) { const c = src.cloneNode(true); c.classList.add('ms-clone'); cl.replaceWith(c); }
+        });
+    }
+
+    async function show(p, dir = 0, { hl = null, manual = false } = {}) {
         p = Math.max(1, Math.min(TOTAL, Number(p) || 1));
         if (hl !== null) hlKey = hl || null;
         else if (!pagesFor(p).includes(state.page)) hlKey = null;
@@ -352,11 +470,18 @@ export function mountMushaf(root, { onBack, owner: ownerIn, ownerName: ownerName
         const my = ++token;
         const list = pagesFor(p);
         if (tools) { try { tools.ctrl.flush(); } catch (e) { /* تجاهل */ } }
+        endFlip();
+        const olds = dir && canFlip() ? snapOld() : null;
         spread.innerHTML = list.map((n) => `<article class="ms-page ${n % 2 ? 'odd' : 'even'}" data-p="${n}"><div class="ms-frame"><div class="ms-body"><div class="ms-load"><span class="ms-spin"></span></div></div><div class="ms-pno">${ar(n)}</div></div></article>`).join('');
-        if (dir) { spread.classList.remove('ms-in-l', 'ms-in-r'); void spread.offsetWidth; spread.classList.add(dir > 0 ? 'ms-in-l' : 'ms-in-r'); }
         stage.scrollTop = 0;
         if (tools) tools.onRender();
-        await Promise.all(list.map(async (n) => {
+        let f = null;
+        if (olds) {
+            // بنستنى المحتوى الجديد شوية (عادة متحمّل مسبقًا) عشان ضهر الورقة يبان مكتوب
+            f = buildFlip(olds, dir, manual);
+            if (f && !manual) f.anims.forEach((a) => a.pause());
+        }
+        const loaded = Promise.all(list.map(async (n) => {
             const body = spread.querySelector(`[data-p="${n}"] .ms-body`);
             try {
                 const pg = await loadPage(n);
@@ -370,6 +495,12 @@ export function mountMushaf(root, { onBack, owner: ownerIn, ownerName: ownerName
                 if (my === token && body) body.innerHTML = `<div class="ms-err"><p>الصفحة ماتحمّلتش 📶</p><button type="button" class="ms-btn" data-retry="${n}">جرّب تاني</button></div>`;
             }
         }));
+        if (f && !manual) {
+            await Promise.race([loaded, new Promise((r) => setTimeout(r, 380))]);
+            if (flip === f) { refreshFlipBack(); f.anims.forEach((a) => a.play()); f.done.then(() => { if (flip === f) endFlip(); }); }
+        }
+        await loaded;
+        if (flip && flip === f) refreshFlipBack();
         if (my === token) applyHighlight(true);
         // تحميل اللي جاي مسبقًا
         const nxt = list[list.length - 1] + 1;
@@ -378,6 +509,8 @@ export function mountMushaf(root, { onBack, owner: ownerIn, ownerName: ownerName
     }
 
     const step = () => (twoUp() ? 2 : 1);
+    /** الصفحة اللي هنروحلها في اتجاه معيّن (أو null لو مفيش) */
+    const targetOf = (dir) => { const l = pagesFor(state.page); if (dir > 0) return l[l.length - 1] < TOTAL ? l[l.length - 1] + 1 : null; return l[0] > 1 ? Math.max(1, l[0] - step()) : null; };
     const next = () => { const l = pagesFor(state.page); if (l[l.length - 1] < TOTAL) show(l[l.length - 1] + 1, 1); };
     const prev = () => { const l = pagesFor(state.page); if (l[0] > 1) show(Math.max(1, l[0] - step()), -1); };
     async function goAyah(s, a) {
@@ -603,9 +736,36 @@ export function mountMushaf(root, { onBack, owner: ownerIn, ownerName: ownerName
     // السحب: من اليمين للشمال = الصفحة اللي بعدها (زي تقليب المصحف) — ومع التكبير أو الرسم السحب بيحرّك الصفحة بس
     let sx = 0, sy = 0, st = 0, pinch = null, multi = false;
     const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    // الورقة بتمشي مع الصباع: من اليمين للشمال = اللي بعدها، والعكس = اللي قبلها
+    let drag = null;   // { dir, from, f, w }
     stage.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 2) { multi = true; pinch = { d: dist(e.touches), z: zoom }; return; }
+        if (e.touches.length === 2) { multi = true; pinch = { d: dist(e.touches), z: zoom }; if (drag) cancelDrag(); return; }
         if (e.touches.length === 1) { multi = false; const t = e.touches[0]; sx = t.clientX; sy = t.clientY; st = Date.now(); }
+    }, { passive: true });
+    function cancelDrag() {
+        const d = drag; drag = null;
+        if (!d || !d.f) return;
+        d.f.anims.forEach((a) => { a.playbackRate = -1.6; a.play(); });
+        d.f.done.then(() => { if (flip === d.f) { endFlip(); show(d.from, 0); } });
+    }
+    stage.addEventListener('touchmove', (e) => {
+        if (pinch || multi || e.touches.length !== 1 || zoom > 1.01 || (tools && tools.ctrl.tool) || !canFlip()) return;
+        const t = e.touches[0];
+        const dx = t.clientX - sx, dy = t.clientY - sy;
+        if (!drag) {
+            if (Math.abs(dx) < 14 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
+            const dir = dx > 0 ? 1 : -1;
+            const target = targetOf(dir);
+            if (!target) return;
+            drag = { dir, from: state.page, f: null, w: Math.max(200, spread.getBoundingClientRect().width * (twoUp() ? 0.5 : 1)) };
+            show(target, dir, { manual: true });
+            drag.f = flip;
+        }
+        if (drag && drag.f) {
+            const prog = Math.max(0.02, Math.min(0.98, (drag.dir > 0 ? dx : -dx) / (drag.w * 1.15)));
+            drag.f.anims.forEach((a) => { a.currentTime = prog * FLIP_MS; });
+            drag.prog = prog;
+        }
     }, { passive: true });
     let pinchRaf = 0;
     stage.addEventListener('touchmove', (e) => {
@@ -618,6 +778,18 @@ export function mountMushaf(root, { onBack, owner: ownerIn, ownerName: ownerName
     }, { passive: false });
     stage.addEventListener('touchend', (e) => {
         if (pinch) { if (e.touches.length < 2) pinch = null; return; }
+        if (drag) {
+            const d = drag;
+            const t = e.changedTouches[0];
+            const fast = Date.now() - st < 350 && Math.abs(t.clientX - sx) > 40;
+            if (!d.f) { drag = null; return; }
+            if ((d.prog || 0) > 0.33 || fast) {
+                drag = null;
+                d.f.anims.forEach((a) => { a.playbackRate = 1.4; a.play(); });
+                d.f.done.then(() => { if (flip === d.f) endFlip(); });
+            } else cancelDrag();
+            return;
+        }
         if (multi || zoom > 1.01 || (tools && tools.ctrl.tool)) return;
         const t = e.changedTouches[0];
         const dx = t.clientX - sx, dy = t.clientY - sy;

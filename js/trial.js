@@ -10,9 +10,9 @@
  *     🗑️ "مكملش": حذف الطالب ومواعيده.
  *     📅 "غيّر الميعاد": لو التجربة اتأجلت.
  */
-import { api } from './api.js?v=58';
-import { ErrorHandler, Formatters, askChoice } from './utils.js?v=58';
-import { icon } from './icons.js?v=58';
+import { api } from './api.js?v=59';
+import { ErrorHandler, Formatters, askChoice } from './utils.js?v=59';
+import { icon } from './icons.js?v=59';
 
 const esc = (s) => Formatters.escapeHtml(String(s == null ? '' : s));
 const DAYS = ['الأحد', 'الاتنين', 'التلات', 'الأربع', 'الخميس', 'الجمعة', 'السبت'];

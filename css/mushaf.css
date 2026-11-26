@@ -175,3 +175,30 @@ html, body { margin: 0; height: 100%; background: var(--ms-bg); font-family: 'IB
 .ms-night .ms-dsearch { background: #2A261E; color: #EDE3C8; border-color: #3A3426; }
 .ms-night .ms-ayt { color: #EDE3C8; }
 .ms-night .ms-pop { background: #1C1A16; color: #EDE3C8; }
+
+/* =========================================================================
+   v41: تقليب ورق طبيعي (الورقة بتتلف حوالين كعب المصحف)
+   ========================================================================= */
+.ms-spread { position: relative; }
+.ms-spread.ms-flipping { animation: none !important; }
+.ms-flipwrap { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.ms-flipwrap > .ms-under { position: absolute; margin: 0; }
+.ms-leaf { position: absolute; transform-style: preserve-3d; will-change: transform; }
+.ms-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow: hidden; }
+.ms-face > .ms-page { width: 100% !important; height: 100% !important; margin: 0; }
+.ms-back { transform: rotateY(180deg); }
+.ms-paper-back { background: linear-gradient(90deg, #F3EAD4, var(--ms-paper) 18%, var(--ms-paper) 82%, #F3EAD4); border-radius: 6px; }
+.ms-night .ms-paper-back { background: linear-gradient(90deg, #15130F, var(--ms-paper) 18%, var(--ms-paper) 82%, #15130F); }
+/* الظل على الورقة نفسها وهي بتتلف (أغمق ناحية الكعب) */
+.ms-fshade { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+.ms-leaf[data-o="r"] .ms-front .ms-fshade { background: linear-gradient(to right, rgba(255,255,255,.12), rgba(0,0,0,.18) 55%, rgba(0,0,0,.42)); }
+.ms-leaf[data-o="l"] .ms-front .ms-fshade { background: linear-gradient(to left, rgba(255,255,255,.12), rgba(0,0,0,.18) 55%, rgba(0,0,0,.42)); }
+.ms-leaf[data-o="r"] .ms-back .ms-fshade { background: linear-gradient(to left, rgba(255,255,255,.1), rgba(0,0,0,.2) 60%, rgba(0,0,0,.45)); }
+.ms-leaf[data-o="l"] .ms-back .ms-fshade { background: linear-gradient(to right, rgba(255,255,255,.1), rgba(0,0,0,.2) 60%, rgba(0,0,0,.45)); }
+/* ظل الورقة على الصفحة اللي تحتها */
+.ms-cast { position: absolute; opacity: 0; pointer-events: none; }
+.ms-cast.to-r { background: linear-gradient(to left, rgba(40, 25, 5, .28), rgba(40, 25, 5, 0) 55%); }
+.ms-cast.to-l { background: linear-gradient(to right, rgba(40, 25, 5, .28), rgba(40, 25, 5, 0) 55%); }
+.ms-flipwrap.two .ms-cast { background: linear-gradient(to right, rgba(40, 25, 5, 0) 30%, rgba(40, 25, 5, .24) 50%, rgba(40, 25, 5, 0) 70%); }
+@media (prefers-reduced-motion: reduce) { .ms-flipwrap { display: none; } }
+.ms-face { box-shadow: 0 0 22px rgba(40, 25, 5, .16); border-radius: 6px; }
