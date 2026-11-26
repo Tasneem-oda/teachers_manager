@@ -67,3 +67,111 @@ html, body { margin: 0; height: 100%; background: var(--ms-bg); font-family: 'IB
 .ms-night .ms-pno, .ms-night .ms-num, .ms-night .ms-w.ms-end { color: #C9A55A; }
 .ms-night .ms-hframe, .ms-night .ms-hname { color: #C9A55A; }
 .ms-night.ms-root { background: #0F0E0C; }
+
+/* =========================================================================
+   v40: أدوات الشرح + التكبير + البحث في الآيات
+   ========================================================================= */
+:root {
+    --primary: #1F4D3A; --primary-hover: #173B2C; --secondary: #C9A55A; --secondary-strong: #8A6A26;
+    --border: #E6D9B6; --card-bg: #FFFFFF; --bg-primary: #FFFDF6; --bg-secondary: #FAF4E4; --bg-muted: #F1E9D2;
+    --text-primary: #1B1B1B; --text-secondary: #6E6249; --text-light: #8A7E64; --danger: #A44C4C; --success-text: #2E6B4A; --field-border: #CDBE95;
+}
+.ms-mid { flex: 1; display: flex; min-height: 0; position: relative; }
+.ms-mid > .ms-stage { flex: 1 1 auto; min-width: 0; }
+/* التكبير: الصفحة بتكبر والمساحة بتتسحب (من غير ما يتقص منها حاجة من أي ناحية) */
+.ms-stage { display: flex; align-items: flex-start; justify-content: flex-start; touch-action: pan-x pan-y; }
+.ms-spread { margin: auto; flex-shrink: 0; }
+.ms-root.ms-zoomed .ms-stage { overflow: auto; overscroll-behavior: contain; cursor: grab; }
+.ms-root.ms-zoomed .ms-stage:active { cursor: grabbing; }
+.ms-root.ms-zoomed .ms-spread { animation: none; }
+.ms-root[data-ptool]:not([data-ptool=""]) .ms-stage { cursor: crosshair; }
+.ms-nav { z-index: 3; }
+.ms-mid > .ms-next { left: 8px; } .ms-mid > .ms-prev { right: 8px; }
+.ms-root.pt-open .ms-mid > .ms-prev { right: 116px; }
+@media (min-width: 1000px) { .ms-root.ms-zoomed .ms-nav { opacity: .55; } .ms-root.ms-zoomed .ms-nav:hover { opacity: 1; } }
+
+/* الآية اللي اتدوّر عليها */
+.ms-w.ms-hl, .ms-ay.ms-hl { background: rgba(201, 165, 90, .38); border-radius: 4px; box-shadow: 0 0 0 2px rgba(201, 165, 90, .25); }
+.ms-night .ms-w.ms-hl, .ms-night .ms-ay.ms-hl { background: rgba(201, 165, 90, .32); }
+
+/* الشريط الأخضر: زرار أدوات الشرح بنفس شكل باقي الأزرار */
+.ms-root .ms-tools { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; order: 0; justify-content: flex-start; flex-wrap: nowrap; }
+.ms-root .bv-btn.pt-toggle { height: 40px; min-width: 40px; padding: 0 12px; border: 0; border-radius: 12px; background: rgba(255,255,255,.1); color: inherit; font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.ms-root .bv-btn.pt-toggle:hover { background: rgba(255,255,255,.2); }
+.ms-root .bv-btn.pt-toggle.is-active { background: #C9A55A; color: #1F4D3A; }
+.ms-bar .ms-ib, .ms-foot .ms-ib { flex-shrink: 0; }
+.ms-bar { gap: 6px; }
+.ms-title { min-width: 0; flex: 0 1 auto; }
+.ms-title b, .ms-title small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* التكبير في الشريط اللي تحت */
+.ms-zoom { display: inline-flex; align-items: center; gap: 2px; background: rgba(255,255,255,.08); border-radius: 12px; padding: 2px; }
+.ms-zoom .ms-ib { min-width: 36px; height: 36px; background: transparent; font-size: 1.25rem; }
+.ms-zoom .ms-ib:hover { background: rgba(255,255,255,.16); }
+.ms-zl { min-width: 54px; height: 36px; border: 0; border-radius: 10px; background: transparent; color: inherit; font: inherit; font-size: .82rem; font-weight: 700; cursor: pointer; }
+.ms-zl:hover { background: rgba(255,255,255,.16); }
+.ms-foot { flex-wrap: nowrap; }
+.ms-go { white-space: nowrap; }
+
+/* عمود الأدوات جنب المصحف (نفس شكل أدوات الكتب) */
+.ms-root .pt-dockwrap { position: relative; inset: auto; left: auto; bottom: auto; transform: none; z-index: 6; flex: 0 0 auto; max-width: none;
+    padding: 8px 6px; background: #17382A; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; display: flex; flex-direction: column; align-items: stretch; }
+.ms-root .pt-dockwrap[hidden] { display: none; }
+.ms-root .pt-dockwrap .ink-dock { display: block; background: transparent; box-shadow: none; border-radius: 0; padding: 0; max-width: none; }
+.ms-root .pt-dockwrap .ink-row { display: grid; grid-template-columns: repeat(2, 42px); gap: 4px; overflow: visible; justify-content: center; }
+.ms-root .pt-dockwrap .ink-tb { min-width: 42px; width: 42px; height: 42px; padding: 0; }
+.ms-root .pt-dockwrap .ink-tb-wide { grid-column: 1 / -1; width: 100%; background: rgba(255, 255, 255, .1); }
+.ms-root .pt-dockwrap .ink-tb-wide span { font-size: .72rem; }
+.ms-root .pt-dockwrap .ink-sep { grid-column: 1 / -1; width: 100%; height: 1px; margin: 3px 0; }
+.ms-root .pt-dockwrap .ink-pop-wrap { position: static; }
+.ms-root .pt-dockwrap .ink-pop { position: fixed; inset: auto; transform: none; margin-inline-start: 96px; margin-top: -42px; max-height: 70vh; overflow: auto; z-index: 30; }
+.ms-root .pt-toastmsg { top: calc(62px + env(safe-area-inset-top, 0px)); }
+.ms-root .pt-back { top: calc(62px + env(safe-area-inset-top, 0px)); }
+.ms-root .pt-focus { top: calc(108px + env(safe-area-inset-top, 0px)); }
+.ms-root.pt-open .pt-chip, .ms-root.pt-open .pt-toastmsg { left: calc(50% + 50px); }
+.ms-root.bv-present .ms-bar, .ms-root.bv-present .ms-foot { display: none; }
+.ms-root:fullscreen { background: var(--ms-bg); }
+@media (max-width: 760px) {
+    .ms-mid { flex-direction: column; }
+    .ms-root .pt-dockwrap { order: 2; flex-direction: row; padding: 6px; overflow-x: auto; overflow-y: hidden; border-top: 1px solid rgba(255,255,255,.08); }
+    .ms-root .pt-dockwrap .ink-row { display: flex; flex-wrap: nowrap; gap: 3px; justify-content: flex-start; width: max-content; }
+    .ms-root .pt-dockwrap .ink-tb { width: 40px; min-width: 40px; height: 40px; }
+    .ms-root .pt-dockwrap .ink-tb-wide { width: auto; padding: 0 10px; }
+    .ms-root .pt-dockwrap .ink-sep { width: 1px; height: 26px; margin: 0 3px; align-self: center; }
+    .ms-root .pt-dockwrap .ink-pop { position: fixed; left: 8px; right: 8px; top: auto; bottom: calc(120px + env(safe-area-inset-bottom, 0px)); margin: 0; width: auto; max-width: none; justify-content: center; }
+    .ms-root.pt-open .pt-chip, .ms-root.pt-open .pt-toastmsg { left: 50%; }
+    .ms-root .bv-btn.pt-toggle span { display: none; }
+    .ms-root .bv-btn.pt-toggle { padding: 0; }
+    .ms-hide-xs { display: none !important; }
+    .ms-bar { gap: 4px; padding-inline: 6px; }
+    .ms-bar .ms-ib, .ms-root .bv-btn.pt-toggle { min-width: 38px; height: 38px; }
+    .ms-foot { gap: 8px; padding-inline: 6px; }
+    .ms-foot .ms-ib { min-width: 38px; height: 38px; }
+    .ms-go input { width: 54px; height: 38px; }
+    .ms-zl { min-width: 46px; font-size: .75rem; }
+    .ms-zoom .ms-ib { min-width: 32px; }
+}
+@media (max-width: 380px) {
+    .ms-foot { gap: 4px; }
+    .ms-go > span:last-child { display: none; }
+    .ms-zl { display: none; }
+}
+
+/* البحث في الآيات */
+.ms-dtabs button { padding: 8px 2px; font-size: .86rem; }
+.ms-di.ms-ref { background: #F5EBD0; border: 1px dashed #C9A55A; margin: 6px 0; }
+.ms-di.ms-ayr { flex-direction: column; align-items: stretch; gap: 4px; }
+.ms-ayt { font-family: 'Amiri Quran', 'Traditional Arabic', serif; font-size: 1.05rem; line-height: 2; color: var(--ms-ink); text-align: start; }
+.ms-ayt mark { background: rgba(201, 165, 90, .45); color: inherit; border-radius: 3px; padding: 0 1px; }
+.ms-di.ms-ayr > small { color: #7A6A4A; font-size: .78rem; }
+.ms-count { margin: 4px 6px 6px; font-size: .8rem; font-weight: 700; color: var(--ms-green); }
+.ms-more { padding: 12px; font-size: .8rem; }
+.ms-load-sm { padding: 28px 12px; text-align: center; }
+.ms-load-sm p { margin: 0; }
+.ms-linkbtn { margin-top: 8px; border: 1px solid #C9A55A; background: #fff; color: var(--ms-green); border-radius: 10px; padding: 6px 12px; font: inherit; font-weight: 700; cursor: pointer; }
+.ms-night .ms-drawer { background: #1C1A16; color: #EDE3C8; }
+.ms-night .ms-di { color: #EDE3C8; border-color: #2E2A22; }
+.ms-night .ms-di:hover, .ms-night .ms-di.on, .ms-night .ms-di.ms-ref { background: #2A261E; }
+.ms-night .ms-dsearch { background: #2A261E; color: #EDE3C8; border-color: #3A3426; }
+.ms-night .ms-ayt { color: #EDE3C8; }
+.ms-night .ms-pop { background: #1C1A16; color: #EDE3C8; }
