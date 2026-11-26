@@ -6,8 +6,8 @@
  *   هناك بنظهر "افتح في Chrome" بدل الزرار عشان المدرس مايشوفش رسالة خطأ من جوجل.
  * • بعد الرجوع من جوجل: لو المدرس جديد بنعمله ملف تلقائي ونوديه للرئيسية يكمّل بياناته.
  */
-import { Auth } from './auth.js?v=57';
-import { ErrorHandler } from './utils.js?v=57';
+import { Auth } from './auth.js?v=59';
+import { ErrorHandler } from './utils.js?v=59';
 
 const ua = navigator.userAgent || '';
 const isIOS = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);

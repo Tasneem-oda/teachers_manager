@@ -5,10 +5,10 @@
  * • كل صفحة بتتحفظ تلقائيًا لكل طالب/مجموعة (lesson-tools)، وترجع زي ما هي الحصة الجاية.
  * • تقدر تصدّر الصفحة صورة وتبعتها للطالب.
  */
-import { api } from './api.js?v=57';
-import { ErrorHandler } from './utils.js?v=57';
-import { icon } from './icons.js?v=57';
-import { W, InkLayer, InkController, ToolDock, handleInkKey, BOARD_BGS, boardBgSvg, isDarkBg, renderItem, LaserPointer, confirmIn } from './annotate.js?v=57';
+import { api } from './api.js?v=59';
+import { ErrorHandler } from './utils.js?v=59';
+import { icon } from './icons.js?v=59';
+import { W, InkLayer, InkController, ToolDock, handleInkKey, BOARD_BGS, boardBgSvg, isDarkBg, renderItem, LaserPointer, confirmIn } from './annotate.js?v=59';
 
 const RATIO = 0.625;   // 16:10
 const H = W * RATIO;
@@ -165,7 +165,9 @@ class Whiteboard {
             const code = e && e.error && e.error.code;
             this.local = true;
             try { pages = JSON.parse(localStorage.getItem(lsKey(this.owner)) || '[]'); } catch (er) { pages = []; }
-            this._status(code === 'NOT_READY' ? 'السبورة شغالة بس مش بتتحفظ على الخادم (lesson-tools لسه ماتفعّلش)' : 'مفيش نت: الرسم بيتحفظ على الجهاز ده بس', 'warn');
+            this._status(code === 'NOT_READY' ? 'السبورة شغالة بس مش بتتحفظ على الخادم (lesson-tools لسه ماتفعّلش)'
+                : (typeof navigator !== 'undefined' && navigator.onLine === false) ? 'مفيش نت: الرسم بيتحفظ على الجهاز ده بس'
+                : 'الرسم بيتحفظ على الجهاز ده بس (سجّل الدخول عشان يتحفظ على حسابك)', 'warn');
         }
         if (this.closed) return;
         this.pages = pages.sort((a, b) => a.page - b.page);

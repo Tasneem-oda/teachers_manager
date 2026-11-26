@@ -16,7 +16,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="css/style.css?v=57">
+    <link rel="stylesheet" href="css/style.css?v=59">
     <!-- PWA: أيقونات التطبيق والبيانات الوصفية اللازمة للتثبيت على الشاشة الرئيسية والدومين -->
     <link rel="icon" type="image/x-icon" href="assets/icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
@@ -24,12 +24,12 @@
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4B3A5A">
-    <link rel="stylesheet" href="css/lessons.css?v=57">
-    <link rel="stylesheet" href="css/books.css?v=57">
+    <link rel="stylesheet" href="css/lessons.css?v=59">
+    <link rel="stylesheet" href="css/books.css?v=59">
     <style>body { margin: 0; }</style>
-    <link rel="stylesheet" href="css/v29.css?v=57">
-    <link rel="stylesheet" href="css/ui.css?v=57">
-    <link rel="stylesheet" href="css/viewer.css?v=57">
+    <link rel="stylesheet" href="css/v29.css?v=59">
+    <link rel="stylesheet" href="css/ui.css?v=59">
+    <link rel="stylesheet" href="css/viewer.css?v=59">
 </head>
 <body>
     <!-- Google Tag Manager (noscript) -->
@@ -319,29 +319,29 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script type="module" src="js/config.js?v=57"></script>
+    <script type="module" src="js/config.js?v=59"></script>
     <script type="module">
-        import { Auth } from './js/auth.js?v=57';
-        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=57';
-        import { api } from './js/api.js?v=57';
-        import { ErrorHandler, Formatters, uuidv4, toLatinDigits, askChoice } from './js/utils.js?v=57';
-        import { icon } from './js/icons.js?v=57';
+        import { Auth } from './js/auth.js?v=59';
+        import { renderSidebar, renderTopHeader } from './js/sidebar.js?v=59';
+        import { api } from './js/api.js?v=59';
+        import { ErrorHandler, Formatters, uuidv4, toLatinDigits, askChoice } from './js/utils.js?v=59';
+        import { icon } from './js/icons.js?v=59';
         import {
             subjectLabel, ratingFieldLabels, RATINGS, HOMEWORK_STATUS, relativeDay, localDateISO, localTimeISO,
             formatDuration, minutesText, LessonDraft, lessonHasContent, lessonDetailsHtml, nextOccurrence, formatNextOccurrence,
             normalizeLesson, isAbsenceRow, attendanceInfo, lessonDay, deviceMsToDateISO, serverTimeToDateISO
-        } from './js/lesson-utils.js?v=57';
-        import { openAttendanceModal } from './js/attendance.js?v=57';
-        import { showTips, dismissTip } from './js/tips.js?v=57';
-        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=57';
-        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=57';
-        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=57';
-        import { openBookViewer, Shelf } from './js/book-viewer.js?v=57';
-        import { openLessonReport } from './js/report.js?v=57';
-        import { isTrial, trialCardHtml, bindTrialActions } from './js/trial.js?v=57';
-        import { openWhiteboard } from './js/whiteboard.js?v=57';
-        import { markLessonSaved } from './js/guide.js?v=57';
-        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=57';
+        } from './js/lesson-utils.js?v=59';
+        import { openAttendanceModal } from './js/attendance.js?v=59';
+        import { showTips, dismissTip } from './js/tips.js?v=59';
+        import { computeBilling, billingCardHtml, bindBillingActions, billingBadge, lessonsText, liveBillingInfo, whatsappUrl } from './js/billing.js?v=59';
+        import { LiveLesson, timeState, notifyLiveLessonChanged } from './js/live-lesson.js?v=59';
+        import { occursOn, timeToMinutes, formatClock12 } from './js/calendar-utils.js?v=59';
+        import { openBookViewer, Shelf } from './js/book-viewer.js?v=59';
+        import { openLessonReport } from './js/report.js?v=59';
+        import { isTrial, trialCardHtml, bindTrialActions } from './js/trial.js?v=59';
+        import { openWhiteboard } from './js/whiteboard.js?v=59';
+        import { markLessonSaved } from './js/guide.js?v=59';
+        import { LessonRecorder, recordingSupported, explainRecordingOnce, showRecordingReady, openRecordingLinkModal, formatDuration as recDuration } from './js/recording.js?v=59';
 
         renderSidebar('students');
         renderTopHeader({ title: 'الحصة', subtitle: 'ابدأ الحصة وتابعها وسجّلها في مكان واحد', showSearch: false });
@@ -629,7 +629,7 @@
             mode = null;
             stopTimer();
             // v33: "الواجب بالتفصيل" (حفظ/مراجعة/تلاوة + السورة + من/إلى)
-            import('./js/hw-builder.js?v=57').then((m) => m.mountHomeworkBuilder($('f-homework'), { subject: student && student.subject })).catch(() => { /* تجاهل */ });
+            import('./js/hw-builder.js?v=59').then((m) => m.mountHomeworkBuilder($('f-homework'), { subject: student && student.subject })).catch(() => { /* تجاهل */ });
             unpublishLive();
             $('r-name').textContent = student.name || 'بدون اسم';
             const sub = [`<span>${icon('bookOpen', { size: 14 })} ${esc(subjectLabel(student.subject))}</span>`];
@@ -884,7 +884,7 @@
         try { document.querySelector('#btn-game .ic-game').innerHTML = icon('gamepad', { size: 16 }); } catch (e) { /* تجاهل */ }
         $('btn-game').addEventListener('click', async () => {
             try {
-                const m = await import('./js/games/picker.js?v=57');
+                const m = await import('./js/games/picker.js?v=59');
                 m.openGamePicker({ api, subject: student && student.subject, toast: { ok: (t) => ErrorHandler.showSuccess(t), err: (e) => ErrorHandler.showError(ErrorHandler.getErrorMessage(e)) } });
             } catch (e) { ErrorHandler.showError('الألعاب ماتحمّلتش. اتأكد من النت وجرّب تاني.'); }
         });
@@ -1344,7 +1344,7 @@
                     await api.saveTeacherSettings({ remind_before_minutes: v === 'none' ? null : Number(v), reminders_configured: true });
                     box.dataset.answered = '1';
                     box.innerHTML = `<strong>${icon('checkCircle', { size: 17 })} تمام!</strong><span>${v === 'none' ? 'هيوصلك ملخص الصبح بس.' : `هنفكرك ${v === '60' ? 'قبل كل حصة بساعة' : 'قبل كل حصة بنص ساعة'}.`} تقدر تغيّره من الإعدادات.</span>`;
-                    try { const { requestPermission } = await import('./js/notifications.js?v=57'); await requestPermission(); } catch (er) { /* تجاهل */ }
+                    try { const { requestPermission } = await import('./js/notifications.js?v=59'); await requestPermission(); } catch (er) { /* تجاهل */ }
                     done();
                 } catch (err) {
                     msg.textContent = '';
@@ -2155,6 +2155,6 @@
             }
         });
         </script>
-    <script src="js/pwa-install.js?v=57" defer></script>
+    <script src="js/pwa-install.js?v=59" defer></script>
 </body>
 </html>

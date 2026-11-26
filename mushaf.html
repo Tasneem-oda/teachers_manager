@@ -9,15 +9,22 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap">
-    <link rel="stylesheet" href="css/mushaf.css?v=57">
+    <link rel="stylesheet" href="css/books.css?v=59">
+    <link rel="stylesheet" href="css/v29.css?v=59">
+    <link rel="stylesheet" href="css/mushaf.css?v=59">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1F4D3A">
 </head>
 <body>
-    <!-- v35: المصحف الشريف — مصحف المدينة (حفص) صفحة بصفحة زي المطبوع. مش محتاج تسجيل دخول -->
+    <!-- v35: المصحف الشريف — مصحف المدينة (حفص) صفحة بصفحة زي المطبوع. مش محتاج تسجيل دخول
+         v40: + أدوات الشرح والتكبير والبحث في الآيات -->
     <div id="mushaf"></div>
+    <!-- v40: تسجيل الدخول (اختياري) عشان السبورة تتحفظ على حساب المدرس -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+    <script>window.__tmGuestOk = true; window.__tmNoSupabase = !window.supabase;   /* المصحف بيشتغل من غيرها: مانعرضش رسالة "الصفحة ماتحمّلتش" */</script>
+    <script type="module" src="js/config.js?v=59"></script>
     <script type="module">
-        import { mountMushaf } from './js/mushaf.js?v=57';
+        import { mountMushaf } from './js/mushaf.js?v=59';
         mountMushaf(document.getElementById('mushaf'));
         try { (window.dataLayer = window.dataLayer || []).push({ event: 'mushaf_open' }); } catch (e) { /* تجاهل */ }
     </script>

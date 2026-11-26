@@ -6,9 +6,9 @@
  * • "صفحة بيضا" (السبورة) في أي وقت، وقص جزء من الكتاب للسبورة
  * • أزرار الكيبورد لكل ده (بتشتغل والكيبورد عربي برضه)
  */
-import { icon } from './icons.js?v=57';
-import { W, InkLayer, InkController, ToolDock, handleInkKey, LaserPointer, confirmIn } from './annotate.js?v=57';
-import { openWhiteboard, isWhiteboardOpen } from './whiteboard.js?v=57';
+import { icon } from './icons.js?v=59';
+import { W, InkLayer, InkController, ToolDock, handleInkKey, LaserPointer, confirmIn } from './annotate.js?v=59';
+import { openWhiteboard, isWhiteboardOpen } from './whiteboard.js?v=59';
 
 const DRAW_TYPES = ['pdf', 'docx', 'pptx', 'image'];
 const BOOK_TOOLS = ['hand', 'pen', 'hl', 'temp', 'eraser', 'line', 'arrow', 'rect', 'ellipse', 'text', 'stamp', 'move', 'laser', 'magnifier', 'zoomarea', 'spotlight', 'ruler', 'snip'];
@@ -23,7 +23,7 @@ const SHORTCUTS = [
 ];
 
 export class PresentTools {
-    /** @param {import('./book-viewer.js?v=57').BookViewer} viewer */
+    /** @param {import('./book-viewer.js?v=59').BookViewer} viewer */
     constructor(viewer) {
         this.v = viewer;
         this.layers = new Map();       // page → InkLayer
@@ -39,7 +39,12 @@ export class PresentTools {
     }
 
     get type() { return this.v.book.file_type; }
-    get canDraw() { return this.v.mode !== 'text' && DRAW_TYPES.includes(this.type) && !!(this.v.adapter && this.v.adapter.pageEls); }
+    /** v40: إعدادات من العارض نفسه (المصحف بيستخدم نفس الأدوات: رسم على الصفحات من غير نوع ملف) */
+    get cfg() { return this.v.toolsConfig || {}; }
+    get drawType() { return this.cfg.draw != null ? !!this.cfg.draw : DRAW_TYPES.includes(this.type); }
+    get canDraw() { return this.v.mode !== 'text' && this.drawType && !!(this.v.adapter && this.v.adapter.pageEls); }
+    get canMagnify() { return this.cfg.magnifier != null ? !!this.cfg.magnifier : ['pdf', 'image'].includes(this.type); }
+    get canSnip() { return typeof this.v.snipRegion === 'function' ? this.v.mode !== 'text' : ['pdf', 'image'].includes(this.type); }
 
     // ------------------------------------------------------------------ الواجهة
     _buildUi() {
@@ -57,7 +62,7 @@ export class PresentTools {
         this.wrap.className = 'pt-dockwrap';
         v.root.appendChild(this.wrap);
         this.dock = new ToolDock(this.wrap, this.ctrl, {
-            tools: BOOK_TOOLS,
+            tools: this.cfg.tools || BOOK_TOOLS,
             onClear: () => this.clearPage(),
             className: 'pt-dock',
             extra: [
@@ -98,11 +103,15 @@ export class PresentTools {
         v.root.appendChild(this.fx);
         // على الموبايل الأدوات مقفولة في الأول (المساحة صغيرة) وبتتفتح من زرار "أدوات الشرح"
         let open = !window.matchMedia('(max-width: 640px)').matches;
-        try { const v = localStorage.getItem(DOCK_KEY); if (v !== null) open = v !== '0'; } catch (e) { /* تجاهل */ }
+        this._dockKey = this.cfg.dockKey || DOCK_KEY;
+        try { const v = localStorage.getItem(this._dockKey); if (v !== null) open = v !== '0'; } catch (e) { /* تجاهل */ }
         this.setDock(open);
         let night = false;
-        try { night = localStorage.getItem('tm_bv_night') === '1'; } catch (e) { /* تجاهل */ }
-        if (night) { this.night = true; v.root.classList.add('bv-night'); this.dock.refresh(); }
+        if (typeof v.onNight === 'function') { this.night = !!v.initialNight; this.dock.refresh(); }
+        else {
+            try { night = localStorage.getItem('tm_bv_night') === '1'; } catch (e) { /* تجاهل */ }
+            if (night) { this.night = true; v.root.classList.add('bv-night'); this.dock.refresh(); }
+        }
     }
 
     setDock(open) {
@@ -110,7 +119,7 @@ export class PresentTools {
         this.wrap.hidden = !open;
         this.toggleBtn.classList.toggle('is-active', open);
         this.v.root.classList.toggle('pt-open', open);
-        try { localStorage.setItem(DOCK_KEY, open ? '1' : '0'); } catch (e) { /* تجاهل */ }
+        try { localStorage.setItem(this._dockKey || DOCK_KEY, open ? '1' : '0'); } catch (e) { /* تجاهل */ }
         if (!open) this.ctrl.setTool(null);
     }
 
@@ -160,7 +169,7 @@ export class PresentTools {
     _lsKey() { return `tm_book_ink:${this.v.book.id}:${this._ownerKey()}`; }
 
     async _loadInk() {
-        if (!DRAW_TYPES.includes(this.type)) return;
+        if (!this.drawType) return;
         try {
             const rows = await this.v.api.boardList('book', this.v.owner || {}, this.v.book.id);
             rows.forEach((r) => this.saved.set(Number(r.page), (r.data && r.data.items) || []));
@@ -269,14 +278,14 @@ export class PresentTools {
             if (!this.dockOpen) this.setDock(true);
             this._ensureAll();
         }
-        if (tool === 'magnifier' && !['pdf', 'image'].includes(this.type)) {
+        if (tool === 'magnifier' && !this.canMagnify) {
             this._msg('العدسة شغالة مع كتب الـ PDF والصور. استخدم "زوم على جزء" (Z) بدلها.');
             this.ctrl.tool = 'zoomarea';
             tool = 'zoomarea';
             this.dock.refresh();
         }
-        if (tool === 'snip' && !['pdf', 'image'].includes(this.type)) {
-            this._msg('القص للسبورة شغال مع كتب الـ PDF والصور.');
+        if (tool === 'snip' && !this.canSnip) {
+            this._msg(this.v.snipRegion ? 'القص للسبورة شغال في عرض "مصحف المدينة" (مش النص العثماني).' : 'القص للسبورة شغال مع كتب الـ PDF والصور.');
             this.ctrl.tool = null; tool = null; this.dock.refresh();
         }
         this.laser.setActive(tool === 'laser');
@@ -353,6 +362,7 @@ export class PresentTools {
     _pageAt(x, y) {
         const els = this._pageEls();
         for (let i = 0; i < els.length; i++) {
+            if (!els[i]) continue;   // v40: المصحف بيرجّع الصفحات الظاهرة بس في أماكنها (مصفوفة فيها فراغات)
             const r = els[i].getBoundingClientRect();
             if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return { el: els[i], page: i + 1, r };
         }
@@ -499,6 +509,15 @@ export class PresentTools {
 
     /** قص جزء من الصفحة (بالرسم اللي عليها) وحطه على السبورة */
     async snip(box) {
+        // v40: المصحف بيرسم الجزء المختار بنفسه (الصفحة كلام بخطوط المصحف مش صورة)
+        if (typeof this.v.snipRegion === 'function') {
+            let img = null;
+            try { img = await this.v.snipRegion(box); } catch (e) { img = null; }
+            if (!img) { this._msg('اختار جزء فيه آيات من الصفحة.'); return; }
+            this.ctrl.setTool(null);
+            this.openBoard({ image: img });
+            return;
+        }
         const cx = box.left + box.width / 2; const cy = box.top + box.height / 2;
         const hit = this._pageAt(cx, cy);
         const src = hit && this._sourceOf(hit.el);
@@ -532,6 +551,7 @@ export class PresentTools {
     openBoard({ image = null } = {}) {
         const v = this.v;
         const title = this.ownerName ? `سبورة ${this.ownerName}` : 'السبورة';
+        if (this.cfg.beforeBoard) { try { this.cfg.beforeBoard(); } catch (e) { /* تجاهل */ } }
         openWhiteboard({ owner: v.owner || {}, title, blank: !image, image, onClose: () => { if (!v.closed) v.stage.focus({ preventScroll: true }); } });
     }
     togglePresent() {
@@ -543,6 +563,13 @@ export class PresentTools {
         } catch (e) { /* تجاهل */ }
     }
     toggleNight(force) {
+        if (typeof this.v.onNight === 'function') {   // v40: المصحف ليه وضع ليلي خاص بيه (ألوان الورق)
+            this.night = typeof force === 'boolean' ? force : !this.night;
+            this.v.onNight(this.night);
+            this.dock.refresh();
+            this._status(this.night ? 'الوضع الليلي شغال 🌙' : 'رجعنا للوضع العادي ☀️', 'ok', 1800);
+            return;
+        }
         this.night = typeof force === 'boolean' ? force : !this.night;
         this.v.root.classList.toggle('bv-night', this.night);
         try { localStorage.setItem('tm_bv_night', this.night ? '1' : '0'); } catch (e) { /* تجاهل */ }
@@ -606,7 +633,8 @@ export class PresentTools {
             if (e.code === 'KeyW') { e.preventDefault(); this.openBoard(); return true; }
             if (e.key === '?' || (e.code === 'Slash' && e.shiftKey)) { e.preventDefault(); this.toggleHelp(); return true; }
         }
-        const drawTools = this.canDraw ? BOOK_TOOLS : VIEW_TOOLS.concat(['hand']);
+        const all = this.cfg.tools || BOOK_TOOLS;
+        const drawTools = this.canDraw ? all : VIEW_TOOLS.concat(['hand']).filter((t) => all.includes(t));
         return handleInkKey(e, this.ctrl, { tools: drawTools, onClear: this.canDraw ? () => this.clearPage() : null });
     }
 

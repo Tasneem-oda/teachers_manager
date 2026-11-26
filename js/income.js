@@ -6,10 +6,10 @@
  * (أبطأ شوية لأنها طلب لكل طالب، فبتشتغل لما المدرس يضغط بس).
  */
 
-import { api } from './api.js?v=57';
-import { Formatters, ErrorHandler } from './utils.js?v=57';
-import { icon } from './icons.js?v=57';
-import { lessonsText, money } from './billing.js?v=57';
+import { api } from './api.js?v=59';
+import { Formatters, ErrorHandler } from './utils.js?v=59';
+import { icon } from './icons.js?v=59';
+import { lessonsText, money } from './billing.js?v=59';
 
 const esc = (s) => Formatters.escapeHtml(s == null ? '' : String(s));
 const CACHE_KEY = 'tm_income_cache_v1';
@@ -162,7 +162,7 @@ export async function renderIncomeCard(root) {
     if (!root) return;
     // v36: ملخص فلوس الشهر في الاحترافية بس: في البداية بنعرض كارت مقفول بدل طلب هيترفض
     try {
-        const { getTier } = await import('./plan.js?v=57');
+        const { getTier } = await import('./plan.js?v=59');
         if (await getTier() === 'starter') {
             root.innerHTML = `<button type="button" class="inc-locked" data-pro-feature data-pro-name="ملخص فلوس الشهر"><span class="il-ic">${icon('lock', { size: 16 })}</span><span class="il-t"><b>ملخص فلوس الشهر</b><small>في الباقة الاحترافية</small></span></button>`;
             return;
